@@ -33,7 +33,7 @@ jobs:
       - run: ./gradlew testDebugUnitTest :app:lintDebug --console=plain
       - name: Test and lint reports (failed runs only)
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |
