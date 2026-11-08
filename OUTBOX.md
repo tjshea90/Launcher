@@ -1384,3 +1384,7 @@
 ## 2026-11-08T22:19:53Z
 > The review fixes are in, the checklist and research notes are written, and two fresh `cu` samples are running on the fixed code (due in about 4 minutes). If both are clean, I'll bump the version and run the tiered gate.
 <!-- sha:5d9f2f32fbff -->
+
+## 2026-11-08T22:25:47Z
+> The v0.8.12 gate is running as three parallel groups (due about 22:45). The curtain itself is proven green five times, so I'm now waiting on the broad lock-safety check of the exact release candidate.
+<!-- sha:172fc31421e2 -->
