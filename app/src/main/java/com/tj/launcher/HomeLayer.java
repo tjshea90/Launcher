@@ -48,17 +48,16 @@ final class HomeLayer {
     }
 
     /**
-     * BL1 (the home curtain): {@code layer} laid over a copy of {@code base} at ({@code left}, {@code top}), SRC_OVER like {@link #compose}, but the layer may be SMALLER than the base (the Launcher window can leave a
-     * system bar out; everything outside the layer is the wallpaper picture as it is). Null on any failure, and when the layer does not fit inside the base.
+     * BL1 (the home curtain): {@code layer} drawn straight onto the MUTABLE {@code base} at ({@code left}, {@code top}), SRC_OVER like {@link #compose}, and {@code base} is returned (no copy: one full-screen bitmap
+     * fewer alive at once on a low-RAM tablet). The layer may be SMALLER than the base (the Launcher window can leave a system bar out; everything outside the layer stays the wallpaper picture). Null on any failure,
+     * and when the layer does not fit inside the base or the base is not mutable.
      */
-    static Bitmap composeAt(Bitmap base, Bitmap layer, int left, int top) {
+    static Bitmap composeInPlace(Bitmap base, Bitmap layer, int left, int top) {
         try {
-            if (base == null || layer == null || left < 0 || top < 0 || left + layer.getWidth() > base.getWidth() || top + layer.getHeight() > base.getHeight()) return null;
-            Bitmap out = base.copy(Bitmap.Config.ARGB_8888, true);
-            if (out == null) return null;
-            new Canvas(out).drawBitmap(layer, left, top, null);
-            return out;
-        } catch (Throwable t) { Log.e(TAG, "composeAt failed", t); return null; }
+            if (base == null || layer == null || !base.isMutable() || left < 0 || top < 0 || left + layer.getWidth() > base.getWidth() || top + layer.getHeight() > base.getHeight()) return null;
+            new Canvas(base).drawBitmap(layer, left, top, null);
+            return base;
+        } catch (Throwable t) { Log.e(TAG, "composeInPlace failed", t); return null; }
     }
 
     /** {@code layer} over a copy of {@code base} (both the same size, base is the opaque wallpaper crop): what the screen shows. Returns null on any failure. */
