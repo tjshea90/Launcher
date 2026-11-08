@@ -1805,21 +1805,22 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** The curtain is wanted but the plain-wallpaper picture of THIS page is not stored yet (a calibration made before the curtain existed kept only the crop): the next calibration takes it (one flash). */
     private boolean curtainWallMissing() {
-        try { return curtainSwitchOn() && !HomeCurtain.hasWall(this, rotation(), homeStepNow(), homeSig()); } catch (Throwable t) { return false; }
+        try { int rot = rotation(), step = homeStepNow(); String sig = homeSig(); return curtainSwitchOn() && !HomeCurtain.hasWall(this, rot, step, sig) && !HomeCurtain.wallFailed(this, rot, step, sig); } catch (Throwable t) { return false; }   // a wallpaper picture that could not be kept (a full disk) is not asked for again and again: that would cost a flash per quiet moment
     }
 
     /** The facts the rules need to say whether the stored picture may be the cover now. Main thread, NO decoding and no disk read of the picture (two preference reads and a file check). */
     private HomeCurtainRules.UseFacts curtainUseFacts(android.util.DisplayMetrics dm) {
         HomeCurtainRules.UseFacts f = new HomeCurtainRules.UseFacts();
         f.switchOn = curtainSwitchOn();
-        f.rotation = rotation(); f.picRotation = f.rotation;
+        f.rotation = rotation();
         f.dispW = dm.widthPixels; f.dispH = dm.heightPixels;
         f.currentSig = homeSig();
-        HomeCurtainRules.Meta m = HomeCurtain.meta(this, f.rotation);
-        android.graphics.Bitmap pic = m == null ? null : HomeCurtain.cachedFor(f.rotation, m.sig);
-        if (m != null && pic == null) curtainPreloadAsync();   // stored but not in memory (a restarted process): it is loaded for the NEXT unlock
-        f.hasPicture = m != null && pic != null;
-        if (f.hasPicture) { f.pictureSig = m.sig; f.picW = pic.getWidth(); f.picH = pic.getHeight(); f.ageMs = System.currentTimeMillis() - m.savedAtMs; }
+        int cr = HomeCurtain.cachedRot(); String cs = HomeCurtain.cachedSig();
+        android.graphics.Bitmap pic = cr < 0 ? null : HomeCurtain.cachedFor(cr, cs);
+        if (pic == null || cr != f.rotation || !cs.equals(f.currentSig)) curtainPreloadAsync();   // nothing fitting in memory (a restarted process, another rotation or wallpaper): the right one is read for the NEXT unlock (the worker looks at the files)
+        f.hasPicture = pic != null;
+        f.picRotation = pic != null ? cr : f.rotation;
+        if (pic != null) { f.pictureSig = cs; f.picW = pic.getWidth(); f.picH = pic.getHeight(); f.ageMs = System.currentTimeMillis() - HomeCurtain.cachedSavedAt(); }
         return f;
     }
 
@@ -1856,6 +1857,9 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable t) { Log.e(TAG, "curtain touch switch failed", t); }
     }
 
+    /** Service teardown (unbind, interrupt, destroy): nothing of the curtain's capture may fire later, and nothing may stay marked busy for the next connection (code review 2026-11-08). */
+    private void curtainStop() { try { handler.removeCallbacks(curtainBuild); curtainPending = false; curtainBuilding = false; } catch (Throwable ignored) { } }
+
     private final Runnable curtainBuild = new Runnable() { @Override public void run() { curtainPending = false; try { buildCurtainNow(); } catch (Throwable t) { curtainBuilding = false; Log.e(TAG, "curtain capture failed", t); } } };
 
     /** From {@link #homeDrew} (every draw of the Launcher): look at the curtain picture again once the home has been quiet. At most ONE posted runnable; nothing else on the draw path. */
@@ -1863,6 +1867,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (curtainBuilding && since(curtainLastStartUp) > 30_000) { curtainBuilding = false; curtainCaptureNote = "a capture never reported back (30 s): the next one may start"; }   // a lost callback must not stop every later capture
         if (curtainPending || curtainBuilding) return;
         if (!curtainSwitchOn()) return;
+        curtainWaits = 0;   // a fresh wish (a draw after a quiet spell) gets a fresh bounded retry budget; the old budget must not stay spent for good (code review 2026-11-08)
         curtainPending = true;
         handler.postDelayed(curtainBuild, HomeCurtainRules.QUIET_DRAW_MS + 100);
     }
@@ -1891,21 +1896,22 @@ public class TjAccessibilityService extends AccessibilityService {
             return;
         }
         curtainWaits = 0;
-        final int[] win = TjHooks.launcherWindowSize();
+        final int[] win = TjHooks.launcherWindowBounds();   // {left, top, width, height} of the Launcher window on the screen
         final android.util.DisplayMetrics dm = realMetrics();
-        if (win == null || win[0] <= 0 || win[1] <= 0) { curtainCaptureNote = "no Launcher window to copy"; return; }
-        final int cw = Math.min(dm.widthPixels, win[0]), ch = Math.min(dm.heightPixels, win[1]);
+        if (win == null || win[2] <= 0 || win[3] <= 0 || win[0] < 0 || win[1] < 0 || win[0] >= dm.widthPixels || win[1] >= dm.heightPixels) { curtainCaptureNote = "no Launcher window to copy"; return; }
+        final int left = win[0], top = win[1];
+        final int cw = Math.min(win[2], dm.widthPixels - left), ch = Math.min(win[3], dm.heightPixels - top);
         curtainBuilding = true; curtainLastStartUp = android.os.SystemClock.uptimeMillis();
         HomeLayer.copy(new Rect(0, 0, cw, ch), handler, new HomeLayer.Done() {
             @Override public void done(final android.graphics.Bitmap layer, String problem) {
                 if (layer == null) { curtainBuilding = false; curtainCaptureNote = "could not read the Launcher's pixels (" + problem + ")"; Log.i(TAG, "CURTAIN layer copy failed: " + problem); return; }
-                new Thread(new Runnable() { @Override public void run() { curtainFinishOffMain(app, layer, rot, step, sig, dm.widthPixels, dm.heightPixels); } }, "tj-curtain").start();
+                new Thread(new Runnable() { @Override public void run() { curtainFinishOffMain(app, layer, rot, step, sig, dm.widthPixels, dm.heightPixels, left, top); } }, "tj-curtain").start();
             }
         });
     }
 
     /** Worker thread: hash the layer, refuse a blank copy, and only when the home changed compose it over the wallpaper picture and store it (PNG) and keep it in memory. Always ends by clearing the busy flag on the main thread. */
-    private void curtainFinishOffMain(final android.content.Context app, final android.graphics.Bitmap layer, final int rot, final int step, final String sig, final int dispW, final int dispH) {
+    private void curtainFinishOffMain(final android.content.Context app, final android.graphics.Bitmap layer, final int rot, final int step, final String sig, final int dispW, final int dispH, final int left, final int top) {
         String result;
         boolean noteIt = true;
         try {
@@ -1915,17 +1921,22 @@ public class TjAccessibilityService extends AccessibilityService {
             else {
                 HomeCurtainRules.Meta m = HomeCurtain.meta(app, rot);
                 boolean changed = HomeCurtainRules.changed(m != null, m == null ? "" : m.sig, m == null ? 0 : m.step, m == null ? 0 : m.hash, sig, step, h);
-                if (!changed) { HomeCurtain.preload(app, rot, sig, dispW, dispH); result = "unchanged since the last picture"; noteIt = false; }
+                if (!changed) {
+                    HomeCurtain.preload(app, rot, sig, dispW, dispH);
+                    if (m != null && HomeCurtainRules.stampDue(System.currentTimeMillis() - m.savedAtMs)) { HomeCurtain.refreshStamp(app, rot); result = "unchanged: the picture's time stamp was renewed"; }   // a still-correct picture must never expire just because the home was not rearranged
+                    else result = "unchanged since the last picture";
+                    noteIt = false;
+                }
                 else {
                     android.graphics.Bitmap wall = HomeCurtain.loadWall(app, rot, step, sig);
                     if (wall == null) result = "the wallpaper picture could not be loaded";
                     else {
-                        android.graphics.Bitmap comp = HomeLayer.composeAt(wall, layer, 0, 0);
-                        wall.recycle();
+                        android.graphics.Bitmap comp = HomeLayer.composeInPlace(wall, layer, left, top);   // the layer is drawn straight onto the decoded wallpaper picture (no copy)
+                        if (comp == null) wall.recycle();
                         if (comp == null) result = "could not compose the picture";
                         else {
                             long now = System.currentTimeMillis();
-                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + ", wallpaper position " + step + ")"; }
+                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
                             else { comp.recycle(); result = "the picture could not be written"; }
                         }
                     }
@@ -2906,10 +2917,10 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
     }
 
-    @Override public void onInterrupt() { scrimTeardown(); removeHotspot(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); removeLockNumber(); picker().remove("interrupted"); try { stopShotWatch(); handler.removeCallbacks(shotIngest); handler.removeCallbacks(autoShot); handler.removeCallbacks(shotEnd); Features.setString(this, PatchShot.CAL_UNTIL_KEY, "0"); } catch (Throwable ignored) { } }
+    @Override public void onInterrupt() { scrimTeardown(); removeHotspot(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); removeLockNumber(); picker().remove("interrupted"); try { stopShotWatch(); handler.removeCallbacks(shotIngest); handler.removeCallbacks(autoShot); handler.removeCallbacks(shotEnd); Features.setString(this, PatchShot.CAL_UNTIL_KEY, "0"); } catch (Throwable ignored) { } }
 
     @Override public boolean onUnbind(android.content.Intent i) { instance = null; LockLog.add(this, "SERVICE", "unbound"); try { AnimationSpeedup.syncNow(this, "helper unbound"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: the helper is what hears the screen go off: without it the animations are real again
-        cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); picker().remove("unbound"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); try { ((android.hardware.SensorManager) getSystemService(SENSOR_SERVICE)).unregisterListener(sensorListener); motionOn = false; } catch (Throwable ignored) { } return super.onUnbind(i); }
+        cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("unbound"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); try { ((android.hardware.SensorManager) getSystemService(SENSOR_SERVICE)).unregisterListener(sensorListener); motionOn = false; } catch (Throwable ignored) { } return super.onUnbind(i); }
 
     /**
      * AD8 (Go discipline, Tj: "optimized for my tablet": 2 GB RAM, memory class 128 MB): when Android reports memory pressure, drop the cached wallpaper / lock-screen bitmaps that nothing is drawing right now
