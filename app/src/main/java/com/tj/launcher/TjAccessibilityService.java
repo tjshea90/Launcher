@@ -2942,7 +2942,7 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
     }
 
-    @Override public void onDestroy() { instance = null; try { AnimationSpeedup.syncNow(this, "helper destroyed"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); } cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); picker().remove("destroyed"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); super.onDestroy(); }
+    @Override public void onDestroy() { instance = null; try { AnimationSpeedup.syncNow(this, "helper destroyed"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); } cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("destroyed"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); super.onDestroy(); }
 
     // ---------------------------------------------------------------- AD8: what the helper costs on THIS tablet (plain counters on the main thread; read by the report)
     private long connectedAtMs = 0, evSeen = 0, evNoise = 0, scanCount = 0, scanTotalMs = 0, scanMaxMs = 0;
