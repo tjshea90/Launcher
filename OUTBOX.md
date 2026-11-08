@@ -1380,3 +1380,7 @@
 >
 > 💡 The code word is off in this chat. Type `/amcodeword` and I'll start every reply with 'Yes Boss!', so you'll notice if I start losing track.
 <!-- sha:4131a101ebcc -->
+
+## 2026-11-08T22:19:53Z
+> The review fixes are in, the checklist and research notes are written, and two fresh `cu` samples are running on the fixed code (due in about 4 minutes). If both are clean, I'll bump the version and run the tiered gate.
+<!-- sha:5d9f2f32fbff -->
