@@ -12,16 +12,19 @@ import java.io.FileOutputStream;
  * counterpart of {@link HomeShot} (which keeps only a small CROP of the wallpaper for the power-menu patch).
  *
  * Two kinds of file in the app's private files: (1) the plain-WALLPAPER picture of the whole display, one per rotation and wallpaper offset step, kept by the home calibration instead of being thrown away
- * after the crop was cut (a real system screenshot taken with the Launcher's own views hidden, so it is exactly what the compositor shows there, navigation bar included); (2) the composed CURTAIN, one per
- * rotation: that wallpaper picture with the Launcher's own window pixels laid over it (the same SRC_OVER the patch uses), i.e. what the home screen really looks like. Metadata lives in preferences.
+ * after the crop was cut (a real system screenshot taken with the Launcher's own views hidden, so it is exactly what the compositor shows there); (2) the composed CURTAIN, one per rotation: that wallpaper
+ * picture with the Launcher's own window pixels laid over it (the same SRC_OVER the patch uses), i.e. what the home screen really looks like. Metadata lives in preferences.
  *
- * The newest curtain is also kept in MEMORY: the cover is created at the ENTER tap, on the main thread, and must never wait for a disk read there. A bitmap that was put in the cache may be on screen in a cover
- * right now, so a replaced or dropped bitmap is never recycled (the garbage collector frees it once the cover is gone). Everything here is best effort and never throws: a doubt means "no picture".
+ * The newest curtain is also kept in MEMORY, as ONE immutable entry (rotation, signature, saved-at, bitmap): the cover is created at the ENTER tap, on the main thread, and must never wait for a disk read
+ * there, and it can tell from the entry alone whether the picture fits the screen as it is now. A bitmap that was put in the cache may be on screen in a cover right now, so a replaced or dropped
+ * bitmap is never recycled (the garbage collector frees it once the cover is gone). Everything here is best effort and never throws: a doubt means "no picture".
  */
 public final class HomeCurtain {
     private static final String TAG = "TjHomeCurtain";
     /** Which wallpaper pictures exist: "r0x0,r0x333". */
     private static final String WALL_INDEX_KEY = "home_wall_idx";
+    /** The last wallpaper picture that could NOT be kept ("signature#rotation#step"): the calibration is not repeated for the same page and wallpaper because of it (code review 2026-11-08: a full disk must not cost six flashes a day). */
+    private static final String WALL_FAIL_KEY = "home_wall_fail";
 
     private HomeCurtain() {}
 
@@ -47,13 +50,25 @@ public final class HomeCurtain {
     /** Keeps the whole calibration screenshot (the plain wallpaper, display size) for this rotation and step. Worker thread (a PNG write). Then forgets the pictures of an older wallpaper. */
     public static boolean saveWall(Context c, int rot, int step, Bitmap full, String sig, long wallpaperId, int dispW, int dispH) {
         try {
-            if (full == null || full.isRecycled() || full.getWidth() != dispW || full.getHeight() != dispH) return false;
-            if (!writePng(full, wallFile(c, rot, step))) return false;
+            if (full == null || full.isRecycled() || full.getWidth() != dispW || full.getHeight() != dispH || !writePng(full, wallFile(c, rot, step))) { markWallFailed(c, rot, step, sig); return false; }
             Features.setString(c, HomeCurtainRules.wallMeta(rot, step), sig);
             addToWallIndex(c, rot, step);
             pruneWalls(c, wallpaperId, dispW, dispH);
+            if (wallFailed(c, rot, step, sig)) Features.remove(c, WALL_FAIL_KEY);
             return true;
-        } catch (Throwable t) { Log.e(TAG, "saving the wallpaper picture failed", t); return false; }
+        } catch (Throwable t) { Log.e(TAG, "saving the wallpaper picture failed", t); markWallFailed(c, rot, step, sig); return false; }
+    }
+
+    private static void markWallFailed(Context c, int rot, int step, String sig) {
+        try { Features.setString(c, WALL_FAIL_KEY, sig + "#" + rot + "#" + step); } catch (Throwable ignored) { }
+    }
+
+    /** Did the calibration for this very page and wallpaper already fail to keep its wallpaper picture? Then it is not run again just for the curtain (the black cover stays). */
+    public static boolean wallFailed(Context c, int rot, int step, String sig) {
+        try {
+            String[] p = Features.getString(c, WALL_FAIL_KEY, "").split("#");
+            return p.length == 3 && sig != null && p[0].equals(sig) && Integer.parseInt(p[1]) == rot && HomePatchRules.sameStep(Integer.parseInt(p[2]), step);
+        } catch (Throwable t) { return false; }
     }
 
     /** The stored step that serves {@code step} (the same wallpaper position, +-2) for this signature, or -1. A cheap check: no decoding. */
@@ -73,11 +88,16 @@ public final class HomeCurtain {
 
     public static boolean hasWall(Context c, int rot, int step, String signature) { return findWallStep(c, rot, step, signature) >= 0; }
 
-    /** The wallpaper picture that serves {@code step}, decoded (a worker thread), or null. */
+    /** The wallpaper picture that serves {@code step}, decoded MUTABLE (the Launcher's layer is drawn straight onto it: one full-screen bitmap fewer on a low-RAM tablet), a worker thread, or null. */
     public static Bitmap loadWall(Context c, int rot, int step, String signature) {
         try {
             int s = findWallStep(c, rot, step, signature);
-            return s < 0 ? null : BitmapFactory.decodeFile(wallFile(c, rot, s).getPath());
+            if (s < 0) return null;
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inMutable = true;
+            Bitmap b = BitmapFactory.decodeFile(wallFile(c, rot, s).getPath(), o);
+            if (b != null && !b.isMutable()) { Bitmap m = b.copy(Bitmap.Config.ARGB_8888, true); b.recycle(); b = m; }
+            return b;
         } catch (Throwable t) { Log.e(TAG, "loading the wallpaper picture failed", t); return null; }
     }
 
@@ -129,7 +149,7 @@ public final class HomeCurtain {
         } catch (Throwable t) { Log.e(TAG, "saving the curtain failed", t); return false; }
     }
 
-    /** The stored curtain's meta for this rotation, or null (none, a malformed meta, or the file is gone). A cheap check: no decoding. */
+    /** The stored curtain's meta for this rotation, or null (none, a malformed meta, or the file is gone). A cheap check: no decoding. NOT for the Enter-tap path (it stats the file). */
     public static HomeCurtainRules.Meta meta(Context c, int rot) {
         try {
             HomeCurtainRules.Meta m = HomeCurtainRules.parseMeta(Features.getString(c, HomeCurtainRules.curtainMeta(rot), ""));
@@ -137,41 +157,63 @@ public final class HomeCurtain {
         } catch (Throwable t) { return null; }
     }
 
+    /**
+     * A capture found the home UNCHANGED: the stored picture is confirmed, so its time stamp is renewed (the meta only, no picture is written) and the memory copy is re-keyed to it. Without this a home that is
+     * never rearranged would expire after 30 days. Returns the new stamp, or 0.
+     */
+    public static long refreshStamp(Context c, int rot) {
+        try {
+            HomeCurtainRules.Meta m = meta(c, rot);
+            if (m == null) return 0;
+            long now = System.currentTimeMillis();
+            Features.setString(c, HomeCurtainRules.curtainMeta(rot), HomeCurtainRules.metaString(m.sig, m.step, m.hash, now));
+            Entry e = cache;
+            if (e != null && e.rot == rot && e.sig.equals(m.sig) && !e.bmp.isRecycled()) cache = new Entry(rot, m.sig, now, e.bmp);
+            return now;
+        } catch (Throwable t) { Log.e(TAG, "renewing the stamp failed", t); return 0; }
+    }
+
     // ================================================================ the in-memory copy (the Enter tap never reads the disk)
 
-    private static volatile Bitmap cachedBmp;
-    private static volatile String cachedKey = "";
+    /** The newest curtain in memory: ONE immutable entry, so rotation, signature, stamp and bitmap are always read together. */
+    private static final class Entry {
+        final int rot; final String sig; final long savedAt; final Bitmap bmp;
+        Entry(int rot, String sig, long savedAt, Bitmap bmp) { this.rot = rot; this.sig = sig; this.savedAt = savedAt; this.bmp = bmp; }
+    }
 
-    private static String keyPrefix(int rot, String sig) { return rot + "|" + sig + "|"; }
+    private static volatile Entry cache;
 
     /** The in-memory curtain for exactly this rotation and signature, or null. NO disk access: this runs on the main thread at the Enter tap. */
     public static Bitmap cachedFor(int rot, String sig) {
         try {
-            Bitmap b = cachedBmp;
-            if (b == null || b.isRecycled() || sig == null || sig.isEmpty()) return null;
-            return cachedKey.startsWith(keyPrefix(rot, sig)) ? b : null;
+            Entry e = cache;
+            return e != null && sig != null && e.rot == rot && e.sig.equals(sig) && !e.bmp.isRecycled() ? e.bmp : null;
         } catch (Throwable t) { return null; }
     }
 
+    /** The rotation of the curtain that is in memory, or -1: the rules compare it with the screen as it is now (a real check, not a copy of the current rotation). */
+    public static int cachedRot() { Entry e = cache; return e == null || e.bmp.isRecycled() ? -1 : e.rot; }
+
+    /** The signature of the curtain in memory, or "". */
+    public static String cachedSig() { Entry e = cache; return e == null || e.bmp.isRecycled() ? "" : e.sig; }
+
+    /** When the curtain in memory was captured (the stamp), or 0. */
+    public static long cachedSavedAt() { Entry e = cache; return e == null ? 0 : e.savedAt; }
+
     /** Puts a curtain in the memory cache. The replaced bitmap is NOT recycled (a cover may be showing it right now). */
     public static void setCache(int rot, String sig, long savedAtMs, Bitmap b) {
-        cachedBmp = b;
-        cachedKey = b == null ? "" : keyPrefix(rot, sig) + savedAtMs;
+        cache = b == null || sig == null ? null : new Entry(rot, sig, savedAtMs, b);
     }
 
-    public static void dropCache() { cachedBmp = null; cachedKey = ""; }
-
-    /** How the cache stands, for the status line: the saved-at of the cached picture or 0. */
-    public static long cachedSavedAt() {
-        try { String k = cachedKey; int i = k.lastIndexOf('|'); return cachedBmp == null || i < 0 ? 0 : Long.parseLong(k.substring(i + 1)); } catch (Throwable t) { return 0; }
-    }
+    public static void dropCache() { cache = null; }
 
     /** Reads the stored curtain into the memory cache if it is for this signature and exactly the display size. Worker thread (a PNG decode). True = it is cached now. */
     public static boolean preload(Context c, int rot, String sig, int dispW, int dispH) {
         try {
             HomeCurtainRules.Meta m = meta(c, rot);
             if (m == null || sig == null || !m.sig.equals(sig)) return false;
-            if (cachedFor(rot, sig) != null && cachedSavedAt() == m.savedAtMs) return true;   // already there
+            Entry e = cache;
+            if (e != null && e.rot == rot && e.sig.equals(sig) && e.savedAt == m.savedAtMs && !e.bmp.isRecycled()) return true;   // already there
             Bitmap b = BitmapFactory.decodeFile(curtainFile(c, rot).getPath());
             if (b == null) return false;
             if (b.getWidth() != dispW || b.getHeight() != dispH) { b.recycle(); return false; }
@@ -180,7 +222,7 @@ public final class HomeCurtain {
         } catch (Throwable t) { Log.e(TAG, "loading the curtain failed", t); return false; }
     }
 
-    /** Forgets every stored picture (the wallpaper pictures, the curtains, the memory copy): "Calibrate the home patch again" and a changed wallpaper start over. */
+    /** Forgets every stored picture (the wallpaper pictures, the curtains, the memory copy, the failure marker): "Calibrate the home patch again" and a changed wallpaper start over. */
     public static void invalidateAll(Context c) {
         try {
             for (String e : wallIndex(c)) {
@@ -191,6 +233,7 @@ public final class HomeCurtain {
                 Features.remove(c, HomeCurtainRules.wallMeta(rot, step));
             }
             Features.remove(c, WALL_INDEX_KEY);
+            Features.remove(c, WALL_FAIL_KEY);
             for (int rot = 0; rot < 4; rot++) { curtainFile(c, rot).delete(); Features.remove(c, HomeCurtainRules.curtainMeta(rot)); }
         } catch (Throwable t) { Log.e(TAG, "forgetting the pictures failed", t); }
         dropCache();
