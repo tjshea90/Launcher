@@ -1714,3 +1714,7 @@
 > - **Your tablet checks:** v0.8.9, v0.8.11 and v0.8.12.
 > - **`session-handoff` plugin:** disabling it is still open.
 <!-- sha:9a28acb3a0ff -->
+
+## 2026-11-09T04:23:53Z
+> Run 448 (`hp` alone) passed, including the new check that the unlock doesn't wrongly keep the home patch away. Runs 444 (`pt`), 447 (`e1,n,ac`) and 449 (`fp,last` with the fixed test) are still running, and I'll read them at about 04:28 UTC. If they're green I ship v0.8.13 straight away, and nothing goes out red.
+<!-- sha:bd8f3abc53c5 -->
