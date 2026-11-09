@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- BN1: the label of the Settings look-alike's drawer entry (activity-alias in the manifest) and of its Recents card. -->
+    <string name="ss_label">Settings</string>
+    <!-- AOSP 10 Settings: icon_launcher_setting_color = accent_device_default_light -->
+    <color name="ss_icon_background">#FF008577</color>
+</resources>
