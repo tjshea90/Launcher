@@ -79,30 +79,67 @@ final class SsPagesSize {
                 return new ContextThemeWrapper(a.createConfigurationContext(cfg), R.style.SsTheme);
             }
         };
+        final SixApps six = new SixApps();   // review B #8: the apps of preview 2 are looked up once per visit, not again at every density stop
         PageBuilder[] pages = {
             new PageBuilder() { @Override public View build(Context c) { return conversationPreview(c); } },
-            new PageBuilder() { @Override public View build(Context c) { return appsPreview(c); } },
+            new PageBuilder() { @Override public View build(Context c) { return appsPreview(c, six); } },
             new PageBuilder() { @Override public View build(Context c) { return settingsPreview(c); } },
         };
         return page(a, d.labels, d.index, true, ctx, pages, new Commit() {
             @Override public void commit(final int stop) {
                 if (d.values[stop] == a.getResources().getConfiguration().densityDpi) return;
                 final int dpi = d.values[stop];
-                new Thread(new Runnable() { @Override public void run() { setDensity(dpi == def ? null : String.valueOf(dpi)); } }, "ss-density").start();
+                requestDensity(dpi == def ? null : String.valueOf(dpi));
             }
         }, "Make the items on your screen smaller or larger. Some apps on your screen may change position.");
     }
 
-    /** {@code wm density N} / {@code wm density reset} as this app (it holds WRITE_SECURE_SETTINGS); never blocks for ever, never throws. */
+    // review B #6: one `wm` at a time, the newest request wins, a daemon thread (a commit used to start a thread and a process per call, overlapping, with the process streams never closed)
+    private static final Object DENSITY_LOCK = new Object();
+    private static boolean densityRunning, densityHasPending;
+    private static String densityPending;
+
+    /** Asks for {@code wm density N} ({@code null} = reset) in the background; a request that arrives while one runs replaces any older waiting one. Main thread. */
+    static void requestDensity(String dpiOrNull) {
+        synchronized (DENSITY_LOCK) {
+            if (densityRunning) { densityPending = dpiOrNull; densityHasPending = true; return; }
+            densityRunning = true;
+        }
+        final String first = dpiOrNull;
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                String next = first;
+                while (true) {
+                    setDensity(next);
+                    synchronized (DENSITY_LOCK) {
+                        if (!densityHasPending) { densityRunning = false; return; }
+                        next = densityPending;
+                        densityHasPending = false;
+                    }
+                }
+            }
+        }, "ss-density");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    /** {@code wm density N} / {@code wm density reset} as this app (it holds WRITE_SECURE_SETTINGS); never blocks for ever, never throws, always closes the process. */
     static void setDensity(String dpiOrNull) {
+        Process p = null;
         try {
-            Process p = new ProcessBuilder("wm", "density", dpiOrNull == null ? "reset" : dpiOrNull).redirectErrorStream(true).start();
-            long deadline = System.currentTimeMillis() + 8000;
-            while (System.currentTimeMillis() < deadline) {
+            p = new ProcessBuilder("wm", "density", dpiOrNull == null ? "reset" : dpiOrNull).redirectErrorStream(true).start();
+            long deadline = android.os.SystemClock.elapsedRealtime() + 8000;
+            while (android.os.SystemClock.elapsedRealtime() < deadline) {
                 try { p.exitValue(); return; } catch (IllegalThreadStateException running) { try { Thread.sleep(50); } catch (InterruptedException e) { return; } }
             }
-            p.destroy();
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) {
+        } finally {
+            if (p != null) {
+                try { p.getOutputStream().close(); } catch (Exception ignored) { }
+                try { p.getInputStream().close(); } catch (Exception ignored) { }
+                p.destroy();
+            }
+        }
     }
 
     // ------------------------------------------------------------------ the shared page
