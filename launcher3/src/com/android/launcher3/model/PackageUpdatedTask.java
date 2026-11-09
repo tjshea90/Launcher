@@ -168,6 +168,8 @@ public class PackageUpdatedTask extends BaseModelUpdateTask {
         final HashSet<ComponentName> removedComponents = new HashSet<>();
         if (mOp == OP_UPDATE) {
             for (AppInfo ai : removedApps) {
+                // Tj (BN1, review C #1): the look-alike's alias comes and goes with the mode; its home-screen shortcuts stay as they are (neither re-pointed to Launcher control nor deleted)
+                if (com.tj.launcher.SettingsSpoof.isLookAlikeComponent(ai.componentName.getClassName())) continue;
                 removedComponents.add(ai.componentName);
             }
         }
