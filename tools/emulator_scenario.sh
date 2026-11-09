@@ -3947,7 +3947,8 @@ check "SS25: the Magnification page lists Magnify with triple-tap and Magnify wi
 info "SS25b: magnification texts = $(tr '>' '\n' < $OUT/ss-mag.xml | grep -oE 'text="[^"]+"' | head -8 | tr '\n' ' ')"
 adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Text-to-speech output"; sleep 2; ssdump "$OUT/ss-tts.xml"; shot ss-18-tts
-check "SS26: the Text-to-speech output page lists Preferred engine, Language, Speech rate, Pitch, Play and Reset" bash -c "for t in 'Preferred engine' 'Language' 'Speech rate' 'Pitch'; do tr '>' '\n' < $OUT/ss-tts.xml | grep -q \"text=\\\"\$t\"; done; tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
+check "SS26: the Text-to-speech output page lists Preferred engine, Language, Speech rate, Pitch, in that order" ssorder "$OUT/ss-tts.xml" "Preferred engine" "Language" "Speech rate" "Pitch"
+check "SS26c: it has the Play and Reset buttons" bash -c "tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
 info "SS26b: tts engines on this image = $(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M1: System > Languages & input, About tablet > Legal information (static pages)
