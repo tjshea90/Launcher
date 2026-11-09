@@ -92,6 +92,7 @@ final class SsBatteryStats {
     /** Runs {@code dumpsys batterystats --charged}; blocks up to {@code limitMs}. Never throws. */
     static Data read(long limitMs) {
         final AtomicBoolean finished = new AtomicBoolean(false);
+        final AtomicBoolean timedOut = new AtomicBoolean(false);
         Process proc = null;
         Parser parser = new Parser(TimeZone.getDefault());
         try {
