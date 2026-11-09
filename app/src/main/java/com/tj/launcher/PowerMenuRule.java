@@ -25,4 +25,16 @@ public final class PowerMenuRule {
         if (Features.isCover(powerMode)) return screenshotFound ? COVER_SCREENSHOT : NOTHING;
         return NOTHING;
     }
+
+    /**
+     * BN2 (Tj, 2026-11-09 03:02 UTC, tablet report): after the stock menu was closed with the Home key, a scan 143 ms later still found the dialog's window in the window list, WITH its entries, and drew the TALL
+     * card over it for 250 ms ("it flashed the old custom power menu you made which is tall"). The stock dialog fades out for about 250 ms and stays in the list until its window is removed. For this long after a
+     * close, "the dialog is up" is not believed unless the dialog announced itself again (a new TYPE_WINDOW_STATE_CHANGED of class ActionsDialog = a real new opening, which clears the mark).
+     */
+    public static final long DYING_DIALOG_MS = 450;
+
+    /** @param menuClosedAtMs uptime ms of the last close (0 = none yet) */
+    public static boolean dyingDialog(long now, long menuClosedAtMs) {
+        return menuClosedAtMs > 0 && now >= menuClosedAtMs && now - menuClosedAtMs < DYING_DIALOG_MS;
+    }
 }
