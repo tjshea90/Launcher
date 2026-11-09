@@ -1925,3 +1925,12 @@
 ## 2026-11-09T19:40:17Z
 > Waiting on the v0.8.13 baseline (#470) and the frame-capture run on `main` (#471); the timer is set for 19:47 UTC. If v0.8.13 `base` is clean, this is a regression from this release and I'll bisect. If it also shows the native crashes and the same four failures, the emulator itself has become unstable and I'll treat the reruns as the proof.
 <!-- sha:27ba3d3eb230 -->
+
+## 2026-11-09T22:28:22Z
+> The release is held up only by emulator trouble, not by the new code. The `legacy` gate section is the last one not yet green on this code, so I'm waiting on it.
+>
+> - **The crash is the emulator's.** The emulator sometimes hits a native crash that makes unrelated checks fail. The released v0.8.13 tag hit it too: its `base` run had the crash and 1 failed check. The new code's `base` run was clean, 29 passed and 0 failed.
+> - **Running now:** `legacy` on the new code and on the v0.8.13 tag, side by side. They finish around 22:34 UTC.
+> - **Next:** if the new code's `legacy` is green, I bump to v0.9.0, ship it and send you the Release link plus the install notes.
+> - **Side job:** a read-only audit is checking whether any other word or state on the look-alike pages differs from your screenshots. It's your "must look identical" request, like the Display size "Custom" case. Anything it finds will go into a follow-up version.
+<!-- sha:012e052bd794 -->
