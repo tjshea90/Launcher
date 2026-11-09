@@ -217,7 +217,7 @@ def logline(text):
 def main():
     argv = sys.argv[1:]
     hook = {}
-    if "--report" not in argv and not sys.stdin.isatty():
+    if "--report" not in argv and "--top" not in argv and not sys.stdin.isatty():
         try:
             hook = json.loads(sys.stdin.read() or "{}")
         except ValueError:
