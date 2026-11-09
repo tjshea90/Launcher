@@ -305,6 +305,33 @@
             android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar"
             android:label="adb setup guide" />
 
+        <!-- BN1 (Tj, 2026-11-09: "Start building the settings spoof app which looks completely identical to the settings app"): the Settings look-alike. ONE page activity (the intent extra names the page), not exported:
+             only our own alias and our own rows start it. Its own task affinity keeps its task apart from Launcher control's (which is excluded from Recents). Like the real Settings it is a normal card in Recents
+             (label "Settings"; RecentsGuard leaves this task alone). Plan: research/SETTINGS_BUILD_PLAN_2026-11-09.md. -->
+        <activity
+            android:name="com.tj.launcher.SsPageActivity"
+            android:exported="false"
+            android:theme="@style/SsTheme"
+            android:label="@string/ss_label"
+            android:icon="@drawable/ss_ic_launcher"
+            android:taskAffinity="com.tj.launcher.settings" />
+
+        <!-- BN1: the drawer entry of the look-alike: label "Settings", the stock Settings icon, a LAUNCHER filter (the drawer lists only components that have one). DISABLED here and in Quickstep mode: SettingsSpoof flips it
+             to enabled (PackageManager, DONT_KILL_APP) only in the custom mode while the switch settings_spoof is on, so the stock drawer keeps its single real Settings. AppVisibility.ALWAYS_SHOWN_OWN_COMPONENTS lets it
+             through the custom drawer's filter. The name has no class behind it (it is a name only; the target is SsPageActivity). -->
+        <activity-alias
+            android:name="com.tj.launcher.SettingsAlias"
+            android:targetActivity="com.tj.launcher.SsPageActivity"
+            android:enabled="false"
+            android:exported="true"
+            android:label="@string/ss_label"
+            android:icon="@drawable/ss_ic_launcher">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
         <!-- AA2: keep-alive foreground service (does no work; one silent notification). Started by the router and the accessibility helper, stopped by the switch / Restore everything. -->
         <service
             android:name="com.tj.launcher.KeepAliveService"
