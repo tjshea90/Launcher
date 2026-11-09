@@ -3888,6 +3888,25 @@ check "SS14: the Battery toolbar menu has ONE item, 'Battery usage'" bash -c "[ 
 sstap "Battery usage"; sleep 3; ssdump "$OUT/ss-usage.xml"; shot ss-10-usage
 check "SS14b: Battery usage lists exactly one app row, Solitaire" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-usage.xml --contains 'Solitaire' --exact)\" ]"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+sstap "Display"; sleep 3; ssdump "$OUT/ss-display.xml"; shot ss-11-display
+check "SS15: Display lists Brightness level, Screen timeout, Auto-rotate screen, Font size, Display size, in that order" ssorder "$OUT/ss-display.xml" "Brightness level" "Screen timeout" "Auto-rotate screen" "Font size" "Display size"
+check "SS15b: Display has none of the other stock rows" ssabsent "$OUT/ss-display.xml" "Night Light" "Adaptive brightness" "Wallpaper" "Dark theme" "Lock screen display"
+info "SS15c: display page texts = $(tr '>' '\n' < $OUT/ss-display.xml | grep -oE 'text="[^"]+"' | head -14 | tr '\n' ' ' | cut -c1-360)"
+SSTO=$(adb shell settings get system screen_off_timeout | tr -d '\r'); SSROT=$(adb shell settings get system accelerometer_rotation | tr -d '\r')
+sstap "Screen timeout"; sleep 2; ssdump "$OUT/ss-timeout.xml"; shot ss-12-timeout
+check "SS16: the Screen timeout dialog lists 15 seconds to 30 minutes in AOSP's order (no Never)" ssorder "$OUT/ss-timeout.xml" "15 seconds" "30 seconds" "1 minute" "2 minutes" "5 minutes" "10 minutes" "30 minutes"
+sstap "10 minutes"; sleep 2
+check "SS16b: choosing 10 minutes wrote Settings.System screen_off_timeout = 600000" bash -c "[ \"\$(adb shell settings get system screen_off_timeout | tr -d '\r')\" = 600000 ]"
+ssdump "$OUT/ss-display2.xml"
+check "SS16c: the row now reads 'After 10 minutes of inactivity'" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-display2.xml --contains 'After 10 minutes of inactivity')\" ]"
+adb shell settings put system screen_off_timeout "$SSTO" >/dev/null 2>&1
+sstap "Auto-rotate screen"; sleep 2
+SSROT2=$(adb shell settings get system accelerometer_rotation | tr -d '\r')
+check "SS17: tapping 'Auto-rotate screen' flipped accelerometer_rotation (was $SSROT, now $SSROT2)" test "$SSROT" != "$SSROT2"
+adb shell settings put system accelerometer_rotation "$SSROT" >/dev/null 2>&1
+sstap "Brightness level"; sleep 3; resumed > "$OUT/ss-bright-resumed.txt"; shot ss-13-brightness
+info "SS18: brightness tap -> $(tr -s ' \n' ' ' < $OUT/ss-bright-resumed.txt | cut -c1-200)"
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M1: System > Languages & input, About tablet > Legal information (static pages)
 sstap "System"; sleep 2; ssdump "$OUT/ss-system.xml"; shot ss-04-system
 check "SS8: System has only 'Languages & input' (no Gestures, Date & time, Backup, Reset options)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-system.xml --contains '& input')\" ]"
