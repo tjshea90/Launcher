@@ -1492,3 +1492,26 @@
 >
 > **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
 <!-- sha:3df0231d2437 -->
+
+## 2026-11-09T02:50:09Z
+> Your 02:47 message and the five extra screenshots are written into `TASKS.md` (BN1i) with the numbers measured. Nothing is built yet, and four read-only research agents are still running.
+>
+> **How I read your two lines (correct me if I got either wrong):**
+> - **Model & hardware:** the row looks exactly like your About-tablet screenshot ("Model: <the tablet's model>"), and tapping it does nothing, as on the stock tablet. I took "the photo" to mean that screenshot, since none of the five new ones shows it.
+> - **Languages & input:** your screenshot without "Autofill service" and "Personal dictionary". That leaves Languages, KEYBOARDS (Virtual keyboard, Physical keyboard), TOOLS (Spell checker) and Pointer speed, plus a last row "Text-to-speech output".
+> - **Text-to-speech output page:** copied as it is on your tablet right now, with no engine installed. Language, Speech rate, Pitch and PLAY are greyed out, and only Preferred engine and RESET are active.
+> - **Other new pages:** the Touch & hold delay dialog, Magnification and Legal information are built as shown, minus the search icon.
+>
+> **What I added:** a CI step that pushes emulator screenshots to a side branch (`ci-shots`). Until now I could only read test numbers from CI, not see a screen, and "identical" can't be judged from numbers alone. It is untested until the first Settings run.
+>
+> **Order of work:**
+> 1. The agents finish the Android 10 Settings facts and the map of why the home screen's first side-key press isn't covered and why the lock screen flashes.
+> 2. The home-screen first-press fix and the lock-screen flash fix ship first as the next release, since you use the patch every day.
+> 3. The Settings spoof build follows.
+>
+> You can veto this order.
+>
+> **From you:** the next time you see the lock-screen flash, or the home-screen first-press leak, send the tablet report right away (Launcher control, then the report), so the log holds the exact hide and show times.
+>
+> **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
+<!-- sha:a5a46edc3c6d -->
