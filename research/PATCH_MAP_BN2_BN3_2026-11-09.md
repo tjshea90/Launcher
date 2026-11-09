@@ -182,6 +182,11 @@ Debounce / thresholds (lock flavour): `TOUCH_AWAY_MS = 900` (TAS 390), `PAD_CALM
 - The listener returns false for ACTION_OUTSIDE and, for other actions, `if (!patchTouchable) return false;` (TAS 1297-1298).
 - Device: the tablet's real pull timing (finger DOWN to first MOVE to the bouncer scrim) is NOT FOUND.
 
+6.6 History written in the code (the same complaint in earlier versions):
+- BC5 (TAS 378-379, Tj 2026-11-07): "For the pull up for the pin, the patch should disappear immediately, as fast as possible after the pull up from the bottom" -> the PIN pad over an OPEN menu hides the patch at once and keeps it away until the menu is gone (`pinHide`, TAS 380).
+- BE1 (TAS 382, Tj 2026-11-07 20:17): "Every once in a while there is a very quick flicker of the wallpaper patch when I pull up to enter pin. And one time the screenshot button showed for a split second" -> the finger-down hide through ACTION_OUTSIDE, and "a patch that is away (touch, PIN pad) is not 'not resting'" (TAS 383-385).
+- NOT FOUND: any record of which return path (section 6.4) was running at one of Tj's flashes; the lock log does not write returns.
+
 ## 7. Logging
 
 Persistent lock log (`files/lock-events.log` through `LockLog`; ring of 48 KB, trimmed to 32 KB; line = `HH:mm:ss.SSS EVENT detail`, cut at 200 characters; written on a background thread with the time of the caller, wall clock: `LockLog.java:17-18,25-30,56-58`):
