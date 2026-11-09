@@ -67,6 +67,7 @@ adb shell dumpsys package com.tj.launcher | grep -E "WRITE_SECURE_SETTINGS|READ_
 SECTION 9 - UNDO [NOW]
 adb shell pm revoke com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 adb shell pm revoke com.tj.launcher android.permission.READ_EXTERNAL_STORAGE
+adb shell pm revoke com.tj.launcher android.permission.PACKAGE_USAGE_STATS
 adb shell pm revoke com.tj.launcher android.permission.DUMP
 adb shell pm revoke com.tj.launcher android.permission.CHANGE_CONFIGURATION
 adb shell cmd appops set com.tj.launcher GET_USAGE_STATS default
