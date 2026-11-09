@@ -60,17 +60,17 @@ final class SsPagesAccessibility {
         list.addView(SsRows.divider(a));
         list.addView(SsRows.heading(a, "Audio & on-screen text"));
         final Switch mono = new Switch(a);
-        mono.setChecked(monoOn(a));
-        final Runnable monoRefresh = new Runnable() { @Override public void run() { if (mono.isChecked() != monoOn(a)) mono.setChecked(monoOn(a)); } };
+        mono.setChecked(monoShown(a));
+        final Runnable monoRefresh = new Runnable() { @Override public void run() { boolean on = monoShown(a); if (mono.isChecked() != on) mono.setChecked(on); } };
         list.addView(SsRows.switchRow(a, "Mono audio", "Combine channels when playing audio", mono, new SsRows.Toggle() {
             @Override public void onToggle(final boolean checked) {
-                applyPrivate(a, MONO, checked ? "1" : "0", monoRefresh);
+                applyPrivate(a, MONO, checked ? "1" : "0", checked ? 1 : 0);
             }
         }));
         final BalanceBar bar = new BalanceBar(a);
-        bar.setProgress(SsAccessRules.balanceProgress(balance(a)));
+        bar.setProgress(balanceShown(a));
         final Runnable balanceRefresh = new Runnable() {
-            @Override public void run() { int p = SsAccessRules.balanceProgress(balance(a)); if (!bar.tracking && bar.getProgress() != p) bar.setProgress(p); }
+            @Override public void run() { int p = balanceShown(a); if (!bar.tracking && bar.getProgress() != p) bar.setProgress(p); }
         };
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
@@ -83,7 +83,7 @@ final class SsPagesAccessibility {
             @Override public void onStartTrackingTouch(SeekBar s) { ((BalanceBar) s).tracking = true; }
             @Override public void onStopTrackingTouch(SeekBar s) {
                 ((BalanceBar) s).tracking = false;
-                if (privateBlocked) applyPrivate(a, BALANCE, SsAccessRules.balanceText(s.getProgress()), balanceRefresh);
+                if (privateBlocked) applyPrivate(a, BALANCE, SsAccessRules.balanceText(s.getProgress()), s.getProgress());
             }
         });
         list.addView(balanceRow(a, bar));
@@ -120,10 +120,49 @@ final class SsPagesAccessibility {
     private static volatile boolean privateBlocked;
 
     /**
-     * Writes master_mono / master_balance: the app itself first (a build that allows it), else the shell helper (new verb SETSYS), on a worker thread. When neither could, the control goes back to the value the
-     * system really holds ({@code revert} runs on the main thread) and a short note says so: the page never shows a value Android does not have.
+     * What a control shows when nothing could store its value (BN1l, Tj 2026-11-09: "it only needs to look identical ... simply make it look like the setting is there"): {@code shown} is the switch (0 / 1) or
+     * the slider position, {@code base} the value the system held when Tj touched it. It is kept for as long as the system still holds {@code base}; the moment the stored value is anything else (changed
+     * by the helper, the real Settings, adb) the real value wins again.
      */
-    static void applyPrivate(final Activity a, final String key, final String value, final Runnable revert) {
+    private static final class Look {
+        final String base;
+        final int shown;
+        Look(String base, int shown) { this.base = base; this.shown = shown; }
+    }
+    private static volatile Look lookMono, lookBalance;
+
+    private static String stored(Context c, String key) { return Settings.System.getString(c.getContentResolver(), key); }
+
+    private static boolean same(String x, String y) { return x == null ? y == null : x.equals(y); }
+
+    /** The switch position to show: Tj's last touch while nothing stored it and the system is unchanged, else the stored value. */
+    static boolean monoShown(Context c) {
+        Look l = lookMono;
+        if (l != null) {
+            if (same(stored(c, MONO), l.base)) return l.shown == 1;
+            lookMono = null;
+        }
+        return monoOn(c);
+    }
+
+    /** The slider position to show, same rule as {@link #monoShown}. */
+    static int balanceShown(Context c) {
+        Look l = lookBalance;
+        if (l != null) {
+            if (same(stored(c, BALANCE), l.base)) return l.shown;
+            lookBalance = null;
+        }
+        return SsAccessRules.balanceProgress(balance(c));
+    }
+
+    /**
+     * Writes master_mono / master_balance: the app itself first (a build that allows it), else the shell helper (new verb SETSYS), on a worker thread. When neither could, NOTHING is said and nothing snaps back:
+     * the control keeps what Tj set (see {@link Look}). {@code shown} is the position of the control (switch 0 / 1, slider progress).
+     */
+    static void applyPrivate(final Activity a, final String key, final String value, final int shown) {
+        final boolean mono = MONO.equals(key);
+        final Look look = new Look(stored(a, key), shown);
+        if (mono) lookMono = look; else lookBalance = look;   // look only, until a write is known to have worked
         new Thread(new Runnable() {
             @Override public void run() {
                 boolean ok = false;
@@ -131,11 +170,7 @@ final class SsPagesAccessibility {
                     try { ok = Settings.System.putString(a.getContentResolver(), key, value); } catch (SecurityException | IllegalArgumentException e) { privateBlocked = true; }
                 }
                 if (!ok) ok = ShellHelper.enabled(a) && ShellHelper.setSystem(key, value);
-                if (ok) return;
-                a.runOnUiThread(new Runnable() { @Override public void run() {
-                    android.widget.Toast.makeText(a, "This setting can't be changed from here.", android.widget.Toast.LENGTH_SHORT).show();
-                    revert.run();
-                } });
+                if (ok) { if (mono) { if (lookMono == look) lookMono = null; } else if (lookBalance == look) lookBalance = null; }   // stored: the system itself holds it now
             }
         }, "ss-private").start();
     }
