@@ -99,7 +99,8 @@ for t in table:
 
 rank = {n: k for k, n in enumerate(order)}
 # sections that read the output files of ANOTHER section (v0.7.6 gate: `b4` greps y2-log.txt, so b4 in a run without y2 fails for nothing): the needed one is added and both stay in ONE run
-BIND = {"b4": "y2"}
+# `legacy` needs `base` in the SAME run ahead of it (RS1: `reset2` and others only pass after `base`; v0.9.0 gate 2026-11-09: legacy in a run without base failed reset2 on the head AND on the v0.8.13 tag)
+BIND = {"b4": "y2", "legacy": "base"}
 for need_by, need in BIND.items():
     if need_by in {t["name"] for t in chosen} and need not in {t["name"] for t in chosen}:
         for t in table:
