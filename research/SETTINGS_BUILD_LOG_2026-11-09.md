@@ -29,6 +29,14 @@ A contact sheet of all of them can be made in a minute with PIL (scratchpad only
 7. The Settings icon is the AOSP gear on teal; if the tablet's vendor icon differs, Tj tells us. Nav bar: the page theme sets the same window attributes as AOSP Settings (transparent bar colour, light icons, 12 % divider); it cannot be compared on the CI emulator (no 3-button bar in its screenshots).
 8. Font size table is PROVISIONAL: AOSP 10 has 0.85 / 1.0 / 1.15 / 1.30 ("Default" = 1.0) but Tj's tablet shows "Default" at its own scale 1.2, so its table is shifted; `SsDisplayRules.FONT_VALUES` = 1.05 / 1.2 / 1.35 / 1.5 until Tj sends the page.
 
+9. (run #455, id 42570101882, head 48b3aa0, ss: 40 PASS 2 FAIL) FACTS: (a) `pm grant PACKAGE_USAGE_STATS` WORKS and then the app's own `dumpsys batterystats --charged` works (status `ok start=true screen=true`), so Battery
+   "Last full charge" / "Screen usage" need ONE extra adb grant for Tj: `adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS` (TO DO: add to tools/adb-setup.sh, tools/adb-all.sh status, research/ADB_COMMANDS.txt,
+   the in-app guide, the tablet checklist). (b) `master_mono` and `master_balance` are in `Settings.System.PRIVATE_SETTINGS`: a non-system app gets IllegalArgumentException("You cannot change private system settings.") EVEN with
+   WRITE_SECURE_SETTINGS (SettingsProvider.enforceRestrictedSystemSettingsMutationForCallingPackage; only system / shell / root may write them). So Mono audio and Audio balance cannot be set by the app itself: plan = try the write,
+   on failure ask the shell helper (new verb SETSYS, allow-list master_mono 0|1 and master_balance -1.0..1.0 only; helper is unproven on the tablet, HLP1), and if neither works REVERT the control and toast (never lie). The same
+   restriction would hit any other private key. (c) Accessibility page render matches Tj's screenshots (rows, headings, Magnification icon, Touch & hold dialog, balance bar with centre tick; Left/Right labels are the SECONDARY
+   colour, measured #737373). (d) scenario bug: `settings put system K "$VAR"` with VAR=null (absent key) writes the literal string "null": restore with `settings delete` when the old value was null.
+
 ## Open questions for Tj (ask ONCE, batched, only if his answer changes the work)
 - Font size page of his tablet (Settings > Display > Font size): a screenshot of the page with the slider at each of the 4 positions, or at least the labels and the preview, so the steps (1.05 / 1.2 / 1.35 / 1.5 are guesses) and the page layout can be copied.
 - Display size page of his tablet (the same, 5 stops expected: Small, Default, Large, Larger, Largest).
