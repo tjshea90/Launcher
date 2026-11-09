@@ -1958,3 +1958,7 @@
 ## 2026-11-09T23:11:14Z
 > Eight `base` runs are going, four on the v0.8.13 tag and four on the new code with the extra diagnostics. I read them at about 23:20 UTC.
 <!-- sha:34edb7045422 -->
+
+## 2026-11-09T23:20:52Z
+> Checkpoint 840 is saved with the exact next steps. A helper is extracting the eight `base` runs now. Once its report is back I decide whether the crash-breaker failures are an emulator flake or a real problem in the new code.
+<!-- sha:84ab2ba9687f -->
