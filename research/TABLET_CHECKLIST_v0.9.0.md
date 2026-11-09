@@ -15,6 +15,10 @@ In the CUSTOM launcher the drawer has a "Settings" icon (the stock gear on teal)
 **E. Storage.** The donut, "Used of ...", the categories and System. Tapping System opens a one-sentence dialog (my default; tell me if you want it inert).
 **F. Accessibility and System.** Headings and rows as in your screenshots, Text-to-speech output page, Touch & hold delay dialog, Magnification page, Languages & input (last row Text-to-speech output), Legal information.
 **G. About tablet.** No owner area; Custom build version `vnd_tb8168p1_bsp 1779111601`.
+**H. The word "Custom" (your 07:16 message).** Display size, on the Display page, on the Accessibility page and on the Display size page itself, must say "Default" (or Small / Large / Larger / Largest) and never "Custom". Tell me if you ever see it.
+**I. Settings icon on the home screen.** Drag the look-alike "Settings" from the drawer to the home screen, go to Quickstep and back (double Home, or lock and unlock the stock way). The icon must still be Settings (not "Launcher control") and open the look-alike. With the switch off in Launcher control the home icon becomes dead; remove it by hand.
+**J. Recents.** Open the look-alike, press Recents: its card must still be there (the real Settings stays out of the custom Recents).
+**K. If a page ever crashes** the look-alike now switches itself OFF (it no longer counts toward the three-crashes-in-two-minutes breaker) and Launcher control says so in a note under the switch; switch it on again to retry, and send the tablet report.
 
 ## Questions for you (built with a default, not blocking)
 1. Should the Solitaire row in Battery usage show a percentage? (built without)
