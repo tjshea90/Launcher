@@ -148,6 +148,60 @@ def message(level, m, t):
             % (now, k(HARD)), True)
 
 
+def brief(inp):
+    try:
+        s = json.dumps(inp, ensure_ascii=False)
+    except (TypeError, ValueError):
+        s = str(inp)
+    return s[:70]
+
+
+def top_report(path, n=8):
+    """Where did the context go? Growth between consecutive model calls, minus the model's own output, is the size of the
+    tool results that arrived in between; attribute it to the tools of the earlier call."""
+    cur, order = {}, []
+    with open(path, "rb") as f:
+        for raw in f:
+            try:
+                o = json.loads(raw)
+            except ValueError:
+                continue
+            if not isinstance(o, dict) or o.get("type") != "assistant" or o.get("isSidechain"):
+                continue
+            msg = o.get("message") or {}
+            u, mid = msg.get("usage"), msg.get("id")
+            if not isinstance(u, dict) or msg.get("model") == "<synthetic>" or not mid:
+                continue
+            p = int(u.get("input_tokens") or 0) + int(u.get("cache_read_input_tokens") or 0) + int(u.get("cache_creation_input_tokens") or 0)
+            if mid not in cur:
+                order.append(mid)
+                cur[mid] = {"prompt": 0, "out": 0, "tools": []}
+            cur[mid]["prompt"], cur[mid]["out"] = p, int(u.get("output_tokens") or 0)
+            for b in msg.get("content") or []:
+                if isinstance(b, dict) and b.get("type") == "tool_use" and (b.get("name"), brief(b.get("input"))) not in cur[mid]["tools"]:
+                    cur[mid]["tools"].append((b.get("name"), brief(b.get("input"))))
+    if not order:
+        print("no model calls with usage found")
+        return
+    first, last = cur[order[0]]["prompt"], cur[order[-1]]["prompt"]
+    by_tool, jumps, out_total = {}, [], 0
+    for a, b in zip(order, order[1:]):
+        pa, pb = cur[a], cur[b]
+        out_total += pa["out"]
+        grow = pb["prompt"] - pa["prompt"] - pa["out"]
+        if grow < -1000 or not pa["tools"]:
+            continue                                   # a compaction (context fell) or a turn without tools
+        for name, inp in pa["tools"]:
+            by_tool[name] = by_tool.get(name, 0) + grow // len(pa["tools"])
+        jumps.append((grow, pa["tools"][0][0], pa["tools"][0][1], len(pa["tools"])))
+    print("calls %d | first prompt %s (= system + tools + CLAUDE.md + briefing) | now %s | model output kept in context ~%s"
+          % (len(order), k(first), k(last), k(out_total)))
+    print("tool results by tool (tokens): " + ", ".join("%s %s" % (a, k(b)) for a, b in sorted(by_tool.items(), key=lambda x: -x[1])[:n]))
+    print("biggest single jumps:")
+    for grow, name, inp, cnt in sorted(jumps, reverse=True)[:n]:
+        print("  %7s  %s%s %s" % (k(grow), name, ("(+%d more in parallel)" % (cnt - 1)) if cnt > 1 else "", inp))
+
+
 def logline(text):
     try:
         p = os.path.join(".git", "ctxwatch.log")
