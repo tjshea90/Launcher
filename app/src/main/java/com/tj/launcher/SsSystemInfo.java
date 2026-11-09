@@ -48,7 +48,14 @@ final class SsSystemInfo {
             ComponentName cn = flat == null ? null : ComponentName.unflattenFromString(flat);
             if (cn == null) return "";
             InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
-            if (imm != null) for (InputMethodInfo i : imm.getInputMethodList()) if (i.getPackageName().equals(cn.getPackageName())) return String.valueOf(i.loadLabel(c.getPackageManager()));
+            if (imm != null) {
+                InputMethodInfo samePackage = null;
+                for (InputMethodInfo i : imm.getInputMethodList()) {
+                    if (cn.equals(i.getComponent())) return String.valueOf(i.loadLabel(c.getPackageManager()));   // review A #5: the exact input method first
+                    if (samePackage == null && i.getPackageName().equals(cn.getPackageName())) samePackage = i;
+                }
+                if (samePackage != null) return String.valueOf(samePackage.loadLabel(c.getPackageManager()));   // a package with two input methods: the first one only when the exact one is not listed
+            }
         } catch (Throwable ignored) { }
         return "";
     }
