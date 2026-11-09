@@ -30,6 +30,7 @@ final class SsPages {
             case BATTERY_USAGE: SsPagesBattery.usage(a, list); break;
             case DISPLAY: SsPagesDisplay.display(a, list, live); break;
             case SOUND: SsPagesSound.sound(a, list, live); break;
+            case STORAGE: SsPagesStorage.storage(a, list, live); break;
             case ACCESSIBILITY: SsPagesAccessibility.accessibility(a, list, live); break;
             case MAGNIFICATION: SsPagesAccessibility.magnification(a, list, live); break;
             case TTS: SsPagesTts.tts(a, list, live); break;
