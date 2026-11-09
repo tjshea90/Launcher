@@ -4,10 +4,6 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.database.ContentObserver;
-import android.net.Uri;
-import android.os.Handler;
-import android.os.Looper;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.View;
@@ -60,24 +56,7 @@ final class SsPagesDisplay {
                 if (rotate.isChecked() != on) rotate.setChecked(on);
             }
         };
-        live.add(new Watcher(a, refresh, Settings.System.SCREEN_BRIGHTNESS, Settings.System.SCREEN_OFF_TIMEOUT, Settings.System.ACCELEROMETER_ROTATION, Settings.System.FONT_SCALE));
-    }
-
-    /** Watches system settings while the page is visible (a ContentObserver per setting, removed when the page stops). */
-    static final class Watcher implements SsPages.Live {
-        private final Activity a;
-        private final Runnable onChange;
-        private final String[] names;
-        private final Handler main = new Handler(Looper.getMainLooper());
-        private final ContentObserver obs = new ContentObserver(main) {
-            @Override public void onChange(boolean selfChange) { onChange.run(); }
-        };
-        Watcher(Activity a, Runnable onChange, String... names) { this.a = a; this.onChange = onChange; this.names = names; }
-        @Override public void start() {
-            for (String n : names) { try { Uri u = Settings.System.getUriFor(n); if (u != null) a.getContentResolver().registerContentObserver(u, false, obs); } catch (Throwable ignored) { } }
-            onChange.run();
-        }
-        @Override public void stop() { try { a.getContentResolver().unregisterContentObserver(obs); } catch (Throwable ignored) { } }
+        live.add(new SsWatcher(a, refresh, SsWatcher.sys(Settings.System.SCREEN_BRIGHTNESS), SsWatcher.sys(Settings.System.SCREEN_OFF_TIMEOUT), SsWatcher.sys(Settings.System.ACCELEROMETER_ROTATION), SsWatcher.sys(Settings.System.FONT_SCALE)));
     }
 
     // ------------------------------------------------------------------ readers

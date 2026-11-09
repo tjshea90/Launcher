@@ -39,6 +39,29 @@ final class SsRows {
         return fallback;
     }
 
+    /** The theme's colour STATE LIST for {@code attr} (so a disabled TextView greys itself), or the plain {@code fallback}. */
+    static android.content.res.ColorStateList themeColors(Context c, int attr, int fallback) {
+        android.content.res.TypedArray ta = c.obtainStyledAttributes(new int[] { attr });
+        try {
+            android.content.res.ColorStateList l = ta.getColorStateList(0);
+            if (l != null) return l;
+        } finally { ta.recycle(); }
+        return android.content.res.ColorStateList.valueOf(fallback);
+    }
+
+    /** Greys a row made by {@link #row} (AOSP Preference.setEnabled(false): title and summary in the disabled text colours, no click, no ripple). */
+    static void disable(View row) {
+        row.setEnabled(false);
+        row.setClickable(false);
+        row.setBackground(null);
+        setTextEnabled(row, false);
+    }
+
+    private static void setTextEnabled(View v, boolean enabled) {
+        if (v instanceof TextView) v.setEnabled(enabled);
+        if (v instanceof ViewGroup) { ViewGroup g = (ViewGroup) v; for (int i = 0; i < g.getChildCount(); i++) setTextEnabled(g.getChildAt(i), enabled); }
+    }
+
     /** A standard preference row: optional icon (36 dp tile or 24 dp glyph), title, optional summary; {@code click} null = not clickable (no ripple). */
     static LinearLayout row(Context c, View icon, CharSequence title, CharSequence summary, View.OnClickListener click) {
         LinearLayout r = new LinearLayout(c);
@@ -63,7 +86,7 @@ final class SsRows {
         if (summary != null) {   // an empty summary keeps its (hidden) view so a page can fill it in later with setSummary
             TextView s = new TextView(c);
             appearance(s, android.R.attr.textAppearanceListItemSecondary);
-            s.setTextColor(themeColor(c, android.R.attr.textColorSecondary, Color.GRAY));
+            s.setTextColor(themeColors(c, android.R.attr.textColorSecondary, Color.GRAY));   // the state list: a disabled row greys its summary too
             s.setText(summary);
             if (summary.length() == 0) s.setVisibility(View.GONE);
             col.addView(s);
