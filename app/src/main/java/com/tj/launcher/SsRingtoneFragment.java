@@ -87,15 +87,8 @@ public final class SsRingtoneFragment extends Fragment {
                 try {
                     RingtoneManager.setActualDefaultRingtoneUri(app, type, picked);
                 } catch (Throwable e) {
-                    // The setting is written first and the sound is copied into the settings cache afterwards: a refusal of the copy leaves the new sound in place, so only a
-                    // refusal that left the old sound is reported.
-                    boolean stored = false;
-                    try { stored = Objects.equals(RingtoneManager.getActualDefaultRingtoneUri(app, type), picked); } catch (Throwable ignored) { }
-                    if (!stored && e instanceof SecurityException) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override public void run() { Toast.makeText(app, "This setting can't be changed from here.", Toast.LENGTH_SHORT).show(); }
-                        });
-                    }
+                    // BN1l (Tj: "it only needs to look identical"): a refused write is silent, the page just shows what the system holds when the row is read again.
+                    // (The setting is written first and the sound is copied into the settings cache afterwards: a refusal of the copy still leaves the new sound in place.)
                 }
             }
         }, "ss-ringtone-save");
