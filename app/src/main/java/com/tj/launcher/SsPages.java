@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import com.android.launcher3.R;
+import java.util.List;
 
 /**
  * BN1: builds the content of one {@link SsPage}. Each page is a ScrollView of rows from {@link SsRows}; a page is rebuilt when the activity is created (and by the pages that watch system values).
@@ -15,11 +16,16 @@ import com.android.launcher3.R;
 final class SsPages {
     private SsPages() {}
 
-    static View build(final Activity a, SsPage page) {
+    /** A page part that follows system values: the activity starts it when it becomes visible and stops it when it is hidden (receivers and observers must not outlive the screen). */
+    interface Live { void start(); void stop(); }
+
+    static View build(final Activity a, SsPage page, List<Live> live) {
         LinearLayout list = new LinearLayout(a);
         list.setOrientation(LinearLayout.VERTICAL);
         switch (page) {
             case HOME: home(a, list); break;
+            case BATTERY: SsPagesBattery.battery(a, list, live); break;
+            case BATTERY_USAGE: SsPagesBattery.usage(a, list); break;
             case SYSTEM: SsPagesSystem.system(a, list); break;
             case LANGUAGES: SsPagesSystem.languages(a, list); break;
             case ABOUT: SsPagesSystem.about(a, list); break;
