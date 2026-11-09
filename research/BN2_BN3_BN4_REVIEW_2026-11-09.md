@@ -16,3 +16,7 @@ Ten findings, all read against the code. Fixed = changed in the next commit; Acc
 | 10 | Dead parameter `foundByFullSearch`, a negation wrapper `unlockEventWasForeign`, a redundant `>= 0`. | **Fixed.** The parameter and the wrapper are gone; `foreignTreatment` keeps its `>= 0` (a clock that goes back must not count as "just after the unlock"; pinned by a test). |
 
 Proof status: JVM tests only (`PencilRulesTest`, `HomePatchRulesTest`, `PowerMenuRuleTest`); emulator HP14 (hp) and the BN4 age check (b6) are regression guards, not proof of the tablet cases (the CI emulator has no animations, so the dying dialog cannot be reproduced there). The tablet report after a flash / a first-press leak / the white box decides.
+
+## Change after the review (before the gate, 2026-11-09 03:40 UTC): the recheck POLLS
+
+The first fix looked ONCE, 400 ms after the SystemUI window event. On the slow tablet the Launcher's resume after an unlock (its window gets the focus at the end of it) can take longer than that, while the keyguard's event comes at the START of the exit: one look would have kept the guard (= v0.8.12 behaviour). Now `homeForeignRecheck` looks every 400 ms until the guard's own end (`HomePatchRules.recheckAgain`), `homeFocusChanged(true)` lifts a provisional guard at once, and only a guard that ran out with the Launcher still without the focus counts as a real window. Gate runs 438-440 (head 14b4971) were cancelled for this and re-dispatched on the new head.
