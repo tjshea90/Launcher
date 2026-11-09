@@ -1303,3 +1303,8 @@ For the tts sliders, allow them to move and slide, but they don't actually do an
 Under tts preferred engine, it should say Pico TTS, and have a settings gear to the very right of this that doesn't do anything. Under language it should say "Use system language". Both the play and reset links should not be grayed out, but they don't do anything. 
 The tts sliders are the same color as the sliders in the sound settings 
 ```
+
+## 2026-11-09T20:27:40Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
