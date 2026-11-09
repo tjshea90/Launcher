@@ -1560,3 +1560,63 @@
 >
 > **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
 <!-- sha:08dfe6b0890c -->
+
+## 2026-11-09T03:42:32Z
+> Tj, nothing from your 03:02 report is on the tablet yet. It's in the emulator gate now, and I'll post the v0.8.13 link as soon as that is green.
+>
+> **What the report showed**
+>
+> This is read from its log and the code. I haven't filmed any of it.
+>
+> - **First side-key press showed Screenshot.** Every plain unlock makes the status-bar window announce itself. The app took that for "the notification panel is open" and kept the patch away for 2.5 s. Your press came 1.2 s after the PIN, inside that time.
+>   - Fix: the guard now starts as before but only provisionally. It is lifted as soon as the home screen has the focus again, checked every 0.4 s and at once when the focus returns.
+> - **Tall power menu flash after the Home key.** The stock menu fades out for about 0.25 s but its window stays listed. 143 ms after the close the app saw it, took it for a new menu and drew the old tall card.
+>   - Fix: a menu seen within 0.45 s after a close we were told about is ignored. A genuinely new menu announces itself and is believed at once.
+> - **White box after the panel slides up.** The white cover over the pencil was removed only after a slow search once the pencil vanished.
+>   - Fix: losing the pencil removes the cover at once, and a 150 ms check runs while the cover is up.
+> - **Lock-screen flash on the PIN pull.** I could not prove a cause, and the log shows no flash. I made three changes:
+>   - The patch stays away 1.5 s after a finger touch, up from 0.9 s.
+>   - The return looks at the PIN pad once more first.
+>   - Every return is now written to the lock log with the path that caused it.
+>   - If it flashes again, send the report right after. The log will then name the path.
+>
+> **Status**
+> - A code review found ten problems. I fixed six. One example: my first version looked only once, 0.4 s after the unlock, which is too early for a slow tablet.
+> - I accepted four with written reasons, in `research/BN2_BN3_BN4_REVIEW_2026-11-09.md`.
+> - Unit tests and lint are green.
+> - Three emulator runs (441, 442, 443) started at 03:40 UTC and should finish around 04:02.
+> - If they are green I ship v0.8.13 right away. The tablet checklist is in `research/TABLET_CHECKLIST_v0.8.13.md`.
+>
+> **Known limit:** a press within about 1 s of the unlock, before the first picture of your home exists, can still show Screenshot. I left that timer alone on purpose, and the next report will give the real numbers.
+>
+> **Still open from you**
+> - BN1, the Settings look-alike with your 02:47 additions. The research is done and the build starts right after v0.8.13. Tell me if you want it first instead.
+> - The v0.8.12, v0.8.11 and v0.8.9 tablet checks.
+> - Turning off the `session-handoff` plugin in claude.ai.
+>
+> 📌 **Chat checkpoint: 🟡 Yellow**
+>
+> **Goal:** Ship v0.8.13 (BN2 home first press + tall flash, BN3 lock flash, BN4 pencil box), then build BN1 (Settings look-alike).
+>
+> **Decisions made:**
+> - Order is BN2/3/4 as v0.8.13, then BN1 (Tj can veto).
+> - The unlock guard is provisional and polls; only SystemUI's plain FrameLayout windo
+> [... 382 characters omitted ...]
+> ejected. Only the close broadcast marks one.
+>
+> **Key details:** head 6702e72, ckpt 771, base v0.8.12 = d435d9b. Gate runs 441 (x1,v,pt,rb), 442 (base,e1,n,ac,hp) and 443 (b6,o,ad,ae,hf,fp,last), started 03:40Z.
+>
+> **Done so far:** causes found, rule classes with JVM tests, code review (6 fixed, 4 accepted), scenario checks HP14 and BN4, tablet checklist.
+>
+> **Open / next steps:**
+> 1. Read the three runs at about 04:02Z.
+> 2. Ship v0.8.13.
+> 3. Tick the BN2–4 boxes after a tablet report.
+> 4. Build BN1, starting with the BN1c design.
+>
+> **Rules to remember:** ckpt after every step; Tj's photos never enter the repo; no push triggers; the final text goes last with no tool call after it; refer to Tj by name.
+>
+> ⚠️ **Health:** Yellow. The session was compacted once, and the repo handoff (CHECKPOINT.md, TASKS.md, OUTBOX.md) is current.
+>
+> 💡 The handoff is already saved in the repo, so `/amhandoff` isn't needed.
+<!-- sha:56e9d773b994 -->
