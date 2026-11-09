@@ -1417,3 +1417,7 @@
 >
 > Your message arrived twice because the session restarted. I answered it once, and none of your messages are unanswered.
 <!-- sha:452d5ad83293 -->
+
+## 2026-11-09T01:31:08Z
+> This notice is genuine: the loop itself ran in the background. Before reading any logs I'll check that both runs have actually finished, since a "no failed jobs" answer from a still-running job would be misleading.
+<!-- sha:3ec917e06114 -->
