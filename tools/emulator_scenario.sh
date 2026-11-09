@@ -3344,7 +3344,8 @@ if [ -n "$FL" ] && [ -n "$CB" ]; then
   check "FP4: the patch opened by the warm-up draw once per window ('PATCH warm-up' in the log of the first opening's process)" bash -c "grep -q 'PATCH warm-up' $OUT/fp-warm-log.txt"
 else check "FP1: the menu geometry is known" false; fi
 fpanim 0
-adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
+# v0.8.13 gate (run 446, picture of the screen): the old `locksettings clear` + `wm dismiss-keyguard` left the PIN pad up, so a section after fp (last) started on the LOCK SCREEN. Unlock with the PIN first, then clear it.
+b6unlock || { adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section fp
 if want rs2; then # section rs2
