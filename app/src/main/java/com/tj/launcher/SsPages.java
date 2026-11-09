@@ -26,6 +26,7 @@ final class SsPages {
             case HOME: home(a, list); break;
             case BATTERY: SsPagesBattery.battery(a, list, live); break;
             case BATTERY_USAGE: SsPagesBattery.usage(a, list); break;
+            case DISPLAY: SsPagesDisplay.display(a, list, live); break;
             case SYSTEM: SsPagesSystem.system(a, list); break;
             case LANGUAGES: SsPagesSystem.languages(a, list); break;
             case ABOUT: SsPagesSystem.about(a, list); break;
