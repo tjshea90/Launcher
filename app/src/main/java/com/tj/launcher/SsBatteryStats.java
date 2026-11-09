@@ -134,6 +134,7 @@ final class SsBatteryStats {
             finished.set(true);
             Data d = parser.data;
             d.status = d.any() ? (d.startClockMs >= 0 && d.screenOnMs >= 0 ? "ok" : "partial") : denied ? "no-dump" : timedOut.get() ? "timeout" : "empty";
+            remember(d, android.os.SystemClock.elapsedRealtime());
             return d;
         } catch (Throwable t) {
             parser.data.status = "exec-failed";
