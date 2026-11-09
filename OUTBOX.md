@@ -1962,3 +1962,7 @@
 ## 2026-11-09T23:20:52Z
 > Checkpoint 840 is saved with the exact next steps. A helper is extracting the eight `base` runs now. Once its report is back I decide whether the crash-breaker failures are an emulator flake or a real problem in the new code.
 <!-- sha:84ab2ba9687f -->
+
+## 2026-11-09T23:24:40Z
+> Six more `base` runs on the new code are going, and I read them at about 23:33 UTC. If one of them hits the breaker problem, the new diagnostics will show which process the `am crash` command hit.
+<!-- sha:817f3c6ea457 -->
