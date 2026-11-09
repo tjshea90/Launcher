@@ -269,8 +269,8 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   minHeight/maxHeight 16dip). progress_horizontal_material (and its track tint, progress_bar_height_material 4dp, progress_bar_corner_material 0dp = square ends,
   config_progressBarCornerRadius -> 0dp) : drawable NOT FOUND [mem: bar 4dp tall centred in the 8dp view, fill colorControlActivated = accent, track
   colorControlNormal-tinted light gray]. [tablet] visible bar about 5 px (4dp = 4.25 px), teal over light gray, x 77-583, no rounded ends.
-- Row height [calc] = 15+15 + 28 (title line) + 13 + 9 + 4 = 84 px = Tj's measured storage row pitch 84 px (the earlier 79 px estimate missed the font padding and the
-  rounding). Geometry: icon x 17-43 (centre 30), title x = 17+60 = 77, bar x 77 to 600-17 = 583 (matches [tablet]).
+- Row height [calc] = 15+15 + 28 (title line) + 13 + 9 + 4 = 84 px = Tj's measured storage row pitch 84 px (needs the font-padding line height and the round-half-up
+  of 8dp/12dp/14dp from section 0; a plain dp sum gives about 79 px). Geometry: icon x 17-43 (centre 30), title x = 17+60 = 77, bar x 77 to 600-17 = 583 (matches [tablet]).
 - Bar value: setStorageSize(size, total): progress = (total == 0) ? 0 : (int)(size * 100 / total) (integer truncation, ProgressBar max 100; no clamp).
 - Size text: FileSizeFormatter.formatFileSize(ctx, size, suffix = identifier of android:string/gigabyteShort ("GB"), mult = 1,000,000,000) (settings10/src/com/android/
   settings/utils/FileSizeFormatter.java): ALWAYS gigabytes, DECIMAL: value = size / 1e9 as float; value < 1 -> "%.2f"; value < 10 -> "%.1f"; else "%.0f"; then
