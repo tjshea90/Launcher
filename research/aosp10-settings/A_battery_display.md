@@ -31,7 +31,7 @@ TEXT [SRC styles_material.xml, styles_device_defaults.xml, donottranslate_materi
   = Body1 14 sp; Material.Small = 14 sp textColorTertiary; Caption 12 sp textColorSecondary; Title 20 sp (sans-serif-medium); Headline 24 sp. DeviceDefault.* adds fontFamily config_bodyFontFamily (sans-serif).
   DeviceDefault.Widget.ActionBar.Title = config_headlineFontFamilyMedium (= font_family_button_material = sans-serif-medium), 20 dp (text_size_title_material_toolbar), textColorPrimary.
 ROWS: listPreferredItemPaddingStart/End = list_item_padding_*_material = action_bar_content_inset_material = 16 dp [SRC]; listPreferredItemHeightSmall 48 dip; Settings sets listPreferredItemHeight 72 dip
-  (used by preference_footer only). A plain Preference row is androidx preference_material.xml (NOT FOUND); SettingsLib preference_two_target.xml / preference_app.xml copy it: LinearLayout horizontal,
+  (preference_footer.xml uses it; the rows below use ...Small). A plain Preference row is androidx preference_material.xml (NOT FOUND); SettingsLib preference_two_target.xml / preference_app.xml copy it: LinearLayout horizontal,
   minHeight 48 dp, paddingStart/End 16 dp, icon_frame minWidth 56 dp (paddingTop/Bottom 4 dp), text block paddingTop/Bottom 16 dp = title (singleLine, marquee, textAppearanceListItem) above summary
   (textAppearanceListItemSecondary, textColorSecondary, maxLines 10), widget_frame minWidth 64 dp. androidx Preference.Material sets iconSpaceReserved=true [MEM], so a row without icon keeps the 56 dp
   frame INVISIBLE: title x = 16 + 56 = 72 dp = 76.5 px (tablet 77 px). Tablet row pitch with that structure: one-line 62 px, two-line 87 px.
