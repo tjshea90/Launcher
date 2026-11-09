@@ -75,6 +75,14 @@ Rules that make the ladder work:
 - **Push failure is never silent.** Autosave warns when commits exist only in this container (they are lost when
   the session ends). Fix the connection and `git push origin HEAD` at once.
 
+## Auto-resume after a cut-off (Tj, 2026-11-09 17:14, permanent; TASKS BO1)
+
+**Why:** 2026-11-09 07:20 UTC the 5-hour usage cap killed the session mid-step; nothing woke it until Tj typed again at 17:14 (about 10 h lost; the stated reset was 08:20). The save ladder keeps the WORK; this keeps the TIME.
+**What exists:** `mcp__claude-code-remote__create_trigger` (a scheduled task on the server, survives container restarts) and `send_later` (one shot) deliver a message into THIS session (proven: the 04:53:45 UTC wake of this session, trigger `trig_017VWBL4...`). **What does not exist:** Claude cannot see the cap, a dead session cannot restart itself, a wake needs available usage (during the cap it fails and the next one retries), nothing helps if the session itself is deleted. Hooks cannot call these tools.
+- **Heartbeat:** at the start of any long job (more than a couple of steps left) make sure ONE exists: `get_trigger` with the id in the latest ckpt "next" (never `list_triggers`: it prints ~20 KB of old reminders). Missing: `create_trigger`, name "Launcher auto-resume heartbeat", cron `0 */2 * * *`, `initiation` human_request, bound to this session, prompt = the six rules of the live one (read it with `get_trigger`, or TASKS BO1b). Put its id in every ckpt "next" while it lives (its prompt tells the woken session to look there).
+- **A cut-off notice that names a reset time** ("resets 8:20am (UTC)"): `send_later` at that time + 2 minutes AT ONCE ("resume Launcher: bash tools/resume.sh, continue Do this next"), before anything else.
+- **End it:** `delete_trigger` when the job is shipped or only Tj-blocked items remain (the heartbeat's own rules say so); it disables itself if another session's commit is under 60 minutes old. Armed 2026-11-09 17:27 UTC: `trig_01DhC2W8FUPFeqdGFQCt7yWe` (every 2 h at :27 UTC).
+
 ## Messages from Tj (standing rule, 2026-11-03, permanent)
 
 If Tj sends several messages while a task is running: **keep doing what you are already doing**, add each new message as the next step (write it into `TASKS.md` in his words, `ckpt`), **never drop or forget one**, and **answer every one of them**, including ones from earlier in the conversation that are still open (re-list them at the end of a reply until they are done). Before ending a turn, scan `INBOX.md`/`TASKS.md` for any message of his that has no answer yet.
