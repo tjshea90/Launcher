@@ -83,10 +83,21 @@ final class SsDisplayRules {
     }
 
     /**
-     * DisplayDensityUtils: one smaller stop, the default, up to three larger stops (even numbers), limited so the smallest screen side stays at least 320 dp wide at 1.5x. {@code current} that matches no stop is
-     * appended as "Custom (N)" and selected, like AOSP.
+     * DisplayDensityUtils: one smaller stop, the default, up to three larger stops (even numbers), limited so the smallest screen side stays at least 320 dp wide at 1.5x.
+     * BN1m (Tj, 2026-11-09 07:16: "it says custom ... They must look identical ... not necessarily accurate"): AOSP appends a "Custom (N)" entry when {@code current} is none of the stops; his screenshots
+     * never show one, so the table is rebuilt around {@code current} as the Default instead (the CI emulator's stable density is 160 and the run forces 170: it then shows his tablet's own 144 / 170 / 198 / 226 /
+     * 254 and "Default"). A label can therefore only be Small, Default, Large, Larger or Largest, and the selected index is always a real stop.
      */
     static Density densityStops(int defaultDpi, int widthPx, int heightPx, int current) {
+        if (current <= 0) current = defaultDpi;
+        Density d = stops(defaultDpi, widthPx, heightPx, current);
+        if (d.index < 0 && current != defaultDpi) d = stops(current, widthPx, heightPx, current);   // current is the default of this second table: its index is found
+        if (d.index < 0) d = new Density(d.values, d.labels, 0);   // defaultDpi <= 0 only: never an out-of-range index
+        return d;
+    }
+
+    /** The AOSP table for {@code defaultDpi}; {@code index} is -1 when {@code current} is none of its stops. */
+    private static Density stops(int defaultDpi, int widthPx, int heightPx, int current) {
         int smallest = Math.min(widthPx, heightPx);
         int maxDensity = 160 * smallest / 320;
         float maxScale = Math.min(1.5f, maxDensity / (float) defaultDpi);
