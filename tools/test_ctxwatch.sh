@@ -27,7 +27,16 @@ def asst(mid, p, side=False, model="claude-x", tool=True):
 rows = [{"type": "user", "message": {"role": "user", "content": "hi"}}]
 if kind == "boundary":
     rows.append({"type": "system", "subtype": "compact_boundary", "compactMetadata": {"trigger": "auto", "preTokens": 391000}, "timestamp": "2026-11-09T01:00:00Z"})
+if kind == "farboundary":      # the marker, then 600 KB of re-injected files, then the first model call after the compaction
+    rows.append({"type": "system", "subtype": "compact_boundary", "compactMetadata": {"trigger": "auto", "preTokens": 392147}, "timestamp": "2026-11-09T02:00:00Z"})
+    for i in range(6):
+        rows.append({"type": "attachment", "attachment": {"content": "y" * 100000}})
 rows.append(asst("m1", prompt))
+if kind == "stale":            # a transcript that lags: the last model call is the one BEFORE the compaction, which is already in the file
+    rows.append({"type": "system", "subtype": "compact_boundary", "compactMetadata": {"trigger": "auto", "preTokens": 440000}, "timestamp": "2026-11-09T03:00:00Z"})
+    rows.append({"type": "user", "message": {"role": "user", "content": "SUMMARY " + "s" * 20000}})
+    for i in range(3):
+        rows.append({"type": "attachment", "attachment": {"content": "z" * 100000}})
 if kind == "sidechain":
     rows.append(asst("m2", 900000, side=True))
     rows.append(asst("m3", 900000, model="<synthetic>"))
