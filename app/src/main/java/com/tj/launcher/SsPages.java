@@ -20,6 +20,8 @@ final class SsPages {
     interface Live { void start(); void stop(); }
 
     static View build(final Activity a, SsPage page, List<Live> live) {
+        if (page == SsPage.FONT_SIZE) return SsPagesSize.fontSize(a, live);          // their own scrolling page (preview frame + slider), not a list of rows
+        if (page == SsPage.DISPLAY_SIZE) return SsPagesSize.displaySize(a, live);
         LinearLayout list = new LinearLayout(a);
         list.setOrientation(LinearLayout.VERTICAL);
         switch (page) {
