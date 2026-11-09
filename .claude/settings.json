@@ -1,10 +1,65 @@
 {
   "_comment": "FALLBACK for when Launcher itself is the Claude Code session root. When several repos share one container Claude Code ignores this file; tools/install-hooks.sh merges the equivalent hooks into the session root instead. Keep the two in step.",
+  "env": {
+    "HANDOFF_STALE_SECONDS": "315360000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "40"
+  },
   "hooks": {
-    "SessionStart": [{ "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/resume.sh\" 2>/dev/null || true", "timeout": 120 }] }],
-    "UserPromptSubmit": [{ "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/capture_inbox.sh\" 2>/dev/null || true", "timeout": 30 }] }],
-    "PostToolUse": [{ "matcher": "Edit|Write|NotebookEdit|Bash", "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/autosave.sh\" 2>/dev/null || true", "timeout": 60 }] }],
-    "Stop": [{ "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/autosave.sh\" 2>/dev/null || true", "timeout": 60 }] }],
-    "PreCompact": [{ "hooks": [{ "type": "command", "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/toobig.sh\" 2>/dev/null || true", "timeout": 60 }] }]
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/resume.sh\" 2>/dev/null || true",
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/capture_inbox.sh\" 2>/dev/null || true",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/autosave.sh\" 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/autosave.sh\" 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/toobig.sh\" 2>/dev/null || true",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
   }
 }
