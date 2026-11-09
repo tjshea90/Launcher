@@ -1281,3 +1281,8 @@ Start the settings look alike app, build it, pause if you have any questions for
 ```
 The settings app does not need to work perfectly ,it only needs to look identical . For any settings that are hard to build or won't function , don't build it. Simply make it look like the setting is there
 ```
+
+## 2026-11-09T07:16:38Z
+```
+On the display size setting you made, it says "custom". This is not identical to the settings screenshots I sent you. They must look identical (except for the changes I asked for) , not necessarily accurate. The settings don't even need to work properly, as long as the settings pages look identical 
+```
