@@ -4017,6 +4017,13 @@ check "SS11b: the wallpaper credits are shown" bash -c "[ -n \"\$(python3 -I too
 adb shell input keyevent KEYCODE_BACK; sleep 2; ssdump "$OUT/ss-about2.xml"
 check "SS12: Back from Legal information returns to About tablet" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-about2.xml --contains 'Custom build version' --exact)\" ]"
 adb shell input keyevent KEYCODE_BACK; sleep 2; home
+# the stock (Quickstep) mode with the switch still ON: the entry goes OFF (the stock launcher's drawer must never list a second Settings) and comes back with the custom mode
+SSQ1=$(adb shell pm query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER | grep -c 'SettingsAlias')
+setmode quickstep; rebind; home; sleep 8
+SSQ2=$(adb shell pm query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER | grep -c 'SettingsAlias')
+setmode custom; rebind; home; sleep 8
+SSQ3=$(adb shell pm query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER | grep -c 'SettingsAlias')
+check "SS8: switch on: the look-alike's launcher entry is listed in the custom mode (now $SSQ1), gone in the Quickstep mode (now $SSQ2), back with the custom mode (now $SSQ3)" test "$SSQ1/$SSQ2/$SSQ3" = "1/0/1"
 # the switch OFF: the entry goes, the real Settings is the one in the drawer again (the emulator seeds it as allowed)
 ssfeat false; setmode custom; rebind; home; sleep 8
 adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-off.txt" 2>&1
