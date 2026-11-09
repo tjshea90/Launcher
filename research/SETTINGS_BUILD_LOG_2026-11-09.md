@@ -44,7 +44,21 @@ A contact sheet of all of them can be made in a minute with PIL (scratchpad only
     it answers an error and the control goes back). Scenario: SS22/SS22b (no helper: nothing stored, switch back), SS22d/e + SS23b (helper: stored 1 / negative), restore by `settings delete` when the value was absent.
 11. Home page summaries: Battery = "NN% - <header sentence>" (`SsHomeSummary`, same sources as the Battery page; scenario SS5b), Storage = "NN% used - X GB free" (AOSP TopLevelStoragePreferenceController; wired from the Storage page code).
 
+12. Font size table (BN1l, from Tj's four Font size shots): the tablet's steps are Small 1.0 / Default 1.2 / Large 1.3 / Largest 1.4 (`SsDisplayRules.FONT_VALUES`; the AOSP table 0.85 / 1.0 / 1.15 / 1.30 and my
+    first guess 1.05 / 1.2 / 1.35 / 1.5 are both wrong). Evidence: the body text line pitch is 18 / 21 / 23 / 24 px, which fits ascent + descent rounding only for those four scales; the 16 sp lines (footer, subtitle) are
+    0.846 / 1 / 1.078 / 1.194 times as wide as at Default (the tablet's text engine rounds advances, so widths alone say 1.015 / 1.2 / 1.294 / 1.433). On his page the page text (footer, label) rescales at every stop (the
+    activity is recreated by the commit) while the toolbar title and the "Preview" label do NOT (they are dp texts): the label now uses the toolbar title's own text appearance (regular weight, not 20 sp medium), and the
+    sample title "The Wonderful Wizard of Oz" is regular (it was medium). The tablet's text is wider than the CI emulator's by 0 to 5 % depending on the size (engine, not code): never calibrate widths against the emulator.
+13. Display size chat preview (BN1l, from Tj's five Display size shots, 144 / 170 / 198 / 226 / 254 dpi; `SsConversation`): outgoing = NO bubble (text #323232, time #8380AD, blue #4285F4 52 dp disc "A" at the right);
+    incoming = green #689F38 bubble with a tail (10 x 12 dp, tip at the top-left corner, radius 4), white text, time #375049, green disc "P". Letter 32 sp bold, text 16 sp, time 12 sp. Row top margin 18 dp, list padding 10 dp,
+    bubble padding top 16 / bottom 12, 3 dp between text and time, incoming start 20.4 / end 15, outgoing start 14.3 / end 21.6, 4 dp of room after the time, outgoing time starts 3.2 dp further in, bubble 1.5 dp from its
+    disc, widest bubble = list width - 2 x (52 + 6) dp. Reproduces Tj's wraps at every density (Default: "... not too / far from here."; Largest: "Hey, want to grab / coffee and catch up / today?"). The CI emulator's stable
+    density is 160 (forced to 170 for the run), so its Display size page reads "Custom (170)": compare geometry in dp, not px.
+14. Look first, function second (Tj, 2026-11-09 06:28, BN1l): a refused write is SILENT everywhere (no "This setting can't be changed from here." / Do Not Disturb toasts); the control stays where Tj put it. Mono audio /
+    Audio balance keep a `Look` (what the control shows + the stored value it was set against) until the stored value changes behind its back; the Sound page's switches and sliders do not snap back; the helper write is still
+    tried quietly. Nothing new is requested for function (no new adb grants, no DND access).
+
 ## Open questions for Tj (ask ONCE, batched, only if his answer changes the work)
-- Font size page of his tablet (Settings > Display > Font size): a screenshot of the page with the slider at each of the 4 positions, or at least the labels and the preview, so the steps (1.05 / 1.2 / 1.35 / 1.5 are guesses) and the page layout can be copied.
-- Display size page of his tablet (the same, 5 stops expected: Small, Default, Large, Larger, Largest).
+- (ANSWERED 2026-11-09 06:28, decision 12) Font size page of his tablet: four screenshots, one per position.
+- (ANSWERED 2026-11-09 06:28, decision 13) Display size page of his tablet: five screenshots, one per stop.
 - Should the Solitaire row in Battery usage show a percentage? (Built without one.)
