@@ -334,10 +334,10 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
 - Public (API 26): StorageStatsManager.getTotalBytes(UUID) / getFreeBytes(UUID) (use StorageManager.UUID_DEFAULT; no permission [mem]) give the same rounded total and
   free-with-clearable-cache as Settings. queryStatsForPackage / queryStatsForUid / queryExternalStatsForUser / getCacheQuotaBytes need PACKAGE_USAGE_STATS (appop
   GET_USAGE_STATS; the adb grant is enough) [mem]. Do NOT use File.getTotalSpace() for the total (28.x GB, not 32 GB).
-- Hidden: StorageManager.getPrimaryStorageSize, VolumeInfo.buildBrowseIntent / findEmulatedForPrivate, UserManager.getUsers (MANAGE_USERS), Formatter.formatBytes,
-  TrafficStats.GB_IN_BYTES, android:string/gigabyteShort (non-public string; hard-code "GB"), SubSettingLauncher/ManageApplications and the Settings.*StorageActivity
-  classes. Public: Formatter.formatFileSize / formatShortFileSize (SI), ApplicationInfo.category (API 26) and FLAG_IS_GAME, StorageManager.ACTION_MANAGE_STORAGE,
-  DocumentsContract.buildRootUri, Intent.ACTION_VIEW.
+- Hidden [mem unless the class is Settings-internal]: StorageManager.getPrimaryStorageSize, VolumeInfo.buildBrowseIntent / findEmulatedForPrivate,
+  UserManager.getUsers (MANAGE_USERS), Formatter.formatBytes, TrafficStats.GB_IN_BYTES, android:string/gigabyteShort (non-public string; hard-code "GB"),
+  SubSettingLauncher/ManageApplications and the Settings.*StorageActivity classes (Settings-internal). Public [mem]: Formatter.formatFileSize / formatShortFileSize (SI),
+  ApplicationInfo.category (API 26) and FLAG_IS_GAME, StorageManager.ACTION_MANAGE_STORAGE, DocumentsContract.buildRootUri, Intent.ACTION_VIEW.
 - Multi-user attribution cannot be reproduced exactly without MANAGE_USERS (only the own user's apps are visible); the code bytes are counted once per package name.
 - Row intents that leave the app: Files / Music / Photos headers use documents-UI roots; on an Android Go build the handler may be Files Go instead of DocumentsUI:
   NOT verifiable here. The second-level lists (ManageApplications) are Settings-internal activities and cannot be started by a third-party app.
