@@ -45,7 +45,7 @@ SCROLL SHADOW [SRC fwbase/packages/SettingsLib/ActionBarShadow/.../ActionBarShad
 ENTRY [SRC AndroidManifest.xml]: action android.intent.action.POWER_USAGE_SUMMARY; label power_usage_summary_title "Battery"; fragment com.android.settings.fuelgauge.PowerUsageSummary
   (PowerUsageBase > DashboardFragment); screen settings10/res/xml/power_usage_summary.xml (key power_usage_summary_screen). Toolbar title "Battery".
 REFRESH [SRC BatteryBroadcastReceiver.java, PowerUsageSummary.java]: registers for ACTION_BATTERY_CHANGED + ACTION_POWER_SAVE_MODE_CHANGED; update type MANUAL(0) on the sticky first call, then BATTERY_LEVEL(1) if the
-  level text changed, else BATTERY_STATUS(3) if the status text changed; each triggers reload of BatteryInfo (loader) and of the two PowerGauge rows. The header percent/icon are ALSO set at once from the
+  level text changed, else BATTERY_STATUS(3) if the status text changed (nothing if neither changed); ACTION_POWER_SAVE_MODE_CHANGED -> BATTERY_SAVER(2); each triggers reload of BatteryInfo (loader) and of the two PowerGauge rows. The header percent/icon are ALSO set at once from the
   sticky broadcast (quickUpdateHeaderPreference): level = EXTRA_LEVEL*100/EXTRA_SCALE (integer division), charging = EXTRA_PLUGGED != 0, power save = PowerManager.isPowerSaveMode().
 TOOLBAR [SRC EntityHeaderController.java]: BatteryHeaderPreferenceController.onStart -> styleActionBar: action bar background ColorDrawable(colorPrimaryDark #E0E0E0), elevation 0 (toolbar and header read as ONE
   grey block), ActionBarShadowController attached to the list (elevation 8 px once scrolled). Overflow menu [SRC PowerUsageSummary]: ONE item, id MENU_ADVANCED_BATTERY, title advanced_battery_title
