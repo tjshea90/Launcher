@@ -289,10 +289,7 @@ final class SsPagesSound {
             try {
                 ok = secure ? Settings.Secure.putInt(cr, key, value) : Settings.System.putInt(cr, key, value);
             } catch (RuntimeException ignored) { }   // SecurityException without WRITE_SETTINGS / WRITE_SECURE_SETTINGS
-            if (!ok) {
-                toast(CANT_CHANGE);
-                syncSwitches();
-            }
+            // BN1l (Tj, 2026-11-09: "it only needs to look identical"): a refused write is silent and the switch stays as tapped (no toast, no snap back)
             return ok;
         }
 
