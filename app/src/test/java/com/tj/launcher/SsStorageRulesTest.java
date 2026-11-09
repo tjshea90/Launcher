@@ -311,6 +311,18 @@ public class SsStorageRulesTest {
         assertEquals(10_000_000_000L, noUsed[files]);
     }
 
+    /** Review A #2: a failed rescan keeps the rows that are on screen; a complete one replaces them; with nothing on screen the scan's own rows show. */
+    @Test public void aFailedRescanKeepsTheRowsOnScreen() {
+        long[] shown = {1, 2, 3, 4, 5, 6, 7};
+        long[] blank = new long[7];
+        java.util.Arrays.fill(blank, SsStorageRules.UNKNOWN);
+        long[] fresh = {7, 6, 5, 4, 3, 2, 1};
+        assertSame(shown, SsStorageRules.keepOnScreen(false, shown, blank));    // timeout / error: do not blank the page
+        assertSame(fresh, SsStorageRules.keepOnScreen(true, shown, fresh));     // a complete scan replaces
+        assertSame(blank, SsStorageRules.keepOnScreen(false, null, blank));     // first visit, nothing to keep
+        assertSame(fresh, SsStorageRules.keepOnScreen(true, null, fresh));
+    }
+
     @Test public void unknownIsNotAnyRealSize() {
         assertFalse(SsStorageRules.isKnown(SsStorageRules.UNKNOWN));
         assertTrue(SsStorageRules.isKnown(0));
