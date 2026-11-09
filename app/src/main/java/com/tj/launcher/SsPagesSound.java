@@ -591,10 +591,12 @@ final class SsPagesSound {
                 Ringtone r = samples[row];
                 if (r != null && sampleStream[row] == stream) return r;
                 release(row);
+                r = null;
                 try {
                     r = RingtoneManager.getRingtone(app, sampleUri(stream));
                     if (r != null) r.setStreamType(stream);
                 } catch (Throwable t) {
+                    if (r != null) { try { r.stop(); } catch (Throwable ignored) { } }   // do not leave a prepared player behind
                     r = null;
                 }
                 samples[row] = r;
