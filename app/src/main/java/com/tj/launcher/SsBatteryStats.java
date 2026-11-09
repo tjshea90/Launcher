@@ -117,7 +117,7 @@ final class SsBatteryStats {
             }
             finished.set(true);
             Data d = parser.data;
-            d.status = denied && !d.any() ? "no-dump" : d.any() ? (d.startClockMs >= 0 && d.screenOnMs >= 0 ? "ok" : "partial") : (System.currentTimeMillis() == 0 ? "timeout" : "empty");
+            d.status = d.any() ? (d.startClockMs >= 0 && d.screenOnMs >= 0 ? "ok" : "partial") : denied ? "no-dump" : timedOut.get() ? "timeout" : "empty";
             return d;
         } catch (Throwable t) {
             parser.data.status = "exec-failed";
