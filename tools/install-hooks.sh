@@ -228,7 +228,7 @@ with open(tmp, "w") as f:
     f.write(new_text)
 os.replace(tmp, target)   # atomic: a killed session never leaves a half file
 
-kept_keys = sorted(k for k in merged if k != "hooks")
+kept_keys = sorted(k for k in merged if k not in ("hooks", "env"))
 note = " (preserved: %s)" % ", ".join(kept_keys) if kept_keys else ""
 if damaged:
     print("  WARN  %s was unreadable or malformed — rebuilt it (a .bak- copy was kept)%s" % (target, note))
