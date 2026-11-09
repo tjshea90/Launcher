@@ -109,7 +109,7 @@ BRIEF="$(
   fi
 
   # can any PreCompact hook veto a compaction right now? (one line; a VETO line is the first thing to fix)
-  bash tools/compact_guard.sh 2>/dev/null | sed 's/^/  /' | cut -c1-300
+  bash tools/compact_guard.sh 2>/dev/null | sed "s/^/  /" | cut -c1-210
   echo "-- toolchain --"
   command -v java >/dev/null 2>&1 && echo "  OK    java" || echo "  WARN  no java — gradlew cannot run"
   bash tools/ensure-build-env.sh --check --quiet >/dev/null 2>&1 \
@@ -131,12 +131,12 @@ BRIEF="$(
   fi
   if [ -f INBOX.md ]; then
     echo "######## INBOX.md tail — Tj's latest raw messages; anything TASKS.md lacks is an unwritten request ########"
-    tail -c 900 INBOX.md
+    tail -c 700 INBOX.md
     echo
   fi
   if [ -f OUTBOX.md ]; then   # 2026-11-06 (Tj: "why are my prompts and Claude findings not being saved?"): what Claude LAST told Tj, saved by tools/capture_outbox.sh on every Stop
     echo "######## OUTBOX.md tail — what Claude last told Tj (answers, findings, decisions); the whole text is in the file ########"
-    tail -c 700 OUTBOX.md | grep -v '^<!-- sha:'
+    tail -c 550 OUTBOX.md | grep -v '^<!-- sha:'
     echo
   fi
   echo "######## STOCK LOOK REFERENCE (Tj: remember at all times): research/reference/stock/INDEX.md — stock-home.png, stock-drawer.png; 5 cols, 8 rows, NO dock, scrim 50% white ########"
