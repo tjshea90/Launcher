@@ -292,7 +292,7 @@ final class SsPagesSize {
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPaddingRelative(SsRows.dp(c, 16), SsRows.dp(c, 16), SsRows.dp(c, 16), 0);
         col.addView(text(c, "Sample text", 24, "sans-serif", Typeface.NORMAL));
-        col.addView(text(c, "The Wonderful Wizard of Oz", 20, "sans-serif-medium", Typeface.NORMAL));
+        col.addView(text(c, "The Wonderful Wizard of Oz", 20, "sans-serif", Typeface.NORMAL));   // regular weight on Tj's tablet (his four Font size shots), not medium
         col.addView(text(c, "Chapter 11: The Wonderful Emerald City of Oz", 16, "sans-serif", Typeface.NORMAL));
         col.addView(text(c, OZ_1 + "\n\n" + OZ_2 + "\n\n" + OZ_3, 14, "sans-serif", Typeface.NORMAL));
         return scroll(c, col);
