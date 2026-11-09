@@ -46,7 +46,7 @@ final class SsPages {
     }
 
     /** The seven home entries in Tj's order; coloured tiles and the stock summaries (AOSP strings; the page-specific summaries are refined in M1). */
-    private static void home(final Activity a, LinearLayout list) {
+    private static void home(final Activity a, LinearLayout list, List<Live> live) {
         Object[][] e = {
             { SsPage.BATTERY, 0xFF258982, R.drawable.ss_glyph_battery, "" },
             { SsPage.DISPLAY, 0xFFFFA727, R.drawable.ss_glyph_display, "Wallpaper, sleep, font size" },
