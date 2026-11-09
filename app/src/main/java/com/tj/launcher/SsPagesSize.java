@@ -129,8 +129,8 @@ final class SsPagesSize {
         bar.setText("Preview");
         bar.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
         bar.setPaddingRelative(SsRows.dp(a, 32), 0, 0, 0);
-        bar.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        bar.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
+        // the same text appearance as the toolbar title (AOSP: TextAppearance.DeviceDefault.Widget.ActionBar.Title): Tj's shots show the word regular, ~20 px, and unchanged at every font size (it is not an sp text)
+        bar.setTextAppearance(a, android.R.style.TextAppearance_DeviceDefault_Widget_ActionBar_Title);
         bar.setTextColor(SsRows.themeColors(a, android.R.attr.textColorPrimary, Color.BLACK));
         bar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         box.addView(bar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, SsRows.dp(a, 56)));
