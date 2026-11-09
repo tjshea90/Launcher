@@ -3878,7 +3878,9 @@ ssorder(){ local f="$1" prev=-1 y t; shift; for t in "$@"; do y=$(ssy "$f" "$t")
 ssabsent(){ local f="$1" t; shift; for t in "$@"; do if [ -n "$(ssy "$f" "$t")" ]; then info "ssabsent: '$t' is on screen"; return 1; fi; done; return 0; }
 sstap(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbounds "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
 sstapc(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbc "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
-adb shell pm grant "$PKG" android.permission.DUMP >/dev/null 2>&1   # a section-only run starts without the base section's grants
+# a section-only run starts without the base section's grants: the same ones Tj's adb setup gives (WRITE_SECURE_SETTINGS lets the pages write Settings.System; PACKAGE_USAGE_STATS is the extra one the app's own dumpsys needs)
+adb shell pm grant "$PKG" android.permission.DUMP >/dev/null 2>&1; adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1; adb shell cmd appops set "$PKG" WRITE_SETTINGS allow >/dev/null 2>&1
+adb shell pm grant "$PKG" android.permission.PACKAGE_USAGE_STATS > "$OUT/ss-grant-usage.txt" 2>&1; info "SS13h: pm grant PACKAGE_USAGE_STATS -> $(tr -d '\r' < $OUT/ss-grant-usage.txt | head -2 | tr '\n' '|' | cut -c1-200)"
 info "SS13e: shell dumpsys = $(adb shell dumpsys batterystats --charged 2>&1 | grep -E 'Statistics since|Start clock|  Screen on:|Battery time remaining|Charge time remaining' | head -6 | tr '\n' '|' | cut -c1-420)"
 info "SS13f: app dumpsys = $(adb shell run-as $PKG dumpsys batterystats --charged 2>&1 | head -3 | tr '\n' '|' | cut -c1-300)"
 info "SS13g: DUMP grant = $(adb shell dumpsys package $PKG | grep -E 'android.permission.DUMP' | head -2 | tr -s ' ' | tr '\n' '|' | cut -c1-200)"
