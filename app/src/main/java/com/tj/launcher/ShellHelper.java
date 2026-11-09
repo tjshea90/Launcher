@@ -162,4 +162,11 @@ public final class ShellHelper {
         if (r == null || !r.startsWith("OK")) return -1;
         try { return Integer.parseInt(r.substring(2).trim().split("\\s+")[0]); } catch (NumberFormatException e) { return 0; }
     }
+
+    /** BN1: writes master_mono / master_balance (private system settings, see ShellProtocol.setSystem) through the helper. @return true when the helper did it. Blocking: call off the main thread. */
+    public static boolean setSystem(String key, String value) {
+        if (ShellProtocol.setSystem("SETSYS " + key + " " + value) == null) return false;
+        String r = ask("SETSYS " + key + " " + value, 8_000);
+        return r != null && r.startsWith("OK");
+    }
 }

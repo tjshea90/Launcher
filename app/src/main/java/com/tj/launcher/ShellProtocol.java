@@ -43,6 +43,27 @@ public final class ShellProtocol {
         return out;
     }
 
+    private static final Pattern BALANCE_VALUE = Pattern.compile("^-?(0|1)(\\.[0-9]{1,3})?$");
+
+    /**
+     * BN1 (the Settings look-alike): "SETSYS master_mono 1" / "SETSYS master_balance -0.5". Android keeps these two settings PRIVATE (Settings.System.PRIVATE_SETTINGS: an app gets "You cannot change private
+     * system settings" even with WRITE_SECURE_SETTINGS; only system, shell and root may write them), so the helper (shell) writes them for the Mono audio switch and the Audio balance slider. A strict allow-list:
+     * exactly these two keys, master_mono 0 or 1, master_balance a plain number in -1 .. 1 with at most three decimals. @return {key, value} (value normalised) or null for anything else.
+     */
+    public static String[] setSystem(String line) {
+        if (line == null) return null;
+        String[] w = line.trim().split("\\s+");
+        if (w.length != 3 || !"SETSYS".equals(w[0])) return null;
+        if ("master_mono".equals(w[1])) return ("0".equals(w[2]) || "1".equals(w[2])) ? new String[] { w[1], w[2] } : null;
+        if ("master_balance".equals(w[1])) {
+            if (!BALANCE_VALUE.matcher(w[2]).matches()) return null;
+            float f = Float.parseFloat(w[2]);
+            if (f < -1f || f > 1f) return null;
+            return new String[] { w[1], w[2] };
+        }
+        return null;
+    }
+
     public static boolean isPing(String line) { return line != null && line.trim().equals("PING"); }
     public static boolean isQuit(String line) { return line != null && line.trim().equals("QUIT"); }
 

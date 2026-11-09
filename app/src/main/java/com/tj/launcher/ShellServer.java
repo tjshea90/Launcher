@@ -167,6 +167,12 @@ public final class ShellServer {
             }
             out.println("OK " + removed + " " + skipped); return;
         }
+        String[] sys = ShellProtocol.setSystem(line);
+        if (sys != null) {   // BN1: Mono audio / Audio balance of the Settings look-alike (the allow-list is in ShellProtocol.setSystem; both arguments are validated constants)
+            String r = runShell("settings put system " + sys[0] + " " + sys[1], 5_000).trim();
+            out.println(r.isEmpty() ? "OK" : "ERR " + r);
+            return;
+        }
         List<String> pkgs = ShellProtocol.forceStopTargets(line);
         if (pkgs == null) { out.println("ERR unknown command"); return; }
         int stopped = forceStop(pkgs);
