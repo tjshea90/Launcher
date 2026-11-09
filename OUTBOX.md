@@ -1934,3 +1934,7 @@
 > - **Next:** if the new code's `legacy` is green, I bump to v0.9.0, ship it and send you the Release link plus the install notes.
 > - **Side job:** a read-only audit is checking whether any other word or state on the look-alike pages differs from your screenshots. It's your "must look identical" request, like the Display size "Custom" case. Anything it finds will go into a follow-up version.
 <!-- sha:012e052bd794 -->
+
+## 2026-11-09T22:28:34Z
+> Alive: the `legacy` runs and the audit are still going, and the 22:34 UTC timer is set.
+<!-- sha:e30715bbabfb -->
