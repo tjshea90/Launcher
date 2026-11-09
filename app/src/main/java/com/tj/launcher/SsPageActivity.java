@@ -69,6 +69,19 @@ public class SsPageActivity extends Activity {
         if (!SettingsSpoof.pageAllowed(this)) finish();
     }
 
+    private final List<android.app.Dialog> dialogs = new ArrayList<>();
+
+    /** Review B #5: a dialog opened from a page must not outlive its activity (a rotation destroys the activity under an open Screen timeout list: WindowLeaked). Main thread only. */
+    static void track(Activity a, android.app.Dialog d) {
+        if (d != null && a instanceof SsPageActivity) ((SsPageActivity) a).dialogs.add(d);
+    }
+
+    @Override protected void onDestroy() {
+        for (android.app.Dialog d : dialogs) { try { d.dismiss(); } catch (Throwable ignored) { } }
+        dialogs.clear();
+        super.onDestroy();
+    }
+
     @Override public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) { finish(); return true; }
         if (item.getItemId() == MENU_BATTERY_USAGE) { startActivity(intent(this, SsPage.BATTERY_USAGE)); return true; }
