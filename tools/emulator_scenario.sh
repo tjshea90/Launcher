@@ -224,13 +224,22 @@ setmode custom; home
 adb shell "run-as $PKG rm -f shared_prefs/tj_crash.xml"; adb shell am force-stop "$PKG"; sleep 1; home
 BRK=""
 for i in 1 2 3; do
-  # v0.9.0 gate: this check failed in 3 of 7 head runs (464, 466, 476) with no native crash in 476. `am crash` does nothing when no process of ours is alive, and the HOME press of the previous
-  # round only had 4 s to restart it: wait for the process (12 s at most, deadline first) and say how long it took, so a failure explains itself.
-  BW=0; while [ "$BW" -lt 12 ] && [ -z "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')" ]; do sleep 1; BW=$((BW+1)); done
-  # run 485 (head, base,last): NO crash was recorded in any of the three rounds although a process was there (wait=0s) and the same code passed in 482 / 483 / 484: which process does `am crash` hit?
-  BRK="$BRK wait$i=${BW}s procs$i=$(adb shell ps -A 2>/dev/null | grep -F "$PKG" | awk '{printf "%s:%s,", $2, $NF}' | cut -c1-90)"
-  adb shell am crash "$PKG"; sleep 5
-  adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/crash-prefs-$i.txt" 2>&1
+  # v0.9.0 gate, runs 464 / 466 / 476 / 485 / 489 (the head; the v0.8.13 tag passed 5 of 5): a round's `am crash` left no record in the breaker's file. Run 489 showed why: the process was there
+  # (its pid listed) but never crashed: the activity manager silently drops a crash request for a process that has not attached to it yet, and the HOME press of the previous round only gave the
+  # restart 4 s, which a loaded emulator does not always keep. So: wait for the process, send the crash, and when the breaker's file shows fewer than i records press HOME, wait and send it again
+  # (4 tries at most, the deadline is the try counter). A normal round is unchanged (one try).
+  BW=0; TRY=0; PR=""
+  while [ "$TRY" -lt 4 ]; do
+    TRY=$((TRY+1))
+    W=0; while [ "$W" -lt 12 ] && [ -z "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')" ]; do sleep 1; W=$((W+1)); done
+    BW=$((BW+W))
+    PR=$(adb shell ps -A 2>/dev/null | grep -F "$PKG" | awk '{printf "%s:%s,", $2, $NF}' | cut -c1-60)
+    adb shell am crash "$PKG"; sleep 5
+    adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/crash-prefs-$i.txt" 2>&1
+    [ "$(grep -c 'name="t[123]" value="[1-9]' "$OUT/crash-prefs-$i.txt")" -ge "$i" ] && break
+    adb shell input keyevent KEYCODE_HOME; sleep 4   # no record: the crash was dropped or the process is gone: start it again, then send the crash again
+  done
+  BRK="$BRK round$i=${TRY}try/${BW}s/procs=$PR"
   adb shell input keyevent KEYCODE_HOME; sleep 4     # restarts the launcher process for the next crash, dismisses a crash dialog
 done
 sleep 3; echo "mode after 3 crashes: $(getmode)" | tee "$OUT/crash-mode.txt"

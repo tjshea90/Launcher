@@ -1966,3 +1966,7 @@
 ## 2026-11-09T23:24:40Z
 > Six more `base` runs on the new code are going, and I read them at about 23:33 UTC. If one of them hits the breaker problem, the new diagnostics will show which process the `am crash` command hit.
 <!-- sha:817f3c6ea457 -->
+
+## 2026-11-09T23:33:41Z
+> Helper started; it reads the six runs now.
+<!-- sha:12776b2c3660 -->
