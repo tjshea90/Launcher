@@ -1669,3 +1669,25 @@
 >
 > I'll message you when the Release is up.
 <!-- sha:213d5e68d246 -->
+
+## 2026-11-09T04:14:35Z
+> v0.8.13 is not shipped yet. The gate is red in two places, and I'm rerunning both before anything goes out.
+>
+> - **Run 441 (`x1,v,pt,rb`):** 4 checks failed, all in the `pt` timing section. The same four failed in the v0.8.4 gate: one tap-timing check and three patch-versus-scrim checks. They fail when `pt` runs after other sections, because the emulator's stock dimming reads 0.75 in one phase and 0.80 in another. `pt` alone passed then. It is rerunning alone now (run 444).
+> - **Run 443 (`b6,o,ad,ae,hf,fp,last`):** every check for your three fixes passed:
+>   - the pencil's white box is hidden 98 ms after the pencil goes;
+>   - the home-screen patch covered the first press in 10 of 10 films;
+>   - the lock-screen checks passed.
+>
+>   The one red is the very last step (the replacement card's Restart). The stock home screen was in front, so the tap never reached our card. I can't explain it yet. It is rerunning alone (run 445) and after `fp` with screenshots, so I can see the screen (run 446).
+> - **Run 442 (`base,e1,n,ac,hp`):** still running.
+>
+> I also changed `gate.sh` so `pt` and `rg` always run alone. That avoids this false alarm next time.
+>
+> I expect the reruns by about 04:25 UTC. If they are green, or the failure is explained, I'll ship straight away.
+>
+> Still open from your messages:
+> - **v0.8.13:** ships when the gate is green.
+> - **Settings look-alike app (BN1):** starts as soon as v0.8.13 is built.
+> - **Your tablet checks:** the v0.8.9, v0.8.11 and v0.8.12 checks, plus disabling the `session-handoff` plugin (it can block auto-compaction in your other projects).
+<!-- sha:808fa9684c1e -->
