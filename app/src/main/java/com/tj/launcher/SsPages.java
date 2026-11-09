@@ -20,6 +20,10 @@ final class SsPages {
         list.setOrientation(LinearLayout.VERTICAL);
         switch (page) {
             case HOME: home(a, list); break;
+            case SYSTEM: SsPagesSystem.system(a, list); break;
+            case LANGUAGES: SsPagesSystem.languages(a, list); break;
+            case ABOUT: SsPagesSystem.about(a, list); break;
+            case LEGAL: SsPagesSystem.legal(a, list); break;
             default:
                 list.addView(SsRows.row(a, null, page.title, "This page is not built yet.", null));
         }
@@ -38,7 +42,7 @@ final class SsPages {
             { SsPage.STORAGE, 0xFFC14CE6, R.drawable.ss_glyph_storage, "" },
             { SsPage.ACCESSIBILITY, 0xFF5011C1, R.drawable.ss_glyph_accessibility, "Screen readers, display, interaction controls" },
             { SsPage.SYSTEM, 0xFF9E9E9E, R.drawable.ss_glyph_system, "Languages, gestures, time, backup" },
-            { SsPage.ABOUT, 0xFF6F86DA, R.drawable.ss_glyph_about, "" },
+            { SsPage.ABOUT, 0xFF6F86DA, R.drawable.ss_glyph_about, android.os.Build.MODEL },
         };
         for (Object[] x : e) {
             final SsPage p = (SsPage) x[0];

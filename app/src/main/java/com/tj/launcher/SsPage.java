@@ -17,7 +17,7 @@ public enum SsPage {
     TTS("tts", "Text-to-speech output"),
     MAGNIFICATION("magnification", "Magnification"),
     SYSTEM("system", "System"),
-    LANGUAGES("languages", "Languages & input"),
+    LANGUAGES("languages", "Languages\u00a0& input")   /* AOSP language_settings: a no-break space before the ampersand */,
     ABOUT("about", "About tablet"),
     LEGAL("legal", "Legal information");
 

@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.hardware.input.InputManager;
 import android.os.LocaleList;
 import android.provider.Settings;
 import android.view.InputDevice;
