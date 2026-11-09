@@ -1901,3 +1901,7 @@
 >
 > The auto-resume heartbeat is armed. Its first scheduled fire is at 18:27 UTC, and I'll confirm it when it arrives.
 <!-- sha:2a2868621fa2 -->
+
+## 2026-11-09T18:23:59Z
+> Gate run #465 (`rg`) passed. Runs #463 and #464 are still going and should finish around 18:49 UTC. I'll read them when the timer fires, then bump to v0.9.0 and ship.
+<!-- sha:6e501f189603 -->
