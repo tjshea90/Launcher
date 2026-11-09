@@ -4028,11 +4028,12 @@ info "SS28b: display size page texts = $(tr '>' '\n' < $OUT/ss-dsize.xml | grep 
 info "SS28c: wm density as the app = $(adb shell run-as $PKG wm density 2>&1 | tr -d '\r' | head -3 | tr '\n' '|' | cut -c1-200)"
 SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'); [ -z "$SSDEN" ] && SSDEN=$(adb shell wm density | tr -d '\r' | grep -i physical | sed 's/[^0-9]//g')
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
-# the emulator's stable density is 160 (the run forces 170), so the page above reads "Custom (170)": for the comparison with Tj's Default shot show the page at its own default density for a moment
+# BN1m (Tj, 2026-11-09 07:16: "it says custom ... must look identical"): the emulator's stable density is 160 and the run forces 170; AOSP would read "Custom (170)", the look-alike rebuilds its stops around 170 (his tablet's own table) and reads "Default". Here the page at the STABLE density (the normal case: stops of 160) for a moment
 adb shell wm density reset; sleep 4; shot ss-20b-displaysize-d160
 ssdump "$OUT/ss-dsize160.xml"
 SSD160=$(tr '>' '\n' < "$OUT/ss-dsize160.xml" | grep -oE 'text="(Small|Default|Large|Larger|Largest|Custom[^"]*)"' | head -3 | tr '\n' ' ')
 info "SS28e: Display size at the stable density = $SSD160"
+check "SS28g: the Display size page reads \"Default\" at the run's own density (170) and no look-alike page says \"Custom (N)\" (BN1m)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-dsize.xml --contains 'Default' --exact)\" ] && [ \"\$(ls $OUT/ss-*.xml | wc -l)\" -ge 8 ] && ! grep -q 'text=\"Custom (' $OUT/ss-*.xml"
 adb shell wm density 170; sleep 4
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M4: Sound and Storage (written by the page agents from Tj's screenshots 0b8dab8c / 4cd04033 / 52ef06ee); both start at the home page
