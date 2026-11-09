@@ -179,8 +179,9 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   - charging_sounds writes ONLY CHARGING_SOUNDS_ENABLED; there is no separate vibration key in this controller.
   - touch_sounds setSetting first runs AsyncTask.execute { AudioManager.loadSoundEffects() if value != 0 else unloadSoundEffects() } (both @hide) and then writes.
 - Other rows of the category, hidden on the tablet: dial_pad_tones "Dial pad tones" (voice only), docking_sounds "Docking sounds" (has_dock_settings false),
-  vibrate_on_touch "Touch vibration" + summary_vibrate_on_touch (no vibrator), dock_audio_media "Dock speaker plays", boot_sounds "Power on sounds"
-  (has_boot_sounds false), emergency_tone "Emergency dialing signal" (voice/CDMA). "Sound enhancement" on the tablet is an OEM row: NOT in AOSP.
+  vibrate_on_touch "Touch vibration" + summary vibrate_on_touch_summary (hidden when there is no vibrator [mem]), dock_audio_media "Dock speaker plays", boot_sounds
+  "Power on sounds" (has_boot_sounds false), emergency_tone "Emergency dialing signal" (summary "Set behavior when an emergency call is placed"; voice/CDMA only
+  [mem]). "Sound enhancement" on the tablet is an OEM row: NOT in AOSP.
 
 ### 1.7 Gotchas for a non-system app (Sound)
 - Hidden/not usable: SeekBarVolumizer (whole class), AudioManager.getStreamMinVolumeInt / getRingerModeInternal / getLastAudibleStreamVolume / loadSoundEffects /
