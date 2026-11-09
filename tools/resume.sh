@@ -58,6 +58,7 @@ BRIEF="$(
     # OTHER BRANCHES WITH WORK THIS ONE LACKS. Claude Code gives every session its own branch,
     # so a cut-off session's work can sit on a branch nobody opens (Portfolio: 565 commits
     # stranded for a whole migration). Name each one and the command that brings it in.
+    ORPHANS=0
     for RB in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin 2>/dev/null | grep -v -e '^origin$' -e '^origin/HEAD$' -e "^origin/${CURBR}$" | head -12); do
       N="$(git rev-list --count "HEAD..$RB" 2>/dev/null || echo 0)"
       [ "$N" -gt 0 ] || continue
