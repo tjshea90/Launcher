@@ -73,8 +73,41 @@ def read_tail(path, nbytes):
     return lines
 
 
+def boundary_of(o):
+    """The compaction marker of a transcript entry as a dict, or None for every other entry."""
+    if isinstance(o, dict) and (o.get("subtype") == "compact_boundary" or o.get("type") == "compact_boundary"):
+        md = o.get("compactMetadata") or o.get("compact_metadata") or {}
+        return {"trigger": md.get("trigger"), "pre": md.get("preTokens") or md.get("pre_tokens"), "at": o.get("timestamp")}
+    return None
+
+
+def find_compaction(path):
+    """The newest compaction marker within the last 30 MB of the transcript, or None. measure() only looks as far back as its own
+    400 KB window, and a compaction re-injects several hundred KB of files and lists, so its marker is usually further back."""
+    size = os.path.getsize(path)
+    for window in (3000000, 30000000):
+        try:
+            lines = read_tail(path, window)
+        except OSError:
+            return None
+        for raw in reversed(lines):
+            if b"compact_boundary" not in raw:
+                continue
+            try:
+                c = boundary_of(json.loads(raw))
+            except ValueError:
+                continue
+            if c:
+                return c
+        if window >= size:
+            break
+    return None
+
+
 def measure(path):
-    """-> dict(prompt=int, est=int, compaction=dict|None) or None. prompt = tokens of the last model call."""
+    """-> dict(prompt=int, est=int, compaction=dict|None, fresh=bool) or None. prompt = tokens of the last model call.
+    fresh = a compaction is the newest thing in the transcript (no model call since: the transcript can lag a turn behind), so the
+    old call's prompt is meaningless and est is built from what follows the marker."""
     size = os.path.getsize(path)
     for window in (400000, 3000000, 30000000):
         try:
