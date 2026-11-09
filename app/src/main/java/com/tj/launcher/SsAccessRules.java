@@ -37,9 +37,9 @@ final class SsAccessRules {
     static final int BALANCE_MAX = 200, BALANCE_CENTER = 100;
     private static final float BALANCE_SNAP = 0.03f;   // BalanceSeekBar.SNAP_TO_PERCENTAGE
 
-    /** The slider position of a stored balance: (int) (balance * 100) + 100, kept inside the bar. */
+    /** The slider position of a stored balance: round (balance * 100) + 100, kept inside the bar. Rounded, not cut: 0.41f * 100f is 40.999996, and the thumb would jump a notch after our own write (review B #1). */
     static int balanceProgress(float balance) {
-        int p = (int) (balance * 100f) + BALANCE_CENTER;
+        int p = Math.round(balance * 100f) + BALANCE_CENTER;
         return p < 0 ? 0 : (p > BALANCE_MAX ? BALANCE_MAX : p);
     }
 
