@@ -351,5 +351,5 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
 - androidx.preference layouts/styles (preference_material, preference_category_material, the divider decoration, the "Advanced" expand row).
 - android.preference.SeekBarVolumizer, AudioService (stream limits, setStreamVolume checks), RingtoneManager, Ringtone.getTitle, Formatter, FileUtils.roundStorageSize,
   StorageStatsService, StorageManager, VolumeInfo, TrafficStats, android.provider.Settings key constants and literals, MediaProvider RingtonePickerActivity UI.
-- Tablet-only: the OEM "Sound enhancement" row, the real value of the 8 px source of the extra row spacing (none needed: 84 px is reproduced), any gray background of the
-  Storage donut block (the gray in Tj's screenshot is the status bar + restyled toolbar, to be confirmed against the screenshot).
+- Tablet-only or unresolved: the OEM "Sound enhancement" row; any gray background of the Storage donut block (source sets none; the gray in Tj's screenshot is
+  probably the status bar + the restyled #E0E0E0 toolbar: confirm against the screenshot); whether the Sound page shows an "Advanced" collapse row (section 1.1).
