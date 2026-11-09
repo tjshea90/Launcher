@@ -70,6 +70,7 @@ BRIEF="$(
       echo "        Look first:  git log --oneline HEAD..$RB | head   — then:  git merge $RB   (tell Tj if it contradicts this branch)"
       SIBLING=1
     done
+    [ "$ORPHANS" -gt 0 ] && echo "  note  $ORPHANS old session branch(es) share no history with this one (orphans): ignored."
     # Another session / another Claude account? Its newest commit is its heartbeat (HANDOFF.md 0d "TAKEOVER").
     [ -n "${SIBLING:-}" ] && echo "  NOTE  Another session's work is ahead of you: newest commit under ~20 min old = it MAY still be running (do not touch main, releases or its CI runs; ask Tj); older with no CI run of its in flight = cut off: TAKE OVER, steps in HANDOFF.md 0d."
 
