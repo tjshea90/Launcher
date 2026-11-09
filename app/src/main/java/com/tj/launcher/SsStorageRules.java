@@ -18,7 +18,7 @@ final class SsStorageRules {
     // ------------------------------------------------------------------ the texts (AOSP Settings strings.xml, English)
 
     /** What a row shows while its number is being measured: memory_calculating_size (l.3184; StorageItemPreference sets it in its constructor). */
-    static final String CALCULATING = "Calculating…";
+    static final String CALCULATING = "Calculating\u2026";
     /** The second line inside the donut: storage_percent_full (l.10499). */
     static final String DONUT_LABEL = "used";
 

@@ -27,7 +27,7 @@ public class SsStorageRulesTest {
     }
 
     @Test public void fixedTexts() {
-        assertEquals("Calculating…", SsStorageRules.CALCULATING);
+        assertEquals("Calculating\u2026", SsStorageRules.CALCULATING);
         assertEquals("used", SsStorageRules.DONUT_LABEL);
         assertEquals("95%, used", SsStorageRules.donutDescription("95%"));
         assertEquals("System includes files used to run Android version 10", SsStorageRules.systemInfo("10"));
@@ -198,7 +198,7 @@ public class SsStorageRulesTest {
 
     @Test public void percentSignRange() {
         assertArrayEquals(new int[] { 2, 3 }, SsStorageRules.percentSignRange("95%", "%"));
-        assertArrayEquals(new int[] { 3, 4 }, SsStorageRules.percentSignRange("95 %", "%"));   // a no-break space before the sign (German)
+        assertArrayEquals(new int[] { 3, 4 }, SsStorageRules.percentSignRange("95\u00a0%", "%"));   // a no-break space before the sign (German)
         assertArrayEquals(new int[] { 0, 1 }, SsStorageRules.percentSignRange("%95", "%"));          // the sign first (Turkish)
         assertArrayEquals(new int[] { 0, 2 }, SsStorageRules.percentSignRange("95", "%"));           // no sign found: the whole text is the small part
     }
