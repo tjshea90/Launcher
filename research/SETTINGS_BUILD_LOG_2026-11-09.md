@@ -22,5 +22,14 @@ A contact sheet of all of them can be made in a minute with PIL (scratchpad only
 2. Legal information rows open the real read-only licence screens through the public intents (`android.settings.LICENSE` etc.) when a handler exists.
 3. Sound ringtone rows use `RingtoneManager.ACTION_RINGTONE_PICKER` (public; what the real Settings does).
 
+4. Battery numbers (estimate, "Last full charge", "Screen usage since full charge") come from Android's own statistics, read the way an adb shell reads them: `dumpsys batterystats --charged` run by the app (it holds DUMP; `SsBatteryStats`,
+   format from AOSP 10 `BatteryStats.dumpLocked`: "Battery time remaining:", "Charge time remaining:", "Start clock time:", "Screen on:"). The status of the last read is in the tablet report (`ss_battery_status`). Unknown value = blank, never a guess.
+5. Category headings are 24 dp above / 8 dp below the text (measured on Tj's Languages screenshot: the glyphs sit exactly 8 px lower than the first guess of 16 / 16 dp); the footer text ends 16 dp before the row padding (Tj's footer wraps "... based on / usage").
+6. Battery usage: ONE permanent row, Solitaire with its real icon (a generic icon if the app is not installed), no percentage, never anything else (Tj: "one permanent app solitaire in the list that never changes and nothing ever adds to the list"). If Tj wants a number on it, say so.
+7. The Settings icon is the AOSP gear on teal; if the tablet's vendor icon differs, Tj tells us. Nav bar: the page theme sets the same window attributes as AOSP Settings (transparent bar colour, light icons, 12 % divider); it cannot be compared on the CI emulator (no 3-button bar in its screenshots).
+8. Font size table is PROVISIONAL: AOSP 10 has 0.85 / 1.0 / 1.15 / 1.30 ("Default" = 1.0) but Tj's tablet shows "Default" at its own scale 1.2, so its table is shifted; `SsDisplayRules.FONT_VALUES` = 1.05 / 1.2 / 1.35 / 1.5 until Tj sends the page.
+
 ## Open questions for Tj (ask ONCE, batched, only if his answer changes the work)
-- none yet (collect here; ask with the question tool at a natural pause)
+- Font size page of his tablet (Settings > Display > Font size): a screenshot of the page with the slider at each of the 4 positions, or at least the labels and the preview, so the steps (1.05 / 1.2 / 1.35 / 1.5 are guesses) and the page layout can be copied.
+- Display size page of his tablet (the same, 5 stops expected: Small, Default, Large, Larger, Largest).
+- Should the Solitaire row in Battery usage show a percentage? (Built without one.)
