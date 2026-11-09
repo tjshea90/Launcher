@@ -182,7 +182,8 @@ class `accessibility/AccessibilitySettings.java`. XML order (a `PreferenceCatego
 - **DIFF**: SPOOF says the balance slider is "inset 16 dp more at BOTH ends than the volume sliders". The source gives +16 dp at the START only (88 vs 72 dp); the end is the same
   (32 dp from the right). Re-measure the end on the screenshot before building. SeekBar wrap_content height: NF (thumb drawable absent); volume slider fixes 48 dp.
 - `BalanceSeekBar.java`: progress 0..200 (`BALANCE_MAX_VALUE` 200, centre 100); stored float = (progress - 100) * 0.01 in -1.0..1.0; snaps to the centre when within
-  `SNAP_TO_PERCENTAGE` 0.03 of the range; draws a centre marker, 14 dp tall and 1 dp wide (`balance_seekbar_center_marker_height/width`, `settings10/res/values/dimens.xml`);
+  `SNAP_TO_PERCENTAGE` 0.03 of the range; draws a centre marker in `Color.BLACK`, 14 dp tall and 1 dp wide, centred on the bar and drawn BEFORE `super.onDraw` (under track and thumb)
+  (`balance_seekbar_center_marker_height/width`, `settings10/res/values/dimens.xml`);
   `setProgressTintList(TRANSPARENT)` (no coloured fill; only the thumb shows the accent). Read: `Settings.System.getFloatForUser(MASTER_BALANCE, 0f, USER_CURRENT)`,
   progress = (int)(balance * 100) + 100. Write: `Settings.System.putFloatForUser(MASTER_BALANCE, value, USER_CURRENT)`. Key `master_balance` (Settings.System, float); the provider
   validator range -1..1 (memory).
