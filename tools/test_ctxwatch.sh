@@ -101,8 +101,9 @@ O="$(cd "$R" && env CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=40 python3 -I "$D/tools/ctxw
 check "--report finds a marker beyond the window" 'printf "%s" "$O" | grep -q "auto at 2026-11-09T02:00:00Z (was 392147)"'
 # a smaller auto-compact window moves T (500,000 x 40 % = 200,000)
 rm -f "$R/.git/ctxwatch.state"
-mk 250000;                       O="$(hook CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)"
-check "CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 moves the point to 200K: 250K is an ALARM there" 'printf "%s" "$O" | field additionalContext | grep -q "CONTEXT ALARM" && printf "%s" "$O" | field additionalContext | grep -q "~200K"'
+mk 250000; hook CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 >/dev/null
+mk 255000;                       O="$(hook CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)"
+check "CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000 moves the point to 200K: two calls at 250K / 255K are an ALARM there" 'printf "%s" "$O" | field additionalContext | grep -q "CONTEXT ALARM" && printf "%s" "$O" | field additionalContext | grep -q "~200K"'
 
 # robustness: never fails, never prints on bad input
 printf 'not json at all\n\x00\x01\x02\n' > "$T/t.jsonl"; O="$(hook)"; RC=$?
