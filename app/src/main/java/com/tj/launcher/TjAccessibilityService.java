@@ -181,6 +181,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private long quietUntilMs = 0;
+    private volatile long menuClosedAtMs = 0;   // BN2: uptime of the last close we were told about (0 = none, or a new dialog announced itself since); see PowerMenuRule.dyingDialog
     private int holdMisses = 0;   // AZ1: scans in a row that found no menu text while the dialog window was still up
     /** AZ1: how long a window burst on the lock screen waits for the stock dialog's own event before the normal scans run (fail-open for a ROM whose dialog does not announce itself). The dialog's event follows the first window event of its burst by 15-45 ms. */
     static final long FAST_WAIT_MS = 120;
