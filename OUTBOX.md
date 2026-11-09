@@ -1469,3 +1469,14 @@
 ## 2026-11-09T02:12:13Z
 > This is a new, large request, so per the project rules I'll first confirm the safety net is active and that your message was captured. Then I'll write it into `TASKS.md` in your words before any code. I'm also checking what this container can do (emulator, image tools), because that decides how I can verify "identical".
 <!-- sha:17901decc604 -->
+
+## 2026-11-09T02:33:14Z
+> Status: Settings spoof (BN1) is in `TASKS.md`; all 18 uploads are read and measured, and the Android 10 Settings source is downloaded. Four read-only subagents are mapping the launcher and the stock pages. I'll start building as soon as their reports land.
+>
+> **So far (nothing built yet):**
+> - **Fonts and sizes:** your tablet runs font scale 1.2 at 170 dpi, which explains the 87 px and 62 px row heights. The platform's own Settings theme and the AndroidX preference rows already in the app reproduce them, so the spoof can be pixel-faithful.
+> - **Where it lives:** the spoof will be pages inside the Launcher APK, opened from the custom drawer's Settings icon. No second app to install.
+> - **Not shown in your screenshots:** the "Languages & input" page and the Magnification, Touch & hold delay, Text-to-speech, Legal information and Model & hardware sub-pages. I'll build those from the Android 10 source. If you can, send screenshots of them, especially "Languages & input", so I can match them exactly.
+>
+> **Still waiting on you (unchanged):** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 tablet checks, and turning off the `session-handoff` plugin.
+<!-- sha:34f230b42662 -->
