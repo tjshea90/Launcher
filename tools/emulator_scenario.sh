@@ -3951,6 +3951,33 @@ check "SS26: the Text-to-speech output page lists Preferred engine, Language, Sp
 check "SS26c: it has the Play and Reset buttons" bash -c "tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
 info "SS26b: tts engines on this image = $(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+# ---- M3b: the Font size and Display size pages (preview frame, label, step buttons, slider, sentence); AOSP font_size_activity / screen_zoom_activity
+ssdesc(){ python3 -I - "$1" "$2" <<'EOF'
+import re,sys
+s=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+for m in re.finditer(r'<node [^>]*>', s):
+    n=m.group(0)
+    if 'content-desc="%s"' % sys.argv[2] in n:
+        b=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', n)
+        if b: print(' '.join(b.groups())); break
+EOF
+}
+SSFS=$(adb shell settings get system font_scale | tr -d '\r')
+sstap "Display"; sleep 3; sstap "Font size"; sleep 3; ssdump "$OUT/ss-font.xml"; shot ss-19-fontsize
+check "SS27: the Font size page shows Preview, the sample text, the label (Default at the emulator's 1.2) and the sentence" bash -c "for t in 'Preview' 'Sample text' 'Default' 'Make the text on screen smaller or larger.'; do [ -n \"\$(python3 -I tools/uinode.py $OUT/ss-font.xml --contains \"\$t\" --exact)\" ] || { echo missing \$t; exit 1; }; done"
+SSLG=$(ssdesc "$OUT/ss-font.xml" "Make larger"); set -- $SSLG
+if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 3; fi
+SSFS2=$(adb shell settings get system font_scale | tr -d '\r')
+check "SS27b: the 'Make larger' button wrote font_scale = 1.35 (was $SSFS, now $SSFS2)" test "$SSFS2" = "1.35"
+adb shell settings put system font_scale "$SSFS" >/dev/null 2>&1; sleep 2
+adb shell input keyevent KEYCODE_BACK; sleep 2
+sstap "Display size"; sleep 3; ssdump "$OUT/ss-dsize.xml"; shot ss-20-displaysize
+check "SS28: the Display size page shows Preview, the first preview page (Hi Pete!) and the sentence" bash -c "for t in 'Preview' 'Hi Pete!' 'Make the items on your screen smaller or larger. Some apps on your screen may change position.'; do [ -n \"\$(python3 -I tools/uinode.py $OUT/ss-dsize.xml --contains \"\$t\" --exact)\" ] || { echo missing \$t; exit 1; }; done"
+info "SS28b: display size page texts = $(tr '>' '\n' < $OUT/ss-dsize.xml | grep -oE 'text="[^"]+"' | head -14 | tr '\n' ' ' | cut -c1-420)"
+info "SS28c: wm density as the app = $(adb shell run-as $PKG wm density 2>&1 | tr -d '\r' | head -3 | tr '\n' '|' | cut -c1-200)"
+SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'); [ -z "$SSDEN" ] && SSDEN=$(adb shell wm density | tr -d '\r' | grep -i physical | sed 's/[^0-9]//g')
+info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M1: System > Languages & input, About tablet > Legal information (static pages)
 sstap "System"; sleep 2; ssdump "$OUT/ss-system.xml"; shot ss-04-system
 check "SS8: System has only 'Languages & input' (no Gestures, Date & time, Backup, Reset options)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-system.xml --contains '& input')\" ]"
