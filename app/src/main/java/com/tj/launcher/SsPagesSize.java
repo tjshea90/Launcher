@@ -339,6 +339,31 @@ final class SsPagesSize {
         return scroll(c, SsConversation.column(c));
     }
 
+    /** The six apps of preview 2 (the first six launcher activities with a label, sorted by label), resolved once per page visit. Main thread only. */
+    private static final class SixApps {
+        static final class Entry {
+            final ResolveInfo ri; final String label;
+            Entry(ResolveInfo ri, String label) { this.ri = ri; this.label = label; }
+        }
+        private List<Entry> entries;
+
+        List<Entry> get(PackageManager pm) {
+            if (entries != null) return entries;
+            Intent main = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
+            List<Entry> six = new ArrayList<>();
+            for (ResolveInfo ri : pm.queryIntentActivities(main, 0)) {
+                if (six.size() == 6) break;
+                CharSequence l = ri.loadLabel(pm);
+                if (l != null && l.length() > 0) six.add(new Entry(ri, l.toString()));
+            }
+            Collections.sort(six, new Comparator<Entry>() {
+                @Override public int compare(Entry x, Entry y) { return x.label.compareToIgnoreCase(y.label); }
+            });
+            entries = six;
+            return six;
+        }
+    }
+
     /** screen_zoom_preview_2: the first six launcher apps by label in a grid of three columns (icon 64 dp, label 12 sp). */
     private static View appsPreview(Context c, SixApps apps) {
         PackageManager pm = c.getPackageManager();
