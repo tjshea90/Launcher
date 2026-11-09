@@ -37,10 +37,10 @@ public final class SettingsSpoof {
     private SettingsSpoof() {}
 
     /**
-     * The default of {@link #KEY}. WORK IN PROGRESS: OFF everywhere until the look-alike is finished and its gate is green (a release made mid-way must be harmless); the finished build switches release builds
-     * ON (debug builds stay OFF like clean_start: the emulator sections that do not test the spoof must not see a second Settings in the drawer; section "ss" turns it on).
+     * The default of {@link #KEY}: ON in release builds (the look-alike is finished and gated, v0.9.0), OFF in debug builds like clean_start: the emulator sections that do not test the spoof must not see a second
+     * Settings in the drawer (section "ss" turns it on). Tj can flip it in Launcher control; the crash fuse ({@link SsFuse}) writes an explicit OFF.
      */
-    public static boolean defaultOn(boolean debuggable) { return false; }
+    public static boolean defaultOn(boolean debuggable) { return !debuggable; }
 
     public static boolean switchOn(Context c) { return Features.get(c, KEY, defaultOn(ReturnReset.isDebuggable(c))); }
 
