@@ -389,7 +389,10 @@ public class LoaderTask implements Runnable {
                                 // component.
 
                                 // If the component is already present
-                                if (mLauncherApps.isActivityEnabledForProfile(cn, c.user)) {
+                                // Tj (BN1, review C #1): a shortcut to the Settings look-alike keeps its target while the alias is switched off with the mode (a Quickstep session, the first seconds after
+                                // a start): the fallback below would turn it into a Launcher control shortcut for good.
+                                if (mLauncherApps.isActivityEnabledForProfile(cn, c.user)
+                                        || com.tj.launcher.SettingsSpoof.isLookAlikeComponent(cn.getClassName())) {
                                     // no special handling necessary for this item
                                     c.markRestored();
                                 } else {
