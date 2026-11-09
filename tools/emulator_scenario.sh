@@ -234,6 +234,8 @@ for i in 1 2 3; do
 done
 sleep 3; echo "mode after 3 crashes: $(getmode)" | tee "$OUT/crash-mode.txt"
 check "crash breaker switched to quickstep" bash -c "[ \"$(getmode)\" = quickstep ]"
+crashsum(){ tr -d '\r\n' < "$1" 2>/dev/null | sed -E 's/<(long|boolean|int|string) name="([a-zA-Z0-9_]+)" value="([^"]*)" *\/>/\2=\3 /g; s/<[^>]*>//g' | cut -c1-150; }
+info "breaker diag: mode=$(getmode) |$BRK | the breaker's file after crash 1 [$(crashsum "$OUT/crash-prefs-1.txt")] 2 [$(crashsum "$OUT/crash-prefs-2.txt")] 3 [$(crashsum "$OUT/crash-prefs-3.txt")]"
 home; resumed > "$OUT/resumed-after-crashes.txt"
 check "after the breaker, Home shows the stock launcher" bash -c "grep -q 'com.android.launcher3/' $OUT/resumed-after-crashes.txt && ! grep -q 'com.tj.launcher' $OUT/resumed-after-crashes.txt"
 
