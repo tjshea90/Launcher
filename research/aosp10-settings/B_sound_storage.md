@@ -321,8 +321,8 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   PrivateStorageInfo.getPrivateStorageInfo, which SUMS total and free over all TYPE_PRIVATE mounted-readable volumes.
 - [mem] StorageStatsService.getTotalBytes for the default (internal) volume returns StorageManager.getPrimaryStorageSize() = FileUtils.roundStorageSize(total space of
   the data partition): rounded UP to the next value of {1,2,4,...,512} x 1000^n bytes (decimal), e.g. 28.4e9 -> 32,000,000,000. That is why the page says "32 GB".
-  getFreeBytes = usable space of /data PLUS the cache the system may clear (cache above its reserved size) when quotas are supported [mem], so "used" excludes
-  clearable cache.
+  getFreeBytes = usable space of the data partition PLUS the cache the system may clear (cache above its reserved size) when quotas are supported [mem], so "used"
+  excludes clearable cache.
 - Unit consistency check [calc, matches [tablet]]: used 30.28e9 / total 32e9 = 0.94625 -> "95%"; the header number 30.28 is therefore decimal (SI) too:
   Formatter.formatBytes(res, bytes, 0) in this release counts 1000 per step (FLAG_IEC_UNITS absent) [mem]. Rules [mem, android.text.format.Formatter, not in checkout]:
   pick the first unit where the value is <= 900 (B, kB, MB, GB, TB); value >= 100 or unit bytes -> "%.0f"; value < 1 -> "%.2f"; 1 <= value < 10 -> "%.2f" without
