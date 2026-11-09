@@ -126,7 +126,7 @@ final class SsPagesDisplay {
             @Override public void onStartTrackingTouch(SeekBar s) { }
             @Override public void onStopTrackingTouch(SeekBar s) { }
         });
-        new AlertDialog.Builder(a).setTitle("Brightness level").setView(bar).setPositiveButton(android.R.string.ok, null).show();
+        SsPageActivity.track(a, new AlertDialog.Builder(a).setTitle("Brightness level").setView(bar).setPositiveButton(android.R.string.ok, null).show());
     }
 
     /** AOSP's TimeoutListPreference dialog: a single-choice list; a tap stores the value and closes it (no OK button), Cancel closes it. */
