@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BN1: themes of the Settings look-alike. Derived from AOSP 10 Settings (android-10.0.0_r47) res/values/themes.xml and styles.xml (Apache-2.0): the platform theme
+     Theme.DeviceDefault.Settings (public API since 21) supplies the solid toolbar, the light status bar, the DeviceDefault switches, dialogs and seek bars; the lines below are
+     the few Settings-only additions (row height, the back arrow, the 72 dp title inset of a sub page). -->
+<resources>
+    <style name="SsTheme" parent="@android:style/Theme.DeviceDefault.Settings">
+        <item name="android:clipToPadding">false</item>
+        <item name="android:clipChildren">false</item>
+        <item name="android:listPreferredItemHeight">72dip</item>
+        <item name="android:homeAsUpIndicator">@drawable/ss_ic_arrow_back</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:actionBarStyle">@style/SsActionBarSub</item>
+    </style>
+
+    <!-- The home page has no toolbar (the stock page has the search card where it would be; Tj wants no search anywhere). -->
+    <style name="SsTheme.Home">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+
+    <style name="SsActionBarSub" parent="@android:style/Widget.DeviceDefault.Light.ActionBar.Solid">
+        <item name="android:contentInsetStart">72dp</item>
+    </style>
+</resources>
