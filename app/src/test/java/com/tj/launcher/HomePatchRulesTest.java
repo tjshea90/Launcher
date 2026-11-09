@@ -227,25 +227,36 @@ public class HomePatchRulesTest {
     }
 
     // ---------------------------------------------------------------- BN2: the keyguard's own window at the unlock is not a shade (tablet report 2026-11-09: the 2.5 s guard it started made the first press uncovered)
-    @Test public void aSystemUiWindowRightAfterTheKeyguardWasUpIsJudgedByTheFocusNotGuardedAtOnce() {
+    @Test public void onlyTheStatusBarWindowCanBeTheKeyguardGoingAway() {
+        assertEquals(true, HomePatchRules.isKeyguardWindow("com.android.systemui", "android.widget.FrameLayout"));
+        assertEquals("the volume panel and every other SystemUI Dialog announce themselves with their own class", false, HomePatchRules.isKeyguardWindow("com.android.systemui", "com.android.systemui.volume.VolumeDialogImpl$CustomDialog"));
+        assertEquals(false, HomePatchRules.isKeyguardWindow("com.android.settings", "android.widget.FrameLayout"));
+        assertEquals(false, HomePatchRules.isKeyguardWindow("com.android.systemui", ""));
+    }
+    @Test public void theKeyguardWindowRightAfterTheKeyguardWasUpGetsAProvisionalGuard() {
         assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, 0));
         assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, 600));
         assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, HomePatchRules.UNLOCK_GRACE_MS - 1));
     }
-    @Test public void aSystemUiWindowLongAfterTheUnlockIsTheShadeAndGuardsAtOnce() {
+    @Test public void theSameWindowLongAfterTheUnlockIsTheShadeAndGuardsForGood() {
         assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, HomePatchRules.UNLOCK_GRACE_MS));
         assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, 60_000));
         assertEquals("the keyguard was never seen up in this process", HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, Long.MAX_VALUE));
     }
-    @Test public void aWindowOfAnotherAppIsAlwaysGuardedAtOnceEvenRightAfterTheUnlock() {
+    @Test public void aDialogOrAnotherAppsWindowIsAlwaysGuardedForGoodEvenRightAfterTheUnlock() {
         assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(false, 0));
         assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(false, 1000));
     }
-    @Test public void theDeferredJudgementFollowsTheLaunchersWindowFocus() {
-        assertEquals("the Launcher still has the focus: it was the keyguard going away", false, HomePatchRules.unlockEventWasForeign(true));
-        assertEquals("the shade took the focus: it was a window over the home", true, HomePatchRules.unlockEventWasForeign(false));
+    @Test public void theRecheckLiftsTheGuardOnlyWhenTheLauncherKeptTheFocusAndNoOtherWindowTouchedTheGuard() {
+        assertEquals("the Launcher still has the focus: it was the keyguard going away", HomePatchRules.RECHECK_LIFT, HomePatchRules.recheck(true, 5000, 5000));
+        assertEquals("the shade took the focus: a real window, the guard stays", HomePatchRules.RECHECK_KEEP, HomePatchRules.recheck(false, 5000, 5000));
     }
-    @Test public void theGraceIsShorterThanTheGuardItReplaces() {
+    @Test public void theRecheckNeverLiftsAGuardAnotherWindowSetOrExtended() {
+        assertEquals("a later window moved the guard end", HomePatchRules.RECHECK_NOT_OURS, HomePatchRules.recheck(true, 5300, 5000));
+        assertEquals("the guard is final (no provisional event)", HomePatchRules.RECHECK_NOT_OURS, HomePatchRules.recheck(true, 5000, 0));
+        assertEquals(HomePatchRules.RECHECK_NOT_OURS, HomePatchRules.recheck(false, 5300, 5000));
+    }
+    @Test public void theGraceRecheckIsShorterThanTheGuardItMayLift() {
         assertEquals(true, HomePatchRules.FOREIGN_RECHECK_MS < 2500);
     }
 }

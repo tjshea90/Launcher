@@ -23,26 +23,24 @@ public class PencilRulesTest {
     }
 
     @Test public void aLostPencilHidesTheCoverAtOnceWithoutAnySearch() {
-        assertEquals(true, PencilRules.hideCover(PencilRules.LOST, false, false));
+        assertEquals(true, PencilRules.hideCover(PencilRules.LOST, false));
     }
 
     @Test public void aSearchThatFoundNothingHidesTheCover() {
-        assertEquals(true, PencilRules.hideCover(PencilRules.NO_KNOWN, true, false));
-    }
-
-    @Test public void aPencilFoundByTheSearchKeepsTheCoverEvenAfterALoss() {
-        assertEquals("lost, but the prompt search found it again: re-covered, not hidden", false, PencilRules.hideCover(PencilRules.LOST, true, true));
+        assertEquals(true, PencilRules.hideCover(PencilRules.NO_KNOWN, true));
+        assertEquals(true, PencilRules.hideCover(PencilRules.LOST, true));
     }
 
     @Test public void whenNothingCouldBeCheckedTheCoverIsLeftAlone() {
-        assertEquals("no node, no search allowed: no answer, no change (the old rule for a busy burst)", false, PencilRules.hideCover(PencilRules.NO_KNOWN, false, false));
-        assertEquals(false, PencilRules.hideCover(PencilRules.FOUND, false, false));
+        assertEquals("no node, no search allowed: no answer, no change (the old rule for a busy burst)", false, PencilRules.hideCover(PencilRules.NO_KNOWN, false));
+        assertEquals(false, PencilRules.hideCover(PencilRules.FOUND, false));
     }
 
-    @Test public void theSpacingGapIsWaivedOnlyAfterALoss() {
-        assertEquals(true, PencilRules.searchGapWaived(PencilRules.LOST));
-        assertEquals(false, PencilRules.searchGapWaived(PencilRules.FOUND));
-        assertEquals(false, PencilRules.searchGapWaived(PencilRules.NO_KNOWN));
+    @Test public void theSpacingGapIsWaivedOnlyAfterALossThatNoSearchAnswered() {
+        assertEquals(true, PencilRules.searchGapWaived(PencilRules.LOST, false));
+        assertEquals("a search that already found nothing in this call is the answer: no second one 30 ms later", false, PencilRules.searchGapWaived(PencilRules.LOST, true));
+        assertEquals(false, PencilRules.searchGapWaived(PencilRules.FOUND, false));
+        assertEquals(false, PencilRules.searchGapWaived(PencilRules.NO_KNOWN, false));
     }
 
     @Test public void theWatchdogIsFasterThanTheOldSearchGapPlusASearch() {
