@@ -110,7 +110,7 @@ public final class TabletReport {
 
     private static void permissions(StringBuilder b, Context c) {
         b.append("\n===== this launcher's permissions\n");
-        for (String p : new String[] { "WRITE_SECURE_SETTINGS", "DUMP", "CHANGE_CONFIGURATION", "READ_EXTERNAL_STORAGE", "INTERNET", "VIBRATE" })
+        for (String p : new String[] { "WRITE_SECURE_SETTINGS", "DUMP", "CHANGE_CONFIGURATION", "READ_EXTERNAL_STORAGE", "PACKAGE_USAGE_STATS", "INTERNET", "VIBRATE" })
             b.append(p).append(": ").append(c.checkSelfPermission("android.permission." + p) == PackageManager.PERMISSION_GRANTED ? "granted" : "NOT granted").append('\n');
     }
 
