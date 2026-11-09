@@ -128,7 +128,7 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
 - SoundSettings.VolumePreferenceCallback (SoundSettings.java l.198-228): onSampleStarting(sbv) stops the previous volumizer's sample if another one is current,
   stores sbv, removes pending STOP_SAMPLE and posts STOP_SAMPLE after SAMPLE_CUTOFF = 2000 ms ("manually cap sample playback at 2 seconds");
   onStreamValueChanged(stream, progress) re-arms the same 2000 ms timer if a sample is current; SoundSettings.onPause() stops the sample.
-- Media: SeekBarVolumizer gets sampleUri = android.resource://<settings package>/res/raw/media_volume (VolumeSeekBarPreference.getMediaVolumeUri). File
+- Media: SeekBarVolumizer gets sampleUri = "android.resource://<settings package>/<numeric id of R.raw.media_volume>" (VolumeSeekBarPreference.getMediaVolumeUri). File
   settings10/res/raw/media_volume.ogg: mono, 44.1 kHz Vorbis, 11,969 bytes, last granule 21,789 samples = 0.494 s (measured here). Other streams pass sampleUri =
   null and SeekBarVolumizer picks defaults [mem]: ring -> Settings.System.DEFAULT_RINGTONE_URI, notification -> DEFAULT_NOTIFICATION_URI, else
   DEFAULT_ALARM_ALERT_URI. [mem] the sample plays when the finger is released (onStopTrackingTouch), through RingtoneManager.getRingtone(...) with the stream
