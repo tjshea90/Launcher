@@ -298,7 +298,7 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   only logged):
   - Photos & videos -> SubSettingLauncher(ManageApplications) title storage_photos_videos, EXTRA_CLASSNAME Settings.PhotosStorageActivity, EXTRA_STORAGE_TYPE =
     STORAGE_TYPE_PHOTOS_VIDEOS (3), list type LIST_TYPE_PHOTOGRAPHY, filter ApplicationsState.FILTER_PHOTOS. That list's header row (PhotosViewHolderController): icon
-    ic_photo_library, title storage_detail_images "Images", size = imageBytes + videoBytes, click ACTION_VIEW type "image/*" with FLAG_ACTIVITY_NEW_DOCUMENT and
+    ic_photo_library, title storage_detail_images "Images", size = imageBytes + videoBytes (text via public Formatter.formatFileSize), click ACTION_VIEW type "image/*" with FLAG_ACTIVITY_NEW_DOCUMENT and
     EXTRA_FROM_STORAGE=true.
   - Music & audio -> ManageApplications title storage_music_audio, class Settings.StorageUseActivity, EXTRA_STORAGE_TYPE = STORAGE_TYPE_MUSIC (1), EXTRA_VOLUME_UUID/NAME,
     filter FILTER_AUDIO. Header row (MusicViewHolderController): icon ic_headset_24dp, title audio_files_title "Audio files", size = audioBytes, click ACTION_VIEW on
