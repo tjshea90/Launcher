@@ -301,7 +301,7 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
     ic_photo_library, title storage_detail_images "Images", size = imageBytes + videoBytes (text via public Formatter.formatFileSize), click ACTION_VIEW type "image/*" with FLAG_ACTIVITY_NEW_DOCUMENT and
     EXTRA_FROM_STORAGE=true.
   - Music & audio -> ManageApplications title storage_music_audio, class Settings.StorageUseActivity, EXTRA_STORAGE_TYPE = STORAGE_TYPE_MUSIC (1), EXTRA_VOLUME_UUID/NAME,
-    filter FILTER_AUDIO. Header row (MusicViewHolderController): icon ic_headset_24dp, title audio_files_title "Audio files", size = audioBytes, click ACTION_VIEW on
+    filter FILTER_AUDIO. Header row (MusicViewHolderController): icon ic_headset_24dp, title audio_files_title "Audio files", size = audioBytes (Formatter.formatFileSize), click ACTION_VIEW on
     DocumentsContract.buildRootUri("com.android.providers.media.documents", "audio_root") with type DocumentsContract.Root.MIME_TYPE_ITEM, CATEGORY_DEFAULT.
   - Games -> ManageApplications title game_storage_settings "Games", class Settings.GamesStorageActivity (LIST_TYPE_GAMES, FILTER_GAMES).
   - Movie & TV apps -> ManageApplications title storage_movies_tv, class Settings.MoviesStorageActivity (LIST_TYPE_MOVIES, FILTER_MOVIES).
