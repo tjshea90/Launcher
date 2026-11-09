@@ -2,6 +2,7 @@ package com.tj.launcher;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.text.NumberFormat;
 import java.util.Locale;
