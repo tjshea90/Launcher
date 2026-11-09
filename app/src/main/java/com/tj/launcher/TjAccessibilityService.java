@@ -2300,17 +2300,23 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
-    private void hidePencil() {
+    private void hidePencil(String why) {
         if (penView == null || !penShown) return;
+        handler.removeCallbacks(penWatch);
         try {
             penView.setAlpha(0f); penShown = false;
             ((WindowManager) getSystemService(WINDOW_SERVICE)).updateViewLayout(penView, penParams(penAt, false));
-            Log.i(TAG, "PENCIL cover hidden (kept warm)");
+            long age = penConfirmedMs > 0 ? android.os.SystemClock.uptimeMillis() - penConfirmedMs : -1;
+            Log.i(TAG, "PENCIL cover hidden (kept warm; " + why + (age >= 0 ? ", the pencil was last seen " + age + " ms ago" : "") + ")");
+            // BN4: for the tablet report: on the lock screen a hide that came late (the white box) shows in the lock log with its age (one line a second at most)
+            long up = android.os.SystemClock.uptimeMillis();
+            if (age >= 150 && up - penLateLoggedMs > 1000 && keyguardLockedFast()) { penLateLoggedMs = up; LockLog.add(getApplicationContext(), "PENCIL", "cover hidden " + age + " ms after the pencil was last seen (" + why + ")"); }
         } catch (Throwable t) { removePencil(); }
     }
 
     private void removePencil() {
         dropPenNode();
+        handler.removeCallbacks(penWatch);
         if (penView == null) return;
         try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(penView); } catch (Throwable ignored) { }
         penView = null; penAt.setEmpty(); penShown = false;
