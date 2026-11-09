@@ -53,20 +53,18 @@ final class SsStorageRules {
 
     /** The rows in the stock order: storage_dashboard_fragment.xml android:order 2, 3, 4, 5, 6, 7 and 100 (the order the screenshot of Tj's tablet shows). */
     enum Row {
-        PHOTOS("pref_photos_videos", "Photos & videos"),   // storage_photos_videos
-        MUSIC("pref_music_audio", "Music & audio"),        // storage_music_audio
-        GAMES("pref_games", "Games"),                       // storage_games
-        MOVIES("pref_movies", "Movie & TV apps"),           // storage_movies_tv
-        OTHER_APPS("pref_other_apps", "Other apps"),        // storage_other_apps
-        FILES("pref_files", "Files"),                       // storage_files
-        SYSTEM("pref_system", "System");                    // storage_detail_system
+        PHOTOS("Photos & videos"),    // pref_photos_videos, storage_photos_videos
+        MUSIC("Music & audio"),       // pref_music_audio, storage_music_audio
+        GAMES("Games"),               // pref_games, storage_games
+        MOVIES("Movie & TV apps"),    // pref_movies, storage_movies_tv
+        OTHER_APPS("Other apps"),     // pref_other_apps, storage_other_apps
+        FILES("Files"),               // pref_files, storage_files
+        SYSTEM("System");             // pref_system, storage_detail_system
 
-        /** The AOSP preference key (for logs and tests). */
-        final String key;
         /** The title of the row. */
         final String label;
 
-        Row(String key, String label) { this.key = key; this.label = label; }
+        Row(String label) { this.label = label; }
     }
 
     /** "No number": a row whose inputs could not be read (never 0, never a guess). A real size may legitimately be negative in odd data, so the marker is not -1. */
