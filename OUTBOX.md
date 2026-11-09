@@ -1970,3 +1970,7 @@
 ## 2026-11-09T23:33:41Z
 > Helper started; it reads the six runs now.
 <!-- sha:12776b2c3660 -->
+
+## 2026-11-09T23:37:55Z
+> Six confirmation runs of `base` are going; I read them at about 23:51 UTC. If all six pass the breaker group, I dispatch the v0.9.0 release build.
+<!-- sha:64e86f79c126 -->
