@@ -39,6 +39,8 @@ heal(){ local n; n=$(command adb logcat -d -b all 2>/dev/null | grep -c "Fatal s
   if [ "${n:-0}" -gt "$CRASHSEEN" ]; then CRASHSEEN=$n
     echo "INFO  NATIVE CRASH #$n of $PKG inside an Android system library (not a Java exception); re-asserting the default home and the helper so the rest of the run is meaningful. Checks that FAIL within ~15 s after this line are caused by the crash." | tee -a "$OUT/results.txt"
     command adb logcat -d -b all 2>/dev/null | grep -A14 "Fatal signal.*($PKG)" | tail -30 > "$OUT/native-crash-$n.txt"
+    # the first frames in the RESULTS block itself (run 462: the saved file is only in the artifact, so a crash could not be told apart from a product bug without downloading it)
+    echo "INFO  NATIVE CRASH #$n detail: $(grep -m1 'Fatal signal' "$OUT/native-crash-$n.txt" | sed 's/^.*Fatal signal/Fatal signal/' | cut -c1-150) | $(grep -m3 -oE '#0[0-9] +pc [0-9a-f]+ +[^ ]+' "$OUT/native-crash-$n.txt" | tr '\n' ';' | cut -c1-200)" | tee -a "$OUT/results.txt"
     adb shell cmd package set-home-activity "$PKG/com.tj.launcher.RouterActivity" >/dev/null 2>&1
     declare -F rebind >/dev/null && rebind
   fi; }
