@@ -1913,3 +1913,7 @@
 >
 > The gate runs #463 and #464 are still going, with a timer set for about 18:47 UTC. After that I bump to v0.9.0 and ship.
 <!-- sha:753db3631a80 -->
+
+## 2026-11-09T18:51:53Z
+> Both gate runs (#463 and #464) are in progress again after the GitHub-side failure. Run #465 (`rg`) already passed. The timer is set for 19:22:30 UTC. Then I read the results, rerun anything failing on its own, bump to v0.9.0 and ship.
+<!-- sha:32fa62fefdb1 -->
