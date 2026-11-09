@@ -236,8 +236,8 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   paddingStart/End = listPreferredItemPaddingStart/End (16dp; ignored by onDraw, which uses getWidth()/getHeight()). View spans x 447-566.
 - Title text = StorageSummaryDonutPreferenceController.convertUsedBytesToFormattedText: Formatter.formatBytes(res, usedBytes, flags 0) (hidden) -> BytesResult
   value/units, expanded into storage_size_large_alternate = "^1<small> <font size="20">^2</font></small>" (number, then a space inside <small> = RelativeSizeSpan 0.8, then
-  the unit inside <font size="20"> = AbsoluteSizeSpan(20, dip=true) [mem], i.e. 20 dip = 21 px NOT scaled by font scale; the nested RelativeSizeSpan 0.8 may be overridden
-  by it depending on span order: measure the "GB" glyph height on the tablet). Example [tablet] "30.28" + "GB".
+  the unit inside <font size="20"> = AbsoluteSizeSpan(20, dip=true) [mem], i.e. 20 dip = 21.25 px NOT scaled by font scale; the enclosing RelativeSizeSpan 0.8 may be
+  overridden by it depending on span order: measure the "GB" glyph height on the tablet). Example [tablet] "30.28" + "GB".
 - Summary text = getString(storage_volume_total) = "Used of %1$s" with Formatter.formatShortFileSize(ctx, totalBytes) (public API, SI, shorter) = "Used of 32 GB" [tablet].
 - DonutView (settings10/src/com/android/settings/widget/DonutView.java): arc rect = (stroke, stroke, width-stroke, height-stroke) with stroke storage_donut_thickness = 4dp
   (settings10/res/values/dimens.xml l.319; 4.25 px as float), BUTT caps, STROKE style, antialias; background circle: 360 degrees from -90 (12 o'clock); filled arc:
