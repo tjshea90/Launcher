@@ -1950,3 +1950,7 @@
 ## 2026-11-09T22:55:13Z
 > Everything for v0.9.0 is in place except the emulator proof. The local checks and the three reruns finish around 23:05 UTC.
 <!-- sha:3087c62fc780 -->
+
+## 2026-11-09T23:05:57Z
+> Local checks passed and v0.9.0 is pushed. All three emulator reruns failed again, so I'm reading what each failure was.
+<!-- sha:1fc315e03b12 -->
