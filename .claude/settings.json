@@ -37,6 +37,16 @@
             "timeout": 60
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo .)}/tools/posttool.sh\" 2>/dev/null || true",
+            "timeout": 20
+          }
+        ]
       }
     ],
     "Stop": [

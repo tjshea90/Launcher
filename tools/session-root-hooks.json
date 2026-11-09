@@ -2,30 +2,80 @@
   "_comment": "TEMPLATE for Launcher - install with `bash tools/install-hooks.sh`, never copy by hand. It substitutes __LAUNCHER_TOOLS__ for this repo's absolute tools/ path and MERGES these entries into the session root's settings file (entries tagged 'launcher-checkpoint-hooks' are the only ones ever replaced; other repos' hooks, permissions and env survive). Scoped to THIS repo only - never a glob over sibling directories. Claude Code on the web does not load hooks from a repo's own .claude/settings.json when the repo sits under a shared session root, which is why the installer targets the root.",
   "hooks": {
     "SessionStart": [
-      { "hooks": [ { "type": "command",
-        "command": "bash \"__LAUNCHER_TOOLS__/resume.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
-        "timeout": 120, "statusMessage": "Launcher: reading where the last session stopped..." } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/resume.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 120,
+            "statusMessage": "Launcher: reading where the last session stopped..."
+          }
+        ]
+      }
     ],
     "UserPromptSubmit": [
-      { "hooks": [ { "type": "command",
-        "command": "bash \"__LAUNCHER_TOOLS__/capture_inbox.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
-        "timeout": 30, "statusMessage": "Launcher: saving your message before starting..." } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/capture_inbox.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 30,
+            "statusMessage": "Launcher: saving your message before starting..."
+          }
+        ]
+      }
     ],
     "PostToolUse": [
-      { "matcher": "Edit|Write|NotebookEdit|Bash",
-        "hooks": [ { "type": "command",
-        "command": "bash \"__LAUNCHER_TOOLS__/autosave.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
-        "timeout": 60, "statusMessage": "Launcher: checkpointing to GitHub..." } ] }
+      {
+        "matcher": "Edit|Write|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/autosave.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 60,
+            "statusMessage": "Launcher: checkpointing to GitHub..."
+          }
+        ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/posttool.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 20,
+            "statusMessage": "Launcher: watching the context size..."
+          }
+        ]
+      }
     ],
     "Stop": [
-      { "hooks": [ { "type": "command",
-        "command": "bash \"__LAUNCHER_TOOLS__/autosave.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
-        "timeout": 60, "statusMessage": "Launcher: final checkpoint..." } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/autosave.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 60,
+            "statusMessage": "Launcher: final checkpoint..."
+          }
+        ]
+      }
     ],
     "PreCompact": [
-      { "hooks": [ { "type": "command",
-        "command": "bash \"__LAUNCHER_TOOLS__/toobig.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
-        "timeout": 60, "statusMessage": "Launcher: session is large - saving before compaction..." } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"__LAUNCHER_TOOLS__/toobig.sh\" 2>/dev/null || true  # launcher-checkpoint-hooks",
+            "timeout": 60,
+            "statusMessage": "Launcher: session is large - saving before compaction..."
+          }
+        ]
+      }
     ]
+  },
+  "env": {
+    "HANDOFF_STALE_SECONDS": "315360000",
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "40"
   }
 }
