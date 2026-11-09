@@ -1742,3 +1742,51 @@
 > - **Your tablet checks:** v0.8.9, v0.8.11 and v0.8.12.
 > - **`session-handoff` plugin:** disabling it is still open.
 <!-- sha:ee346ad2503f -->
+
+## 2026-11-09T04:35:19Z
+> `ship.sh` passed all its local checks for v0.8.13 (code 38): the handoff self-test, the version check and the full unit suite. It pushed, and the branch and `origin/main` are both at 3ea693a. The Release itself is not built yet.
+>
+> The one gate item left is `pt` alone on `main` (run 450), expected around 04:46 UTC. When it's green I'll have GitHub build and sign v0.8.13, confirm the Release exists and send you the link. If it fails only the same timing checks as before, I'll compare against v0.8.12 first and won't ship on a guess.
+>
+> Still open from your messages:
+> - **Settings look-alike app (BN1):** starts once v0.8.13 is built.
+> - **Your tablet checks:** v0.8.9, v0.8.11 and v0.8.12.
+> - **`session-handoff` plugin:** disabling it is still open.
+>
+> 📌 **Chat checkpoint: 🔴 Red**
+>
+> **Goal:** Ship v0.8.13 (BN2 first-press patch and menu flash, BN3 lock-patch flash, BN4 white box) once the gate is green, then build the Settings look-alike app (BN1).
+>
+> **Decisions made:**
+> - Nothing ships red (Tj, 03:52Z: "Ship v0.8.13 when the gate is green").
+> - BN1 code starts only after v0.8.13 is built.
+> - `pt` and `rg` always run alone in the gate.
+>
+> **Changed / rejected:**
+> - Chaining `pt` with other sections → rejected (same 4 FAILs as the v0.8.4 gate).
+> - `fp` leaving the emulator locked → scenario fixed.
+>
+> **Key details:**
+> - Branch `ccr-5ef85f7a-ngtgj1` = `main` = 3ea693a; version 0.8.13, code 38.
+> - Green runs: 445 `last`, 447 `e1,n,ac`, 448 `hp`, 449 `fp,last`.
+> - 444 `pt` was cancelled (emulator hung).
+> - Pending: 450 `pt` on `main`, id 42562320225.
+> - BN1 plan: `research/SETTINGS_BUILD_PLAN_2026-11-09.md`.
+>
+> **Done so far:** BN2–BN4 code, review and tests; gate triage; `gate.sh` solo rule; scenario fix; `ship.sh` passed and pushed.
+>
+> **Open / next steps:**
+> 1. Read run 450.
+> 2. Dispatch `android.yml` with `full_build=true` on `main`.
+> 3. Confirm the Release with `get_release_by_tag v0.8.13`.
+> 4. Run `record-release`.
+> 5. Send Tj the Release link.
+> 6. Tick the BN2–BN4 boxes.
+> 7. Start BN1 M0.
+>
+> **Rules to remember:** final text last with no tool call after it; Tj's photos never go into the repo; no push triggers on workflows; GitHub MCP tools only; `ckpt` after every step; save usage; refer to Tj by name; don't decide OPEN items for Tj.
+>
+> ⚠️ **Health:** Red by exchange count. Compaction at about 392K tokens plus `CHECKPOINT.md` (updated after every step) carry the next steps, so I'm carrying on here and not restarting. Tell me if you'd rather start fresh and I'll run `/amhandoff`.
+>
+> 💡 The code word is off in this chat. Type `/amcodeword` and I'll start every reply with "Yes Boss!", so you'll notice if I start losing track.
+<!-- sha:e382ea44e190 -->
