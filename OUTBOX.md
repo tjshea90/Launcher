@@ -1437,3 +1437,7 @@
 >
 > I'll check both when they finish. If `uf` is green, I'll dispatch the signed build.
 <!-- sha:f2f262ca6cc8 -->
+
+## 2026-11-09T01:48:31Z
+> Checkpoint 751 is saved with everything a cold resume needs: the build run id, the verbatim release note, and the order of the next steps. The signed v0.8.12 build is running (run #39, id 42547336189). I'll check it at about 01:57 UTC and then confirm the Release, record it, and send you the link.
+<!-- sha:dea56d334384 -->
