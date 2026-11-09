@@ -1406,8 +1406,11 @@ public class TjAccessibilityService extends AccessibilityService {
         long up = android.os.SystemClock.uptimeMillis();
         if (up - kgAt < 250) return kgVal;
         kgVal = keyguardLocked(); kgAt = up;
+        if (kgVal) lastKeyguardUpMs = up;
         return kgVal;
     }
+    /** BN2: the last time the keyguard was seen up (any caller of {@link #keyguardLockedFast}, and USER_PRESENT): a SystemUI window event soon after it is the keyguard going away, not the shade (HomePatchRules.foreignTreatment). */
+    private volatile long lastKeyguardUpMs = 0;
 
     private long lastPadKeyAt = 0;
 
