@@ -336,8 +336,8 @@ final class SsPagesSound {
         }
 
         // ------------------------------------------------------------------ small helpers
+        /** BN1l: Tj wants the page to look like the stock one and never to say "can't": every note is silent now (the call sites stay, so a note can come back with one line). */
         private void toast(String text) {
-            Toast.makeText(a, text, Toast.LENGTH_SHORT).show();
         }
 
         /** At most one toast every few seconds: a refused drag would otherwise fire it on every step. */
