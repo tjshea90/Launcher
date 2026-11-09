@@ -487,6 +487,15 @@ final class SsPagesStorage {
             final Context app = a.getApplicationContext();
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
+                    try {
+                        read();
+                    } catch (Throwable e) {
+                        // a diagnostics page must never take the launcher down: the page keeps what it shows, the report says what happened
+                        try { Features.setStringAsync(app, STATUS_KEY, "worker failed: " + e); } catch (Throwable ignored) { }
+                    }
+                }
+
+                private void read() {
                     final long t0 = SystemClock.elapsedRealtime();
                     final long[] vol = volume(app);
                     final long[] shown = previous == null ? null : previous.rows;
