@@ -1421,3 +1421,7 @@
 ## 2026-11-09T01:31:08Z
 > This notice is genuine: the loop itself ran in the background. Before reading any logs I'll check that both runs have actually finished, since a "no failed jobs" answer from a still-running job would be misleading.
 <!-- sha:3ec917e06114 -->
+
+## 2026-11-09T01:32:37Z
+> v0.8.12 is ready to ship: versionCode 37 is above the last release's 36, and BUILDLOG has no v0.8.12 line yet. Run #433 is due within a minute or two, and I'll ship as soon as it reports green.
+<!-- sha:2da790631db3 -->
