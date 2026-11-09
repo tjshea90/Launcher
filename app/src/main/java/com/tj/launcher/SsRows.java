@@ -72,6 +72,38 @@ final class SsRows {
         return r;
     }
 
+    /** A row with a value at the right edge (AOSP preference_app + preference_widget_summary: 14 sp, secondary colour, text end 16 dp from the screen edge); {@code value} is the caller's TextView, filled in later. */
+    static LinearLayout valueRow(Context c, CharSequence title, TextView value) {
+        LinearLayout r = row(c, null, title, null, null);
+        value.setTextAppearance(android.R.style.TextAppearance_DeviceDefault_Small);
+        value.setTextColor(themeColor(c, android.R.attr.textColorSecondary, Color.GRAY));
+        value.setGravity(Gravity.CENTER_VERTICAL | Gravity.END);
+        value.setMinWidth(dp(c, 64));
+        r.addView(value, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        return r;
+    }
+
+    /** The footer note of a page (AOSP preference_footer: icon frame 56 dp wide with a 24 dp info icon at its top, 14 sp secondary text, at least 72 dp high, not clickable). */
+    static LinearLayout footer(Context c, CharSequence text) {
+        LinearLayout r = new LinearLayout(c);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        r.setPadding(dp(c, 16), 0, dp(c, 16), 0);
+        r.setMinimumHeight(dp(c, 72));
+        FrameLayout frame = new FrameLayout(c);
+        frame.setPadding(0, dp(c, 16), dp(c, 12), dp(c, 4));
+        ImageView ic = new ImageView(c);
+        ic.setImageResource(R.drawable.ss_ic_info_outline);
+        frame.addView(ic, new FrameLayout.LayoutParams(dp(c, 24), dp(c, 24), Gravity.START | Gravity.TOP));
+        r.addView(frame, new LinearLayout.LayoutParams(dp(c, 56), ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView t = new TextView(c);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        t.setTextColor(themeColor(c, android.R.attr.textColorSecondary, Color.GRAY));
+        t.setPadding(0, dp(c, 16), 0, dp(c, 16));
+        t.setText(text);
+        r.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        return r;
+    }
+
     /** The coloured square of a home-page row: 36 dp, corner radius 2.9 dp, a white 24 dp glyph inset 6 dp (AOSP dashboard_tile_image_size / _foreground_image_size / _inset). */
     static View tile(Context c, int color, int glyphRes) {
         FrameLayout f = new FrameLayout(c);
