@@ -1276,3 +1276,8 @@ Ship v0.8.13 when the gate is green
 ```
 Start the settings look alike app, build it, pause if you have any questions for me 
 ```
+
+## 2026-11-09T06:28:48Z
+```
+The settings app does not need to work perfectly ,it only needs to look identical . For any settings that are hard to build or won't function , don't build it. Simply make it look like the setting is there
+```
