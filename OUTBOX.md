@@ -1429,3 +1429,11 @@
 ## 2026-11-09T01:34:48Z
 > Run #433 is still going. The scenario step has been running since 01:21:30, and it covers seven sections plus an emulator boot, so this is normal. The next check is at 01:39:30. I'll ship v0.8.12 once it reports green. If it is still running at about 01:47, I'll treat it as the CI hang (BM1h) and cancel it.
 <!-- sha:d6c2ea386de9 -->
+
+## 2026-11-09T01:42:20Z
+> Two things are running in the background:
+> - `ship.sh` is running the local release gate for v0.8.12 (unit suite and lint).
+> - `uf` solo on `main` is running in CI as run #437 (id 42546847796), to confirm that the UF1 failures after the native crash were the known flake.
+>
+> I'll check both when they finish. If `uf` is green, I'll dispatch the signed build.
+<!-- sha:f2f262ca6cc8 -->
