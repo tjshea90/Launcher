@@ -223,7 +223,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (patchView == null || !patchLockMode) return;
             if (patchHomeMode) { patchShow(overlayShown); scheduleHomeBuild(); return; }   // BI1: nothing of the lock screen's calibration applies
             if (patchShotBmp == null && PatchShot.has(TjAccessibilityService.this, rotation(), shotSig())) loadStoredShot();
-            patchShow(overlayShown);
+            patchShowCause = "restRecheck"; patchShow(overlayShown);
             maybeAutoCalibrate("the patch window settled");   // AW5
             restInfo("restRecheck rest=" + patchResting + " menuOpen=" + overlayShown);   // the diagnostic is written here (twice per new window), not on every menu open / close
         } catch (Throwable t) { Log.e(TAG, "rest recheck failed", t); }
