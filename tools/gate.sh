@@ -122,9 +122,17 @@ for t in chosen:
             for other in (by_name[a], by_name[b]):
                 if other["name"] not in used: unit.append(other); used.add(other["name"])
     units.append(unit)
-g = [{"w": 0, "s": []} for _ in range(min(groups, len(units)) or 1)]
+# SOLO sections always get a run of their own (2026-11-09, gate of v0.8.13: `pt` after x1,v failed with the SAME four checks as in the v0.8.4 gate, BC2 closetap + three PB, because the emulator's stock scrim
+# was 0.75 when phase C measured it and 0.80 again in phase D; `pt` alone passes; `rg` is order-sensitive too, TASKS AT2). Chaining them cost a rerun every time.
+SOLO = {"pt", "rg"}
+solo_units = [u for u in units if all(t["name"] in SOLO for t in u)]
+units = [u for u in units if u not in solo_units]
+g = [{"w": 0, "s": []} for _ in range(min(max(1, groups - len(solo_units)), len(units)) if units else 0)]
 for unit in sorted(units, key=lambda u: -sum(t["wait"] for t in u)):
     lo = min(g, key=lambda x: x["w"]); lo["s"].extend(unit); lo["w"] += sum(t["wait"] for t in unit)
+for unit in solo_units:
+    g.append({"w": sum(t["wait"] for t in unit), "s": list(unit)})
+g = g or [{"w": 0, "s": []}]
 print(f"\nSPLIT into {len(g)} parallel run(s) (wall time about 3 min boot + 2.5 x waits):")
 tot = 0
 for k, x in enumerate(sorted(g, key=lambda x: -x["w"]), 1):
