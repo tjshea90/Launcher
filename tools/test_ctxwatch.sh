@@ -85,6 +85,20 @@ check "sidechain + synthetic entries with 900K are ignored (main thread is 100K)
 # a compaction in the transcript is logged (proof that compaction worked)
 mk 100000 0 boundary; hook >/dev/null
 check "a compact_boundary entry is logged as COMPACTION SEEN with its size" 'grep -q "COMPACTION SEEN trigger=auto pre=391000" "$R/.git/ctxwatch.log"'
+# a transcript that lags: the compaction marker is the newest thing in it, the last model call (440K) is from before it
+rm -f "$R/.git/ctxwatch.state" "$R/.git/ctxwatch.log"
+mk 440000 0 stale;               O="$(hook)"
+check "compaction newer than the last model call (stale 440K call): silent, no false alarm" '[ -z "$O" ]'
+check "... and it is logged as a fresh compaction" 'grep -q "COMPACTION SEEN trigger=auto pre=440000" "$R/.git/ctxwatch.log"'
+O="$(cd "$R" && env CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=40 python3 -I "$D/tools/ctxwatch.py" --report --transcript "$T/t.jsonl")"
+check "--report says the session was just compacted (estimate from what follows the marker, not 440K)" 'printf "%s" "$O" | grep -q "just compacted" && printf "%s" "$O" | grep -q "auto at 2026-11-09T03:00:00Z (was 440000)" && ! printf "%s" "$O" | grep -q "~44[0-9]K"'
+# the marker is further back than the 400 KB window (a compaction re-injects hundreds of KB): found when the context falls, and by --report
+rm -f "$R/.git/ctxwatch.state" "$R/.git/ctxwatch.log"
+mk 400000; hook >/dev/null
+mk 120000 0 farboundary; hook >/dev/null
+check "context fell 400K -> 120K, marker 600 KB back: COMPACTION SEEN is still logged (look-back beyond the window)" 'grep -q "COMPACTION SEEN trigger=auto pre=392147" "$R/.git/ctxwatch.log"'
+O="$(cd "$R" && env CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=40 python3 -I "$D/tools/ctxwatch.py" --report --transcript "$T/t.jsonl")"
+check "--report finds a marker beyond the window" 'printf "%s" "$O" | grep -q "auto at 2026-11-09T02:00:00Z (was 392147)"'
 # a smaller auto-compact window moves T (500,000 x 40 % = 200,000)
 rm -f "$R/.git/ctxwatch.state"
 mk 250000;                       O="$(hook CLAUDE_CODE_AUTO_COMPACT_WINDOW=500000)"
