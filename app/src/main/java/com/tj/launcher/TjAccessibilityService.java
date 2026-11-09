@@ -3789,9 +3789,10 @@ public class TjAccessibilityService extends AccessibilityService {
             if (patchView == null || !patchLockMode || overlayShown || !patchResting || pinHide) return;
             long now = android.os.SystemClock.uptimeMillis();
             lastTouchDownMs = now;
-            touchAwayUntilMs = now + TOUCH_AWAY_MS;
+            final long away = patchHomeMode ? TOUCH_AWAY_MS : LOCK_TOUCH_AWAY_MS;   // BN3: the lock screen holds the patch away longer (see LOCK_TOUCH_AWAY_MS)
+            touchAwayUntilMs = now + away;
             patchView.setAlpha(0f);                          // first: gone in the next frame (patchResting is left alone: the patch is still restable, so the stock dialog's own event brings it back at once, and the PIN-pad logic keeps its log lines)
-            handler.removeCallbacks(touchBack); handler.postDelayed(touchBack, TOUCH_AWAY_MS + 20);
+            handler.removeCallbacks(touchBack); handler.postDelayed(touchBack, away + 20);
             if (now - lastTouchLogMs > 3000) { lastTouchLogMs = now; Log.i(TAG, "PATCH touch hide (a finger went down) t=" + now); logPatch("resting patch hidden at the finger's DOWN"); }
         } catch (Throwable t) { Log.e(TAG, "touch hide failed", t); }
     }
