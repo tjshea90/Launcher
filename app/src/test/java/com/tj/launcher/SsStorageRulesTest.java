@@ -307,6 +307,5 @@ public class SsStorageRulesTest {
         assertFalse(SsStorageRules.isKnown(SsStorageRules.UNKNOWN));
         assertTrue(SsStorageRules.isKnown(0));
         assertTrue(SsStorageRules.isKnown(-1));
-        assertArrayEquals(new long[0], new long[0]);
     }
 }
