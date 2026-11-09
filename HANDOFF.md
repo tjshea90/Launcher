@@ -147,6 +147,9 @@ Tj tried v0.8.1: "The power menu is 99% perfect. The timing is perfect, but the 
   `bash tools/record-release.sh vX.Y.Z "note"` (writes `BUILDLOG.md`; it is guarded — run it BEFORE bumping the version again).
   Give Tj the Release URL as **plain text on its own line** (never in a code block): `https://github.com/tjshea90/Launcher/releases/tag/vX.Y.Z`.
 - Never add a `push:` trigger to any workflow (Actions minutes are scarce; `test_handoff.sh` fails if you do). Dispatch/tag only.
+- **Rung 5 (auto-resume, Tj 2026-11-09, TASKS BO1):** the ladder keeps the work, a scheduled task keeps the TIME. 2026-11-09 07:20 UTC the 5-hour cap killed the session and nothing woke it for
+  10 h. Keep ONE heartbeat (`create_trigger`, cron `0 */2 * * *`, bound to the session; id in every ckpt "next"; check with `get_trigger`, never `list_triggers`) while a long job runs, and on a
+  cut-off notice that names a reset time call `send_later` at reset + 2 min. A wake needs usage and cannot restart a deleted session. Full rule: CLAUDE.md "Auto-resume after a cut-off".
 - Version lives in `app/build.gradle.kts` (`versionCode`, `versionName`). Last shipped: see `BUILDLOG.md`.
 
 ## 3. The test system (this is where most time goes — read before testing)
