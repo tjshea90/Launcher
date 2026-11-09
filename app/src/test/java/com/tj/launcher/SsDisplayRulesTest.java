@@ -48,10 +48,14 @@ public class SsDisplayRulesTest {
         assertEquals(1, SsDisplayRules.fontIndex(1.2f));      // the tablet's own scale is "Default"
         assertEquals(1, SsDisplayRules.fontIndex(1.1999817f));
         assertEquals(0, SsDisplayRules.fontIndex(1.0f));
-        assertEquals(0, SsDisplayRules.fontIndex(1.1249f));
-        assertEquals(1, SsDisplayRules.fontIndex(1.125f));    // exactly the midpoint of the first two steps: the upper step
-        assertEquals(2, SsDisplayRules.fontIndex(1.35f));
-        assertEquals(3, SsDisplayRules.fontIndex(1.5f));
+        assertEquals(0, SsDisplayRules.fontIndex(1.09f));     // below the midpoint 1.1 of the first two steps
+        assertEquals(1, SsDisplayRules.fontIndex(1.11f));
+        assertEquals(1, SsDisplayRules.fontIndex(1.24f));     // below the midpoint 1.25 of Default and Large
+        assertEquals(2, SsDisplayRules.fontIndex(1.26f));
+        assertEquals(2, SsDisplayRules.fontIndex(1.3f));
+        assertEquals(2, SsDisplayRules.fontIndex(1.34f));     // below the midpoint 1.35 of Large and Largest
+        assertEquals(3, SsDisplayRules.fontIndex(1.36f));
+        assertEquals(3, SsDisplayRules.fontIndex(1.4f));
         assertEquals(3, SsDisplayRules.fontIndex(2.0f));
         assertEquals("Default", SsDisplayRules.FONT_LABELS[SsDisplayRules.fontIndex(1.2f)]);
     }
