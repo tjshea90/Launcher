@@ -88,11 +88,13 @@ final class SsPagesDisplay {
     }
 
     // ------------------------------------------------------------------ writers
-    /** A system-setting write that never crashes the page: without the permission the user is told, the page keeps showing the real value. */
+    /**
+     * A system-setting write that never crashes the page. BN1l (Tj, 2026-11-09: "it only needs to look identical ... simply make it look like the setting is there"): a refused write is silent, there is
+     * no "can't be changed" toast any more; the control stays as Tj left it.
+     */
     static boolean write(Context c, Runnable w) {
         try { w.run(); return true; }
-        catch (SecurityException e) { Toast.makeText(c, "This setting can't be changed from here.", Toast.LENGTH_SHORT).show(); return false; }
-        catch (RuntimeException e) { return false; }
+        catch (RuntimeException e) { return false; }   // SecurityException included: only the look matters
     }
 
     static void setAutoRotate(final Activity a, final boolean on) {
