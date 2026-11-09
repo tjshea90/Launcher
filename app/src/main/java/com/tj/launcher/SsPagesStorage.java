@@ -507,8 +507,10 @@ final class SsPagesStorage {
                     final Scan s = scan(app, t0 + SCAN_DEADLINE_MS, new Cancel() { @Override public boolean now() { return gen != generation; } });
                     final long used = vol[0] > 0 && vol[1] >= 0 ? SsStorageRules.used(vol[0], vol[1]) : SsStorageRules.UNKNOWN;
                     final long[] sizes = SsStorageRules.rowSizes(s.apps, s.ext, used);
-                    final Snapshot full = new Snapshot(vol[0], vol[1], sizes);
-                    if (s.apps != null && s.ext != null && vol[0] > 0 && gen == generation) {   // only a complete read is kept for the next start
+                    final boolean scanned = s.apps != null && s.ext != null;
+                    // review A #2: a scan that timed out or failed gives no numbers; the rows already on screen (the last complete read) must stay, not turn blank
+                    final Snapshot full = new Snapshot(vol[0], vol[1], SsStorageRules.keepOnScreen(scanned, shown, sizes));
+                    if (scanned && vol[0] > 0 && gen == generation) {   // only a complete read is kept for the next start
                         cached = full;
                         cachedAt = SystemClock.elapsedRealtime();
                     }
