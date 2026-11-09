@@ -74,11 +74,32 @@ public class SsDisplayRulesTest {
         assertArrayEquals(new int[] { 238, 280, 306, 332, 360 }, SsDisplayRules.densityStops(280, 720, 1280, 280).values);
     }
 
-    @Test public void anUnknownDensityIsACustomEntry() {
-        SsDisplayRules.Density d = SsDisplayRules.densityStops(170, 600, 1024, 180);
-        assertEquals(6, d.values.length);
-        assertEquals(180, d.values[5]);
-        assertEquals("Custom (180)", d.labels[5]);
-        assertEquals(5, d.index);
+    /** BN1m (Tj, 2026-11-09 07:16): his Display size screenshots never say "Custom"; a density that is no stop becomes the Default of a rebuilt table. */
+    @Test public void aDensityThatIsNoStopBecomesTheDefault() {
+        // the CI emulator: stable density 160, the run forces 170 -> exactly his tablet's table and "Default"
+        SsDisplayRules.Density d = SsDisplayRules.densityStops(160, 600, 1024, 170);
+        assertArrayEquals(new int[] { 144, 170, 198, 226, 254 }, d.values);
+        assertArrayEquals(new String[] { "Small", "Default", "Large", "Larger", "Largest" }, d.labels);
+        assertEquals(1, d.index);
+        // an odd value on his tablet: the table is built around it
+        SsDisplayRules.Density e = SsDisplayRules.densityStops(170, 600, 1024, 180);
+        assertEquals(5, e.values.length);
+        assertEquals(180, e.values[e.index]);
+        assertEquals("Default", e.labels[e.index]);
+        // a value that IS a stop of the stable density keeps the stable table (the normal case)
+        assertArrayEquals(new int[] { 136, 160, 186, 212, 240 }, SsDisplayRules.densityStops(160, 600, 1024, 160).values);
+        assertEquals(2, SsDisplayRules.densityStops(160, 600, 1024, 186).index);
+    }
+
+    @Test public void noDensityEverReadsCustomOrFallsOffTheTable() {
+        for (int stable : new int[] { 120, 160, 170, 213, 280, 420 }) {
+            for (int cur = 0; cur <= 640; cur += 3) {
+                SsDisplayRules.Density d = SsDisplayRules.densityStops(stable, 600, 1024, cur);
+                assertTrue("index in range (stable " + stable + ", current " + cur + ")", d.index >= 0 && d.index < d.values.length);
+                assertEquals(d.values.length, d.labels.length);
+                for (String l : d.labels) assertTrue(l, l.equals("Small") || l.equals("Default") || l.equals("Large") || l.equals("Larger") || l.equals("Largest"));
+                if (cur > 0) assertEquals("the selected stop is the current density (stable " + stable + ", current " + cur + ")", cur, d.values[d.index]);
+            }
+        }
     }
 }
