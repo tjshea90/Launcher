@@ -98,7 +98,7 @@ final class SsSoundRules {
 
     // ------------------------------------------------------------------ ringtone rows
     /** The first summary of a ringtone row: AOSP's summary_placeholder (a no-break space) keeps the two-line height until the title is known. */
-    static final String PLACEHOLDER = " ";
+    static final String PLACEHOLDER = "\u00a0";
     static final String NONE = "None";          // framework ringtone_silent (the first entry of the picker)
     static final String UNKNOWN = "Unknown";    // framework ringtone_unknown (what Ringtone.getTitle answers for a sound it cannot name)
 
