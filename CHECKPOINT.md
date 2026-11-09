@@ -1,13 +1,13 @@
-# CHECKPOINT 791 — read me first, then TASKS.md
+# CHECKPOINT 792 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T05:15:22Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `f74b715` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T05:31:35Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `c170e2a` (this checkpoint is the commit after it)
 
 ## Just done
-BN1: M1 ss run dispatched on main at 05:14Z (head f74b715; find id: list_workflow_runs emulator.yml branch main event workflow_dispatch perPage 1)
+BN1 M2 part 1: Battery page code (SsBatteryText/Stats/Icon, SsPagesBattery, Live wiring, heading padding 24/8) + 15 JVM tests green; next scenario steps SS13+ and CI ss shots
 
 ## Do this next
-read the M1 run: get_job_logs run_id failed_only tail_lines 70; shots: git fetch origin ci-shots; git show origin/ci-shots:ss-04-system.png (05-languages 06-about 07-legal 02-home) into the scratchpad and Read; fix; then M2: SsPages BATTERY (+BATTERY_USAGE) and DISPLAY per research/aosp10-settings/A_battery_display.md sec 2-4 (SsBatteryText, SsBrightness, SsTimeouts pure rules + JVM tests)
+add ss scenario steps: open Battery from home, check rows + overflow Battery usage + Solitaire row, shots ss-08-battery ss-09-usage; dispatch emulator.yml ss shots=true on main; compare with Tj 07401db6 (header y 86-283, icon x390-459); then Display page
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read the M1 run: get_job_logs run_id failed_only tail_lines 70; shots: git fetch
 
 ## Last ten checkpoints
 ```
+  87715f1 ckpt 791: BN1: M1 ss run dispatched on main at 05:14Z (head f74b715; find id: list_workf
   f74b715 ckpt 790: BN1 M1: pages System, Languages & input, About tablet, Legal (SsPagesSystem, S
   dbe1092 ckpt 789: BN1 M0: CI ss run #451 id 42565458939 in flight (head 2ba5988); build log rese
   2ba5988 ckpt 788: BN1 M0 code: SettingsSpoof (alias gating), SsPage/SsPageActivity/SsPages/SsRow
@@ -25,5 +26,7 @@ read the M1 run: get_job_logs run_id failed_only tail_lines 70; shots: git fetch
   3ea693a ckpt 784: gated v0.8.13 (code 38) and pushed it: the handoff self-test, the full unit su
   b466126 ckpt 783: 444 pt solo cancelled at 20 min (emulator died in phase H: 3 FAIL = PT timing 
   53ea1f0 ckpt 782: GATE v0.8.13: ALL GREEN except 444 still running: 445 last, 447 e1,n,ac (id 42
-  d6bdfd6 ckpt 781: 448 hp SOLO = SUCCESS (HP14 green). 449 fp,last (fixed scenario, head 4b0cbfc)
 ```
+
+(20 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
