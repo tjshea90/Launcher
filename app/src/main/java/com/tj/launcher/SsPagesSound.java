@@ -11,7 +11,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.ContentObserver;
 import android.graphics.drawable.Drawable;
-import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
@@ -33,19 +32,21 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.android.launcher3.R;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 
 /**
  * BN1: the Sound page, built from Tj's screenshot of the stock page (Android 10 Settings, SoundSettings / sound_settings.xml) minus what he removed (Do Not Disturb, "Shortcut to prevent ringing",
  * the words "and vibrations" of the last heading, "Sound enhancement"): four volume sliders (Media, Call, Alarm, Notification), a divider, "Default notification sound" and "Default alarm sound", a
  * divider, the heading OTHER SOUNDS and the switches Screen locking sounds, Charging sounds and vibration, Touch sounds. No search anywhere. Every control changes the real system value:
- * a slider calls AudioManager.setStreamVolume (a worker thread, like SeekBarVolumizer) and plays the stock release sample; a sound row opens the system picker through {@link SsRingtoneFragment};
- * a switch writes the same Settings key as AOSP's SettingPref. The page follows changes made elsewhere (hardware keys, other apps, adb) while it is visible: a receiver for the volume / mute /
- * ringer / Do Not Disturb broadcasts plus one observer on the system settings, both removed in stop(). Rules (pure Java, JVM-tested): {@link SsSoundRules}.
+ * a slider calls AudioManager.setStreamVolume on a worker thread and plays the stock release sample (the code follows the platform's SeekBarVolumizer, android-10.0.0_r47, line by line); a sound row opens
+ * the system picker through {@link SsRingtoneFragment}; a switch writes the same Settings key as AOSP's SettingPref. The page follows changes made elsewhere (hardware keys, other apps, adb) while it is
+ * visible: a receiver for the volume / mute / ringer / Do Not Disturb broadcasts plus one observer on the system settings, both removed in stop(). Rules (pure Java, JVM-tested): {@link SsSoundRules}.
  * The row layout is AOSP's preference_volume_slider.xml in code: row padding 16 dp, icon frame min 44 dp (icon 24 dp, end padding 12 dp, 4 dp above and below), a column with 8 dp above and below holding
- * the title (16 sp, 12 dp start padding) and a 48 dp SeekBar (12 dp start padding), which makes a 97 px row at 170 dpi, as measured on Tj's screenshot.
+ * the title (16 sp, 12 dp start padding) and a 48 dp SeekBar (12 dp start padding), which makes a 97 px row at 170 dpi, as measured on Tj's screenshot. Every system call is in a try / catch: a missing
+ * service or permission leaves a slider that cannot move, never a crash.
  */
 final class SsPagesSound {
     private SsPagesSound() {}
@@ -59,9 +60,11 @@ final class SsPagesSound {
 
     private static final int WRAP = ViewGroup.LayoutParams.WRAP_CONTENT, MATCH = ViewGroup.LayoutParams.MATCH_PARENT;
     private static final int FLAG_SHOW_UI_WARNINGS = 1 << 10;   // AudioManager.FLAG_SHOW_UI_WARNINGS (hidden): what SeekBarVolumizer passes to setStreamVolume
-    private static final int MSG_START_SAMPLE = 1, MSG_STOP_SAMPLE = 2, MSG_SYNC = 3, MSG_SET_VOLUME = 100;   // audio thread (MSG_SET_VOLUME + row index)
-    private static final int MSG_TITLES = 1;                                                                   // io thread
-    private static final long TOAST_GAP_MS = 3000;
+    // audio thread: MSG_SET_VOLUME + the row index is the volume write of that row (coalesced), the others are the sample machinery of SeekBarVolumizer
+    private static final int MSG_REQUEST_SAMPLE = 1, MSG_START_SAMPLE = 2, MSG_STOP_SAMPLE = 3, MSG_INIT_SAMPLE = 4, MSG_SYNC = 5, MSG_SET_VOLUME = 100;
+    private static final int MSG_TITLES = 1;   // io thread
+    private static final long TOAST_GAP_MS = 3000, REFRESH_DELAY_MS = 50;
+    private static final String CANT_CHANGE = "This setting can't be changed from here.", NEEDS_DND = "This needs Do Not Disturb access.";
 
     /** What a refresh reads once for all rows: the facts that are not per stream. */
     private static final class Facts {
@@ -69,6 +72,37 @@ final class SsPagesSound {
         int ringerMode = SsSoundRules.RINGER_NORMAL;
         int filter = SsSoundRules.FILTER_ALL;
         boolean allowAlarms = true, allowMedia = true, allowRinger = true;
+    }
+
+    /** One stream as the audio service reports it. */
+    private static final class Level {
+        int min, max, volume, lastAudible;
+        boolean muted;
+    }
+
+    /**
+     * Two hidden AudioManager methods the stock slider relies on; both are on the greylist (@UnsupportedAppUsage in Android 10), so reflection works for this app, and both fall back to the public
+     * twin (the current volume, the public ringer mode) when this build refuses them.
+     */
+    private static final class Hidden {
+        static final Method LAST_AUDIBLE = find("getLastAudibleStreamVolume", int.class);
+        static final Method RINGER_INTERNAL = find("getRingerModeInternal");
+
+        private static Method find(String name, Class<?>... args) {
+            try { return AudioManager.class.getMethod(name, args); } catch (Throwable t) { return null; }
+        }
+
+        /** The volume the stream had before it was muted (a stream silenced by Do Not Disturb reports 0 itself, and the stock slider shows this one). */
+        static int lastAudible(AudioManager am, int stream, int fallback) {
+            try { if (LAST_AUDIBLE != null) return (Integer) LAST_AUDIBLE.invoke(am, stream); } catch (Throwable ignored) { }
+            return fallback;
+        }
+
+        /** The ringer mode the user chose, which Do Not Disturb does not overwrite (the public getRingerMode answers silent while Do Not Disturb silences everything). */
+        static int ringerMode(AudioManager am) {
+            try { if (RINGER_INTERNAL != null) return (Integer) RINGER_INTERNAL.invoke(am); } catch (Throwable ignored) { }
+            return am.getRingerMode();
+        }
     }
 
     private static final class Page implements SsPages.Live {
@@ -83,7 +117,8 @@ final class SsPagesSound {
         private volatile Audio audio;
         private HandlerThread ioThread;
         private volatile Handler io;
-        private long lastToast;   // main thread only
+        private long lastToast;            // main thread only
+        private boolean refreshPending;    // main thread only
 
         Page(Activity a) {
             this.a = a;
@@ -134,16 +169,15 @@ final class SsPagesSound {
         @Override public void start() {
             if (started) return;
             started = true;
-            audio = new Audio();
+            Audio au = new Audio();
+            audio = au;
             ioThread = new HandlerThread("ss-sound-io");
             ioThread.start();
             io = new Handler(ioThread.getLooper(), m -> {
-                if (m.what == MSG_TITLES) {
-                    loadTitle(SsSoundRules.TYPE_NOTIFICATION, ringNotification);
-                    loadTitle(SsSoundRules.TYPE_ALARM, ringAlarm);
-                    return true;
-                }
-                return false;
+                if (m.what != MSG_TITLES) return false;
+                loadTitle(SsSoundRules.TYPE_NOTIFICATION, ringNotification);
+                loadTitle(SsSoundRules.TYPE_ALARM, ringAlarm);
+                return true;
             });
             IntentFilter filter = new IntentFilter();
             for (String action : SsSoundRules.WATCHED_ACTIONS) filter.addAction(action);
@@ -152,6 +186,7 @@ final class SsPagesSound {
             try { cr.registerContentObserver(Settings.System.CONTENT_URI, true, observer); } catch (Throwable ignored) { }   // every volume is stored per output device: watch the table, filter by name
             try { cr.registerContentObserver(Settings.Secure.getUriFor(SsSoundRules.KEY_CHARGING_SOUNDS), false, observer); } catch (Throwable ignored) { }
             refreshNow();
+            for (Row r : rows) au.prepareSample(r.index, r.stream);   // SeekBarVolumizer.start: MSG_INIT_SAMPLE, so the first release plays at once
             requestTitles();
         }
 
@@ -159,12 +194,13 @@ final class SsPagesSound {
             if (!started) return;
             started = false;
             main.removeCallbacks(refresh);
+            refreshPending = false;
             try { a.unregisterReceiver(receiver); } catch (Throwable ignored) { }
             try { a.getContentResolver().unregisterContentObserver(observer); } catch (Throwable ignored) { }
             for (Row r : rows) r.tracking = false;
             Audio au = audio;
             audio = null;
-            if (au != null) au.shutdown();   // stops a playing sample (SoundSettings.onPause), finishes the writes already queued
+            if (au != null) au.shutdown();   // stops a playing sample (SoundSettings.onPause), still applies the volume writes already queued
             HandlerThread t = ioThread;
             ioThread = null;
             io = null;
@@ -187,14 +223,24 @@ final class SsPagesSound {
             if ((kind & SsSoundRules.CHANGE_RINGTONE) != 0) requestTitles();
         }
 
+        /** Reads everything again now (also what the audio thread asks for after a write); it replaces a refresh that was still waiting. */
         private final Runnable refresh = new Runnable() {
-            @Override public void run() { if (started) refreshNow(); }
+            @Override public void run() {
+                main.removeCallbacks(this);
+                refreshPending = false;
+                if (started) refreshNow();
+            }
         };
 
-        /** Coalesces a burst of broadcasts / setting changes (a drag fires many) into one read. */
+        /**
+         * Coalesces a burst of broadcasts and setting changes (every step of a drag fires several) into one read, and does nothing while a finger is on a slider: the release asks for a read
+         * after the last write (MSG_SYNC), and the slider under the finger is not moved by it anyway.
+         */
         private void refreshSoon() {
-            main.removeCallbacks(refresh);
-            main.post(refresh);
+            if (!started || refreshPending) return;
+            for (Row r : rows) if (r.tracking) return;
+            refreshPending = true;
+            main.postDelayed(refresh, REFRESH_DELAY_MS);
         }
 
         private void refreshNow() {
@@ -206,18 +252,15 @@ final class SsPagesSound {
         private Facts facts() {
             Facts f = new Facts();
             try { if (am != null) f.scoOn = am.isBluetoothScoOn(); } catch (Throwable ignored) { }
-            try { if (am != null) f.ringerMode = am.getRingerMode(); } catch (Throwable ignored) { }
+            try { if (am != null) f.ringerMode = Hidden.ringerMode(am); } catch (Throwable ignored) { }
             try {
                 if (nm != null) {
                     f.filter = nm.getCurrentInterruptionFilter();
                     NotificationManager.Policy p = nm.getNotificationPolicy();
                     if (p != null) {
-                        int c = p.priorityCategories;
-                        f.allowAlarms = (c & NotificationManager.Policy.PRIORITY_CATEGORY_ALARMS) != 0;
-                        f.allowMedia = (c & NotificationManager.Policy.PRIORITY_CATEGORY_MEDIA) != 0;
-                        f.allowRinger = (c & (NotificationManager.Policy.PRIORITY_CATEGORY_REMINDERS | NotificationManager.Policy.PRIORITY_CATEGORY_EVENTS
-                                | NotificationManager.Policy.PRIORITY_CATEGORY_MESSAGES | NotificationManager.Policy.PRIORITY_CATEGORY_CALLS
-                                | NotificationManager.Policy.PRIORITY_CATEGORY_REPEAT_CALLERS)) != 0;   // ZenModeConfig.areAllPriorityOnlyNotificationZenSoundsMuted, negated [mem]
+                        f.allowAlarms = SsSoundRules.allowsAlarms(p.priorityCategories);
+                        f.allowMedia = SsSoundRules.allowsMedia(p.priorityCategories);
+                        f.allowRinger = SsSoundRules.allowsRinger(p.priorityCategories);
                     }
                 }
             } catch (Throwable ignored) { }
@@ -246,22 +289,20 @@ final class SsPagesSound {
                 ok = secure ? Settings.Secure.putInt(cr, key, value) : Settings.System.putInt(cr, key, value);
             } catch (RuntimeException ignored) { }   // SecurityException without WRITE_SETTINGS / WRITE_SECURE_SETTINGS
             if (!ok) {
-                toast("This setting can't be changed from here.");
+                toast(CANT_CHANGE);
                 syncSwitches();
             }
             return ok;
         }
 
         /**
-         * TouchSoundPreferenceController: after the setting, the sound effects are loaded (on) or unloaded (off) off the main thread. Both calls are hidden AudioManager methods, so by reflection and best
-         * effort: the setting alone already decides whether a touch plays a sound.
+         * TouchSoundPreferenceController: after the setting, the sound effects are loaded (on) or unloaded (off) off the main thread, so the next touch already has (or no longer holds) its sounds.
+         * The page may be gone by then, so this thread belongs to no lifecycle.
          */
         private void loadEffects(final boolean on) {
-            Handler h = io;
-            if (h == null) return;
-            h.post(() -> {
-                try { AudioManager.class.getMethod(on ? "loadSoundEffects" : "unloadSoundEffects").invoke(am); } catch (Throwable ignored) { }
-            });
+            new Thread(() -> {
+                try { if (on) am.loadSoundEffects(); else am.unloadSoundEffects(); } catch (Throwable ignored) { }
+            }, "ss-sound-effects").start();
         }
 
         // ------------------------------------------------------------------ sound rows
@@ -316,9 +357,9 @@ final class SsPagesSound {
             final LinearLayout view;
             final ImageView icon;
             final SeekBar bar;
-            int stream = -1, min = 0, max = 0;
+            int stream = -1;
             int iconKind = -1;
-            boolean tracking;
+            boolean tracking;   // main thread only: a finger is on the slider
 
             Row(int index) {
                 this.index = index;
@@ -327,7 +368,7 @@ final class SsPagesSound {
                 view.setOrientation(LinearLayout.HORIZONTAL);
                 view.setGravity(Gravity.CENTER_VERTICAL);
                 view.setPadding(dp(16), 0, dp(16), 0);   // listPreferredItemPaddingStart / End
-                view.setMinimumHeight(dp(48));           // listPreferredItemHeightSmall; the row itself is not clickable (SeekBarPreference: selectable = false)
+                view.setMinimumHeight(dp(48));           // listPreferredItemHeightSmall; the row itself is not clickable (android:clickable="false", SeekBarPreference is not selectable)
 
                 LinearLayout frame = new LinearLayout(a);   // icon_frame
                 frame.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -349,94 +390,86 @@ final class SsPagesSound {
                 t.setSingleLine(true);
                 t.setEllipsize(TextUtils.TruncateAt.MARQUEE);
                 t.setHorizontalFadingEdgeEnabled(true);
-                t.setPaddingRelative(dp(12), 0, dp(12), 0);   // the end padding is the (empty) widget_frame of the stock layout
+                t.setPaddingRelative(dp(12), 0, 0, 0);   // the stock widget_frame next to the title is GONE (the volume preference has no widget layout)
                 t.setText(title);
                 body.addView(t, new LinearLayout.LayoutParams(MATCH, WRAP));
 
                 bar = new SeekBar(a);   // the theme's seekBarStyle: Material track (2 dp), teal thumb, same as the stock row
                 bar.setPaddingRelative(dp(12), bar.getPaddingTop(), bar.getPaddingEnd(), bar.getPaddingBottom());
-                bar.setContentDescription(title);   // SeekBarPreference: the row title
+                bar.setContentDescription(title);
                 bar.setOnSeekBarChangeListener(this);
                 LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(MATCH, dp(48));
                 slp.gravity = Gravity.CENTER_VERTICAL;
                 body.addView(bar, slp);
             }
 
-            /** Reads the stream and shows it: range, position, glyph, enabled. Not the position while the finger is on the slider. */
+            /** Reads the stream and shows it: range, position, glyph, enabled. The position is left alone while the finger is on the slider. */
             void sync(Facts f) {
                 int s = SsSoundRules.streamFor(index, f.scoOn);
-                int[] st = read(s);
-                if (st == null && index == SsSoundRules.ROW_CALL && s != SsSoundRules.STREAM_VOICE_CALL) {   // AudioHelper.getMinVolume: fall back to the voice call stream
+                Level l = read(s);
+                if (l == null && index == SsSoundRules.ROW_CALL && s != SsSoundRules.STREAM_VOICE_CALL) {   // the public API refuses the Bluetooth SCO stream: the call row falls back to the voice call stream
                     s = SsSoundRules.STREAM_VOICE_CALL;
-                    st = read(s);
+                    l = read(s);
                 }
                 stream = s;
-                if (st == null) {   // no audio service: a slider that cannot move
-                    min = 0;
-                    max = 0;
+                if (l == null) {   // no audio service: a slider that cannot move
                     bar.setEnabled(false);
-                    bar.setMax(0);
-                    bar.setProgress(0);
                     setIcon(SsSoundRules.ICON_NORMAL);
                     return;
                 }
-                min = st[0];
-                max = Math.max(st[0], st[1]);
-                boolean muted = st[3] != 0;
                 boolean zen = SsSoundRules.zenMuted(f.filter, s, f.allowAlarms, f.allowMedia, f.allowRinger);
-                setIcon(SsSoundRules.iconKind(index, f.ringerMode, muted, zen));
+                setIcon(SsSoundRules.iconKind(index, f.ringerMode, l.muted, zen));
                 bar.setEnabled(!zen);
                 if (tracking) return;
-                int range = SsSoundRules.sliderMax(min, max);
-                if (bar.getMax() != range) bar.setMax(range);
-                int p = SsSoundRules.toProgress(SsSoundRules.shownVolume(index, st[2], muted, zen, f.ringerMode, min, max), min, max);
+                if (bar.getMax() != l.max) bar.setMax(l.max);   // the maximum first: a new minimum above the old maximum would be clamped
+                if (bar.getMin() != l.min) bar.setMin(l.min);
+                int p = SsSoundRules.shownVolume(s, l.volume, l.lastAudible, l.muted, zen, f.ringerMode, l.min, l.max);
                 if (bar.getProgress() != p) {
                     if (bar.isAttachedToWindow()) bar.setProgress(p, true); else bar.setProgress(p);   // the stock slider animates to a volume changed elsewhere
                 }
             }
 
-            private int[] read(int s) {
+            private Level read(int s) {
                 if (am == null) return null;
-                try { return new int[] { am.getStreamMinVolume(s), am.getStreamMaxVolume(s), am.getStreamVolume(s), am.isStreamMute(s) ? 1 : 0 }; }
-                catch (Throwable t) { return null; }
+                try {
+                    Level l = new Level();
+                    l.min = am.getStreamMinVolume(s);   // IllegalArgumentException for a stream that is not public (Bluetooth SCO)
+                    l.max = Math.max(l.min, am.getStreamMaxVolume(s));
+                    l.volume = am.getStreamVolume(s);
+                    l.muted = am.isStreamMute(s);
+                    l.lastAudible = Hidden.lastAudible(am, s, l.volume);
+                    return l;
+                } catch (Throwable t) {
+                    return null;
+                }
             }
 
             private void setIcon(int kind) {
                 if (kind == iconKind) return;
                 iconKind = kind;
-                Drawable d;
+                int res;
                 switch (index) {
                     case SsSoundRules.ROW_MEDIA:
-                        d = a.getDrawable(kind == SsSoundRules.ICON_MUTED ? R.drawable.ss_ic_media_stream_off : R.drawable.ss_ic_media_stream);
+                        res = kind == SsSoundRules.ICON_MUTED ? R.drawable.ss_ic_media_stream_off : R.drawable.ss_ic_media_stream;
                         break;
                     case SsSoundRules.ROW_CALL:
-                        d = a.getDrawable(R.drawable.ss_ic_local_phone);   // "the call volume can never be fully muted": the muted glyph is the same phone
+                        res = R.drawable.ss_ic_local_phone;   // the call volume can never be muted (lowest volume 1): its glyph never changes
                         break;
                     case SsSoundRules.ROW_ALARM:
-                        d = kind == SsSoundRules.ICON_MUTED ? alarmMutedIcon() : a.getDrawable(R.drawable.ss_ic_audio_alarm);
+                        res = kind == SsSoundRules.ICON_MUTED ? R.drawable.ss_ic_audio_alarm_off : R.drawable.ss_ic_audio_alarm;
                         break;
                     default:
-                        d = a.getDrawable(kind == SsSoundRules.ICON_RINGER_VIBRATE ? R.drawable.ss_ic_volume_ringer_vibrate
-                                : kind == SsSoundRules.ICON_RINGER_SILENT ? R.drawable.ss_ic_notifications_off : R.drawable.ss_ic_notifications);
+                        res = kind == SsSoundRules.ICON_RINGER_VIBRATE ? R.drawable.ss_ic_volume_ringer_vibrate
+                                : kind == SsSoundRules.ICON_RINGER_SILENT ? R.drawable.ss_ic_notifications_off : R.drawable.ss_ic_notifications;
                 }
-                icon.setImageDrawable(d);
+                icon.setImageDrawable(a.getDrawable(res));
             }
 
-            /** AlarmVolumePreferenceController.getMuteIcon is the framework's ic_audio_alarm_mute (not in the research checkout): use it when this build has it, else the Material "alarm off" glyph. */
-            private Drawable alarmMutedIcon() {
-                try {
-                    int id = Resources.getSystem().getIdentifier("ic_audio_alarm_mute", "drawable", "android");
-                    if (id != 0) {
-                        Drawable d = a.getDrawable(id);
-                        if (d != null) return d;
-                    }
-                } catch (Throwable ignored) { }
-                return a.getDrawable(R.drawable.ss_ic_audio_alarm_off);
-            }
-
+            /** The progress of this slider IS the stream volume (the bar runs from the stream's lowest to its highest volume). */
             @Override public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
                 if (!fromUser) return;   // our own setProgress, or the system moving the slider
-                postVolume(this, SsSoundRules.toVolume(progress, min, max));
+                Audio au = audio;
+                if (au != null) au.setVolume(index, stream, progress);
             }
 
             @Override public void onStartTrackingTouch(SeekBar s) { tracking = true; }
@@ -446,58 +479,80 @@ final class SsPagesSound {
                 tracking = false;
                 Audio au = audio;
                 if (au == null) return;
-                au.handler.sendMessage(au.handler.obtainMessage(MSG_START_SAMPLE, index, stream));
-                au.handler.sendEmptyMessage(MSG_SYNC);
+                au.requestSample(index, stream);
+                au.sync();
             }
         }
 
-        /** The latest value of a slider goes to the audio thread; an older one that has not been written yet is dropped. */
-        private void postVolume(Row r, int volume) {
-            Audio au = audio;
-            if (au == null) return;
-            au.handler.removeMessages(MSG_SET_VOLUME + r.index);
-            au.handler.sendMessage(au.handler.obtainMessage(MSG_SET_VOLUME + r.index, r.stream, volume));
-        }
-
         // ------------------------------------------------------------------ the audio worker: volume writes and release samples
-        /** One per start(): a thread for AudioManager.setStreamVolume and the release sample, so a slow audio service never stalls the page; stopped with the page. */
+        /**
+         * One per start(): a thread for AudioManager.setStreamVolume and the release samples (SeekBarVolumizer's callback handler), so a slow audio service never stalls the page. Everything below the
+         * constructor runs on that thread.
+         */
         private final class Audio {
-            final HandlerThread thread = new HandlerThread("ss-sound-audio");
+            private final HandlerThread thread = new HandlerThread("ss-sound-audio");
             final Handler handler;
-            private Ringtone sample;      // audio thread only
-            private int sampleRow = -1;   // audio thread only
+            private final Context app = a.getApplicationContext();   // the samples must not hold the activity
+            private final Ringtone[] samples = new Ringtone[SsSoundRules.TITLES.length];   // one prepared sample per row
+            private final int[] sampleStream = new int[SsSoundRules.TITLES.length];
+            private int current = -1;   // the row whose sample started last (SoundSettings.VolumePreferenceCallback.mCurrent)
 
             Audio() {
+                Arrays.fill(sampleStream, -1);
                 thread.start();
                 handler = new Handler(thread.getLooper(), this::handle);
             }
 
+            // ---- called from the main thread
+            /** The latest value of a slider; an older one of the same row that has not been written yet is dropped (SeekBarVolumizer.postSetVolume). */
+            void setVolume(int row, int stream, int progress) {
+                handler.removeMessages(MSG_SET_VOLUME + row);
+                handler.sendMessage(handler.obtainMessage(MSG_SET_VOLUME + row, stream, progress));
+            }
+
+            void requestSample(int row, int stream) { handler.sendMessage(handler.obtainMessage(MSG_REQUEST_SAMPLE, row, stream)); }
+
+            void prepareSample(int row, int stream) { handler.sendMessage(handler.obtainMessage(MSG_INIT_SAMPLE, row, stream)); }
+
+            void sync() { handler.sendEmptyMessage(MSG_SYNC); }
+
+            /** The page leaves the screen: the writes already queued are still applied, then every sample is stopped and released; the delayed messages (cut-off, a second try) are dropped by quitSafely. */
+            void shutdown() {
+                handler.post(this::releaseAll);
+                thread.quitSafely();
+            }
+
+            // ---- the audio thread
             private boolean handle(Message m) {
-                if (m.what >= MSG_SET_VOLUME && m.what < MSG_SET_VOLUME + SsSoundRules.TITLES.length) {
+                if (m.what >= MSG_SET_VOLUME) {
                     writeVolume(m.arg1, m.arg2);
                     return true;
                 }
                 switch (m.what) {
+                    case MSG_INIT_SAMPLE: sample(m.arg1, m.arg2); return true;
+                    case MSG_REQUEST_SAMPLE: requestSampleNow(m.arg1, m.arg2); return true;
                     case MSG_START_SAMPLE: startSample(m.arg1, m.arg2); return true;
-                    case MSG_STOP_SAMPLE: stopSample(); return true;
+                    case MSG_STOP_SAMPLE: stopSampleOf(current); return true;
                     case MSG_SYNC: main.post(refresh); return true;
                     default: return false;
                 }
             }
 
-            void shutdown() {
-                handler.post(this::stopSample);   // due at once, so quitSafely runs it; the delayed cutoff message is dropped with the queue
-                thread.quitSafely();
-            }
-
-            private void writeVolume(int stream, int volume) {
+            /**
+             * SeekBarVolumizer MSG_SET_STREAM_VOLUME: unmute a muted stream that is dragged above 0, set the volume, mute an unmuted stream that was dragged to 0. (The stock order is mute first; here the mute
+             * comes after the set, so a refused set leaves nothing half done.) A SecurityException is Android's "Not allowed to change Do Not Disturb state": on a tablet without vibrator a ring-type stream
+             * (Notification aliases Ring there) that reaches 0 switches the ringer to silent, which an app may do only with Do Not Disturb access. The slider then snaps back to the real value.
+             */
+            private void writeVolume(int stream, int progress) {
                 try {
-                    am.setStreamVolume(stream, volume, FLAG_SHOW_UI_WARNINGS);
-                    if (sample != null) armCutoff();   // SoundSettings.VolumePreferenceCallback.onStreamValueChanged: a change while a sample plays restarts the 2 s timer
+                    int adjust = SsSoundRules.muteAdjustment(am.isStreamMute(stream), progress);
+                    if (adjust == SsSoundRules.ADJUST_UNMUTE) am.adjustStreamVolume(stream, AudioManager.ADJUST_UNMUTE, 0);
+                    am.setStreamVolume(stream, progress, FLAG_SHOW_UI_WARNINGS);
+                    if (adjust == SsSoundRules.ADJUST_MUTE) am.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
+                    if (current >= 0) armCutoff();   // SoundSettings.onStreamValueChanged: a change while a sample is current restarts the 2 s timer
                 } catch (SecurityException e) {
-                    // "Not allowed to change Do Not Disturb state": lowering a ring-type stream to 0 (or raising it from silent) flips the ringer mode, which a non-system app may do only with
-                    // Do Not Disturb access. The slider snaps back to the real value.
-                    main.post(() -> toastRateLimited("This setting can't be changed from here."));
+                    final String msg = e.getMessage() != null && e.getMessage().contains("Do Not Disturb") ? NEEDS_DND : CANT_CHANGE;
+                    main.post(() -> toastRateLimited(msg));
                     main.post(refresh);
                 } catch (Throwable t) {
                     main.post(refresh);
@@ -509,70 +564,77 @@ final class SsPagesSound {
                 handler.sendEmptyMessageDelayed(MSG_STOP_SAMPLE, SsSoundRules.SAMPLE_CUTOFF_MS);
             }
 
-            private void startSample(int row, int stream) {
-                if (sample != null && sampleRow == row) {   // SeekBarVolumizer.onStartSample plays only when the sample is not already playing
-                    boolean playing = false;
-                    try { playing = sample.isPlaying(); } catch (Throwable ignored) { }
-                    if (playing) {
-                        armCutoff();
-                        return;
-                    }
-                }
-                stopSample();
-                Ringtone r = null;
-                try {
-                    r = RingtoneManager.getRingtone(a, sampleUri(stream));
-                    if (r == null) return;
-                    r.setAudioAttributes(attributesFor(stream));
-                    r.play();
-                    sample = r;
-                    sampleRow = row;
-                    armCutoff();
-                } catch (Throwable t) {
-                    if (r != null) { try { r.stop(); } catch (Throwable ignored) { } }
-                }
+            /** SeekBarVolumizer.postStartSample: at once, or after a second when the sample of this row still plays (and then it starts only if it has stopped by then). */
+            private void requestSampleNow(int row, int stream) {
+                handler.removeMessages(MSG_START_SAMPLE);
+                int delay = SsSoundRules.sampleStartDelayMs(playing(row));
+                if (delay == 0) startSample(row, stream);
+                else handler.sendMessageDelayed(handler.obtainMessage(MSG_START_SAMPLE, row, stream), delay);
             }
 
-            private void stopSample() {
-                handler.removeMessages(MSG_STOP_SAMPLE);
-                Ringtone r = sample;
-                sample = null;
-                sampleRow = -1;
+            /** SeekBarVolumizer.onStartSample + SoundSettings.onSampleStarting: only when none plays; another row's sample is stopped first; the 2 s cut-off starts. */
+            private void startSample(int row, int stream) {
+                Ringtone r = sample(row, stream);
+                if (r == null || playing(row)) return;
+                if (current >= 0 && current != row) stopSampleOf(current);
+                current = row;
+                armCutoff();
+                try { r.play(); } catch (Throwable ignored) { }
+            }
+
+            /**
+             * The prepared sample of a row: Ringtone.setStreamType is what SeekBarVolumizer.onInitSample calls, so the sample plays on the slider's own stream (and its volume is the slider's). A Ringtone
+             * that was stopped is gone (stop() destroys its player), so a new one is made when needed. The bypass-mute flag the stock adds is left out: it needs a privilege this app does not have.
+             */
+            @SuppressWarnings("deprecation")
+            private Ringtone sample(int row, int stream) {
+                Ringtone r = samples[row];
+                if (r != null && sampleStream[row] == stream) return r;
+                release(row);
+                try {
+                    r = RingtoneManager.getRingtone(app, sampleUri(stream));
+                    if (r != null) r.setStreamType(stream);
+                } catch (Throwable t) {
+                    r = null;
+                }
+                samples[row] = r;
+                sampleStream[row] = r == null ? -1 : stream;
+                return r;
+            }
+
+            private boolean playing(int row) {
+                Ringtone r = row < 0 ? null : samples[row];
+                try { return r != null && r.isPlaying(); } catch (Throwable t) { return false; }
+            }
+
+            /** Cuts a sample that is still playing and prepares the next one (stop() destroys the player). A sample that has ended by itself is left alone. */
+            private void stopSampleOf(int row) {
+                if (row < 0 || !playing(row)) return;
+                int stream = sampleStream[row];
+                release(row);
+                sample(row, stream);
+            }
+
+            private void release(int row) {
+                Ringtone r = samples[row];
+                samples[row] = null;
+                sampleStream[row] = -1;
                 if (r != null) { try { r.stop(); } catch (Throwable ignored) { } }
+            }
+
+            private void releaseAll() {
+                for (int i = 0; i < samples.length; i++) release(i);
+                current = -1;
             }
 
             /** Media: Settings' own media_volume.ogg (shipped as res/raw/ss_media_volume, 0.49 s mono Vorbis); the others: the default sound of their kind. */
             private Uri sampleUri(int stream) {
                 switch (SsSoundRules.sampleSource(stream)) {
-                    case SsSoundRules.SAMPLE_BUNDLED: return Uri.parse("android.resource://" + a.getPackageName() + "/" + R.raw.ss_media_volume);
+                    case SsSoundRules.SAMPLE_BUNDLED: return Uri.parse("android.resource://" + app.getPackageName() + "/" + R.raw.ss_media_volume);
                     case SsSoundRules.SAMPLE_RINGTONE: return Settings.System.DEFAULT_RINGTONE_URI;
                     case SsSoundRules.SAMPLE_NOTIFICATION: return Settings.System.DEFAULT_NOTIFICATION_URI;
                     default: return Settings.System.DEFAULT_ALARM_ALERT_URI;
                 }
-            }
-
-            /** The playback attributes that make the sample follow the slider's stream volume (no bypass flags: an app that is not privileged may not request them). */
-            private AudioAttributes attributesFor(int stream) {
-                int usage, content;
-                switch (stream) {
-                    case SsSoundRules.STREAM_MUSIC:
-                        usage = AudioAttributes.USAGE_MEDIA;
-                        content = AudioAttributes.CONTENT_TYPE_MUSIC;
-                        break;
-                    case SsSoundRules.STREAM_VOICE_CALL:
-                    case SsSoundRules.STREAM_BLUETOOTH_SCO:
-                        usage = AudioAttributes.USAGE_VOICE_COMMUNICATION;
-                        content = AudioAttributes.CONTENT_TYPE_SPEECH;
-                        break;
-                    case SsSoundRules.STREAM_ALARM:
-                        usage = AudioAttributes.USAGE_ALARM;
-                        content = AudioAttributes.CONTENT_TYPE_SONIFICATION;
-                        break;
-                    default:
-                        usage = AudioAttributes.USAGE_NOTIFICATION;
-                        content = AudioAttributes.CONTENT_TYPE_SONIFICATION;
-                }
-                return new AudioAttributes.Builder().setUsage(usage).setContentType(content).build();
             }
         }
     }
