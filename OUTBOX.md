@@ -1620,3 +1620,28 @@
 >
 > 💡 The handoff is already saved in the repo, so `/amhandoff` isn't needed.
 <!-- sha:56e9d773b994 -->
+
+## 2026-11-09T03:47:50Z
+> Tj, understood: the Settings look-alike (BN1) is a go and I'll build it through to the release.
+>
+> **Order.** v0.8.13, the home and lock-screen fixes, is built first.
+> - Its emulator gate is running now and should finish around 04:02 UTC.
+> - Autosave commits every edit I make, and a release builds whatever the branch holds. BN1 code therefore waits until that release exists, so it can't leak into it.
+> - Today's research and design are saved as notes in the repo, so nothing is lost.
+>
+> **While the gate runs:**
+> - I wrote the build plan, `research/SETTINGS_BUILD_PLAN_2026-11-09.md`. The pages are built from my own row views on the stock Settings theme, using the exact AOSP sizes. They are not a copy of the real Settings app.
+> - The "Settings" entry in the custom drawer is gated by a switch, so a release made mid-build stays harmless.
+> - The plan splits the work into milestones M0–M5: entry and chrome, About/System/Languages/Legal, Battery and Display, Sound and Storage, Accessibility, then proof, review and release.
+> - A helper is collecting the exact icon drawings from the Android 10 source into `research/`.
+>
+> **Seeing the result.** I'll check the look on the CI emulator with screenshots next to your 18 originals. Those stay out of the repo.
+>
+> I'll ask you only what the screenshots and the Android source can't answer.
+>
+> **Still open:**
+> - v0.8.13 to ship after the gate.
+> - BN1 build, all pages in your order, no search anywhere.
+> - Your v0.8.9, v0.8.11 and v0.8.12 tablet checks.
+> - Turning off the `session-handoff` plugin in claude.ai.
+<!-- sha:1d7ae6220d0c -->
