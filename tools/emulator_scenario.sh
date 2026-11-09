@@ -4025,6 +4025,11 @@ info "SS28b: display size page texts = $(tr '>' '\n' < $OUT/ss-dsize.xml | grep 
 info "SS28c: wm density as the app = $(adb shell run-as $PKG wm density 2>&1 | tr -d '\r' | head -3 | tr '\n' '|' | cut -c1-200)"
 SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'); [ -z "$SSDEN" ] && SSDEN=$(adb shell wm density | tr -d '\r' | grep -i physical | sed 's/[^0-9]//g')
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
+# the emulator's stable density is 160 (the run forces 170), so the page above reads "Custom (170)": for the comparison with Tj's Default shot show the page at its own default density for a moment
+adb shell wm density reset; sleep 4; shot ss-20b-displaysize-d160
+SSD160=$(tr '>' '\n' < <(ssdump "$OUT/ss-dsize160.xml"; cat "$OUT/ss-dsize160.xml") | grep -oE 'text="(Small|Default|Large|Larger|Largest|Custom[^"]*)"' | head -3 | tr '\n' ' ')
+info "SS28e: Display size at the stable density = $SSD160"
+adb shell wm density 170; sleep 4
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M4: Sound and Storage (written by the page agents from Tj's screenshots 0b8dab8c / 4cd04033 / 52ef06ee); both start at the home page
 ssvol(){ L=$(adb shell settings list system | tr -d '\r'); v=$(echo "$L" | grep -E '^volume_music_speaker=' | head -1 | cut -d= -f2); [ -z "$v" ] && v=$(echo "$L" | grep -E '^volume_music=' | head -1 | cut -d= -f2); echo "$v"; }   # the emulator plays music on the speaker device: its volume lives in volume_music_speaker (run #457: the plain key never moved)
