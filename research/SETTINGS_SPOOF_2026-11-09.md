@@ -71,6 +71,19 @@ Useful tags to read first: `res/layout/preference_*`, `res/values/dimens.xml`, `
 | Battery header height | 257 px (26..283) | | |
 | Storage row pitch | 84 px | | |
 
+### 4b. Numbers measured with PIL from Tj's screenshots (2026-11-09; px at 170 dpi, font scale 1.2 = tablet report "600x973 @170 dpi, font scale 1.2")
+
+- Colours: status bar #E0E0E0, toolbar #F5F5F5, page #FAFAFA, navigation bar #FCFCFC with a #DCDCDC line on its top edge (y 973); toolbar shadow y 86 #E3E3E3, 87 #EEEEEE, 88 #F3F3F3, 89 #F6F6F6, 90 #F8F8F8, 91 #F9F9F9, 92 #FAFAFA (a 4 dp elevation shadow).
+- Geometry: status bar y 0-25 (26 px), toolbar y 26-85 (60 px = 56 dp), app window y 26-972 (947 px = the tablet report's 973 incl. status bar), nav bar y 973-1023.
+- Display page rows (the standard preference row): rows start at y 87; two-line row = 87 px (title ascender top at row+23, summary digit top at row+51); one-line row = 62 px;
+  title text 19 px from ascender to descender (about 20.4 px = 16 sp x 1.275), summary digits 13 px high (about 17.85 px = 14 sp x 1.275). This equals the AndroidX / framework
+  preference row: padding 16 dp top and bottom, title 16 sp, summary 14 sp directly below it, `includeFontPadding` default (Roboto top -1.056, bottom +0.271 em).
+- Settings home icons: 38 x 38 px squares with small rounded corners at x 17-54, one per row, pitch 87 px; fills: Battery #258982, Display #FFA727, Sound #01B1AF,
+  Storage #C14CE6, Accessibility #5011C1, System #9E9E9E, About tablet #6F86DA (others, not needed: Network #2196F3, Connected devices #72B70F, Apps #FF7E0F, Privacy #5E97F6,
+  Location #2EC7DC, Security #0F9D58, Accounts #F15B8D, DuraSpeed #1A73E8).
+- The platform theme that gives all of this for free: `Theme.DeviceDefault.Settings` (framework `themes_device_defaults.xml` line 1452: light status bar, `ic_ab_back_material_settings`,
+  solid action bar, white navigation bar with divider, `colorListDivider`). Its resource id can be looked up by name at run time (`getIdentifier("Theme.DeviceDefault.Settings", "style", "android")`).
+
 ## 5. Hard facts about this container (so nobody re-derives them)
 
 - No `/dev/kvm`, no emulator, no system image here: the look can only be checked on the CI emulator (`emulator.yml`) and ONLY through numbers (RESULTS block), no pictures.
