@@ -41,7 +41,7 @@ if errorlevel 1 goto nolauncher
 
 if "%STATUSONLY%"=="1" goto status
 call :say == 1. permissions
-for %%P in (WRITE_SECURE_SETTINGS DUMP CHANGE_CONFIGURATION READ_EXTERNAL_STORAGE) do (
+for %%P in (WRITE_SECURE_SETTINGS DUMP CHANGE_CONFIGURATION READ_EXTERNAL_STORAGE PACKAGE_USAGE_STATS) do (
   adb shell pm grant %PKG% android.permission.%%P >> %STATUS% 2>&1
 )
 for %%O in (GET_USAGE_STATS WRITE_SETTINGS RUN_IN_BACKGROUND RUN_ANY_IN_BACKGROUND) do (
