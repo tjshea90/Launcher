@@ -3986,7 +3986,15 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Text-to-speech output"; sleep 2; ssdump "$OUT/ss-tts.xml"; shot ss-18-tts
 check "SS26: the Text-to-speech output page lists Preferred engine, Language, Speech rate, Pitch, in that order" ssorder "$OUT/ss-tts.xml" "Preferred engine" "Language" "Speech rate" "Pitch"
 check "SS26c: it has the Play and Reset buttons" bash -c "tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
-info "SS26b: tts engines on this image = $(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
+# SS26d (BN1m, Tj 07:16 "must look identical"): the two sliders' tracks are thin and light grey in his screenshot (darkest grey 0.843); the Discrete style drew 590 tick marks into a dark line (0.204 / 0.341 in run #460).
+# Meaningful only while the sliders are disabled (no TTS engine on the image, as on his tablet's screenshot).
+SS_TTS_ENG="$(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r')"
+if [ "${SS_TTS_ENG:-0}" = "0" ]; then
+  check "SS26d: both TTS slider tracks are light grey like Tj's screenshot (darkest grey of the block above 0.6; the tick-mark style drew 0.20)" bash -c "[ \"\$(convert $OUT/ss-18-tts.png -crop 360x130+200+300 +repage -colorspace Gray -format '%[fx:minima>0.6?1:0]' info:)\" = 1 ]"
+else
+  info "SS26d: skipped, this image has $SS_TTS_ENG TTS engine(s), the sliders are enabled"
+fi
+info "SS26b: tts engines on this image =$(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M3b: the Font size and Display size pages (preview frame, label, step buttons, slider, sentence); AOSP font_size_activity / screen_zoom_activity
 ssdesc(){ python3 -I - "$1" "$2" <<'EOF'
