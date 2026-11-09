@@ -65,7 +65,7 @@ BRIEF="$(
       # Dependabot branches and orphan histories (no common ancestor with this branch: the repo was re-rooted on 2026-11-02) are not stranded
       # session work, and merging them would drag in an unrelated root commit. Say so once, quietly, instead of a false alarm every session.
       case "$RB" in origin/dependabot/*) continue ;; esac
-      if ! git merge-base HEAD "$RB" >/dev/null 2>&1; then echo "  note  ${RB#origin/} shares no history with this branch (orphan): ignored."; continue; fi
+      if ! git merge-base HEAD "$RB" >/dev/null 2>&1; then ORPHANS=$((ORPHANS+1)); continue; fi   # one summary line below (BO1: the briefing has a 10,000-character cap; twelve note lines cost ~800)
       echo "  !!    ${RB#origin/} has $N commit(s) this branch lacks (last: $(git log -1 --format='%s' "$RB" | cut -c1-70); newest commit $(git log -1 --format=%cr "$RB"))."
       echo "        Look first:  git log --oneline HEAD..$RB | head   — then:  git merge $RB   (tell Tj if it contradicts this branch)"
       SIBLING=1
