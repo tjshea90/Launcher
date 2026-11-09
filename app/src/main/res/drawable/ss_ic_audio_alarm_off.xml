@@ -1,7 +1,7 @@
 <!--
   Crossed alarm clock glyph shown when the alarm stream is muted (Material Design "alarm off" icon, outline, Apache License 2.0). It is the same outline as AOSP's
   framework drawable ic_audio_alarm_mute (core/res, android-10.0.0_r47), which is private to the platform: that file draws it on a 48-unit grid at 32 dp, this one on the
-  24-unit grid at 24 dp (every coordinate is half of the framework's). Tinted with the theme's colorControlNormal.
+  24-unit grid at 24 dp (the same outline at half the scale: both rasterised overlap by 99.5 %). Tinted with the theme's colorControlNormal.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
