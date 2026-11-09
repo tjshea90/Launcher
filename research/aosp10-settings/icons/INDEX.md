@@ -153,7 +153,10 @@ paddingStart 72 dp, paddingEnd 16 dp, padding 32 dp top and bottom; title 36 sp 
 - Stroke `storage_donut_thickness` = 4 dp; the arc rectangle is inset by 4 dp, so the outer diameter is 108 dp (115 px). Start angle -90, sweep 360 x percent, cap BUTT.
 - Background ring = `meter_background_color` (colorForeground at alpha 0.3) with an accent SRC_IN filter: **#4D008577**. Consumed arc = `meter_consumed_color` with the same filter: **#FF008577**. Text paints are accent #FF008577.
 - Text sizes on the tablet (`settings10/res/values-sw360dp/dimens.xml` lines 28-31): big number 30 sp (default 45 sp), percent sign 20 sp (RelativeSizeSpan 20/30), label "used" 14 sp (default 21 sp; 10 sp if the label is longer than 10 characters).
-- Source: `settings10/src/com/android/settings/deviceinfo/StorageSummaryDonutPreference.java` and `fwbase/packages/SettingsLib` DonutView; dimens and strings in `VALUES_EXCERPTS.md`, section D.
+- Drawing code: `settings10/src/com/android/settings/widget/DonutView.java` (`drawDonut`: two `drawArc` calls, background full circle then the consumed sweep, both with the accent SRC_IN filter; `drawInnerText`: the percentage in a centred `StaticLayout`
+  with the percent sign shrunk by a `RelativeSizeSpan`, typeface `config_headlineFontFamily`; the label "used" centred below it). Bound by `settings10/src/com/android/settings/deviceinfo/storage/StorageSummaryDonutPreference.java`.
+  Layout variants in the clone: `layout/storage_summary_donut.xml` (default), `layout-land/` and `layout-sw360dp/` (portrait tablet).
+- Dimens and strings: `VALUES_EXCERPTS.md`, section D.
 - Toolbar on this page: entity style (section 7).
 
 ---
