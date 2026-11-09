@@ -46,6 +46,6 @@ public class PencilRulesTest {
     }
 
     @Test public void theWatchdogIsFasterThanTheOldSearchGapPlusASearch() {
-        assertEquals(true, PencilRules.WATCH_MS < EventNoise.minPencilSearchGapMs(EventNoise.TYPE_WINDOW_CONTENT_CHANGED_FOR_TESTS) + 50);
+        assertEquals(true, PencilRules.WATCH_MS < EventNoise.minPencilSearchGapMs(0x00000800) + 50);   // 0x800 = TYPE_WINDOW_CONTENT_CHANGED
     }
 }
