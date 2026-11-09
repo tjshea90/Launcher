@@ -340,16 +340,9 @@ final class SsPagesSize {
     }
 
     /** screen_zoom_preview_2: the first six launcher apps by label in a grid of three columns (icon 64 dp, label 12 sp). */
-    private static View appsPreview(Context c) {
+    private static View appsPreview(Context c, SixApps apps) {
         PackageManager pm = c.getPackageManager();
-        Intent main = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER);
-        final List<ResolveInfo> all = new ArrayList<>(pm.queryIntentActivities(main, 0));
-        List<ResolveInfo> six = new ArrayList<>();
-        for (ResolveInfo ri : all) { if (six.size() == 6) break; if (ri.loadLabel(pm) != null && ri.loadLabel(pm).length() > 0) six.add(ri); }
-        final PackageManager fpm = pm;
-        Collections.sort(six, new Comparator<ResolveInfo>() {
-            @Override public int compare(ResolveInfo x, ResolveInfo y) { return String.valueOf(x.loadLabel(fpm)).compareToIgnoreCase(String.valueOf(y.loadLabel(fpm))); }
-        });
+        List<SixApps.Entry> six = apps.get(pm);
         LinearLayout grid = new LinearLayout(c);
         grid.setOrientation(LinearLayout.VERTICAL);
         grid.setGravity(Gravity.CENTER);
