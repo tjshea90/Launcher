@@ -1425,3 +1425,7 @@
 ## 2026-11-09T01:32:37Z
 > v0.8.12 is ready to ship: versionCode 37 is above the last release's 36, and BUILDLOG has no v0.8.12 line yet. Run #433 is due within a minute or two, and I'll ship as soon as it reports green.
 <!-- sha:2da790631db3 -->
+
+## 2026-11-09T01:34:48Z
+> Run #433 is still going. The scenario step has been running since 01:21:30, and it covers seven sections plus an emulator boot, so this is normal. The next check is at 01:39:30. I'll ship v0.8.12 once it reports green. If it is still running at about 01:47, I'll treat it as the CI hang (BM1h) and cancel it.
+<!-- sha:d6c2ea386de9 -->
