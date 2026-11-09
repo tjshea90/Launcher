@@ -4021,6 +4021,9 @@ adb shell settings put system font_scale "$SSFS" >/dev/null 2>&1; sleep 2
 adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Display size"; sleep 3; ssdump "$OUT/ss-dsize.xml"; shot ss-20-displaysize
 check "SS28: the Display size page shows Preview, the first preview page (Hi Pete!) and the sentence" bash -c "for t in 'Preview' 'Hi Pete!' 'Make the items on your screen smaller or larger. Some apps on your screen may change position.'; do [ -n \"\$(python3 -I tools/uinode.py $OUT/ss-dsize.xml --contains \"\$t\" --exact)\" ] || { echo missing \$t; exit 1; }; done"
+# BN1l: the chat has Tj's own geometry (his Default shot at 170 dpi, font 1.2: incoming bubbles 75 px tall, disc tops 125 / 313 blue and 219 / 431 green); run #458 had 83 px bubbles (default font padding on the bubble texts). tools/ss_chat_probe.py, pinned offline by tools/test_ss_chat_probe.sh
+SSCHAT=$(python3 -I tools/ss_chat_probe.py "$OUT/ss-20-displaysize.png" 2>&1 | tail -1)
+check "SS28f: the Display size chat has the geometry of Tj's Default shot (measured: $SSCHAT; wanted blue_tops=125,313 green_tops=219,431 bubble_h=75,75, +-2 px)" python3 -I tools/ss_chat_probe.py --check "$OUT/ss-20-displaysize.png"
 info "SS28b: display size page texts = $(tr '>' '\n' < $OUT/ss-dsize.xml | grep -oE 'text="[^"]+"' | head -14 | tr '\n' ' ' | cut -c1-420)"
 info "SS28c: wm density as the app = $(adb shell run-as $PKG wm density 2>&1 | tr -d '\r' | head -3 | tr '\n' '|' | cut -c1-200)"
 SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'); [ -z "$SSDEN" ] && SSDEN=$(adb shell wm density | tr -d '\r' | grep -i physical | sed 's/[^0-9]//g')

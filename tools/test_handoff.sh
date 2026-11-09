@@ -143,6 +143,9 @@ if TI_OUT="$(bash "$D/tools/test_tablet_intake.sh" 2>&1)"; then ok; else bad "ta
 # ---------------------------------------------------------------- the node finder the emulator scenario's phone-guide checks use (tools/uinode.py; its own self-test, ~1 s)
 if UN_OUT="$(bash "$D/tools/test_uinode.sh" 2>&1)"; then ok; else bad "uinode self-test failed (bash tools/test_uinode.sh)"; printf '%s\n' "$UN_OUT" | grep FAIL | head -10; fi
 
+# ---------------------------------------------------------------- the chat probe of scenario check SS28f (tools/ss_chat_probe.py; its own self-test, ~1 s)
+if SC_OUT="$(bash "$D/tools/test_ss_chat_probe.sh" 2>&1)"; then ok; else bad "chat probe self-test failed (bash tools/test_ss_chat_probe.sh)"; printf '%s\n' "$SC_OUT" | grep FAIL | head -10; fi
+
 # ---------------------------------------------------------------- compaction must never be vetoed (TASKS BM1, 2026-11-09: an account plugin's PreCompact hook killed four sessions with "Prompt is too long"; own self-tests, ~5 s)
 if CG_OUT="$(bash "$D/tools/test_compact_guard.sh" 2>&1)"; then ok; else bad "compact guard / keepalive self-test failed (bash tools/test_compact_guard.sh)"; printf '%s\n' "$CG_OUT" | grep FAIL | head -10; fi
 if CW_OUT="$(bash "$D/tools/test_ctxwatch.sh" 2>&1)"; then ok; else bad "context watchdog self-test failed (bash tools/test_ctxwatch.sh)"; printf '%s\n' "$CW_OUT" | grep FAIL | head -10; fi
