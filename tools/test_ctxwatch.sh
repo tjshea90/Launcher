@@ -62,7 +62,9 @@ O="$(hook)";                     check "the same level is spoken only once" '[ -
 mk 340000;                       O="$(hook)"
 check "340K (87 %): level 2 'due soon', tells Claude to ckpt, shown to the user too" 'printf "%s" "$O" | field additionalContext | grep -q "due soon" && printf "%s" "$O" | field additionalContext | grep -q "tools/ckpt.sh" && printf "%s" "$O" | field systemMessage | grep -q "due soon"'
 mk 440000;                       O="$(hook)"
-check "440K last call (> T + 30K): level 3 ALARM names the cause and compact_guard" 'printf "%s" "$O" | field additionalContext | grep -q "CONTEXT ALARM" && printf "%s" "$O" | field additionalContext | grep -q "compact_guard.sh" && printf "%s" "$O" | field additionalContext | grep -q "did NOT fire"'
+check "440K last call (> T + 30K) seen ONCE is not an alarm yet (one big tool result right before a compaction looks the same)" '! printf "%s" "$O" | grep -q "CONTEXT ALARM"'
+mk 445000;                       O="$(hook)"
+check "a second, different model call above T + 30K (445K): level 3 ALARM names the cause and compact_guard" 'printf "%s" "$O" | field additionalContext | grep -q "CONTEXT ALARM" && printf "%s" "$O" | field additionalContext | grep -q "compact_guard.sh" && printf "%s" "$O" | field additionalContext | grep -q "did NOT fire"'
 N=0; for i in $(seq 1 12); do [ -n "$(hook)" ] && N=$((N+1)); done
 check "the alarm repeats, but only once in 12 calls (not on every tool call)" '[ "$N" = 1 ]'
 mk 920000;                       O="$(hook)"
