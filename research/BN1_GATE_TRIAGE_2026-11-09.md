@@ -17,3 +17,18 @@ Both runs printed `INFO NATIVE CRASH #1 of com.tj.launcher` (the known SIGSEGV t
 **Suspect to rule out FIRST (a real regression is possible):** the crash-breaker FAILs (`crash breaker switched to quickstep`, `after the breaker, Home shows the stock launcher`, section base) touch `CrashGuard.record`, which BN1 changed (`SsFuse.fuseHandles(e, SsFuse.blocked(app))` runs FIRST and returns without counting when the first own frame is an `Ss*` / `SettingsSpoof*` class). If the scenario's forced crashes hit that branch, the breaker never reaches 3. Read `tools/emulator_scenario.sh` l.200-230 (what crash is forced) and `SsFuse.fuseHandles`, and the unit test `SsFuseTest`.
 
 Plan: (1) read the crash-breaker part of the scenario and SsFuse (cheap, decides it); (2) rerun SOLO on the head: `base`, `o`, `legacy`, `lq` (gate.sh / dispatch emulator.yml sections each; different sections run side by side); (3) any section that fails again: run it on the tag `v0.8.13` (`ref` = v0.8.13) to see whether it is pre-existing; (4) fix a real regression, else record the reruns as the proof (`git diff <gated> HEAD -- app launcher3 phoneguide` must stay empty, only version lines may differ); (5) then bump `app/build.gradle.kts` versionName 0.9.0 / versionCode 39 and `bash ship.sh "note"`.
+
+## Solo reruns and the baseline (written 2026-11-09 22:30 UTC, after the cut-off)
+
+Product code is identical to the gated head (`git diff 09215cc HEAD -- app launcher3 phoneguide` is empty; only scenario, docs and CI bookkeeping changed).
+
+| Run | Section / ref | Id | Result |
+| :- | :- | :- | :- |
+| #466 | `base`, head | 42683210584 | 4 FAIL, 2 native crashes (threads `launcher-loader` and main) |
+| #467 | `o`, head | 42683216363 | green |
+| #468 | `legacy`, head | (see ckpt 831) | 2 FAIL (reset2, startup) + a native crash |
+| #469 | `lq`, head | (see ckpt 831) | green |
+| #470 | `base`, TAG v0.8.13 (edbf66d) | 42685125516 | **28 PASS, 1 FAIL** (`lock: Launcher control does not open in custom mode`) + `INFO NATIVE CRASH #1`: the RELEASED tag crashes natively too |
+| #471 | `base`, head 4a49b3f | 42685347862 | **29 PASS, 0 FAIL, no native crash** |
+
+Reading: `base` fails on the released tag with the same native crash (so the crash is the emulator's, not BN1's) and passes clean on the head. The head's earlier `base` failures (#464, #466) were crash-poisoned runs. `legacy` is the one section still to prove: dispatched solo on `main` and on `v0.8.13` side by side (ids in the checkpoint).
