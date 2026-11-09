@@ -25,15 +25,17 @@ public final class PencilRules {
         return refreshed && visible && boundsOk ? FOUND : LOST;
     }
 
-    /** The cover goes now: the followed pencil was lost, or a whole-tree search ran and found none. Never because nothing could be checked (no node and no search allowed): that leaves the cover as it is. */
-    public static boolean hideCover(int followed, boolean searched, boolean foundByFullSearch) {
-        if (foundByFullSearch) return false;
+    /** The cover goes now: the followed pencil was lost, or a whole-tree search ran and found none. Never because nothing could be checked (no node and no search allowed): that leaves the cover as it is. (Called only when nothing was found.) */
+    public static boolean hideCover(int followed, boolean searched) {
         return followed == LOST || searched;
     }
 
     /** While the cover is up it is re-checked this often even without an event (the events stop when the panel stops moving, and the last one may come before the pencil is hidden). One node refresh each: cheap. */
     public static final long WATCH_MS = 150;
 
-    /** A whole-tree search is not held back by the spacing gap right after a followed pencil was lost (it may be a transient failure; the cover is already hidden, the pencil must be re-covered promptly). */
-    public static boolean searchGapWaived(int followed) { return followed == LOST; }
+    /**
+     * A whole-tree search is not held back by the spacing gap right after a followed pencil was lost (it may be a transient failure; the cover is already hidden, the pencil must be re-covered promptly) - but only when
+     * that call did NOT already search: a search that found nothing is the answer, a second one 30 ms later (up to ~500 ms of main thread on the tablet) cannot find more (code review 2026-11-09).
+     */
+    public static boolean searchGapWaived(int followed, boolean fullSearchRan) { return followed == LOST && !fullSearchRan; }
 }

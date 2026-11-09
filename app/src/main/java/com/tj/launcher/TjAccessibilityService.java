@@ -1055,6 +1055,7 @@ public class TjAccessibilityService extends AccessibilityService {
             return "switch " + (homeSwitchOn() ? "on" : "off") + ", power menu mode " + Features.powerMode(this) + ", crops stored " + HomeShot.count(this) + ", window " + (patchView != null && patchHomeMode ? (patchResting ? "resting" : "present, away") : "none")
                     + ", fresh " + homeRestable() + ", calibrating " + homeCalRunning
                     + ", foreign windows seen " + homeForeignCount + (homeForeignCount == 0 ? "" : " (" + homeForeignNames + "; the last " + Math.max(0, (android.os.SystemClock.uptimeMillis() - homeForeignLastAtMs) / 1000) + " s ago)")
+                    + (homeForeignUnlockIgnored == 0 ? "" : ", unlock window events ignored " + homeForeignUnlockIgnored)
                     + " | " + Features.getString(this, HOME_STATUS_KEY, "(nothing yet)");
         } catch (Throwable t) { return "(unreadable)"; }
     }
@@ -2219,8 +2220,8 @@ public class TjAccessibilityService extends AccessibilityService {
             if (r == null) {
                 // BN4 (Tj, 2026-11-09 03:02 UTC: "as soon as I slide the notification panel back up I see a white box on the lock screen"): a pencil that was being followed and is gone (hidden, collapsed, INVISIBLE views
                 // cannot be refreshed) takes the cover away AT ONCE; before, only a whole-tree search that found nothing did, and that one waits for its spacing gap: the opaque white cover stayed on the lock screen.
-                if (PencilRules.hideCover(penFollowed, penSearched, false)) hidePencil(penFollowed == PencilRules.LOST ? "the followed pencil is gone" : "no pencil found");
-                if (PencilRules.searchGapWaived(penFollowed)) {   // it may only have been a failed refresh: search promptly (the gap is waived once) and cover the pencil again if it is still there
+                if (PencilRules.hideCover(penFollowed, penSearched)) hidePencil(penFollowed == PencilRules.LOST ? "the followed pencil is gone" : "no pencil found");
+                if (PencilRules.searchGapWaived(penFollowed, penSearched)) {   // it may only have been a failed refresh (no search ran in this call): search promptly (the gap is waived once) and cover the pencil again if it is still there
                     lastPenFullMs = 0;
                     if (!penPending) { penPending = true; handler.postDelayed(penEval, 30); }
                 }
@@ -2289,7 +2290,12 @@ public class TjAccessibilityService extends AccessibilityService {
                     CharSequence cd = n.getContentDescription();
                     if (!n.isVisibleToUser() || cd == null || !cd.toString().toLowerCase(java.util.Locale.ROOT).contains("edit")) continue;
                     Rect b = new Rect(); n.getBoundsInScreen(b);
-                    if (pencilBoundsOk(b)) { dropPenNode(); try { penNode = AccessibilityNodeInfo.obtain(n); } catch (Throwable ignored) { penNode = null; } return b; }
+                    if (pencilBoundsOk(b)) {
+                        dropPenNode();
+                        try { penNode = AccessibilityNodeInfo.obtain(n); } catch (Throwable ignored) { penNode = null; }
+                        if (penNode == null) return null;   // a cover must always have a node it follows (penWatch hides one that has none: found without a node = no cover, not a 150 ms flicker; code review 2026-11-09)
+                        return b;
+                    }
                 }
             } finally { root.recycle(); }
         }
