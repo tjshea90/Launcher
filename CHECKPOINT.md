@@ -1,13 +1,13 @@
-# CHECKPOINT 834 — read me first, then TASKS.md
+# CHECKPOINT 835 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T22:27:49Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `5fd2c0b` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T22:36:44Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `e796a99` (this checkpoint is the commit after it)
 
 ## Just done
-Read-only audit subagent started 22:29Z (BN1m-2: look-alike state words vs Tj screenshots) -> research/BN1M2_AUDIT_2026-11-09.md; checklist v0.9.0 de-DRAFTed
+legacy SOLO fails reset2 by design (needs base in the same run, HANDOFF 0e/RS1): #472 head 17P/3F (reset2 + W5x2 after native crash launcher-loader jemalloc), #473 TAG v0.8.13 19P/1F reset2. gate.sh BIND legacy->base fixed. Dispatched base,legacy ONE run: #474 id 42713242884 on 306152a (22:35Z)
 
 ## Do this next
-timer 22:34Z: read #472 (legacy main id 42711379205) and #473 (legacy tag id 42711385101). Green -> bump 0.9.0/code 39, ship.sh, android.yml full_build main, record-release. Audit result -> v0.9.1 only if cheap fixes. Heartbeat trig_01DhC2W8FUPFeqdGFQCt7yWe
+timer 22:47Z: read #474 (get_workflow_run; failed_only tail 75). Green (reset2 passes after base) -> bump 0.9.0/code 39, ship.sh, android.yml full_build main, get_release_by_tag v0.9.0, record-release. A native crash again -> rerun base,legacy; if reset2 fails after base on head but not tag -> real. Audit subagent writes research/BN1M2_AUDIT_2026-11-09.md. Heartbeat trig_01DhC2W8FUPFeqdGFQCt7yWe
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ timer 22:34Z: read #472 (legacy main id 42711379205) and #473 (legacy tag id 427
 
 ## Last ten checkpoints
 ```
+  0f211eb ckpt 834: Read-only audit subagent started 22:29Z (BN1m-2: look-alike state words vs Tj 
   299085c ckpt 833: #470 base on TAG v0.8.13: 28 PASS 1 FAIL + native crash (released tag crashes 
   a4583b1 ckpt 832: Baseline #470 id 42685125516 = base on tag v0.8.13; #471 id 42685347862 = base
   4a49b3f ckpt 831: Solo reruns: #466 base FAIL 4 (2 native crashes: launcher-loader, main), #467 
@@ -25,8 +26,7 @@ timer 22:34Z: read #472 (legacy main id 42711379205) and #473 (legacy tag id 427
   0cf5f0e ckpt 827: Gate #463/#464 (42671984609 / 42671992301) FAILED at +57 s with ZERO jobs (no 
   e676c11 ckpt 826: BO1d PROVEN: heartbeat first fire 18:27:33Z reached this session idle (queued 
   0c91d62 ckpt 825: HANDOFF.md architecture map: Settings look-alike row. Gate #463/#464 running (
-  1ff741f ckpt 824: Gate #465 (rg solo, 42671999660, 09215cc) = SUCCESS (done 18:16:50). #463/#464
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(3 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
