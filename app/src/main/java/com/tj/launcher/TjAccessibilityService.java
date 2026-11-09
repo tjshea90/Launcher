@@ -2218,13 +2218,14 @@ public class TjAccessibilityService extends AccessibilityService {
     private Rect findPencil(boolean allowFull) {
         AccessibilityNodeInfo known = penNode;
         if (known != null) {
+            boolean refreshed = false, visible = false, boundsOk = false; Rect b = new Rect();
             try {
-                if (known.refresh() && known.isVisibleToUser()) {
-                    Rect b = new Rect(); known.getBoundsInScreen(b);
-                    if (pencilBoundsOk(b)) { penFast++; penSearched = true; return b; }
-                }
+                refreshed = known.refresh();
+                if (refreshed) { visible = known.isVisibleToUser(); if (visible) { known.getBoundsInScreen(b); boundsOk = pencilBoundsOk(b); } }
             } catch (Throwable ignored) { }
-            dropPenNode();   // gone, hidden or moved to a bad place: search again (below) when allowed
+            penFollowed = PencilRules.follow(true, refreshed, visible, boundsOk);   // BN4
+            if (penFollowed == PencilRules.FOUND) { penFast++; penSearched = true; return b; }
+            dropPenNode();   // gone, hidden or moved to a bad place: updatePencil takes the cover away; search again (below) when allowed
         }
         if (!allowFull) return null;
         penSearched = true;
