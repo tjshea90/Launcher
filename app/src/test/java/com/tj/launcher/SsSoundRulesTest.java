@@ -233,13 +233,13 @@ public class SsSoundRulesTest {
 
     // ------------------------------------------------------------------ ringtone rows
     @Test public void aRingtoneRowShowsTheTitleOfItsSound() {
-        assertEquals("Cesium", SsSoundRules.ringtoneSummary(true, "Cesium"));
-        assertEquals("On The Hunt", SsSoundRules.ringtoneSummary(true, "On The Hunt"));
+        assertEquals("Test tone A", SsSoundRules.ringtoneSummary(true, "Test tone A"));
+        assertEquals("Test tone B", SsSoundRules.ringtoneSummary(true, "Test tone B"));
     }
 
     @Test public void aSilentChoiceReadsNone() {
         assertEquals("None", SsSoundRules.ringtoneSummary(false, null));
-        assertEquals("None", SsSoundRules.ringtoneSummary(false, "Cesium"));   // no sound wins over a stale title
+        assertEquals("None", SsSoundRules.ringtoneSummary(false, "Test tone A"));   // no sound wins over a stale title
     }
 
     @Test public void aSoundWithoutAnameReadsUnknown() {
