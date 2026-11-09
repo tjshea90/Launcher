@@ -69,8 +69,11 @@ final class SsHomeSummary implements SsPages.Live {
     }
 
     private void maybeReload(boolean force) {
-        long now = System.currentTimeMillis();
-        if (loading || (!force && now - lastLoad < MIN_RELOAD_MS)) return;
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (loading) return;
+        SsBatteryStats.Data shared = SsBatteryStats.recent(MIN_RELOAD_MS, now);   // review B #4 / A #3: the Battery page (or an earlier visit) read the dump a moment ago, do not spawn another dumpsys on every return to the home page
+        if (shared != null) { if (data != shared) { data = shared; renderBattery(); } return; }
+        if (!force && now - lastLoad < MIN_RELOAD_MS) return;
         loading = true;
         lastLoad = now;
         Thread t = new Thread(new Runnable() {
