@@ -116,8 +116,8 @@ final class SsBatteryStats {
             final Process p = proc;
             Thread watchdog = new Thread(new Runnable() {
                 @Override public void run() {
-                    long end = System.currentTimeMillis() + limitMs;
-                    while (!finished.get() && System.currentTimeMillis() < end) { try { Thread.sleep(50); } catch (InterruptedException e) { return; } }
+                    long end = android.os.SystemClock.elapsedRealtime() + limitMs;   // not the wall clock: a clock set backwards must not give a hung dumpsys more time
+                    while (!finished.get() && android.os.SystemClock.elapsedRealtime() < end) { try { Thread.sleep(50); } catch (InterruptedException e) { return; } }
                     if (!finished.get()) { timedOut.set(true); p.destroy(); }
                 }
             }, "TjSsBattWatch");
