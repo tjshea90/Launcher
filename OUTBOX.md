@@ -1531,3 +1531,18 @@
 >
 > **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
 <!-- sha:35c09b465b47 -->
+
+## 2026-11-09T02:56:05Z
+> The tablet report button is inside Launcher control, which only opens while the stock launcher (Quickstep) is your home.
+>
+> 1. Open the stock app drawer and tap the **Launcher control** icon. In custom-launcher mode it closes itself, so switch to Quickstep first.
+> 2. Scroll down to the shell helper part of the page. Right under the grey text "The helper is a small process the adb command starts…" is a row called **Tablet setup & report**, followed by **adb setup guide**. Tap **Tablet setup & report**.
+> 3. On that screen, tap **"2. Collect the tablet report (small, about a minute) – SEND THIS FILE"**. Wait about a minute and don't touch anything meanwhile.
+> 4. Send me the file `tablet-report.txt`. It is in the **Downloads** app (or any file manager), folder **launcher-probe**.
+>
+> - **If the file isn't in Downloads:** that means the shell helper isn't running. The report then stays under Android › data › com.tj.launcher › files › probe › tablet-report.txt.
+> - **If you can't attach a file:** tap **"2b. Share a SHORT summary as text"** on the same screen and send that text instead.
+> - **No helper needed:** buttons 2 and 2b both work without it.
+>
+> For the lock-screen flash, take the report soon after you see it. The lock log is a short ring that overwrites old lines. For the home-screen first press, take it right after a press that showed the Screenshot button.
+<!-- sha:e8e5dfc4e682 -->
