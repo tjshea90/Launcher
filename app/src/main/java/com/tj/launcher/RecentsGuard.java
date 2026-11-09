@@ -27,7 +27,10 @@ public final class RecentsGuard {
             ActivityManager am = (ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
             List<ActivityManager.AppTask> tasks = am == null ? null : am.getAppTasks();
             if (tasks == null) return;
-            for (ActivityManager.AppTask t : tasks) t.setExcludeFromRecents(true);
+            for (ActivityManager.AppTask t : tasks) {
+                if (isSettingsLookAlikeTask(t)) continue;   // BN1: like the real Settings, the look-alike is a normal card in Recents
+                t.setExcludeFromRecents(true);
+            }
         } catch (Throwable t) { Log.e(TAG, "exclude failed", t); }
     }
 
