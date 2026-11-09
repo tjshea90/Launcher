@@ -89,7 +89,7 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   Tj); track 2 px, thumb 11 px, inactive track #D7D7D7 = colorControlNormal #8A000000 x disabled_alpha_material_light 0.26 over #FAFAFA (calc 215 = #D7), active
   colorControlActivated = #008577 [tablet+calc].
 - suppression_text (Ring/Notification rows only): text = SuppressorHelper.getSuppressionText(ctx, NotificationManager.getEffectsSuppressor()) when a suppressor
-  is set [src class, text from memory: "Muted by <app>"]; empty -> view stays gone.
+  is set = framework string muted_by "%1$s is muting some sounds" (fwbase strings.xml l.4936; %1$s = the suppressor service's label); null -> the view stays gone.
 
 ### 1.3 The four rows: strings, icons, streams, controllers (settings10/src/com/android/settings/notification/*VolumePreferenceController.java)
 - Common base VolumeSeekBarPreferenceController -> AdjustVolumeRestrictedPreferenceController -> SliderPreferenceController. displayPreference() calls
