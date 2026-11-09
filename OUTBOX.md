@@ -1480,3 +1480,15 @@
 >
 > **Still waiting on you (unchanged):** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 tablet checks, and turning off the `session-handoff` plugin.
 <!-- sha:34f230b42662 -->
+
+## 2026-11-09T02:35:50Z
+> Got both new requests (BN2 and BN3) and wrote them into `TASKS.md` in your words, checkpointed. Nothing is built for either yet.
+>
+> - **Home screen, first side-key press:** a read-only agent is mapping what the patch needs before the first power-menu press, and what exists only after that press. The fix will be to have everything ready before the home screen is visible. I'll add an emulator check that makes the very first press right after home appears, which none of the current tests do.
+> - **Lock screen, flash when pulling the PIN pad:** the same agent is mapping every place that shows or redraws the patch during a pull. The patch already hides when your finger touches down, so the question is where it can be late or come back. I'll hide it at the earliest signal, keep it hidden until the PIN pad is gone, and log every hide and show with times.
+> - **Order (your call to veto):** the Settings spoof research is still running (it only reads). Then BN2 and BN3 ship first as the next release, since you use the patch every day. The Settings spoof build follows.
+>
+> **From you:** the next time you see the lock-screen flash, or the first-press leak on home, send the tablet report right away (Launcher control, then the report). The log keeps the exact hide and show times, so I can size the fix instead of guessing.
+>
+> **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
+<!-- sha:3df0231d2437 -->
