@@ -85,11 +85,17 @@ public final class SsRingtoneFragment extends Fragment {
             @Override public void run() {
                 try {
                     RingtoneManager.setActualDefaultRingtoneUri(app, type, picked);
-                } catch (SecurityException e) {
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override public void run() { Toast.makeText(app, "This setting can't be changed from here.", Toast.LENGTH_SHORT).show(); }
-                    });
-                } catch (Throwable ignored) { }
+                } catch (Throwable e) {
+                    // The setting is written first and the sound is copied into the settings cache afterwards: a refusal of the copy leaves the new sound in place, so only a
+                    // refusal that left the old sound is reported.
+                    boolean stored = false;
+                    try { stored = Objects.equals(RingtoneManager.getActualDefaultRingtoneUri(app, type), picked); } catch (Throwable ignored) { }
+                    if (!stored && e instanceof SecurityException) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override public void run() { Toast.makeText(app, "This setting can't be changed from here.", Toast.LENGTH_SHORT).show(); }
+                        });
+                    }
+                }
             }
         }, "ss-ringtone-save");
         t.start();
