@@ -108,6 +108,8 @@ BRIEF="$(
     echo
   fi
 
+  # can any PreCompact hook veto a compaction right now? (one line; a VETO line is the first thing to fix)
+  bash tools/compact_guard.sh 2>/dev/null | sed 's/^/  /' | cut -c1-300
   echo "-- toolchain --"
   command -v java >/dev/null 2>&1 && echo "  OK    java" || echo "  WARN  no java — gradlew cannot run"
   bash tools/ensure-build-env.sh --check --quiet >/dev/null 2>&1 \
