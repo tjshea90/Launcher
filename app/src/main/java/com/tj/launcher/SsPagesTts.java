@@ -53,7 +53,7 @@ final class SsPagesTts {
         list.addView(language);
         list.addView(SsRows.divider(a));
 
-        final SeekBar rate = new SeekBar(a), pitch = new SeekBar(a);
+        final SeekBar rate = SsRows.discreteSeekBar(a), pitch = SsRows.discreteSeekBar(a);
         rate.setMax(SsAccessRules.RATE_PROGRESS_MAX);
         pitch.setMax(SsAccessRules.PITCH_PROGRESS_MAX);
         rate.setProgress(SsAccessRules.rateProgress(stored(a, RATE)));

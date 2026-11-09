@@ -62,6 +62,15 @@ final class SsRows {
         if (v instanceof ViewGroup) { ViewGroup g = (ViewGroup) v; for (int i = 0; i < g.getChildCount(); i++) setTextEnabled(g.getChildAt(i), enabled); }
     }
 
+    /** A platform style by name (private ones too: the Settings layouts use styles the public SDK does not list); 0 when this build has none. */
+    static int sysStyle(String name) { return android.content.res.Resources.getSystem().getIdentifier(name, "style", "android"); }
+
+    /** AOSP's Widget.Material.SeekBar.Discrete (tick marks) as the Settings sliders use it; the plain seek bar of the theme when the platform has no such style. */
+    static android.widget.SeekBar discreteSeekBar(Context c) {
+        int style = sysStyle("Widget.Material.SeekBar.Discrete");
+        return style != 0 ? new android.widget.SeekBar(c, null, 0, style) : new android.widget.SeekBar(c);
+    }
+
     /** A standard preference row: optional icon (36 dp tile or 24 dp glyph), title, optional summary; {@code click} null = not clickable (no ripple). */
     static LinearLayout row(Context c, View icon, CharSequence title, CharSequence summary, View.OnClickListener click) {
         LinearLayout r = new LinearLayout(c);
