@@ -81,7 +81,12 @@ public final class SsRingtoneFragment extends Fragment {
         Activity a = getActivity();
         if (a == null) return;
         final Context app = a.getApplicationContext();
-        final Uri picked = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+        final Uri picked;
+        try {
+            picked = data.getParcelableExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI);
+        } catch (RuntimeException e) {
+            return;   // review A #4: a third-party picker that answers with something that is not a Uri must not take the shared launcher process down
+        }
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
                 try {
