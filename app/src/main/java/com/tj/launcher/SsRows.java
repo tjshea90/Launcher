@@ -98,7 +98,10 @@ final class SsRows {
         return iv;
     }
 
-    /** A category heading: teal capitals, 11 sp medium, letter spacing 0.0727, text at 72 dp, 16 dp above and below (AOSP TextAppearance.CategoryTitle + the Settings category layout). */
+    /**
+     * A category heading: teal capitals, 11 sp medium, letter spacing 0.0727, text at 72 dp. The block is 32 dp of padding with 8 dp of it BELOW the text (measured 2026-11-09 on Tj's Languages screenshot against
+     * the first CI render: the glyphs sit exactly 8 px lower in the stock, the next row does not move; 16 / 16 dp was 8 px too high). The top is "32 dp minus 8 dp" so the block keeps its rounded height at any density.
+     */
     static TextView heading(Context c, CharSequence text) {
         TextView t = new TextView(c);
         t.setText(text);
