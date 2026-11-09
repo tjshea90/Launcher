@@ -1718,3 +1718,12 @@
 ## 2026-11-09T04:23:53Z
 > Run 448 (`hp` alone) passed, including the new check that the unlock doesn't wrongly keep the home patch away. Runs 444 (`pt`), 447 (`e1,n,ac`) and 449 (`fp,last` with the fixed test) are still running, and I'll read them at about 04:28 UTC. If they're green I ship v0.8.13 straight away, and nothing goes out red.
 <!-- sha:bd8f3abc53c5 -->
+
+## 2026-11-09T04:28:35Z
+> Four of the five gate reruns are green, and the fifth is the last one standing between us and the release:
+>
+> - **Green:** `last` alone, `e1,n,ac`, `hp`, and `fp,last` with the fixed test.
+> - **Still running:** `pt` alone (run 444). It's past its usual time, probably a slow ffmpeg install, and I'll check it at 04:31 UTC.
+>
+> When it's green I'll bump the version to 0.8.13, run `ship.sh`, have GitHub build it, confirm the Release exists and send you the link. If it's red, I'll triage it against v0.8.12 first and won't ship it red.
+<!-- sha:1ab68ceeeba4 -->
