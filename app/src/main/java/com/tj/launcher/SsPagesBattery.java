@@ -126,8 +126,11 @@ final class SsPagesBattery {
         }
 
         private void maybeReload(boolean force) {
-            long now = System.currentTimeMillis();
-            if (loading || (!force && now - lastLoad < MIN_RELOAD_MS)) return;
+            long now = android.os.SystemClock.elapsedRealtime();
+            if (loading) return;
+            SsBatteryStats.Data shared = SsBatteryStats.recent(MIN_RELOAD_MS, now);   // review A #3: the Settings home (or an earlier visit) read the dump a moment ago, do not spawn another dumpsys
+            if (shared != null) { if (data != shared) { data = shared; if (started) render(); } return; }
+            if (!force && now - lastLoad < MIN_RELOAD_MS) return;
             loading = true;
             lastLoad = now;
             final Context app = a.getApplicationContext();
