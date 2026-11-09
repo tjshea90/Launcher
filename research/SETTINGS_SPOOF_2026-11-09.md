@@ -165,6 +165,28 @@ Useful tags to read first: `res/layout/preference_*`, `res/values/dimens.xml`, `
   "109 minutes ago" / "113 minutes ago" / "2 hours ago"; "Screen usage since full charge" shows "59 min" / "1 hr, 3 min" / "1 hr, 16 min". (The estimate and the
   history figures come from Android's own battery statistics.) The row label on screen is "Screen usage since full charge" (Tj wrote "since last full charge").
 
+## 8. The SECOND batch of screenshots (Tj, 2026-11-09 02:47 UTC; 5 more files; words + numbers only)
+
+Tj's words: "The model and hardware setting should look like the photo, but it can't be opened. The languages and input page has everything except autofill service and personal
+dictionary, and there is a last setting on the bottom called Text-to-speech output". (Claude's reading is in TASKS BN1i: Model & hardware = the About-page row as shown, a tap does nothing.)
+
+- **Languages & input** (stock, 9:41): rows: "Languages" (a translate icon at x 30, summary "English (United States)"), divider, heading KEYBOARDS: "Virtual keyboard / Android Keyboard (AOSP)",
+  "Physical keyboard / Not connected"; divider; heading TOOLS: "Spell checker / Android Spell Checker (AOSP)", "Autofill service" (REMOVE), "Personal dictionary" (REMOVE); divider; "Pointer speed";
+  and (Tj) a LAST row "Text-to-speech output" below it. Measured y (px): Languages title 110-129, summary 136-154, divider 173, heading KEYBOARDS cap 204-214, Virtual keyboard 251-270 / 277-295,
+  Physical keyboard 338-357 / 365-379, divider 401, TOOLS 432-442, Spell checker 479-497 / 505-523, Autofill 565-581, Personal dictionary 628-647, divider 666, Pointer speed 690-708.
+  Dividers are 1 px #DADCE0 full width. (In the spoof, after removing the two rows the same rhythm continues: Spell checker, then the divider, Pointer speed, Text-to-speech output.)
+- **Text-to-speech output** (stock, state with NO engine installed: "Preferred engine" has no summary, the rest is disabled): rows: "Preferred engine" (enabled, #202020, title only, y 109-129);
+  "Language" (disabled #B9B9B9, summary "Sets the language-specific voice for the spoken text", y 173-190 / 199-216); divider y 235; "Speech rate" (disabled, title y 274-292) with a slider under it
+  (y 315-323, track #D7D7D7 from x 77 to 569, DISABLED thumb = a hollow ring about 9 px at x 152); "Pitch" (title y 365-379, slider y 406-414, hollow thumb at x 175); divider y 437; a two-button bar
+  at y 471-484: "PLAY" (disabled #D7D7D7, centred at x 150) and "RESET" (enabled, teal #008577, centred at x 447). Search icon in the toolbar (REMOVE).
+- **Touch & hold delay** dialog (over the Accessibility page): the whole window is dimmed 60 % black (page #FAFAFA -> #646464, toolbar #F5F5F5 -> #626262, status bar #E0E0E0 -> #5A5A5A; the
+  navigation bar stays #FFFFFF); dialog box x 77-521 (445 px), y 359-638 (280 px), colour #FAFAFA; title "Touch & hold delay" (text y 386-410); three radio rows "Short" (selected, teal #008577
+  ring + dot), "Medium", "Long" (text y 435-456, 486-507, 537-560: pitch 51 px = 48 dp); a "CANCEL" text button (teal, y 601-614, right aligned). Summary of the row on the Accessibility page: "Short".
+- **Magnification**: two rows "Magnify with triple-tap / Off" and "Magnify with shortcut / Off" (standard 87 px rows, titles y 109-129 and 196-216). Search icon (REMOVE).
+- **Legal information**: "Third-party licenses" (one line, y 110-129), "System WebView licenses" (one line, y 172-191), "Wallpapers" (title y 234-252, a two-line summary "Satellite imagery
+  providers:" / "(c)2014 CNES / Astrium, DigitalGlobe, Bluesky", y 261-299). Search icon (REMOVE).
+- **Model & hardware**: no new picture; the About screenshot shows "Model & hardware / Model: 711". Tj: it "can't be opened" on the stock tablet, so the spoof row looks the same and is not clickable.
+
 ## 7. Where each stock number comes from (to implement "functions identically")
 
 Filled in as the AOSP source is read (`PowerUsageSummary`, `BatteryUtils.calculateLastFullChargeTime`, `StorageSummaryDonutPreference`, `AudioSummaryPreference`, ...).
