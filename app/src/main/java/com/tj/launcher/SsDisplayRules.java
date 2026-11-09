@@ -125,12 +125,6 @@ final class SsDisplayRules {
                 values[k] = d; labels[k] = LARGER[i]; k++;
             }
         }
-        if (cur < 0) {
-            int[] v2 = java.util.Arrays.copyOf(values, n + 1);
-            String[] l2 = java.util.Arrays.copyOf(labels, n + 1);
-            v2[n] = current; l2[n] = "Custom (" + current + ")";
-            return new Density(v2, l2, n);
-        }
         return new Density(values, labels, cur);
     }
 
