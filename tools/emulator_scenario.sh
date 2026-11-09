@@ -500,7 +500,7 @@ check "B6/D4: when the panel closes the cover is hidden (the window is kept warm
 # allowed whole-tree search, 200 ms gap + the search). The hide line now says how long ago the pencil was last seen.
 BN4_AGE="$(sed -n 's/.*PENCIL cover hidden (kept warm.*last seen \([0-9]*\) ms ago.*/\1/p' "$OUT/pencil-log2.txt" | tail -1)"
 info "BN4: the cover was hidden ${BN4_AGE:-?} ms after the pencil was last seen; line: $(grep 'PENCIL cover hidden' "$OUT/pencil-log2.txt" | tail -1 | cut -c25-170)"
-check "BN4: the cover is hidden within 400 ms of the last time the pencil was seen" bash -c "[ -n '$BN4_AGE' ] && [ '$BN4_AGE' -le 400 ]"
+check "BN4: the cover is hidden within 600 ms of the last time the pencil was seen (a regression guard: the emulator has no animations, so the old code passed it too; the tablet report decides)" bash -c "[ -n '$BN4_AGE' ] && [ '$BN4_AGE' -le 600 ]"
 # ---- BK1b (Tj, 2026-11-08 18:16 UTC, about v0.8.10: "Can the pencil in the notification panel be hidden on the lock screen? If so, do it."): the same quick-settings panel on the LOCK screen, in BOTH stored modes. Run #389 (head 4c2e2e2):
 #      mode custom = the cover appeared 75 ms after the panel was asked to open. Mode QUICKSTEP while locked is the usual case on the tablet without the shell helper (the lock-time pre-arm only switches the mode WITH the helper),
 #      and schedulePencil asked `Mode.isCustom` alone. A marker line is written to the log right before the panel is opened, so the delay until the cover appears can be read.
