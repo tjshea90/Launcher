@@ -215,7 +215,8 @@ Layout `settings10/res/layout/settings_base_layout.xml`: a Toolbar with `style="
 Toolbar facts (values with line numbers in `VALUES_EXCERPTS.md`, section E):
 - Height 56 dp (`action_bar_default_height_material`); elevation 4 dp (`action_bar_elevation_material`), static on normal pages. Background colorPrimary #FFF5F5F5; status bar colorPrimaryDark #FFE0E0E0 (`windowLightStatusBar`).
 - Content inset start: 16 dp on the home page (`Widget.ActionBar`), 72 dp on sub pages (`Widget.ActionBar.SubSettings`, `actionbar_subsettings_contentInsetStart`).
-- Title style `TextAppearance.DeviceDefault.Widget.ActionBar.Title`: 20 sp, textColorPrimary (#DE000000), font `config_headlineFontFamilyMedium`.
+- Title style `TextAppearance.DeviceDefault.Widget.ActionBar.Title` (`styles_device_defaults.xml` line 345; parent `TextAppearance.Material.Widget.ActionBar.Title`, `styles_material.xml` line 362): size
+  `text_size_title_material_toolbar` = **20dp** (`dimens_material.xml` line 78; dp, not sp, so it does not follow the font scale), colour textColorPrimary (#DE000000), font `config_headlineFontFamilyMedium`.
 - Entity-header pages (Battery, Storage): `EntityHeaderController.styleActionBar` (`settings10/src/com/android/settings/widget/EntityHeaderController.java` lines 310-327) sets the toolbar background to colorPrimaryDark #FFE0E0E0 and elevation 0,
   then `ActionBarShadowController` (`fwbase/packages/SettingsLib/ActionBarShadow/src/com/android/settingslib/widget/ActionBarShadowController.java`) sets elevation 8 (passed to `setElevation`, which takes pixels) while the list can scroll up, else 0.
   Header style `EntityHeader` (`fwbase/packages/SettingsLib/LayoutPreference/res/values/styles.xml` lines 18-24): background colorPrimaryDark, paddingTop 24 dp, paddingBottom 16 dp, paddingEnd 16 dp.
