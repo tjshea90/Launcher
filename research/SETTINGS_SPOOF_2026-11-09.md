@@ -54,10 +54,52 @@ AOSP Settings, Android 10: `https://github.com/aosp-mirror/platform_packages_app
 2026-11-09: cloned into the session scratchpad (`aosp/settings10/src`); the scratchpad does not survive a new session, clone again (about 1 minute).
 Useful tags to read first: `res/layout/preference_*`, `res/values/dimens.xml`, `styles.xml`, `res/xml/{power_usage_summary,display_settings,sound_settings,storage_dashboard_fragment,accessibility_settings,system_dashboard_fragment,device_info_settings}.xml`.
 
-## 3. Open (fill in as it is learned; see TASKS BN1a-BN1c)
+## 3. The launcher map (BN1a, read-only subagent, 2026-11-09; paths relative to the repo; T = app/src/main/java/com/tj/launcher, L3 = launcher3/src/com/android/launcher3)
 
-- Delivery shape chosen (unless the map shows a blocker): activities inside the Launcher APK, reached from the custom drawer.
-- What the Launcher already holds (adb grants) and how the drawer treats the real Settings: BN1a map (subagent), then written here.
+- **Drawer list**: `L3/model/LoaderTask.java:800-818` (`getActivityList`) -> `L3/AllAppsList.java:77` `mAppFilter.shouldShowApp` -> `L3/AppFilter.java:20` -> `T/HiddenApps.isShown` -> `T/AppVisibility.java:27-28`:
+  own package: `className != null && ALWAYS_SHOWN_OWN_COMPONENTS.contains(className)`; any other package: shown iff it is in the allowed set (prefs `tj_apps`). The set
+  `ALWAYS_SHOWN_OWN_COMPONENTS` (`AppVisibility.java:13`) is EMPTY and its comment says "later: the Settings clone": the hook for this job already exists.
+  The real Settings (`com.android.settings`) has no special case today (shown iff chosen in the Quickstep-only app chooser; the emulator seeds it allowed, `tools/emulator_scenario.sh:175`).
+- **Launch**: `L3/AppInfo.java:96-100` builds `ACTION_MAIN` + `CATEGORY_LAUNCHER` + component + `NEW_TASK | RESET_TASK_IF_NEEDED`; click path `L3/touch/ItemClickHandler.java:106` -> `BaseDraggingActivity.java:151-170`.
+  Drawer entries come ONLY from `LauncherActivityInfo` (a component with a LAUNCHER intent filter): so the spoof needs one, and the STOCK Quickstep drawer would list it too.
+- **Manifest / build**: compileSdk 36, minSdk 29, **targetSdk 28**, R8 off, application theme `AppTheme`; permissions already declared: WRITE_SECURE_SETTINGS, WRITE_SETTINGS, CHANGE_CONFIGURATION,
+  PACKAGE_USAGE_STATS, DUMP, KILL_BACKGROUND_PROCESSES, SET_WALLPAPER, READ_EXTERNAL_STORAGE ... (adb grants documented in `research/ADB_COMMANDS.txt` lines 24, 52, 54; in-app guide
+  `T/AdbGuideActivity.java`, Quickstep only). Dependencies already in the APK: `androidx.preference:preference:1.1.1` (pulls appcompat 1.1.0), recyclerview 1.3.2, dynamicanimation,
+  `:iconloaderlib` (androidx.core): **no new dependency is needed** (BRIEF.md line 13 "Kotlin stdlib only" is stale). `app/src/main/res` has only `values/tj_strings.xml`, `xml/tj_accessibility.xml`
+  and two vectors (no layouts or styles yet); the pool in `launcher3/res` has `BaseLauncherTheme` (parent `Theme.DeviceDefault.Light`). Own screens so far are code-built plain views.
+- **Settings.System / Secure writers today**: only `T/EntranceWatcher.java:79` writes Settings.System (ACCELEROMETER_ROTATION, needs the WRITE_SETTINGS appop); the Secure / Global writers
+  (`BatterySaverGuard`, `LockQuiet`, `NotifQuiet`, `AnimationSpeedup`, `KeyboardSwitch`, ...) each check `checkSelfPermission(WRITE_SECURE_SETTINGS)` themselves. No code exists for brightness,
+  screen timeout, font scale, volume or storage. Grant checks to copy: `AdbGuideActivity.java:66-88`, `SetupActivity.java:135-155`.
+- **Recents / sweep**: tasks ROOTED in `com.tj.launcher` are never swept (`ResetPolicy.shouldKill` returns false for the own package; `RecentsSweep.java:83`); own windows count as "home"
+  (`TjAccessibilityService.java:2086`); the manifest `excludeFromRecents` plus `RecentsGuard.excludeOurTasks` keep Control / Setup / HiddenApps out of Recents today. A spoof activity inside this APK
+  is therefore safe from the sweep; whether it SHOULD show in Recents like the real Settings does is a design choice (decision below).
+- **Emulator scenario**: `tools/emulator_scenario.sh`, 49 sections written as `if want <name>; then # section <name>` (`want()` line 72); `emulator.yml` takes `sections`; each section is
+  listed in `tools/gate-map.txt` (`section :: fixed waits :: tier :: path regex :: content regex :: protects`); `tools/gate.sh --check` and `tools/test_handoff.sh` keep both in sync.
+  Measuring helpers: `tools/uinode.py` (uiautomator dump -> bounds), `pb_ui.py` (text + bounds), `pb_probe.py` (edges in 600x1024 PNGs). CI screenshots are an artifact (`emulator-screenshots`,
+  14 days) that a hook stops us from downloading: so far only text results reach Claude.
+- **Tests**: JVM only (JUnit 4.13.2, no Robolectric); pattern = a final class with a private constructor and static pure methods (e.g. `HomeDoublePress` + `HomeDoublePressTest`).
+- **Older plan** (`research/SETTINGS_CLONE_2026-11-02.md`): the REAL Settings cannot be cloned (system UID, platform key, 2,917 files, hidden APIs): a "front door" that opens real pages was the
+  earlier idea. Tj's BN1 request is different and feasible: re-implement ONLY seven pages with public APIs. `HANDOFF.md` line 212 held SET1 back "until his go-ahead and his inputs": BN1 is both.
+
+## 3b. Decisions taken for BN1 (Claude, 2026-11-09; Tj can veto any of them)
+
+1. **Delivery: activities inside the Launcher APK**, one theme, no new dependency, no second APK.
+2. **Entry in the drawer**: an `activity-alias` named like the real app (label "Settings", the real icon) carrying the LAUNCHER filter; its class name goes into `ALWAYS_SHOWN_OWN_COMPONENTS`; the real
+   `com.android.settings` stays out of the custom drawer. The alias is ENABLED only in custom mode and DISABLED in Quickstep mode (`PackageManager.setComponentEnabledSetting`, DONT_KILL_APP), so
+   the stock drawer keeps its single real Settings. The flip is level-triggered (process start + `Mode.set`) and runs OFF the unlock path, a few seconds late (the unlock path must stay fast, BK1).
+3. **One page activity** (`SsPageActivity`, extras = page id) on `Theme.DeviceDefault.Settings` + the Settings overlay (`androidx.preference` rows as in the real app) so rows, headings, switches,
+   dialogs and the toolbar are the platform's own; the special rows (battery header, volume / balance sliders, storage header, home icons) are small custom views.
+4. **Strings**: exact English strings from the AOSP source (or Tj's screenshots where the tablet differs, e.g. "Touch & hold delay", "Screen usage since full charge").
+5. **Recents**: the spoof appears in Recents like the real Settings (task label "Settings", the real icon via TaskDescription); it is never swept (own package).
+6. **Seeing the result**: add a CI step that pushes the emulator screenshots of section `ss` to an orphan branch (`ci-shots`) so Claude can fetch and LOOK at them next to Tj's screenshots
+   (numbers alone cannot show a missing icon). No personal data is on the emulator.
+
+## 3c. Still open / to ask Tj (only if the answer changes the work)
+
+- Languages & input page content, Magnification, Touch & hold delay, Text-to-speech, Legal information, Model & hardware and Battery usage pages were not in his screenshots: built from the
+  AOSP 10 source; he gets the list to compare and can send screenshots.
+- "Charging sounds and vibration" on the Sound page keeps its words (he asked to drop only the words "and vibrations" = the heading).
+- The home page summaries ("Wallpaper, sleep, font size" ...) stay as stock; he can change them.
 
 ## 4. Measured numbers to match (px at 170 dpi unless noted) — to be completed from the AOSP source (dp values) and the CI emulator
 
