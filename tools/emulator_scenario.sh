@@ -222,7 +222,12 @@ home
 adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"home_type_launcher\\\" value=\\\"false\\\" /></map>\" > shared_prefs/tj_features.xml'"
 setmode custom; home
 adb shell "run-as $PKG rm -f shared_prefs/tj_crash.xml"; adb shell am force-stop "$PKG"; sleep 1; home
+BRK=""
 for i in 1 2 3; do
+  # v0.9.0 gate: this check failed in 3 of 7 head runs (464, 466, 476) with no native crash in 476. `am crash` does nothing when no process of ours is alive, and the HOME press of the previous
+  # round only had 4 s to restart it: wait for the process (12 s at most, deadline first) and say how long it took, so a failure explains itself.
+  BW=0; while [ "$BW" -lt 12 ] && [ -z "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')" ]; do sleep 1; BW=$((BW+1)); done
+  BRK="$BRK wait$i=${BW}s"
   adb shell am crash "$PKG"; sleep 5
   adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/crash-prefs-$i.txt" 2>&1
   adb shell input keyevent KEYCODE_HOME; sleep 4     # restarts the launcher process for the next crash, dismisses a crash dialog
