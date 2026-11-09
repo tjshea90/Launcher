@@ -1954,3 +1954,7 @@
 ## 2026-11-09T23:05:57Z
 > Local checks passed and v0.9.0 is pushed. All three emulator reruns failed again, so I'm reading what each failure was.
 <!-- sha:1fc315e03b12 -->
+
+## 2026-11-09T23:11:14Z
+> Eight `base` runs are going, four on the v0.8.13 tag and four on the new code with the extra diagnostics. I read them at about 23:20 UTC.
+<!-- sha:34edb7045422 -->
