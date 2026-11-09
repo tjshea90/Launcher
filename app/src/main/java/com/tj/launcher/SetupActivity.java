@@ -79,6 +79,7 @@ public class SetupActivity extends Activity {
         new Item("Permission: read what is running (DUMP)", "Read-only look at what is open.", "GRANT_DUMP"),
         new Item("Permission: change configuration", "For later features (font size, orientation).", "GRANT_CFG"),
         new Item("Permission: read storage", "Only for the wallpaper-patch power-menu mode and the share folder.", "GRANT_STORAGE"),
+        new Item("Permission: battery numbers (usage stats)", "Only for the Battery page of the Settings look-alike: last full charge and screen time.", "GRANT_USAGE"),
         new Item("Usage access", "Which app was used last (read-only).", "OP_USAGE"),
         new Item("Modify system settings", "For later features (brightness, screen timeout).", "OP_WRITE"),
         new Item("Allowed to run in the background", "So Android does not freeze the helper.", "OP_BG"),
