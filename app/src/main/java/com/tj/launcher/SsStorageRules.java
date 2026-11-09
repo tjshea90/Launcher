@@ -17,8 +17,6 @@ final class SsStorageRules {
 
     // ------------------------------------------------------------------ the texts (AOSP Settings strings.xml, English)
 
-    /** Preference title and toolbar title: storage_settings (strings.xml l.3092). */
-    static final String TITLE = "Storage";
     /** What a row shows while its number is being measured: memory_calculating_size (l.3184; StorageItemPreference sets it in its constructor). */
     static final String CALCULATING = "Calculating…";
     /** The second line inside the donut: storage_percent_full (l.10499). */
