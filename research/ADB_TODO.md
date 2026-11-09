@@ -35,7 +35,7 @@ They are lost only if you uninstall the launcher.
 - [ ] `adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS` — only for the Battery page of the Settings look-alike (last full charge, screen time); without it that page shows the percentage only
 - [ ] `adb shell cmd appops set com.tj.launcher GET_USAGE_STATS allow` — read-only "which app was used last"
 - [ ] `adb shell cmd appops set com.tj.launcher WRITE_SETTINGS allow` — for later features (brightness, screen timeout)
-- [ ] Check they took: `adb shell dumpsys package com.tj.launcher | grep -E "WRITE_SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|READ_EXTERNAL_STORAGE"` — each should show `granted=true`
+- [ ] Check they took: `adb shell dumpsys package com.tj.launcher | grep -E "WRITE_SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|READ_EXTERNAL_STORAGE|PACKAGE_USAGE_STATS"` — each should show `granted=true`
 - Not needed and not requested: INTERNET, VIBRATE, KILL_BACKGROUND_PROCESSES, wallpaper and the rest are "normal" permissions Android gives at install. (INTERNET is declared only for the local link to the helper in section C.)
 
 ## B. Keep the helper alive on this low-memory tablet — once (about 30 seconds)
