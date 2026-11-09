@@ -76,7 +76,7 @@ root LinearLayout id battery_entity_header, horizontal, match x match, style Ent
      SOURCE BUG: two stray lines 'android:textColor="?android:attr/textColorPrimary"/>' follow summary1 and summary2 OUTSIDE any tag: never applied, so both stay textColorTertiary.
   B: com.android.settings.fuelgauge.BatteryMeterView id battery_header_icon, width match_parent, height @dimen/battery_meter_height (100 dp), layout_gravity center.
 Tablet check: header height 197 px (grey block y 26..283 = 56 dp toolbar + header); icon: left edge = 250 dp + (298.7 - 66) / 2 dp = 366.4 dp = 389 px (measured 390), 66 x 100 dp = 70 x 106 px
-  (measured 70 x 106), top = 25.5 + (154.5 - 106.25) / 2 px below the header top = y 136 (measured 136); percent text x = 72 dp = 76.5 px.
+  (measured 70 x 106), top = header top (y 86) + 25.5 + (154.5 - 106.25) / 2 px = y 136 (measured 136; 154.5 px = 197 - 25.5 - 17 = height of the text column); percent text x = 72 dp = 76.5 px.
 Percent text: string battery_header_title_alternate = '^1<small> <font size="20">%</font></small>' [SRC settings10/res/values/strings.xml], filled with TextUtils.expandTemplate(getText(...),
   android.icu NumberFormat.getIntegerInstance().format(level)) -> "84" + small "%". Span meaning [MEM, StringBlock]: <small> = RelativeSizeSpan 0.8, <font size="20"> = AbsoluteSizeSpan(20, dip=true):
   the inner span wins, so "%" is about 20 dp (21 px), not scaled by font scale; the space before it is 0.8 x 36 sp.
