@@ -1515,3 +1515,19 @@
 >
 > **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
 <!-- sha:a5a46edc3c6d -->
+
+## 2026-11-09T02:52:01Z
+> The Accessibility, System and About facts agent is done and saved to `research/aosp10-settings/C_access_system_about.md` (checkpoint 762). Nothing is built yet, and three agents are still running: Battery/Display, Sound/Storage, and the map of the home-screen first-press and lock-screen flash.
+>
+> Four findings from the Accessibility, System and About agent change how the pages get built:
+> - **Font size:** the tablet's "Default" is font scale 1.2, but the stock Android 10 value for 1.2 would read "Large". The tablet's settings app has its own size list. A normal app can read the installed Settings app's resources by name, so the Font size page can use the tablet's real list and wording instead of guessing. I haven't tested that on the tablet.
+> - **Text-to-speech page:** it uses "Play" and "Reset" buttons, which matches your screenshot.
+> - **Legal information:** the first row is "Third-party licenses", also as in your screenshot. Its text comes from the system notice file.
+> - **Not available to an ordinary app:** the serial number, plus the vendor-only rows "Custom build version" and "Software updates". That is fine, because you want the build version row to be a fixed text anyway.
+>
+> The plan is unchanged. The home-screen first-press fix and the lock-screen flash fix ship first as the next release, then the Settings spoof build starts.
+>
+> **From you:** the next time you see the lock-screen flash or the first-press leak on the home screen, send the tablet report right away (Launcher control, then the report). The log keeps the exact times of each hide and show.
+>
+> **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
+<!-- sha:35c09b465b47 -->
