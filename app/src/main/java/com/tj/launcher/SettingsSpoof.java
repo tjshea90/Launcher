@@ -53,6 +53,11 @@ public final class SettingsSpoof {
     /** Pure: an open look-alike page may stay on screen (the custom mode, the switch on); otherwise it closes itself on resume (a stale task in a Quickstep session must not show our pages). */
     public static boolean pageAllowed(boolean switchOn, boolean customMode) { return aliasWanted(switchOn, customMode); }
 
+    /** Pure: the class name is the look-alike's alias or its page activity (the two names a task of it can be rooted in). */
+    public static boolean isLookAlikeComponent(String className) {
+        return ALIAS.equals(className) || SsPageActivity.class.getName().equals(className);
+    }
+
     public static boolean hidesRealSettings(Context c, String pkg) {
         if (!REAL_SETTINGS_PACKAGE.equals(pkg)) return false;   // the common case first: the drawer asks this for every app
         return hidesRealSettings(switchOn(c), Mode.isCustom(c), pkg);
