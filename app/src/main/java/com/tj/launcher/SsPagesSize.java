@@ -356,7 +356,7 @@ final class SsPagesSize {
             cell.setGravity(Gravity.CENTER_HORIZONTAL);
             cell.setPadding(0, SsRows.dp(c, 8), 0, 0);
             ImageView icon = new ImageView(c);
-            icon.setImageDrawable(six.get(i).loadIcon(pm));
+            icon.setImageDrawable(six.get(i).ri.loadIcon(pm));   // per stop: the icon follows the stop's density
             icon.setScaleType(ImageView.ScaleType.FIT_CENTER);
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(SsRows.dp(c, 64), SsRows.dp(c, 64));
             ilp.bottomMargin = SsRows.dp(c, 4);
