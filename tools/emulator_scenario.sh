@@ -3856,7 +3856,7 @@ b6unlock >/dev/null 2>&1 || { adb shell locksettings clear --old 1234 >/dev/null
 adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><string name=\\\"power_mode\\\">hide_screenshot</string><boolean name=\\\"guard_stock_home\\\" value=\\\"false\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /></map>\" > shared_prefs/tj_features.xml'"; adb shell am force-stop "$PKG"; sleep 1
 setmode custom; rebind; home; sleep 3
 adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; shot 14-card-before-restart
-info "LAST state: display $(adb shell wm size | tr -d '\r' | tr '\n' ' ')$(adb shell wm density | tr -d '\r' | tr '\n' ' '); a11y services bound: $(adb shell dumpsys accessibility | grep -c 'Service\[label='); stock menu windows: $(adb shell dumpsys window windows | grep -c 'ActionsDialog'); TjA11y log lines this boot: $(adb logcat -d -s TjA11y:I | wc -l); resumed: $(resumed | cut -c1-90)"
+info "LAST state: keyguard $(kg_state); display $(adb shell wm size | tr -d '\r' | tr '\n' ' ')$(adb shell wm density | tr -d '\r' | tr '\n' ' '); a11y services bound: $(adb shell dumpsys accessibility | grep -c 'Service\[label='); stock menu windows: $(adb shell dumpsys window windows | grep -c 'ActionsDialog'); TjA11y log lines this boot: $(adb logcat -d -s TjA11y:I | wc -l); resumed: $(resumed | cut -c1-90)"
 RECT="$(adb logcat -d -s TjA11y:I | grep -o 'bounds=Rect([0-9, -]*)' | tail -1 | grep -o '[0-9]*' | tr '\n' ' ')"
 set -- $RECT
 if [ "$#" -ge 4 ]; then
