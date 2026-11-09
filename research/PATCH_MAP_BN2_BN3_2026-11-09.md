@@ -13,7 +13,7 @@ Evidence limit: no tablet report in the repo holds a `PATCH` line (`research/tab
 - The home patch needs power mode `hide_screenshot` (TAS 605); `Features.powerMode` returns `off` when nothing is stored (`app/src/main/java/com/tj/launcher/Features.java:43-46`). Switch `home_patch`: release ON, debug OFF (HPR 16). `lock_patch` default true (TAS 997), `lock_patch_always` default ON (`app/src/main/java/com/tj/launcher/PatchRest.java:10-11`).
 - NOT FOUND: which power mode and switch values Tj's tablet has stored (the report prints them; none is in the repo).
 - Service config: `accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged|typeWindowContentChanged|typeViewClicked|typeNotificationStateChanged"`, `notificationTimeout="0"` (`app/src/main/res/xml/tj_accessibility.xml:7,12`). No touch-interaction event type is subscribed.
-- Logcat tag is `TjA11y` (TAS 31). The tablet's logcat keeps about three minutes (`app/src/main/java/com/tj/launcher/LockLog.java:8`).
+- Logcat tag is `TjA11y` (TAS 31). The tablet's logcat keeps about three minutes (`app/src/main/java/com/tj/launcher/LockLog.java:8-9`).
 
 ## 1. Home patch objects: where each is created, where it dies
 
