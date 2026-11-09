@@ -1203,3 +1203,34 @@ Continue this session and try to find a way to stop this problem
 ```
 Continue this session and try to find a way to stop this problem
 ```
+
+## 2026-11-09T02:06:44Z
+```
+The attached screenshots are what the settings look like currently in quickstep. The settings icon is in the app drawer. Start building the settings spoof app which looks completely identical to the settings app in the screenshots, and also functions identically, but with only the following settings pages available (in this order from the top down) there should be no search bar feature on the top. You may download and use the android source settings app for android 10 go api 29 if needed and available :
+
+Battery
+Display
+Sound
+Storage
+Accessibility
+System
+About tablet
+
+Inside each section :
+
+Battery - should only have the top gray portion with the battery icon and percentage, and under that only  last full charge, screen usage since last full charge, and the note which says battery usage data is approximate... The the menu at the top should open only a setting that says battery usage, with one permanent app solitaire in the list that never changes and nothing ever adds to the list
+
+Display - only should have brightness level, screen timeout, auto rotate screen, font size, and display size. From top to bottom. There should be no search icon on the top right. 
+
+Sound - everything in the screenshot except do not disturb, shortcut to prevent ringing, the "and vibrations"  text, and sound enhancement
+
+Storage - everything in the screenshot except the free up space button and search icon in the top right
+
+Accessibility - only the following settings in order of the screenshot and including their headings, but without the search icon on the top right : text to speech output, font size, display size, magnification, touch and hold delay, mono audio, audio balance
+
+System - only languages and input
+
+About tablet - only legal information, model and hardware, android version, and custom build version. The custom build version should read vnd_tb8168p1_bsp 1779111601. It should not have the gray owner area at the top. 
+
+No settings page should have the search icon
+```
