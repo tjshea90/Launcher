@@ -1546,3 +1546,17 @@
 >
 > For the lock-screen flash, take the report soon after you see it. The lock log is a short ring that overwrites old lines. For the home-screen first press, take it right after a press that showed the Screenshot button.
 <!-- sha:e8e5dfc4e682 -->
+
+## 2026-11-09T03:00:24Z
+> The Battery and Display facts agent is done and saved to `research/aosp10-settings/A_battery_display.md` (checkpoint 763). Two agents are still running: Sound/Storage, and the map of the home-screen first-press and lock-screen flash. Nothing is built yet.
+>
+> Four findings from the Battery and Display agent matter for the build:
+> - **Brightness percentage:** the number shown ("25%" on your tablet) is not the raw brightness setting. Android converts the raw 10 to 255 value with a gamma curve, so the default raw 102 reads about 82%, and your 25% is a raw value of about 15. I'll use the same conversion so the numbers match.
+> - **Font size and Display size:** Font size only changes one system setting, so that part is simple. Display size has to go through hidden window-manager calls, with the density steps 144, 170, 198, 226 and 254 dpi on your tablet. That page will need either the extra permission grant or the shell helper.
+> - **Battery header:** the grey "Should last until about…" line is a lighter grey than the title, and the big battery icon is one flat colour.
+> - **Display page:** your tablet shows ten rows without folding any away. The spoof just keeps the five you asked for.
+>
+> The order is unchanged: the home-screen first-press fix and the lock-screen flash fix ship first, then the Settings spoof build. I'm waiting on the patch map before touching any code.
+>
+> **Still waiting on you:** the v0.8.12 tablet check, the older v0.8.9 and v0.8.11 checks, and turning off the `session-handoff` plugin.
+<!-- sha:08dfe6b0890c -->
