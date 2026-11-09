@@ -78,3 +78,11 @@ jobs:
           path: emulator-out/
           retention-days: 14
           if-no-files-found: warn
+      - name: Publish the screenshots to branch ci-shots (only when shots=true)
+        if: always() && inputs.shots == 'true'
+        continue-on-error: true
+        timeout-minutes: 3
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SECTIONS: ${{ inputs.sections }}
+        run: bash tools/ci_publish_shots.sh emulator-out
