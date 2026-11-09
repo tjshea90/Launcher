@@ -82,6 +82,7 @@ public class AdbGuideActivity extends Activity {
                 + tick(granted("android.permission.READ_EXTERNAL_STORAGE")) + "READ_EXTERNAL_STORAGE (wallpaper patch)\n"
                 + tick(granted("android.permission.DUMP")) + "DUMP\n"
                 + tick(granted("android.permission.CHANGE_CONFIGURATION")) + "CHANGE_CONFIGURATION\n"
+                + tick(granted("android.permission.PACKAGE_USAGE_STATS")) + "PACKAGE_USAGE_STATS (Settings look-alike: battery numbers)\n"
                 + tick(appOp("android:get_usage_stats")) + "usage access\n"
                 + tick(Settings.System.canWrite(this)) + "modify system settings\n"
                 + tick(pm != null && pm.isIgnoringBatteryOptimizations(PKG)) + "battery whitelist\n"
