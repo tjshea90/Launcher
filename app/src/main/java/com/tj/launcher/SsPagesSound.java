@@ -551,9 +551,7 @@ final class SsPagesSound {
                     if (adjust == SsSoundRules.ADJUST_MUTE) am.adjustStreamVolume(stream, AudioManager.ADJUST_MUTE, 0);
                     if (current >= 0) armCutoff();   // SoundSettings.onStreamValueChanged: a change while a sample is current restarts the 2 s timer
                 } catch (SecurityException e) {
-                    final String msg = e.getMessage() != null && e.getMessage().contains("Do Not Disturb") ? NEEDS_DND : CANT_CHANGE;
-                    main.post(() -> toastRateLimited(msg));
-                    main.post(refresh);
+                    // BN1l (Tj: "it only needs to look identical"): Android refused (a ring-type stream dragged to 0 needs Do Not Disturb access): no toast and no snap back, the slider stays where Tj put it
                 } catch (Throwable t) {
                     main.post(refresh);
                 }
