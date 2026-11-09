@@ -3990,7 +3990,7 @@ check "SS27: the Font size page shows Preview, the sample text, the label (Defau
 SSLG=$(ssdesc "$OUT/ss-font.xml" "Make larger"); set -- $SSLG
 if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 3; fi
 SSFS2=$(adb shell settings get system font_scale | tr -d '\r')
-check "SS27b: the 'Make larger' button wrote font_scale = 1.35 (was $SSFS, now $SSFS2)" test "$SSFS2" = "1.35"
+check "SS27b: the 'Make larger' button wrote font_scale = 1.3 (Tj's table 1.0 / 1.2 / 1.3 / 1.4; was $SSFS, now $SSFS2)" test "$SSFS2" = "1.3"
 adb shell settings put system font_scale "$SSFS" >/dev/null 2>&1; sleep 2
 adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Display size"; sleep 3; ssdump "$OUT/ss-dsize.xml"; shot ss-20-displaysize
