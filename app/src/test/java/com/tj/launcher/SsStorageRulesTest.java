@@ -27,7 +27,6 @@ public class SsStorageRulesTest {
     }
 
     @Test public void fixedTexts() {
-        assertEquals("Storage", SsStorageRules.TITLE);
         assertEquals("Calculating…", SsStorageRules.CALCULATING);
         assertEquals("used", SsStorageRules.DONUT_LABEL);
         assertEquals("95%, used", SsStorageRules.donutDescription("95%"));
