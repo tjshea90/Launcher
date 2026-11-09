@@ -52,10 +52,12 @@ final class SsDisplayRules {
 
     // ------------------------------------------------------------------ font size
     /**
-     * entryvalues_font_size. AOSP 10 has 0.85, 1.0, 1.15, 1.30; Tj's tablet reads "Default" at its own font scale of 1.2, so its table is shifted. PROVISIONAL until Tj sends the tablet's Font size page
-     * (BN1 open question): the same 0.15 steps with "Default" at 1.2.
+     * entryvalues_font_size. AOSP 10 has 0.85, 1.0, 1.15, 1.30; Tj's tablet reads "Default" at its own font scale of 1.2, so its table is not AOSP's. MEASURED from Tj's four Font size screenshots
+     * (2026-11-09, BN1l; research/SETTINGS_BUILD_LOG_2026-11-09.md decision 12): the body text line pitch is 18 / 21 / 23 / 24 px (Small .. Largest) which fits ascent + descent rounding only for
+     * scales 1.0 / 1.2 / 1.3 / 1.4; the 16 sp lines (footer, subtitle) are 0.846 / 1 / 1.078 / 1.194 times as wide as at Default (1.015 / 1.2 / 1.294 / 1.433 by width, within what the tablet's text engine
+     * rounds). A table of 1.0 / 1.2 / 1.3 / 1.4 is the one that fits both.
      */
-    static final float[] FONT_VALUES = { 1.05f, 1.2f, 1.35f, 1.5f };
+    static final float[] FONT_VALUES = { 1.0f, 1.2f, 1.3f, 1.4f };
     static final String[] FONT_LABELS = { "Small", "Default", "Large", "Largest" };
 
     /** ToggleFontSizePreferenceFragment / PreviewSeekBarPreferenceFragment.fontSizeValueToIndex: the first step whose midpoint the value is below. */
