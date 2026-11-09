@@ -38,6 +38,14 @@ public class SsAccessRulesTest {
         assertEquals(0.5f, SsAccessRules.balanceValue(150), 1e-6f);
     }
 
+    /** Review B #1: every slider position written (as the float or as the text the helper stores) reads back as the SAME position; a cut instead of a round moved the thumb one notch at 41, 47, 153, 159. */
+    @Test public void audioBalanceRoundTripsEveryPosition() {
+        for (int p = 0; p <= SsAccessRules.BALANCE_MAX; p++) {
+            assertEquals("float " + p, p, SsAccessRules.balanceProgress(SsAccessRules.balanceValue(p)));
+            assertEquals("text " + p, p, SsAccessRules.balanceProgress(Float.parseFloat(SsAccessRules.balanceText(p))));
+        }
+    }
+
     @Test public void audioBalanceSnapsToTheMiddle() {
         assertEquals(100, SsAccessRules.snapBalance(100));
         assertEquals(100, SsAccessRules.snapBalance(95));            // within 6 of the middle
