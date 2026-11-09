@@ -1697,3 +1697,20 @@
 >
 > I cancelled gate run 442 (`base,e1,n,ac,hp`) because it had hung (the known CI hang, BM1h). A cancelled run still prints its results, so I'll read them in a minute to see which sections finished. The three reruns are still going: 444 `pt` alone, 445 `last` alone, and 446 `fp,last` with screenshots. v0.8.13 is not shipped yet.
 <!-- sha:532cb876a7e7 -->
+
+## 2026-11-09T04:22:04Z
+> The gate is still not fully green, so v0.8.13 is not shipped yet. This is where each run stands:
+>
+> - **`last` failure:** it was a test-order problem, not the app. A screenshot from the new picture channel showed the emulator sitting on the lock screen with the PIN pad up. The `fp` test section leaves the device locked, and `last` assumed an unlocked home. I fixed the test scenario, and a rerun (run 449) is going. `last` on its own already passed.
+> - **`pt` failures:** the same four checks failed at v0.8.4, and `pt` run alone passed then. `gate.sh` now always runs `pt` and `rg` alone. The `pt` rerun (run 444) is still going.
+> - **Run 442:** the emulator died in `e1` (the known CI hang), so `n`, `ac` and `hp` never ran. I'm rerunning them as runs 447 (`e1,n,ac`) and 448 (`hp`).
+> - **Your three fixes:** every check for them passed in run 443 (the pencil's white box hidden 98 ms after the pencil goes, the home patch covering the first press in 10 of 10 films).
+>
+> I'll read the four runs at about 04:28 UTC. If they're green, I ship straight away. Nothing goes out red.
+>
+> Still open from your messages:
+> - **v0.8.13:** ships once the gate is green.
+> - **Settings look-alike app (BN1):** starts once v0.8.13 is built.
+> - **Your tablet checks:** v0.8.9, v0.8.11 and v0.8.12.
+> - **`session-handoff` plugin:** disabling it is still open.
+<!-- sha:9a28acb3a0ff -->
