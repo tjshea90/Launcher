@@ -17,6 +17,9 @@
 # re-reading a conversation that by this point is far larger than that.
 #
 # So: guarantee everything is saved, then say so plainly.
+#
+# 2026-11-09 CORRECTION: with a 1M window and compaction at ~392K the cheap move is to compact and carry on, not to abandon the session; the
+# message below no longer says to start a new session. (The old advice also hid the real bug: a plugin vetoed every compaction.)
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$D" || exit 0
 
@@ -37,7 +40,10 @@ else
   STATE="WARNING: $UNPUSHED commit(s) are not pushed yet — run: git push origin HEAD"
 fi
 
-MSG="This session is now large enough to auto-compact, which is the point where it starts costing real usage: every turn resends the whole conversation, and compaction rewrites it rather than shrinking what you pay for. $STATE  Cheapest next move: run  bash tools/ckpt.sh \"what I just did\" \"what comes next\"  and then START A NEW SESSION. It resumes from GitHub in well under a hundred lines instead of re-reading this entire conversation. Nothing is lost by doing that."
+# 2026-11-09 (TASKS BM1): compaction now fires EARLY (about 392K tokens, CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=40) and is normal: the session
+# CONTINUES and the briefing is re-injected by the SessionStart hook. The old text here ("START A NEW SESSION") dates from the 200K era and
+# would send Tj away at every compaction. A new session is advised only by tools/ctxwatch.py (alarm / critical), never by this hook.
+MSG="Auto-compacting now (the conversation is being summarised so the session can go on). $STATE  The briefing (CHECKPOINT.md, open tasks, rules) is re-read automatically afterwards, and CHECKPOINT.md / TASKS.md hold everything losslessly, so nothing is lost. If you want an even cleaner break, run  bash tools/ckpt.sh \"what I just did\" \"what comes next\"  first."
 if [ "$TEXT_MODE" -eq 1 ]; then
   printf '%s\n' "$MSG"
 else
