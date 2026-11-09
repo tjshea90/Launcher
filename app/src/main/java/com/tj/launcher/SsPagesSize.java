@@ -298,59 +298,9 @@ final class SsPagesSize {
         return scroll(c, col);
     }
 
-    /** screen_zoom_preview_1: four chat messages, outgoing white bubbles with an "A" icon (blue), incoming green bubbles with a "P" icon (green). */
+    /** screen_zoom_preview_1: four chat messages (outgoing: no bubble and a blue "A" disc; incoming: a green bubble with a tail and a green "P" disc), drawn to Tj's measured geometry (SsConversation). */
     private static View conversationPreview(Context c) {
-        LinearLayout col = new LinearLayout(c);
-        col.setOrientation(LinearLayout.VERTICAL);
-        int p = SsRows.dp(c, 10);
-        col.setPadding(p, p, p, 0);
-        col.setBackgroundColor(SsRows.themeColor(c, android.R.attr.colorBackgroundFloating, Color.WHITE));
-        col.addView(message(c, false, "A", "Hi Pete!", "Tue 6:00PM"));
-        col.addView(message(c, true, "P", "Hey, want to grab coffee and catch up today?", "Tue 6:01PM"));
-        col.addView(message(c, false, "A", "Sounds great. I know of a good place not too far from here.", "Tue 6:02PM"));
-        col.addView(message(c, true, "P", "Perfect!", "Tue 6:03PM"));
-        return scroll(c, col);
-    }
-
-    private static View message(Context c, boolean incoming, String letter, String body, String time) {
-        LinearLayout row = new LinearLayout(c);
-        row.setGravity(incoming ? Gravity.START : Gravity.END);
-        row.setPadding(0, 0, 0, SsRows.dp(c, 8));
-        TextView icon = new TextView(c);
-        icon.setText(letter);
-        icon.setGravity(Gravity.CENTER);
-        icon.setTextColor(Color.WHITE);
-        icon.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
-        icon.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        GradientDrawable oval = new GradientDrawable();
-        oval.setShape(GradientDrawable.OVAL);
-        oval.setColor(incoming ? 0xFF689F38 : 0xFF4285F4);
-        icon.setBackground(oval);
-        LinearLayout bubble = new LinearLayout(c);
-        bubble.setOrientation(LinearLayout.VERTICAL);
-        bubble.setPadding(SsRows.dp(c, 14), SsRows.dp(c, 10), SsRows.dp(c, 14), SsRows.dp(c, 12));
-        GradientDrawable shape = new GradientDrawable();
-        shape.setCornerRadius(SsRows.dp(c, 6));
-        shape.setColor(incoming ? 0xFF689F38 : Color.WHITE);
-        if (!incoming) shape.setStroke(1, 0x1F000000);
-        bubble.setBackground(shape);
-        int ink = incoming ? Color.WHITE : 0xFF323232;
-        TextView msg = new TextView(c);
-        msg.setText(body);
-        msg.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        msg.setTextColor(ink);
-        TextView status = new TextView(c);
-        status.setText(time);
-        status.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-        status.setTextColor((ink & 0x00FFFFFF) | 0xB3000000);
-        bubble.addView(msg);
-        bubble.addView(status);
-        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(SsRows.dp(c, 40), SsRows.dp(c, 40));
-        ilp.gravity = Gravity.BOTTOM;
-        LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        blp.setMargins(incoming ? SsRows.dp(c, 8) : 0, 0, incoming ? 0 : SsRows.dp(c, 8), 0);
-        if (incoming) { row.addView(icon, ilp); row.addView(bubble, blp); } else { row.addView(bubble, blp); row.addView(icon, ilp); }
-        return row;
+        return scroll(c, SsConversation.column(c));
     }
 
     /** screen_zoom_preview_2: the first six launcher apps by label in a grid of three columns (icon 64 dp, label 12 sp). */
