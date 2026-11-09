@@ -26,7 +26,7 @@ public final class ReportState {
             "compile_done_code", "boot_count_seen", "keytest_summary", "keytest_output", "keytest_menu", "keytest_at", "keep_alive_blocked_why", "battery_saver_last", "migrate_note",
             // v0.7.6 (review of v0.7.5): the wallpaper kind was documented as "in the report" but never listed; the patch nudges are plain numbers (never the lock-screen number TEXT)
             "wallpaper_kind", "wallpaper_geometry", "patch_dx", "patch_dy", "patch_scale_pct", "patch_dim_pct", "patch_scrim_pct",
-            "lock_text_size_pct", "lock_text_weight_nudge", "lock_text_alpha_pct", "patch_shot_status", "hide_my_photos", "picker_status", "picker_dump", "recents_drawer_only", "recents_guard_status", "clean_start", "recents_sweep", "clean_pending_boot", "patch_rest_info", "patch_auto_note", "patch_auto_cal", "patch_fade", "bs_heals", "bs_unstick_done", "lq_last"));
+            "lock_text_size_pct", "lock_text_weight_nudge", "lock_text_alpha_pct", "patch_shot_status", "hide_my_photos", "picker_status", "picker_dump", "recents_drawer_only", "recents_guard_status", "clean_start", "ss_alias_status", "recents_sweep", "clean_pending_boot", "patch_rest_info", "patch_auto_note", "patch_auto_cal", "patch_fade", "bs_heals", "bs_unstick_done", "lq_last"));
 
     /** Pure: the "key: value" lines for the preferences in {@code all}: every Boolean, plus the allow-listed text and number values; sorted, values flattened to one line and cut to 600 characters. */
     public static String format(Map<String, ?> all) {
