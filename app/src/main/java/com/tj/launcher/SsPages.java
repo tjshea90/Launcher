@@ -56,10 +56,15 @@ final class SsPages {
             { SsPage.SYSTEM, 0xFF9E9E9E, R.drawable.ss_glyph_system, "Languages, gestures, time, backup" },
             { SsPage.ABOUT, 0xFF6F86DA, R.drawable.ss_glyph_about, android.os.Build.MODEL },
         };
+        View battery = null, storage = null;
         for (Object[] x : e) {
             final SsPage p = (SsPage) x[0];
             View.OnClickListener go = new View.OnClickListener() { @Override public void onClick(View v) { a.startActivity(SsPageActivity.intent(a, p)); } };
-            list.addView(SsRows.row(a, SsRows.tile(a, (Integer) x[1], (Integer) x[2]), p.title, (String) x[3], go));
+            View row = SsRows.row(a, SsRows.tile(a, (Integer) x[1], (Integer) x[2]), p.title, (String) x[3], go);
+            if (p == SsPage.BATTERY) battery = row;
+            if (p == SsPage.STORAGE) storage = row;
+            list.addView(row);
         }
+        live.add(new SsHomeSummary(a, battery, storage));   // the two summaries that follow the system: "69% - ..." and "95% used - ... free"
     }
 }
