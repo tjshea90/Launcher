@@ -361,7 +361,7 @@ final class SsPagesSize {
             LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(SsRows.dp(c, 64), SsRows.dp(c, 64));
             ilp.bottomMargin = SsRows.dp(c, 4);
             cell.addView(icon, ilp);
-            TextView label = text(c, six.get(i).loadLabel(pm), 12, "sans-serif", Typeface.NORMAL);
+            TextView label = text(c, six.get(i).label, 12, "sans-serif", Typeface.NORMAL);
             label.setSingleLine(true);
             label.setEllipsize(TextUtils.TruncateAt.END);
             cell.addView(label);
