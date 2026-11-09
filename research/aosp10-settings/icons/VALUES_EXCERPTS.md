@@ -40,10 +40,11 @@ Source: `settings10/res/values/colors.xml`, lines 84-100
     <color name="homepage_privacy_background">#5E97F6</color>
 ```
 
-### Dark-theme variant (only the accessibility tile differs; not used by the light tablet)
-Source: `settings10/res/values-night/colors.xml`, lines 20-20
+### Dark-theme variant (of the seven tiles only Accessibility differs, Support differs too; not used by the light tablet)
+Source: `settings10/res/values-night/colors.xml`, lines 20-21
 ```xml
     <color name="homepage_accessibility_background">#783BE5</color>
+    <color name="homepage_support_background">#3F5FBD</color>
 ```
 
 ### Shape mask of the tile (AdaptiveIconShapeDrawable reads this string; viewport 100 x 100)
