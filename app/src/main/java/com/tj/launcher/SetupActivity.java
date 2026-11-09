@@ -143,6 +143,7 @@ public class SetupActivity extends Activity {
                 case "GRANT_DUMP": return checkSelfPermission("android.permission.DUMP") == PackageManager.PERMISSION_GRANTED;
                 case "GRANT_CFG": return checkSelfPermission("android.permission.CHANGE_CONFIGURATION") == PackageManager.PERMISSION_GRANTED;
                 case "GRANT_STORAGE": return checkSelfPermission("android.permission.READ_EXTERNAL_STORAGE") == PackageManager.PERMISSION_GRANTED;
+                case "GRANT_USAGE": return checkSelfPermission("android.permission.PACKAGE_USAGE_STATS") == PackageManager.PERMISSION_GRANTED;
                 case "OP_USAGE": return op("android:get_usage_stats");
                 case "OP_WRITE": return android.provider.Settings.System.canWrite(this);
                 case "OP_BG": return op("android:run_in_background");
