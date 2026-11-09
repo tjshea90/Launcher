@@ -76,6 +76,19 @@ info "sections: ${SECTIONS:-ALL}"
 pafeat(){ # pafeat <automatic true|false> <manual calibration window end, epoch ms; 0 = none>: wipes the stored crop and the learned menu place
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs files; rm -f files/patchshot_r0.png files/patchshot_r1.png; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_radios_off\\\" value=\\\"false\\\" /><boolean name=\\\"lock_quiet\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"$1\\\" /><string name=\\\"patch_cal_until\\\">$2</string><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
 palock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }     # the lock screen, screen on
+kg_state(){ adb shell dumpsys window policy 2>/dev/null | grep -o 'showing=[a-z]*' | head -1; }   # showing=true | showing=false (global since the v0.8.13 gate: sections fp and last need it without b6)
+b6unlock(){ # unlock the way the other sections do (wake, swipe up, PIN 1234 + Enter) and only THEN clear the PIN; taps only while still locked (they could hit launcher icons); 0 only when the keyguard reports showing=false (runs #412-#415: `locksettings clear` first + `dismiss-keyguard` left the lock screen up, so the next phase and the "unlocked" control started LOCKED)
+  local i
+  for i in 1 2 3; do
+    [ "$(kg_state)" = "showing=false" ] && break
+    adb shell input keyevent KEYCODE_WAKEUP; sleep 2; adb shell input swipe 300 900 300 300 300; sleep 2
+    [ "$(kg_state)" = "showing=false" ] && break
+    adb shell input tap 177 628; sleep 0.4; adb shell input tap 300 628; sleep 0.4; adb shell input tap 424 628; sleep 0.4; adb shell input tap 177 714; sleep 0.4; adb shell input tap 424 886; sleep 3
+  done
+  [ "$(kg_state)" = "showing=false" ] || return 1
+  adb shell locksettings clear --old 1234 >/dev/null 2>&1
+  return 0
+}
 pastatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
 panote(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_auto_note">[^<]*' | sed 's/.*>//'; }
 pamae(){ compare -metric MAE -extract "$3" "$OUT/$1.png" "$OUT/$2.png" null: 2>&1 | grep -o '([0-9.e+-]*)' | tr -d '()'; }
