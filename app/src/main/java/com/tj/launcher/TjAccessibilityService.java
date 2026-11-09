@@ -3006,7 +3006,12 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean menuOpen = false, found = false, dialogUpNow = false;
         if (custom && !Features.POWER_OFF.equals(mode) && !(locked && Features.POWER_BLOCK.equals(mode))) {   // Y1: the cover also works on the lock screen; BLOCK still stays off it
             List<AccessibilityWindowInfo> windows = getWindows();
-            final boolean dialogUp = dialogWindowPresent(windows);
+            // BN2 (Tj, 2026-11-09 03:02 UTC, tablet report): 143 ms after the menu was closed (Home key) a scan still found the stock dialog's window, with its entries, and drew the TALL card over it for 250 ms. A close we
+            // were TOLD about (the system's close-dialogs broadcast) marks the next DYING_DIALOG_MS: a dialog listed in that time is not believed to be a new opening (a new one announces itself: fastMenuOpen clears the mark).
+            final boolean listed = dialogWindowPresent(windows);
+            final boolean dying = listed && !overlayShown && PowerMenuRule.dyingDialog(android.os.SystemClock.uptimeMillis(), menuClosedAtMs);
+            if (dying) Log.i(TAG, "PATCH scan ignored: the stock dialog is still fading out (closed " + (android.os.SystemClock.uptimeMillis() - menuClosedAtMs) + " ms ago)");
+            final boolean dialogUp = listed && !dying;
             dialogUpNow = dialogUp;
             final boolean everyWindow = android.os.SystemClock.uptimeMillis() < fullScanUntilMs;
             if (menuSeenMs == 0 && dialogUp) menuSeenMs = android.os.SystemClock.uptimeMillis();
