@@ -1,4 +1,4 @@
-# Tablet checklist for v0.9.0, the Settings look-alike (BN1). DRAFT written 2026-11-09 before the release; NOTHING in it has run on the real tablet yet, only JVM tests and the CI emulator
+# Tablet checklist for v0.9.0, the Settings look-alike (BN1). Written 2026-11-09; NOTHING in it has run on the real tablet yet, only JVM tests (864) and the CI emulator (section `ss`, all checks green in run #464)
 
 Your words (2026-11-09): "The settings app does not need to work perfectly, it only needs to look identical. For any settings that are hard to build or won't function, don't build it. Simply make it look like the setting is there." So the LOOK was built from your screenshots; the controls change the real setting where the app is allowed to, and stay silent (no message, no snap back) where it is not.
 
