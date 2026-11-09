@@ -239,11 +239,12 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
   the unit inside <font size="20"> = AbsoluteSizeSpan(20, dip=true) [mem], i.e. 20 dip = 21.25 px NOT scaled by font scale; the enclosing RelativeSizeSpan 0.8 may be
   overridden by it depending on span order: measure the "GB" glyph height on the tablet). Example [tablet] "30.28" + "GB".
 - Summary text = getString(storage_volume_total) = "Used of %1$s" with Formatter.formatShortFileSize(ctx, totalBytes) (public API, SI, shorter) = "Used of 32 GB" [tablet].
-- DonutView (settings10/src/com/android/settings/widget/DonutView.java): arc rect = (stroke, stroke, width-stroke, height-stroke) with stroke storage_donut_thickness = 4dp
-  (settings10/res/values/dimens.xml l.319; 4.25 px as float), BUTT caps, STROKE style, antialias; background circle: 360 degrees from -90 (12 o'clock); filled arc:
-  sweep 360 x percent from -90 clockwise. Both Paints get PorterDuffColorFilter(colorAccent #008577, SRC_IN): filled arc = meter_consumed_color (colorForeground,
-  alpha 1.0) -> opaque teal; track = meter_background_color (colorForeground alpha 0.3) -> teal at 30% alpha
-  (fwbase/packages/SettingsLib/res/color/meter_*_color.xml). Outer ring diameter [calc] 119 - 4.25 = 114.75 px (Tj measured 115), centreline 110.5, inner 106.25.
+- DonutView (settings10/src/com/android/settings/widget/DonutView.java): arc rect = (stroke, stroke, width-stroke, height-stroke), BUTT caps, STROKE style, antialias.
+  stroke: the constructor reads storage_donut_thickness = 4dp (settings10/res/values/dimens.xml l.319) as the float 4.25, but the inflate path then calls
+  styledAttrs.getDimensionPixelSize(DonutView_thickness, (int) 4.25) and the attribute is not set in the layout, so the stroke is the INTEGER 4 px [calc].
+  Background circle: 360 degrees from -90 (12 o'clock); filled arc: sweep 360 x percent from -90 clockwise. Both Paints get PorterDuffColorFilter(colorAccent
+  #008577, SRC_IN): filled arc = meter_consumed_color (colorForeground, alpha 1.0) -> opaque teal; track = meter_background_color (colorForeground alpha 0.3) ->
+  teal at 30% alpha (fwbase/packages/SettingsLib/res/color/meter_*_color.xml). Outer ring diameter [calc] 119 - 4 = 115 px (= Tj's measured 115), centreline 111, inner 107.
   percent = used/total (double). Inner text, centred in the view: line 1 = Utils.formatPercentage(percent) = NumberFormat.getPercentInstance().format(percent) ("95%";
   HALF_EVEN, 0 decimals) in typeface Typeface.create(config_headlineFontFamily = "") = Roboto Regular, colour accent, size storage_donut_view_percent_text_size; the
   localized percent sign gets RelativeSizeSpan(storage_donut_view_percent_sign_size / percent_text_size); line 2 = storage_percent_full "used", accent, size
