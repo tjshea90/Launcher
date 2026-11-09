@@ -56,3 +56,20 @@ Next: 4 x `base` on the tag v0.8.13 against 4 x `base` on the head (ckpt 839: th
 `base` on the TAG v0.8.13: #470 failed `lock:` (with a native crash), then #478-#481 (4 runs): ALL GREEN (29-34 PASS, 0 FAIL; one healed native crash in #480). `base` on the HEAD: #464, #466, #476, #485 and #489 failed the same four checks (`crash breaker switched to quickstep`, `after the breaker, Home shows the stock launcher`, `AR1` x2); #471, #474, #475, #477, #482-#484, #486-#488, #490, #491 passed them (the breaker group failed in 5 of 16 head runs, 0 of 5 tag runs).
 
 The diagnostics of ckpt 839 / 841 explain the mechanism: run #489 (branch, `base,last`): the breaker's file after crash 1 `t1`, after crash 2 `t1 t2`, after crash 3 UNCHANGED, mode `custom`; the third round's process (pid 5223) EXISTED (`procs3`) but the log has no `FATAL EXCEPTION` for it: the third `am crash` never crashed anything. The activity manager silently drops a crash request for a process that has not attached to it yet (`ProcessRecord.scheduleCrash` does nothing while `thread == null`); the scenario pressed HOME and waited only 4 s for the restart, and #487 needed 6 s for a process to appear at all (`wait3=6s`). #485 had no record in any round (not explained further: no diagnostics yet). The product code never ran in those rounds, so this is a TEST race that a bigger app / a loaded emulator makes likelier (the head app is larger than the tag). FIX in the scenario (ckpt 842): a round sends the crash again (HOME, 4 s, up to 4 tries) until the breaker's file shows that many records; `breaker diag` prints `roundN=<tries>try/<s waited>/procs=...` and the log lines of the crashes. Confirmation: six `base` runs on the head after ckpt 842 (ids in the checkpoint).
+
+## The confirmation runs of the breaker fix (written 2026-11-10 00:00 UTC)
+
+Product code is the gated head's: `git diff 09215cc HEAD -- app launcher3 phoneguide` shows only `versionCode 39` / `versionName "0.9.0"`.
+
+| Run | Ref / sections | Id | Result |
+| :- | :- | :- | :- |
+| #492 | main `base` | 42721965699 | CANCELLED by me after 16 min: the emulator went offline in RESET1 (19 PASS; `reset:` Calendar + Wi-Fi, then "the emulator went offline (adb did not report a device for 4 minutes)"); infrastructure, no native-crash line, nothing after that point ran |
+| #493 | main `base,last` | (Actions list) | 30 PASS, 0 FAIL |
+| #494 | main `base,x1` | (Actions list) | 33 PASS, 0 FAIL |
+| #495 | branch `base` | (Actions list) | 29 PASS, 0 FAIL |
+| #496 | branch `base,last` | (Actions list) | 30 PASS, 0 FAIL |
+| #497 | branch `base,x1` | 42721986796 | 32 PASS, **1 FAIL** `switching back to custom works` (scenario l.162) + two native crashes |
+
+**The breaker group is fixed:** in all five completed runs `breaker diag` reads `mode=quickstep`, `round1..3 = 1try` (process wait 0 s or 6 s) and the breaker's file ends `tripped=true`; the four checks that failed in 5 of 16 head runs before (`crash breaker switched to quickstep`, `after the breaker, Home shows the stock launcher`, `AR1` x2) passed in all five.
+
+**#497's one FAIL is a native crash, by the job-log clock:** `FAIL switching back to custom works` 23:40:31.42Z, `INFO NATIVE CRASH #1` 23:40:32.28Z (0.85 s later: the next `heal()` is the one inside `setmode quickstep`, right after the check). Crash #1 = pid 3728, thread `Jit thread pool`, fault addr 0x8, `extent_deregister_impl` <- `je_large_malloc` <- `malloc` <- `SzBigAlloc` <- `MatchFinder_Create` <- `LzmaEnc_AllocAndInit` (libartbase): jemalloc again, the process died during `home`'s 4 s wait and Android cleared the default home. Crash #2 (23:42:24Z, main thread, `RecordingCanvas::onDrawDrawable` -> `realloc`) came 110 s later in the `lock:` area and was healed with no FAIL after it.
