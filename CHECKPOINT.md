@@ -1,13 +1,13 @@
-# CHECKPOINT 755 — read me first, then TASKS.md
+# CHECKPOINT 756 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T02:22:40Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `236fca1` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T02:28:32Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `6ae5cdd` (this checkpoint is the commit after it)
 
 ## Just done
-BN1b: all 18 screenshots read; Settings home, System, Battery variants added to research/SETTINGS_SPOOF_2026-11-09.md; BN1a subagent addae9a476b3b454e still running
+BN1: AOSP10 Settings + frameworks/base partial clone in scratchpad aosp/{settings10,fwbase}/src; 3 research subagents launched (A abffb21fd421f24a0 battery/display, B afe999a964c7bc502 sound/storage, C a06bd887e15e9c449 access/system/about) writing research/aosp10-settings/*.md; BN1a map agent addae9a476b3b454e
 
 ## Do this next
-read AOSP 10 layouts/dimens (scratchpad aosp/settings10/src; re-clone with git clone --depth 1 --branch android-10.0.0_r47 into a NEW dir if gone) into section 4 of the research file; collect the BN1a subagent report
+when the 4 agent notices arrive: read their files/report (BN1a report to be written into research/SETTINGS_SPOOF_2026-11-09.md section 3); meanwhile measure the screenshots with PIL into the same file section 4 (numbers only)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read AOSP 10 layouts/dimens (scratchpad aosp/settings10/src; re-clone with git c
 
 ## Last ten checkpoints
 ```
+  6ae5cdd ckpt 755: BN1b: all 18 screenshots read; Settings home, System, Battery variants added t
   ac598a2 ckpt 754: BN1b: 13 of 18 screenshots read, facts in research/SETTINGS_SPOOF_2026-11-09.m
   263981a ckpt 753: BN1 settings spoof request written into TASKS (boxes BN1a-h)
   e584170 ckpt 752: v0.8.12 RELEASED: Build APK #39 id 42547336189 success, Release published 01:4
@@ -25,8 +26,4 @@ read AOSP 10 layouts/dimens (scratchpad aosp/settings10/src; re-clone with git c
   a739409 ckpt 748: gated v0.8.12 (code 37) and pushed it: the handoff self-test, the full unit su
   2ac3ecb ckpt 747: BM1f: #433 id 42545046876 e1,b6,n,x,ac,se,uf = 102 PASS 2 FAIL (UF1 x2 after N
   390c17d ckpt 746: BM1f: #434 id 42545049965 o,hp SUCCESS (hp ok after o = B flake); #433 id 4254
-  5634d23 ckpt 745: BM1f: gate v0.8.12 read: A #428 emulator died in e1 (n,ac,uf,x,se,b6 never ran
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
