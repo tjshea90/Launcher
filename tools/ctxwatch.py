@@ -132,12 +132,14 @@ def measure(path):
                 if found is None:
                     after += len(raw)
                 continue
-            if compaction is None and (o.get("subtype") == "compact_boundary" or o.get("type") == "compact_boundary"):
-                md = o.get("compactMetadata") or o.get("compact_metadata") or {}
-                compaction = {"trigger": md.get("trigger"), "pre": md.get("preTokens") or md.get("pre_tokens"),
-                              "at": o.get("timestamp")}
+            if compaction is None and boundary_of(o):
+                compaction = boundary_of(o)
                 if found is not None:
                     break
+                # The compaction is newer than every model call in the file: the context was just rebuilt (summary + re-injected files).
+                # The call before it (maybe 391K) says nothing about it any more; a false alarm here would be the watchdog's own bug.
+                found = {"prompt": 0, "est": POST_COMPACT_BASE + int(after / CHARS_PER_TOKEN), "fresh": True}
+                break
             if found is None and o.get("type") == "assistant" and not o.get("isSidechain"):
                 msg = o.get("message") or {}
                 u = msg.get("usage")
