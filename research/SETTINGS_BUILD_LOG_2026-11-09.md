@@ -57,6 +57,12 @@ A contact sheet of all of them can be made in a minute with PIL (scratchpad only
 14. Look first, function second (Tj, 2026-11-09 06:28, BN1l): a refused write is SILENT everywhere (no "This setting can't be changed from here." / Do Not Disturb toasts); the control stays where Tj put it. Mono audio /
     Audio balance keep a `Look` (what the control shows + the stored value it was set against) until the stored value changes behind its back; the Sound page's switches and sliders do not snap back; the helper write is still
     tried quietly. Nothing new is requested for function (no new adb grants, no DND access).
+15. Pixel proof against Tj's shots (run #458 id 42575958072 green 62 PASS, run #459 id 42576989735 green 64 PASS; method: PIL ink-row runs on his shot and the CI shot, never by eye). Font size: the body line pitch equals his
+    exactly at all four stops (18 / 21 / 23 / 24 px), every heading and body top within 1-2 px (the emulator's text engine is up to 5 % narrower, so line WRAPS differ: not a layout difference). Display size chat: the bubbles were
+    83 px tall against his 75 (run #458): the platform's default font padding adds ~3 px above and below each text line, his page has none. `setIncludeFontPadding(false)` on the message and the time, with 16 + 12 + 3 dp of padding,
+    fits ALL his single-line bubbles (144 dpi 63 px, 170 dpi 75, 198 dpi 88, 226 dpi 100) and the extra lines of the wrapped ones. Pinned by scenario check SS28f (`tools/ss_chat_probe.py`, offline test
+    `tools/test_ss_chat_probe.sh`: his Default shot reads blue_tops=125,313 green_tops=219,431 bubble_h=75,75; run #458's shot read 125,329 / 227,455 / 83,83). The 3 px lower bottom block on the emulator is its navigation bar
+    (content area ends at 976, his at 973), not our layout: the block is 233 px tall in both.
 
 ## Open questions for Tj (ask ONCE, batched, only if his answer changes the work)
 - (ANSWERED 2026-11-09 06:28, decision 12) Font size page of his tablet: four screenshots, one per position.
