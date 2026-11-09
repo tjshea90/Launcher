@@ -1823,3 +1823,22 @@
 > - **Your tablet checks:** v0.8.9, v0.8.11, v0.8.12 and now v0.8.13.
 > - **`session-handoff` plugin:** disabling it in claude.ai is still open. It can block auto-compaction in your other projects.
 <!-- sha:572bdd2bce2d -->
+
+## 2026-11-09T06:22:56Z
+> Waiting on the two page-building agents; everything else for this stretch is in and checkpointed (ckpt 802, pushed).
+>
+> **Done since the last update**
+> - **Mono audio / Audio balance:** Android lets only the shell write those two settings, so the app now asks the helper through a new `SETSYS` verb. If the helper isn't running, the switch or bar goes back to the stored value and a short note says so, instead of showing a state Android doesn't have. The scenario checks both cases.
+> - **Battery numbers:** "Last full charge" and "Screen usage" need one extra adb grant, `PACKAGE_USAGE_STATS`. It is now in every adb guide and script, the phone guide, the in-app guide, the "Do everything" setup, and the tablet report. The unit tests (825) pass with it.
+> - **Home page:** Battery now shows "NN% - <header sentence>", and Storage is wired to show "NN% used - X free". Neither is checked on the emulator yet.
+> - **Text-to-speech page:** I measured it against your screenshot and corrected the spacing. The two sliders sit 25 px lower, the divider below them lands where yours does, and Play / Reset sit 5 px lower. The CI shot will confirm it.
+> - **New emulator checks:** the home summaries, and "no second Settings in the stock drawer when the tablet runs the stock launcher".
+>
+> **Not compiled or run on CI yet**
+> - **Sound and Storage pages:** the two agents are still finishing their files. The app doesn't compile until they do, so I can't run the CI screenshot pass yet. The Sound page is already wired into the page switch.
+> - **Next:** when they report, I compile, run `emulator.yml` `ss` with screenshots, compare Sound and Storage with your screenshots, review, gate, and ship as v0.9.0.
+>
+> **Two questions for you** (not blocking; I've built defaults):
+> 1. **Font size and Display size pages:** none of your screenshots show them. I built Font size with steps 1.05 / 1.2 / 1.35 / 1.5 (your "Default" is 1.2), a guess, and Display size from the stock layout. A screenshot of each page, with the slider at each position if it's quick, would let me copy them exactly.
+> 2. **Battery usage:** should the Solitaire row show a percentage? I built it without one.
+<!-- sha:31ff3581dd76 -->
