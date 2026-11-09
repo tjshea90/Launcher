@@ -55,7 +55,7 @@ public class SsBatteryTextTest {
         assertEquals("Less than 15 min remaining", SsBatteryText.discharge(15 * MIN, 0, clock));
         assertEquals("Should last until about T900000", SsBatteryText.discharge(15 * MIN + 1, 0, clock));
         assertEquals("Should last until about T1800000", SsBatteryText.discharge(23 * MIN, 0, clock));   // 23 min -> nearest 15 = 30
-        assertEquals("Should last until about T" + (DAY - 15 * MIN > 0 ? 23 * HOUR + 45 * MIN : 0), SsBatteryText.discharge(DAY - 1, 0, clock));
+        assertEquals("Should last until about T" + DAY, SsBatteryText.discharge(DAY - 1, 0, clock));   // 23 h 59 min 59 s: the clock time rounds up to the next quarter hour
         assertEquals("About 1 day left", SsBatteryText.discharge(DAY, 0, clock));
         assertEquals("About 1 day, 3 hr left", SsBatteryText.discharge(DAY + 3 * HOUR + 20 * MIN, 0, clock));
         assertEquals("About 1 day, 23 hr left", SsBatteryText.discharge(47 * HOUR, 0, clock));
