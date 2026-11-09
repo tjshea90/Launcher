@@ -273,6 +273,8 @@ public class ControlActivity extends Activity {
         toggle("Settings look-alike in the custom launcher", "On = the custom drawer has a \"Settings\" icon that opens a look-alike with only Battery, Display, Sound, Storage, Accessibility, System and About tablet, and the real Settings is kept out of the custom drawer. Off = the real Settings is the only one. The Quickstep drawer always keeps the real Settings.", SettingsSpoof.switchOn(this), new Chg() { public void on(boolean v) { if (v) SsFuse.rearm(ControlActivity.this); Features.set(ControlActivity.this, SettingsSpoof.KEY, v); SettingsSpoof.syncSoon(ControlActivity.this, "switch " + (v ? "on" : "off")); } });
         String ssStatus = Features.getString(this, SettingsSpoof.STATUS_KEY, "");
         if (!ssStatus.isEmpty()) note("Settings entry, last change: " + ssStatus);
+        String ssFuse = SsFuse.blockedWhy(this);
+        if (!ssFuse.isEmpty()) note("The Settings look-alike switched itself OFF after a crash in one of its pages (" + ssFuse + "). Switch it on again to retry.");
 
         group("return", "Return to the custom launcher (from Quickstep)", false);
         toggle("Run the return reset", "Master switch: when you go back to the custom launcher from Quickstep (double Home, the Back-to-custom icon or tile, a plain PIN) the apps you opened there are closed and the notifications cleared.", ReturnReset.enabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ReturnReset.KEY, v); } });
