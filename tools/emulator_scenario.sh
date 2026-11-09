@@ -4006,6 +4006,17 @@ SSLG=$(ssdesc "$OUT/ss-font.xml" "Make larger"); set -- $SSLG
 if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 3; fi
 SSFS2=$(adb shell settings get system font_scale | tr -d '\r')
 check "SS27b: the 'Make larger' button wrote font_scale = 1.3 (Tj's table 1.0 / 1.2 / 1.3 / 1.4; was $SSFS, now $SSFS2)" test "$SSFS2" = "1.3"
+# the other stops, for the pixel comparison with Tj's four Font size shots (Large / Largest / Small): each tap commits, the page is rebuilt at the new scale like on his tablet
+shot ss-19b-font-large
+ssdump "$OUT/ss-font-b.xml"; SSLG=$(ssdesc "$OUT/ss-font-b.xml" "Make larger"); set -- $SSLG
+if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 3; fi
+SSFS3=$(adb shell settings get system font_scale | tr -d '\r')
+check "SS27c: the second 'Make larger' wrote font_scale = 1.4 (Largest; now $SSFS3)" test "$SSFS3" = "1.4"
+shot ss-19c-font-largest
+for SSI in 1 2 3; do ssdump "$OUT/ss-font-c.xml"; SSLG=$(ssdesc "$OUT/ss-font-c.xml" "Make smaller"); set -- $SSLG; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); sleep 3; fi; done
+SSFS4=$(adb shell settings get system font_scale | tr -d '\r')
+check "SS27d: three 'Make smaller' taps from Largest wrote font_scale = 1.0 (Small; now $SSFS4)" test "$SSFS4" = "1.0"
+shot ss-19d-font-small
 adb shell settings put system font_scale "$SSFS" >/dev/null 2>&1; sleep 2
 adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Display size"; sleep 3; ssdump "$OUT/ss-dsize.xml"; shot ss-20-displaysize
