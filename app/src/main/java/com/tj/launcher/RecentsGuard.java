@@ -34,6 +34,15 @@ public final class RecentsGuard {
         } catch (Throwable t) { Log.e(TAG, "exclude failed", t); }
     }
 
+    /** BN1: true for the task whose root is the Settings look-alike (entered through the alias, or its page activity). Never throws. */
+    static boolean isSettingsLookAlikeTask(ActivityManager.AppTask t) {
+        try {
+            ActivityManager.RecentTaskInfo info = t.getTaskInfo();
+            android.content.ComponentName cn = info == null ? null : (info.baseIntent != null && info.baseIntent.getComponent() != null ? info.baseIntent.getComponent() : info.baseActivity);
+            return cn != null && SettingsSpoof.isLookAlikeComponent(cn.getClassName());
+        } catch (Throwable ignored) { return false; }
+    }
+
     private static volatile String cachedLabel;
     private static volatile Bitmap cachedIcon;
 
