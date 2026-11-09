@@ -150,6 +150,8 @@ BRIEF="$(
   workflow with mcp__github__actions_run_trigger, then  bash tools/record-release.sh.
 - Never commit a key, the keystore (app/sideload.jks) or local.properties. Never regenerate the keystore.
 - Build traps (JAVA_TOOL_OPTIONS, one Gradle at a time, Maven 429): BRIEF.md.
+- AUTO-RESUME (Tj, BO1): on a long job keep the heartbeat (id in the latest ckpt 'next'; get_trigger, never list_triggers); a cut-off
+  notice with a reset time -> send_later at reset+2 min. CLAUDE.md 'Auto-resume'.
 SHORT
 )"
 
