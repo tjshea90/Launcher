@@ -25,7 +25,7 @@ final class SsPages {
         LinearLayout list = new LinearLayout(a);
         list.setOrientation(LinearLayout.VERTICAL);
         switch (page) {
-            case HOME: home(a, list); break;
+            case HOME: home(a, list, live); break;
             case BATTERY: SsPagesBattery.battery(a, list, live); break;
             case BATTERY_USAGE: SsPagesBattery.usage(a, list); break;
             case DISPLAY: SsPagesDisplay.display(a, list, live); break;
