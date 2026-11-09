@@ -224,17 +224,28 @@ public final class HomePatchRules {
     public static final long UNLOCK_GRACE_MS = 3000;
     /** Such an event is judged again this long later, by the Launcher's window focus (the shade takes the focus from the Launcher, the keyguard's exit does not). */
     public static final long FOREIGN_RECHECK_MS = 400;
-    /** {@link #FOREIGN_NOW}: start the away guard now (a shade, a volume panel, a dialog); {@link #FOREIGN_UNLOCK_CHECK}: hide the patch at once but start no guard, and decide at {@link #FOREIGN_RECHECK_MS}. */
+    /** {@link #FOREIGN_NOW}: a window over the home (a shade long after an unlock, a volume panel, a dialog): the away guard is final. {@link #FOREIGN_UNLOCK_CHECK}: the guard starts as ever but is PROVISIONAL: it can be lifted at {@link #FOREIGN_RECHECK_MS}. */
     public static final int FOREIGN_NOW = 0, FOREIGN_UNLOCK_CHECK = 1;
 
-    /**
-     * @param systemUiWindow the event's package is SystemUI (the shade, the keyguard and the volume panel all announce themselves with it)
-     * @param sinceKeyguardUpMs ms since the keyguard was last seen up ({@code Long.MAX_VALUE} = never)
-     */
-    public static int foreignTreatment(boolean systemUiWindow, long sinceKeyguardUpMs) {
-        return systemUiWindow && sinceKeyguardUpMs >= 0 && sinceKeyguardUpMs < UNLOCK_GRACE_MS ? FOREIGN_UNLOCK_CHECK : FOREIGN_NOW;
+    /** The window the keyguard and the shade live in is SystemUI's status-bar window, announced as a plain FrameLayout; every SystemUI Dialog (the volume panel, the stock power menu) announces itself with its own class. */
+    public static boolean isKeyguardWindow(String pkg, String cls) {
+        return "com.android.systemui".equals(pkg) && "android.widget.FrameLayout".equals(cls);
     }
 
-    /** The deferred judgement of {@link #FOREIGN_UNLOCK_CHECK}: the Launcher kept (or regained) the window focus = it was the keyguard going away, nothing to guard; else it was a real window over the home. */
-    public static boolean unlockEventWasForeign(boolean launcherHasFocus) { return !launcherHasFocus; }
+    /**
+     * @param keyguardWindow {@link #isKeyguardWindow}: only that window can be "the keyguard going away"; a Dialog never is
+     * @param sinceKeyguardUpMs ms since the keyguard was last seen up ({@code Long.MAX_VALUE} = never)
+     */
+    public static int foreignTreatment(boolean keyguardWindow, long sinceKeyguardUpMs) {
+        return keyguardWindow && sinceKeyguardUpMs >= 0 && sinceKeyguardUpMs < UNLOCK_GRACE_MS ? FOREIGN_UNLOCK_CHECK : FOREIGN_NOW;
+    }
+
+    /** What the recheck of a provisional guard does: lift it (the keyguard went away), keep it (a real window: it is counted now), or nothing (another window set or extended the guard since: it is not ours to lift). */
+    public static final int RECHECK_LIFT = 0, RECHECK_KEEP = 1, RECHECK_NOT_OURS = 2;
+
+    /** @param guardUntilMs the guard end now; @param provisionalUntilMs the guard end the deferred event set (0 = none) */
+    public static int recheck(boolean launcherHasFocus, long guardUntilMs, long provisionalUntilMs) {
+        if (provisionalUntilMs == 0 || guardUntilMs != provisionalUntilMs) return RECHECK_NOT_OURS;
+        return launcherHasFocus ? RECHECK_LIFT : RECHECK_KEEP;
+    }
 }
