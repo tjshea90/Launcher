@@ -49,6 +49,8 @@ public final class CrashGuard {
     }
 
     static void record(Context app, Throwable e) {
+        // BN1 (review C #3): a crash that began in a Settings look-alike page is the look-alike's fuse, not the breaker's (only the first one: see SsFuse.fuseHandles).
+        if (SsFuse.fuseHandles(e, SsFuse.blocked(app))) { SsFuse.blowFuse(app, e); return; }
         // KA1: the keep-alive notification crash is the fuse's, not the breaker's (only the first one: see KeepAlivePolicy.fuseHandles).
         if (KeepAlivePolicy.fuseHandles(e, KeepAliveService.blocked(app))) { KeepAliveService.blowFuse(app, e); return; }
         SharedPreferences p = app.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
