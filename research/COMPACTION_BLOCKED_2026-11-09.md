@@ -72,7 +72,26 @@ and the CLI's retry stops after three tries.
 What only Tj can do: disable the `session-handoff` plugin in his claude.ai plugin list. It vetoes compaction in his OTHER projects too (novig, Mirage ...)
 and a repo cannot change an account plugin.
 
-## 5. Status (updated as the work lands; see TASKS BM1b-BM1g)
+## 5. Status (2026-11-09, TASKS BM1b-BM1g)
 
-See `CHECKPOINT.md` for the live state. Open after the first write of this file: compact_guard, ctxwatch, posttool, install-hooks env merge, resume.sh
-integration, the live compaction test (this very session crossed 306K tokens at 00:35 UTC with the 40 % point at about 392K), tests, CLAUDE.md note.
+**LIVE PROOF (the session that built the fix compacted itself): it worked.** The conversation reached 392,147 tokens at 00:50:20 UTC (threshold 980,000 x 40 %
+= 392,000), the CLI compacted with `trigger=auto` (transcript entry `compact_boundary`, `preTokens` 392147), no PreCompact hook vetoed, and the SAME session went on
+without a restart. The first model call after it had a **136,007-token prompt** (the next 138,749): 391K -> 136K, a 65 % cut, and every later turn re-reads 255K fewer
+tokens. The SessionStart hook re-injected the briefing after the summary. `.git/ctxwatch.log`: `00:50:25Z COMPACTION SEEN trigger=auto pre=392147`, then
+`00:50:27Z level 2 -> 0 est=137045 last_call=136007`. (The CLI's diag log `/tmp/claude-code-*.diag.log` has no hook lines at all, so it is NOT evidence; the transcript is.)
+
+What the live test showed about the watchdog itself, and what was fixed (`tools/test_ctxwatch.sh`, 20 -> 26 checks):
+- The transcript on disk can LAG the conversation by a round. One `--report` read right after the compaction showed 511K / 130 % (the stale 391K call plus
+  ~400K characters of re-injected files and lists that follow the marker) while the real prompt was 136K. A level-3 ALARM from such a reading would have been false.
+  Now: a compaction marker newer than the last model call means "just compacted" (estimate from what follows the marker, never the old call), and
+  **level 3 needs TWO different model calls above the point + 30K** (one big tool result right before a compaction looks the same as a failed compaction).
+- A compaction re-injects about 700 KB of transcript lines (files, skill and tool lists), so the marker is usually further back than the 400 KB read window:
+  `find_compaction` looks back up to 30 MB when the context falls by 30 % and for `--report` (before: "none seen" and no COMPACTION SEEN line).
+- The context FLOOR after a compaction is about 136K (system prompt + tools + skills + CLAUDE.md + briefing ~117K, summary ~19K): below that no setting helps.
+
+Where the context went in the 36 calls before that compaction (`bash tools/ctxwatch.sh --top`, usage deltas): about 155K of the 332K growth was the model's OWN output
+(thinking at effort `max`), tool results about 60K. Saying less and calling `ckpt` more is the cheapest saving; the effort level is Tj's call (not changed).
+
+Everything in section 4 is built, tested (`test_compact_guard.sh` 18, `test_ctxwatch.sh` 26, `test_handoff.sh` 43) and wired into `resume.sh`, `capture_inbox.sh`,
+`posttool.sh`, `install-hooks.sh`, `.claude/settings.json` and CLAUDE.md. Still open, and only Tj can do it: disable the `session-handoff` plugin in his claude.ai plugin list
+(it vetoes compaction in his other projects, novig and Mirage, which do not have this repo's protection; there a session still dies at ~900K).
