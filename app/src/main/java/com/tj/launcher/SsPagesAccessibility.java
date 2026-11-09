@@ -199,7 +199,7 @@ final class SsPagesAccessibility {
 
     /** AOSP's ListPreference dialog for the touch & hold delay: a single-choice list, a tap stores the value and closes it (no OK button), Cancel closes it. */
     static void openHold(final Activity a) {
-        new AlertDialog.Builder(a).setTitle("Touch & hold delay")
+        SsPageActivity.track(a, new AlertDialog.Builder(a).setTitle("Touch & hold delay")
                 .setSingleChoiceItems(SsAccessRules.LONG_PRESS_LABELS, SsAccessRules.longPressIndex(holdMs(a)), new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, final int which) {
                         SsPagesDisplay.write(a, new Runnable() { @Override public void run() {
@@ -209,7 +209,7 @@ final class SsPagesAccessibility {
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .show());
     }
 
     /**
