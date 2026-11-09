@@ -22,6 +22,11 @@ INPUT="$(cat)"
 [ -z "$INPUT" ] && exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
 
+# 2026-11-09 (TASKS BM1): HANDOFF.md stays fresh so the account plugin cannot veto a compaction, and the context watchdog
+# speaks BEFORE the model starts work on this message (it prints hook JSON only from 60 % of the compaction point upward).
+bash tools/keepalive.sh --once >/dev/null 2>&1 || true
+printf '%s' "$INPUT" | bash tools/ctxwatch.sh 2>/dev/null || true
+
 PROMPT="$(printf '%s' "$INPUT" | python3 -I -c '
 import json, re, sys
 try:
