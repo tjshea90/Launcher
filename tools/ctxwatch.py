@@ -286,10 +286,12 @@ def main():
         if not m:
             print("context: unknown (no transcript with usage found)")
         else:
-            c = m["compaction"]
-            print("context: ~%s tokens (last call %s); auto-compact at ~%s = %d%%; hard stop ~%s; last compaction: %s"
-                  % (k(m["est"]), k(m["prompt"]), k(t), round(100.0 * m["est"] / t),
-                     k(HARD), ("%s at %s (was %s)" % (c["trigger"], c["at"], c["pre"])) if c else "none seen in the recent transcript"))
+            c = m["compaction"] or find_compaction(path)
+            what = ("estimate, the session was just compacted and no model call has happened since" if m.get("fresh")
+                    else "last call %s" % k(m["prompt"]))
+            print("context: ~%s tokens (%s); auto-compact at ~%s = %d%%; hard stop ~%s; last compaction: %s"
+                  % (k(m["est"]), what, k(t), round(100.0 * m["est"] / t),
+                     k(HARD), ("%s at %s (was %s)" % (c["trigger"], c["at"], c["pre"])) if c else "none seen in the last 30 MB of the transcript"))
         return
     if not m:
         return
