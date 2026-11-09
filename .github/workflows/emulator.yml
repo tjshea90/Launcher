@@ -28,6 +28,8 @@ jobs:
   emulator:
     runs-on: ubuntu-latest
     timeout-minutes: 50
+    permissions:
+      contents: write   # only so the optional shots step can push the orphan branch ci-shots; nothing else writes
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/results   # post step: the compact RESULTS block becomes the last lines of the log
