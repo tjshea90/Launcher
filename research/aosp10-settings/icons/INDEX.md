@@ -132,7 +132,8 @@ Sound seek bar, switch and radio drawables: section 8 (names only).
 
 Rows are in `settings10/res/xml/storage_dashboard_fragment.xml`. `StorageItemPreferenceController.applyTint` (`settings10/src/com/android/settings/deviceinfo/storage/StorageItemPreferenceController.java`,
 lines 220-230) sets `colorControlNormal` as an explicit tint on every row icon, so each row is drawn #8A000000 whatever the vector's own tint.
-Row layout `settings10/res/layout/storage_item.xml`: icon frame minWidth 56 dp, padding 14 dp top and bottom; ProgressBar 8 dp high, margins 12 dp top and 4 dp bottom (its progress drawable is the framework `progress_horizontal_material`, section 8).
+Row layout `settings10/res/layout/storage_item.xml`: row minHeight `listPreferredItemHeightSmall`, padding 14 dp top and bottom (lines 24-25), paddingStart/End `listPreferredItemPaddingStart/End`;
+icon frame minWidth 56 dp, padding 4 dp top and bottom (lines 42-45), icon ImageView maxWidth and maxHeight 24 dp; ProgressBar 8 dp high, margins 12 dp top and 4 dp bottom (lines 79-84; its progress drawable is the framework `progress_horizontal_material`, section 8).
 
 | Purpose | File | Source path | Size (dp) | Viewport | Fill / tint (resolved) | Notes |
 | :- | :- | :- | :- | :- | :- | :- |
