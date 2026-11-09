@@ -1241,3 +1241,8 @@ For the home screen on custom launcher, the wallpaper patch doesn't load fast en
 
 Also the wallpaper patch on the lock screen shows up and flashes sometimes when I pull the pin pad up, maybe this can't be fixed, but try to make the wallpaper patch disappear immediately or as fast as possible when I pull up to enter pin so that it doesn't flash
 ```
+
+## 2026-11-09T02:47:24Z
+```
+The model and hardware  setting should look like the photo , but it can't be opened.the languages and input page has everything except autofill service and personal dictionary, and there is a last setting on the bottom called Text-to-speech output
+```
