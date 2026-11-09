@@ -130,6 +130,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (cn == null || !cn.toString().contains("ActionsDialog")) return;
         long now = android.os.SystemClock.uptimeMillis();
         dialogEventMs = event.getEventTime();
+        menuClosedAtMs = 0;                     // BN2: the dialog announced itself: a NEW opening, not the dying one of a close (evaluateScan)
         dialogWindowId = event.getWindowId();   // BC2: the removal of THIS window ends the fade-out (dialogGone)
         String why = fastDecline();
         if (why != null) {
