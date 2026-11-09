@@ -1917,3 +1917,7 @@
 ## 2026-11-09T18:51:53Z
 > Both gate runs (#463 and #464) are in progress again after the GitHub-side failure. Run #465 (`rg`) already passed. The timer is set for 19:22:30 UTC. Then I read the results, rerun anything failing on its own, bump to v0.9.0 and ship.
 <!-- sha:32fa62fefdb1 -->
+
+## 2026-11-09T19:26:51Z
+> Product code is unchanged since the gated commit `09215cc`, so the reruns count as proof for it. Four solo reruns are running on `main`: `base`, `o`, `legacy` and `lq`. They should all finish by about 19:36 UTC; the timer is set for 19:36:30. If a section fails again I'll run it on the v0.8.13 tag to see whether it already failed before this release. If all four pass, I bump to v0.9.0 and ship.
+<!-- sha:8862bd079862 -->
