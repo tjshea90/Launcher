@@ -143,6 +143,13 @@ if TI_OUT="$(bash "$D/tools/test_tablet_intake.sh" 2>&1)"; then ok; else bad "ta
 # ---------------------------------------------------------------- the node finder the emulator scenario's phone-guide checks use (tools/uinode.py; its own self-test, ~1 s)
 if UN_OUT="$(bash "$D/tools/test_uinode.sh" 2>&1)"; then ok; else bad "uinode self-test failed (bash tools/test_uinode.sh)"; printf '%s\n' "$UN_OUT" | grep FAIL | head -10; fi
 
+# ---------------------------------------------------------------- compaction must never be vetoed (TASKS BM1, 2026-11-09: an account plugin's PreCompact hook killed four sessions with "Prompt is too long"; own self-tests, ~5 s)
+if CG_OUT="$(bash "$D/tools/test_compact_guard.sh" 2>&1)"; then ok; else bad "compact guard / keepalive self-test failed (bash tools/test_compact_guard.sh)"; printf '%s\n' "$CG_OUT" | grep FAIL | head -10; fi
+if CW_OUT="$(bash "$D/tools/test_ctxwatch.sh" 2>&1)"; then ok; else bad "context watchdog self-test failed (bash tools/test_ctxwatch.sh)"; printf '%s\n' "$CW_OUT" | grep FAIL | head -10; fi
+check "the project's own settings carry the compaction env (veto switched off, compaction early)" 'grep -q HANDOFF_STALE_SECONDS "$D/.claude/settings.json" && grep -q CLAUDE_AUTOCOMPACT_PCT_OVERRIDE "$D/.claude/settings.json" && grep -q HANDOFF_STALE_SECONDS "$D/tools/session-root-hooks.json"'
+check "a PostToolUse hook with matcher * (every tool, MCP included) is registered in settings and template" 'python3 -c "import json,sys; [sys.exit(0 if any(e.get(\"matcher\")==\"*\" and \"posttool.sh\" in json.dumps(e) for e in json.load(open(p))[\"hooks\"][\"PostToolUse\"]) else 1) for p in sys.argv[1:]]" "$D/.claude/settings.json" "$D/tools/session-root-hooks.json"'
+check "HANDOFF.md exists (a missing file is vetoed by the account plugin too)" '[ -f "$D/HANDOFF.md" ]'
+
 # ---------------------------------------------------------------- inbox capture
 printf '{"prompt":"please build X, my key is ghp_%s ok"}' "$(printf 'c%.0s' $(seq 1 36))" | bash tools/capture_inbox.sh
 check "inbox captures the message, redacts the key, and commits it" 'grep -q "please build X" INBOX.md && grep -q "REDACTED-KEY" INBOX.md && ! grep -q "ghp_c" INBOX.md && [ "$(bash tools/unpushed.sh)" = 0 ]'
