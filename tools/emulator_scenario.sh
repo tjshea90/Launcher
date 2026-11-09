@@ -3848,6 +3848,37 @@ adb shell settings delete global policy_control >/dev/null 2>&1
 adb shell cmd overlay enable com.android.internal.systemui.navbar.threebutton 2>/dev/null; adb shell wm size 600x1024; adb shell wm overscan 0,0,0,48; adb shell wm density 170; adb shell settings put system font_scale 1.2; sleep 2
 setfeat; setmode custom; rebind; home
 fi # section rb
+if want ss; then # section ss
+ensurehome
+# ---- BN1 (Tj, 2026-11-09): the Settings look-alike (research/SETTINGS_BUILD_PLAN_2026-11-09.md). M0: the switch flips the manifest alias, the custom drawer lists ONE "Settings" (the look-alike, never the real
+# one), it opens the look-alike's HOME page with the seven entries in Tj's order and nothing to search. Later milestones add a block per page below.
+beat "before SS"
+ssdump(){ adb shell uiautomator dump /sdcard/ss.xml >/dev/null 2>&1; adb shell cat /sdcard/ss.xml > "$1" 2>/dev/null; }
+ssbounds(){ python3 -I tools/uinode.py "$1" --contains "$2" --exact | head -1; }   # "x1 y1 x2 y2" of the node whose text IS $2 (nothing when absent)
+ssfeat(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"settings_spoof\\\" value=\\\"$1\\\" /><string name=\\\"return_app_label\\\">Calendar</string></map>\" > shared_prefs/tj_features.xml'"; }
+ssdrawer(){ # ssdrawer <dump file>: open the custom drawer and scroll until "Settings" is on screen (the emulator's list is short, but never assume)
+  local k; adb shell input swipe 300 900 300 200 400; sleep 3
+  for k in 1 2 3 4; do ssdump "$1"; [ -n "$(ssbounds "$1" Settings)" ] && return 0; adb shell input swipe 300 800 300 300 400; sleep 2; done; return 1; }
+ssfeat true; setmode custom; rebind; home; sleep 8     # the process starts at Home; SettingsSpoof flips the alias 3 s later on a background thread
+adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-on.txt" 2>&1
+check "SS1: the Settings entry (the manifest alias) was switched ON in the custom mode with the switch on" grep -q "Settings entry ON" "$OUT/ss-log-on.txt"
+ssdrawer "$OUT/ss-drawer.xml"; shot ss-01-drawer
+check "SS2: exactly ONE 'Settings' in the custom drawer (the look-alike; the real Settings is kept out)" bash -c "[ \"\$(tr '>' '\n' < $OUT/ss-drawer.xml | grep -c 'text=\"Settings\"')\" = 1 ]"
+SB=$(ssbounds "$OUT/ss-drawer.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-02-home; resumed > "$OUT/ss-resumed.txt"
+check "SS3: the look-alike's own page activity is on screen (not com.android.settings)" grep -q "com.tj.launcher/.SsPageActivity" "$OUT/ss-resumed.txt"
+ssdump "$OUT/ss-home.xml"
+SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
+check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
+check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
+adb shell input keyevent KEYCODE_BACK; sleep 2; home
+# the switch OFF: the entry goes, the real Settings is the one in the drawer again (the emulator seeds it as allowed)
+ssfeat false; setmode custom; rebind; home; sleep 8
+adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-off.txt" 2>&1
+check "SS6: with the switch off the Settings entry was switched OFF again" grep -q "Settings entry OFF" "$OUT/ss-log-off.txt"
+ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-03-real-settings; resumed > "$OUT/ss-resumed2.txt"
+check "SS7: switch off: the drawer's Settings is the real one" grep -q "com.android.settings" "$OUT/ss-resumed2.txt"
+setfeat; setmode custom; rebind; home; sleep 6
+fi # section ss
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
