@@ -2293,6 +2293,7 @@ public class TjAccessibilityService extends AccessibilityService {
             wm.addView(v, lp);
             penView = v; penAt.set(r); penShown = true;
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
+            startPenWatch();
         } else if (!penAt.equals(r)) {
             wm.updateViewLayout(penView, lp);
             penAt.set(r);
