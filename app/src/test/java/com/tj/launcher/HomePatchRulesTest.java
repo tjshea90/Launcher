@@ -225,4 +225,27 @@ public class HomePatchRulesTest {
     @Test public void anOpenMenuNeverStartsAnotherWait() {
         assertEquals("once our patch is up the stock dialog's event has been handled: nothing to wait for", HomePatchRules.BURST_NORMAL, HomePatchRules.burstTreatment(true, 2000, 0, true));
     }
+
+    // ---------------------------------------------------------------- BN2: the keyguard's own window at the unlock is not a shade (tablet report 2026-11-09: the 2.5 s guard it started made the first press uncovered)
+    @Test public void aSystemUiWindowRightAfterTheKeyguardWasUpIsJudgedByTheFocusNotGuardedAtOnce() {
+        assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, 0));
+        assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, 600));
+        assertEquals(HomePatchRules.FOREIGN_UNLOCK_CHECK, HomePatchRules.foreignTreatment(true, HomePatchRules.UNLOCK_GRACE_MS - 1));
+    }
+    @Test public void aSystemUiWindowLongAfterTheUnlockIsTheShadeAndGuardsAtOnce() {
+        assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, HomePatchRules.UNLOCK_GRACE_MS));
+        assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, 60_000));
+        assertEquals("the keyguard was never seen up in this process", HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(true, Long.MAX_VALUE));
+    }
+    @Test public void aWindowOfAnotherAppIsAlwaysGuardedAtOnceEvenRightAfterTheUnlock() {
+        assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(false, 0));
+        assertEquals(HomePatchRules.FOREIGN_NOW, HomePatchRules.foreignTreatment(false, 1000));
+    }
+    @Test public void theDeferredJudgementFollowsTheLaunchersWindowFocus() {
+        assertEquals("the Launcher still has the focus: it was the keyguard going away", false, HomePatchRules.unlockEventWasForeign(true));
+        assertEquals("the shade took the focus: it was a window over the home", true, HomePatchRules.unlockEventWasForeign(false));
+    }
+    @Test public void theGraceIsShorterThanTheGuardItReplaces() {
+        assertEquals(true, HomePatchRules.FOREIGN_RECHECK_MS < 2500);
+    }
 }
