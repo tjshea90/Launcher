@@ -1,17 +1,13 @@
-# CHECKPOINT 838 — read me first, then TASKS.md
+# CHECKPOINT 839 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T22:55:25Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `5abde52` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T23:09:49Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `6ea1c7d` (this checkpoint is the commit after it)
 
 ## Just done
-gated v0.9.0 (code 39) and pushed it: the handoff self-test, the full unit suite + lint
-and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
+scenario: breaker diag + wait for process; reruns 475 (3 crashes; FAIL recents,B1,reset2) 476 (NO crash; FAIL breaker x2 AR1 x2) 477 (1 crash; FAIL startup)
 
 ## Do this next
-TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
-android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
-confirm the Release is published (get_release_by_tag is enough) and then run:
-  bash tools/record-release.sh v0.9.0 "v0.9.0: Settings look-alike in the custom drawer (BN1): Battery, Display, Sound, Storage, Accessibility, System, About tablet, Text-to-speech output; look-only where the app has no permission; own crash fuse"
+dispatch base x4 on v0.8.13 (sections base, base+last, base+x1, base+e1) and x4 on main/branch (base, base+last) to compare the breaker check; read breaker diag INFO; verdict regression vs flake; heartbeat trig_01DhC2W8FUPFeqdGFQCt7yWe
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -20,6 +16,7 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
 
 ## Last ten checkpoints
 ```
+  a0359ad ckpt 838: gated v0.9.0 (code 39) and pushed it: the handoff self-test, the full unit sui
   a79ee8e ckpt 837: reruns #475 42715672216 main, #476 42715676675 branch, #477 42715681398 main+l
   3da7cb8 ckpt 836: #474 base,legacy ONE run (306152a): 40P/4F recents,W5x2,W3b + THREE native cra
   098143a ckpt 835: legacy SOLO fails reset2 by design (needs base in the same run, HANDOFF 0e/RS1
@@ -29,8 +26,7 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
   4a49b3f ckpt 831: Solo reruns: #466 base FAIL 4 (2 native crashes: launcher-loader, main), #467 
   e024dae ckpt 830: Solo reruns on eaeb47e: #466 42683210584 base, #467 42683216363 o, #468 426832
   eaeb47e ckpt 829: GATE v0.9.0 on 09215cc: #465 rg OK; #463 (42671984609) 5 FAIL legacy/lq; #464 
-  c5dca2d ckpt 828: Gate attempt 2 of #463 (42671984609) and #464 (42671992301) RUNNING since 18:4
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(3 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
