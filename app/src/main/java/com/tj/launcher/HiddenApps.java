@@ -39,6 +39,7 @@ public final class HiddenApps {
 
     public static boolean isShown(Context c, ComponentName app) {
         try {
+            if (SettingsSpoof.hidesRealSettings(c, app.getPackageName())) return false;   // BN1: the look-alike is the Settings entry of the custom drawer; the real one stays out while it is
             synchronized (LOCK) { return AppVisibility.isShown(allowed(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
         } catch (Throwable t) {
             android.util.Log.e("TjHidden", "isShown failed, showing the app", t);
