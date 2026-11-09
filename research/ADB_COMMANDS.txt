@@ -61,7 +61,7 @@ SECTION 7 - IF ANDROID EVER SHOWS "CHOOSE A HOME APP" [NOW]
 adb shell cmd package set-home-activity com.tj.launcher/com.tj.launcher.RouterActivity
 
 SECTION 8 - CHECK WHAT IS GRANTED [NOW]
-adb shell dumpsys package com.tj.launcher | grep -E "WRITE_SECURE_SETTINGS|READ_EXTERNAL_STORAGE|DUMP|CHANGE_CONFIGURATION"
+adb shell dumpsys package com.tj.launcher | grep -E "WRITE_SECURE_SETTINGS|READ_EXTERNAL_STORAGE|DUMP|CHANGE_CONFIGURATION|PACKAGE_USAGE_STATS"
 # Each granted one shows "granted=true".
 
 SECTION 9 - UNDO [NOW]
