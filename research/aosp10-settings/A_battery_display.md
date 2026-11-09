@@ -194,7 +194,7 @@ Write: onPreferenceChange -> Settings.System.putInt(SCREEN_OFF_TIMEOUT, int) (pu
 ### 4.3 Auto-rotate screen
 key auto_rotate; androidx SwitchPreference; title accelerometer_title "Auto-rotate screen"; no summary; controller AutoRotatePreferenceController (TogglePreferenceController): a tap on the row toggles the switch.
 isChecked = !RotationPolicy.isRotationLocked(ctx); setChecked(c) = RotationPolicy.setRotationLock(ctx, !c); available only if RotationPolicy.isRotationLockToggleVisible(ctx); a RotationPolicyListener
-  re-reads the state in onResume / onPause pairs. RotationPolicy (com.android.internal.view) is NOT in the checkout [MEM]: locked == Settings.System ACCELEROMETER_ROTATION == 0; setRotationLock clears
+  (registered in onResume, unregistered in onPause) re-reads the state on every rotation-setting change. RotationPolicy (com.android.internal.view) is NOT in the checkout [MEM]: locked == Settings.System ACCELEROMETER_ROTATION == 0; setRotationLock clears
   HIDE_ROTATION_LOCK_TOGGLE_FOR_ACCESSIBILITY and runs an AsyncTask calling IWindowManager.freezeRotation(rotation) when locking / thawRotation() when unlocking (hidden); freezeRotation writes
   ACCELEROMETER_ROTATION = 0 and USER_ROTATION. config_supportAutoRotation = true [SRC core config.xml]. The tablet report lists accelerometer_rotation and user_rotation among its Settings.System names.
 
