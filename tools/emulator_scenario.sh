@@ -3986,14 +3986,14 @@ adb shell input keyevent KEYCODE_BACK; sleep 2
 sstap "Text-to-speech output"; sleep 2; ssdump "$OUT/ss-tts.xml"; shot ss-18-tts
 check "SS26: the Text-to-speech output page lists Preferred engine, Language, Speech rate, Pitch, in that order" ssorder "$OUT/ss-tts.xml" "Preferred engine" "Language" "Speech rate" "Pitch"
 check "SS26c: it has the Play and Reset buttons" bash -c "tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
-# SS26d (BN1m, Tj 07:16 "must look identical"): the two sliders' tracks are thin and light grey in his screenshot (darkest grey 0.843); the Discrete style drew 590 tick marks into a dark line (0.204 / 0.341 in run #460).
-# Meaningful only while the sliders are disabled (no TTS engine on the image, as on his tablet's screenshot).
-SS_TTS_ENG="$(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r')"
-if [ "${SS_TTS_ENG:-0}" = "0" ]; then
-  check "SS26d: both TTS slider tracks are light grey like Tj's screenshot (darkest grey of the block above 0.6; the tick-mark style drew 0.20)" bash -c "[ \"\$(convert $OUT/ss-18-tts.png -crop 360x130+200+300 +repage -colorspace Gray -format '%[fx:minima>0.6?1:0]' info:)\" = 1 ]"
-else
-  info "SS26d: skipped, this image has $SS_TTS_ENG TTS engine(s), the sliders are enabled"
-fi
+# SS26d-g (BO2, Tj 2026-11-09 17:5x, replaces the greyed look): the page reads like a tablet WITH an engine and everything on it is inert
+tr '>' '\n' < "$OUT/ss-tts.xml" > "$OUT/ss-tts.nodes"
+check "SS26d: Preferred engine says Pico TTS, Language says Use system language (the grey help line is gone)" bash -c "grep -q 'text=\"Pico TTS\"' $OUT/ss-tts.nodes && grep -q 'text=\"Use system language\"' $OUT/ss-tts.nodes && ! grep -q 'Sets the language-specific voice' $OUT/ss-tts.nodes"
+check "SS26e: PLAY, RESET and both sliders are enabled (not grey), the gear sits at the right edge" bash -c "[ \$(grep -ciE 'text=\"(play|reset)\"[^>]*enabled=\"true\"' $OUT/ss-tts.nodes) -eq 2 ] && [ \$(grep -c 'class=\"android.widget.SeekBar\"[^>]*enabled=\"true\"' $OUT/ss-tts.nodes) -eq 2 ] && grep -qE 'content-desc=\"Settings\"[^>]*bounds=\"\\[5[0-9][0-9],' $OUT/ss-tts.nodes"
+SS_TTS_RATE0="$(adb shell settings get secure tts_default_rate | tr -d '\r')"
+SS_TTS_PT="$(python3 -I tools/ss_slider_probe.py --point 1 "$OUT/ss-18-tts.png")"   # "x y" inside the Speech rate thumb
+if [ -n "$SS_TTS_PT" ] && [ "$SS_TTS_PT" != none ]; then adb shell input swipe ${SS_TTS_PT% *} ${SS_TTS_PT#* } 500 ${SS_TTS_PT#* } 600; sleep 1; shot ss-18b-tts-drag; fi
+check "SS26f: dragging Speech rate moves its thumb to the right, Pitch stays, and nothing is stored (tts_default_rate unchanged)" bash -c "python3 -I tools/ss_slider_probe.py --moved $OUT/ss-18-tts.png $OUT/ss-18b-tts-drag.png --bar 1 --min 150 && [ \"\$(adb shell settings get secure tts_default_rate | tr -d '\r')\" = \"$SS_TTS_RATE0\" ]"
 info "SS26b: tts engines on this image =$(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M3b: the Font size and Display size pages (preview frame, label, step buttons, slider, sentence); AOSP font_size_activity / screen_zoom_activity
