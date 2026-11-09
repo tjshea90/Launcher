@@ -1,10 +1,10 @@
 package com.tj.launcher;
 
 /**
- * BN1: the pure rules of the Sound page (JVM-tested: SsSoundRulesTest). Plain Java, no Android classes. Sources: AOSP 10 Settings (android-10.0.0_r47) {@code notification/*VolumePreferenceController},
- * {@code VolumeSeekBarPreference}, {@code SoundSettings}, {@code RingtonePreferenceControllerBase}, {@code SettingPref}; the platform's {@code SeekBarVolumizer} (hidden class, not in the checkout: its
- * rules are written from memory and marked "[mem]"); research/aosp10-settings/B_sound_storage.md sec. 1. The platform integers mirrored here (stream types, ringer modes, interruption filters,
- * ringtone types) are API constants that have not changed since they were introduced, so the tests can pin them.
+ * BN1: the pure rules of the Sound page (JVM-tested: SsSoundRulesTest). Plain Java, no Android classes. Sources: AOSP 10 (android-10.0.0_r47) Settings {@code notification/*VolumePreferenceController},
+ * {@code VolumeSeekBarPreference}, {@code SoundSettings}, {@code RingtonePreferenceControllerBase}, {@code SettingPref}, and the platform's {@code android.preference.SeekBarVolumizer} (core/java), whose
+ * code the slider rows follow line by line; research/aosp10-settings/B_sound_storage.md sec. 1. The platform integers mirrored here (stream types, ringer modes, interruption filters, policy categories,
+ * ringtone types, mute adjustments) are API constants that have not changed since they were introduced, so the tests can pin them.
  */
 final class SsSoundRules {
     private SsSoundRules() {}
@@ -32,34 +32,39 @@ final class SsSoundRules {
 
     static boolean isNotificationOrRing(int stream) { return stream == STREAM_NOTIFICATION || stream == STREAM_RING; }
 
-    // ------------------------------------------------------------------ slider <-> stream volume
-    // The stock slider is a SeekBar over [min .. max] (SeekBarPreference.setMin / setMax with AudioManager.getStreamMinVolume / getStreamMaxVolume). Ours runs over [0 .. max - min] with the
-    // same thumb positions (the thumb sits at (volume - min) / (max - min) of the track): checked on Tj's screenshot, where Alarm (min 1, max 15) shows volume 12 at 11/14 of the track
-    // (thumb centre 460 of a track from 77 to 566) and Notification (0 .. 15) shows volume 6 at 6/15.
+    // ------------------------------------------------------------------ slider position
+    // The stock slider is a SeekBar over the ABSOLUTE volumes [min .. max]: Settings' SeekBarPreference.onBindViewHolder calls setMax and setMin (AudioManager.getStreamMaxVolume / getStreamMinVolume),
+    // SeekBarVolumizer.setSeekBar sets the same max again and shows the stream volume itself as the progress. The thumb sits at (volume - min) / (max - min) of the track. Checked on Tj's screenshot:
+    // Alarm (min 1, max 15) shows volume 12 at 11/14 of the track (thumb centre x = 460 on a track whose thumb centre runs from 77 to 566) and Notification (0 .. 15) shows volume 6 at 6/15 (x = 272).
 
-    /** The SeekBar's max: the number of steps between the lowest and the highest volume (never negative, 0 = a fixed volume). */
-    static int sliderMax(int min, int max) { return Math.max(0, max - min); }
-
-    /** The slider position of a stream volume (clamped into the stream's range). */
-    static int toProgress(int volume, int min, int max) { return clamp(volume, min, max) - min; }
-
-    /** The stream volume of a slider position (position 0 = the lowest volume; a position outside the track is clamped). */
-    static int toVolume(int progress, int min, int max) { return clamp(progress + min, min, max); }
-
-    /**
-     * What the slider shows, in the order of SeekBarVolumizer.updateSeekBar [mem]: a stream muted by Do Not Disturb shows its last audible volume (the slider is disabled); the Notification row in
-     * vibrate mode shows the lowest position; a muted stream shows the lowest position; otherwise the real volume.
-     */
-    static int shownVolume(int row, int volume, boolean muted, boolean zenMuted, int ringerMode, int min, int max) {
-        if (zenMuted) return clamp(volume, min, max);
-        if (row == ROW_NOTIFICATION && ringerMode == RINGER_VIBRATE) return clamp(min, min, max);
-        if (muted) return clamp(min, min, max);
-        return clamp(volume, min, max);
+    /** A volume clamped into the stream's range (what ProgressBar does with any progress it is given, so 0 is the lowest position of a stream whose minimum is 1). */
+    static int clampVolume(int volume, int min, int max) {
+        int top = Math.max(min, max);
+        return volume < min ? min : (volume > top ? top : volume);
     }
 
-    private static int clamp(int v, int lo, int hi) {
-        int top = Math.max(lo, hi);
-        return v < lo ? lo : (v > top ? top : v);
+    /**
+     * What the slider shows: SeekBarVolumizer.updateSeekBar, in its order. A stream muted by Do Not Disturb shows its LAST AUDIBLE volume (the slider is disabled); the Notification and Ring streams in vibrate
+     * mode show 0; a muted stream shows 0; otherwise the volume. The answer is clamped into [min .. max] like the progress bar does.
+     */
+    static int shownVolume(int stream, int volume, int lastAudible, boolean muted, boolean zenMuted, int ringerMode, int min, int max) {
+        if (zenMuted) return clampVolume(lastAudible, min, max);
+        if (isNotificationOrRing(stream) && ringerMode == RINGER_VIBRATE) return clampVolume(0, min, max);
+        if (muted) return clampVolume(0, min, max);
+        return clampVolume(volume, min, max);
+    }
+
+    // ------------------------------------------------------------------ writing a volume
+    static final int ADJUST_MUTE = -100, ADJUST_SAME = 0, ADJUST_UNMUTE = 100;   // AudioManager.ADJUST_*
+
+    /**
+     * What to tell the audio service around the slider's new volume (SeekBarVolumizer.handleMessage, MSG_SET_STREAM_VOLUME): a MUTED stream dragged above 0 is unmuted first; an UNMUTED stream dragged to 0
+     * is muted (that is what makes the Media glyph turn into the crossed note and gives the stream a "last audible" volume). Streams whose lowest volume is 1 (Call, Alarm) never reach 0, so never get muted here.
+     */
+    static int muteAdjustment(boolean muted, int progress) {
+        if (muted && progress > 0) return ADJUST_UNMUTE;
+        if (!muted && progress == 0) return ADJUST_MUTE;
+        return ADJUST_SAME;
     }
 
     // ------------------------------------------------------------------ icons
@@ -69,7 +74,8 @@ final class SsSoundRules {
     /**
      * Which glyph a row shows (VolumeSeekBarPreference.updateIconView: the controller's showIcon override first, then the mute icon when muted and not Do-Not-Disturb-muted, then the row's own icon).
      * The Notification row inherits RingVolumePreferenceController, which calls showIcon in EVERY ringer mode (bell, bell-off, vibrate): its "muted at volume 0" branch is never reached, only the ringer
-     * mode changes the glyph. The other rows use the mute icon (Media: the crossed note; Alarm: the crossed clock; Call: the same phone).
+     * mode changes the glyph. The other rows use the mute icon (Media: the crossed note; Alarm: the crossed clock; Call: the same phone). {@code muted} is AudioManager.isStreamMute, as at the first bind of
+     * the stock page (a Media stream at volume 0 WITHOUT the mute flag keeps the plain note, as on Tj's screenshot).
      */
     static int iconKind(int row, int ringerMode, boolean muted, boolean zenMuted) {
         if (row == ROW_NOTIFICATION) {
@@ -83,9 +89,24 @@ final class SsSoundRules {
     // ------------------------------------------------------------------ Do Not Disturb
     static final int FILTER_ALL = 1, FILTER_PRIORITY = 2, FILTER_NONE = 3, FILTER_ALARMS = 4;   // NotificationManager.INTERRUPTION_FILTER_*
 
+    // NotificationManager.Policy.PRIORITY_CATEGORY_* (bit mask in Policy.priorityCategories)
+    static final int CATEGORY_REMINDERS = 1, CATEGORY_EVENTS = 1 << 1, CATEGORY_MESSAGES = 1 << 2, CATEGORY_CALLS = 1 << 3, CATEGORY_REPEAT_CALLERS = 1 << 4, CATEGORY_ALARMS = 1 << 5, CATEGORY_MEDIA = 1 << 6;
+
+    static boolean allowsAlarms(int priorityCategories) { return (priorityCategories & CATEGORY_ALARMS) != 0; }
+
+    static boolean allowsMedia(int priorityCategories) { return (priorityCategories & CATEGORY_MEDIA) != 0; }
+
     /**
-     * Whether Do Not Disturb silences this stream, so its slider is disabled (SeekBarVolumizer.isZenMuted [mem]; the interruption filter is the public twin of Settings.Global.zen_mode: NONE = total
-     * silence = ZEN_MODE_NO_INTERRUPTIONS mutes everything, ALARMS = alarms only mutes notification and ring, PRIORITY mutes the streams whose category the policy does not allow).
+     * SeekBarVolumizer's mAllowRinger = !ZenModeConfig.areAllPriorityOnlyNotificationZenSoundsMuted(policy): the ring and notification streams stay audible in "priority only" when reminders, events, messages,
+     * calls or repeat callers are allowed. (AOSP also counts "channels that bypass Do Not Disturb"; that bit of Policy.state is a hidden field an app cannot read, so it is left out.)
+     */
+    static boolean allowsRinger(int priorityCategories) {
+        return (priorityCategories & (CATEGORY_REMINDERS | CATEGORY_EVENTS | CATEGORY_MESSAGES | CATEGORY_CALLS | CATEGORY_REPEAT_CALLERS)) != 0;
+    }
+
+    /**
+     * Whether Do Not Disturb silences this stream, so its slider is disabled (SeekBarVolumizer.isZenMuted; the interruption filter is the public twin of Settings.Global.zen_mode: NONE = total silence =
+     * ZEN_MODE_NO_INTERRUPTIONS mutes everything, ALARMS = alarms only mutes notification and ring, PRIORITY = important interruptions mutes the streams whose category the policy does not allow).
      */
     static boolean zenMuted(int filter, int stream, boolean allowAlarms, boolean allowMedia, boolean allowRinger) {
         if (filter == FILTER_NONE) return true;
@@ -98,13 +119,14 @@ final class SsSoundRules {
 
     // ------------------------------------------------------------------ ringtone rows
     /** The first summary of a ringtone row: AOSP's summary_placeholder (a no-break space) keeps the two-line height until the title is known. */
-    static final String PLACEHOLDER = "\u00a0";
+    static final String PLACEHOLDER = " ";
     static final String NONE = "None";          // framework ringtone_silent (the first entry of the picker)
     static final String UNKNOWN = "Unknown";    // framework ringtone_unknown (what Ringtone.getTitle answers for a sound it cannot name)
 
     /**
-     * The summary of "Default notification sound" / "Default alarm sound": the title of the current sound. AOSP 10 leaves the placeholder when the sound is silent (RingtonePreferenceControllerBase
-     * sets no summary for a null Uri, so after choosing None the row shows nothing or the stale title); the framework's own wording for that choice is "None", which is what we show.
+     * The summary of "Default notification sound" / "Default alarm sound": the title of the current sound. AOSP 10 leaves the summary alone when the sound is silent (RingtonePreferenceControllerBase.updateSummary
+     * sets none for a null Uri, so a freshly opened page shows the placeholder and the page that has just changed to None keeps the old title until it is reopened); the framework's own word for that choice is
+     * "None" (Ringtone.getTitle of a null Uri), which is what we show.
      */
     static String ringtoneSummary(boolean hasSound, String title) {
         if (!hasSound) return NONE;
@@ -153,8 +175,8 @@ final class SsSoundRules {
     }
 
     /**
-     * The broadcasts that tell the sliders to read the system again: what SeekBarVolumizer's receiver [mem] and AdjustVolumeRestrictedPreferenceController.getIntentFilter listen to (volume, mute,
-     * master mute, ringer mode, the output device of a stream) plus the Do Not Disturb changes that disable a slider. Several are hidden AudioManager constants: the literal action strings.
+     * The broadcasts that tell the sliders to read the system again: the five SeekBarVolumizer's receiver listens to (volume, internal ringer mode, interruption filter, notification policy, the output device
+     * of a stream) plus the stream mute, master mute and public ringer mode changes (a slider dragged to 0 mutes its stream). Several are hidden AudioManager constants: the literal action strings.
      */
     static final String[] WATCHED_ACTIONS = {
         "android.media.VOLUME_CHANGED_ACTION",
@@ -171,10 +193,15 @@ final class SsSoundRules {
     static final int SAMPLE_BUNDLED = 0, SAMPLE_RINGTONE = 1, SAMPLE_NOTIFICATION = 2, SAMPLE_ALARM = 3;
     /** SoundSettings.SAMPLE_CUTOFF: "manually cap sample playback at 2 seconds". */
     static final int SAMPLE_CUTOFF_MS = 2000;
+    /** SeekBarVolumizer.CHECK_RINGTONE_PLAYBACK_DELAY_MS: a release while the sample still plays asks again after this long. */
+    static final int SAMPLE_RECHECK_MS = 1000;
+
+    /** SeekBarVolumizer.postStartSample: start at once, or one second later when a sample is playing right now (and then only if it has stopped by then). */
+    static int sampleStartDelayMs(boolean samplePlaying) { return samplePlaying ? SAMPLE_RECHECK_MS : 0; }
 
     /**
-     * Which sound a slider plays when the finger lifts: Media plays the short sample that Settings ships (media_volume.ogg); the others play the default sound of their kind
-     * (VolumeSeekBarPreference passes a sample Uri only for STREAM_MUSIC; SeekBarVolumizer's constructor [mem] picks ring -> ringtone, notification -> notification sound, anything else -> alarm sound).
+     * Which sound a slider plays when the finger lifts: Media plays the short sample that Settings ships (media_volume.ogg; VolumeSeekBarPreference passes a sample Uri only for STREAM_MUSIC); the others
+     * play the default sound of their kind (SeekBarVolumizer's constructor: ring -> ringtone, notification -> notification sound, anything else, Call included -> alarm sound).
      */
     static int sampleSource(int stream) {
         if (stream == STREAM_MUSIC) return SAMPLE_BUNDLED;
