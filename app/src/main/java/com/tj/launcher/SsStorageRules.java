@@ -192,13 +192,21 @@ final class SsStorageRules {
     }
 
     /**
-     * How many pixels of a bar {@code widthPx} wide the teal part covers for {@code progress} (0..100): ProgressBar.doRefreshProgress sets the level (int) ((float) progress / 100f * 10000) on the platform's
-     * progress_horizontal_material, whose progress layer is a ScaleDrawable (scaleWidth 100%): ScaleDrawable.onBoundsChange cuts (int) (w * (10000 - level) * 1.0f / 10000) off the width. Checked against the
-     * seven bars of Tj's screenshot (506 px wide): progress 10, 1, 9, 0, 11, 48, 13 cover 51, 6, 46, 0, 56, 243, 66 px. For scenario checks; the page draws with the platform's own ProgressBar.
+     * The drawable level the platform gives the bar for {@code progress} of 100: ProgressBar.setVisualProgress sets (int) (scale * MAX_LEVEL) with scale = (progress - min) / (float) range, all in float, so
+     * 39 gives 3899, not 3900 (the same for 53, 59 and 78). A plain setProgress does not animate, the bar is at this level at once.
+     */
+    static int barLevel(int progress) {
+        int p = Math.max(0, Math.min(100, progress));
+        return (int) ((float) p / (float) 100 * 10000);
+    }
+
+    /**
+     * How many pixels of a bar {@code widthPx} wide the teal part covers for {@code progress} (0..100): the platform's progress_horizontal_material draws the progress layer as a ScaleDrawable (scaleWidth 100%),
+     * and ScaleDrawable.onBoundsChange cuts (int) (w * (10000 - level) * 1.0f / 10000) off the width. Checked against the seven bars of Tj's screenshot (506 px wide): progress 10, 1, 9, 0, 11, 48, 13 cover 51, 6,
+     * 46, 0, 56, 243, 66 px. For the unit test and the emulator scenario's expected values; the page itself draws with the platform's own ProgressBar, so it is identical by construction.
      */
     static int barFillPx(int widthPx, int progress) {
-        int p = Math.max(0, Math.min(100, progress));
-        int level = (int) ((float) p / (float) 100 * 10000);
+        int level = barLevel(progress);
         return widthPx - (int) (widthPx * (10000 - level) * 1.0f / 10000);
     }
 
