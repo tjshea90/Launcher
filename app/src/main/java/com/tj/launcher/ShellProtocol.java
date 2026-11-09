@@ -199,6 +199,8 @@ public final class ShellProtocol {
         {"GRANT_DUMP", "pm grant com.tj.launcher android.permission.DUMP"},
         {"GRANT_CFG", "pm grant com.tj.launcher android.permission.CHANGE_CONFIGURATION"},
         {"GRANT_STORAGE", "pm grant com.tj.launcher android.permission.READ_EXTERNAL_STORAGE"},
+        // BN1: the look-alike Settings app's Battery page runs `dumpsys batterystats --charged` as the app: that needs DUMP (above) AND this grant (verified on the CI emulator, run 455)
+        {"GRANT_USAGE", "pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS"},
         {"OP_USAGE", "cmd appops set com.tj.launcher GET_USAGE_STATS allow"},
         {"OP_WRITE", "cmd appops set com.tj.launcher WRITE_SETTINGS allow"},
         {"OP_BG", "cmd appops set com.tj.launcher RUN_IN_BACKGROUND allow"},
