@@ -90,6 +90,27 @@ final class SsRows {
 
     static Drawable glyph(Context c, int res) { return c.getDrawable(res); }
 
+    /** A themed 24 dp icon (vector with the theme's control tint) for the icon frame of a row. */
+    static View icon(Context c, int res) {
+        ImageView iv = new ImageView(c);
+        iv.setImageDrawable(c.getDrawable(res));
+        iv.setLayoutParams(new FrameLayout.LayoutParams(dp(c, 24), dp(c, 24), Gravity.START | Gravity.CENTER_VERTICAL));
+        return iv;
+    }
+
+    /** A category heading: teal capitals, 11 sp medium, letter spacing 0.0727, text at 72 dp, 16 dp above and below (AOSP TextAppearance.CategoryTitle + the Settings category layout). */
+    static TextView heading(Context c, CharSequence text) {
+        TextView t = new TextView(c);
+        t.setText(text);
+        t.setAllCaps(true);
+        t.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
+        t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        t.setLetterSpacing(0.072727f);
+        t.setTextColor(themeColor(c, android.R.attr.colorAccent, 0xFF008577));
+        t.setPaddingRelative(dp(c, 72), dp(c, 16), dp(c, 16), dp(c, 16));
+        return t;
+    }
+
     /** A hairline divider: 1 px, #DADCE0 (measured on Tj's screenshots of the Battery and Languages pages). */
     static View divider(Context c) {
         View v = new View(c);
