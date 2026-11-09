@@ -166,6 +166,27 @@ for event in list(hooks.keys()):
         else:
             del hooks[event]
 
+# ENV (TASKS BM1, 2026-11-09): the template may carry an "env" object. Keys we manage:
+#   HANDOFF_STALE_SECONDS            the account plugin `session-handoff` vetoes every compaction unless HANDOFF.md is
+#                                    younger than this; a huge value switches the veto off (research/COMPACTION_BLOCKED_*.md)
+#   CLAUDE_AUTOCOMPACT_PCT_OVERRIDE  where auto-compact fires (% of the window); we lower it, and never RAISE a lower value
+#                                    the user already chose. Everything else in "env" is preserved untouched.
+wanted_env = wanted.get("env", {}) or {}
+if wanted_env:
+    env = merged.get("env")
+    if not isinstance(env, dict):
+        env = {}
+        merged["env"] = env
+    for key, val in wanted_env.items():
+        cur = env.get(key)
+        if key == "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE" and cur is not None:
+            try:
+                if float(cur) <= float(val):
+                    continue
+            except ValueError:
+                pass
+        env[key] = val
+
 # An old `cp`-based install could have left the template's own _comment in
 # the user's settings file, where it is meaningless. Remove it when it is
 # unambiguously ours; never touch a _comment that is not.
