@@ -239,4 +239,26 @@ public class ShellProtocolTest {
     @Test public void aKeyWithoutATimestampStillCounts() {
         assertTrue(ShellProtocol.keyTestSummary("/dev/input/event3: EV_KEY KEY_POWER DOWN").contains("side key WAS seen"));
     }
+
+    @Test public void setSystemAllowListIsStrict() {   // BN1: Mono audio / Audio balance through the helper
+        assertArrayEquals(new String[] { "master_mono", "1" }, ShellProtocol.setSystem("SETSYS master_mono 1"));
+        assertArrayEquals(new String[] { "master_mono", "0" }, ShellProtocol.setSystem("  SETSYS   master_mono 0 "));
+        assertArrayEquals(new String[] { "master_balance", "-0.5" }, ShellProtocol.setSystem("SETSYS master_balance -0.5"));
+        assertArrayEquals(new String[] { "master_balance", "1" }, ShellProtocol.setSystem("SETSYS master_balance 1"));
+        assertArrayEquals(new String[] { "master_balance", "-1.000" }, ShellProtocol.setSystem("SETSYS master_balance -1.000"));
+        assertArrayEquals(new String[] { "master_balance", "0" }, ShellProtocol.setSystem("SETSYS master_balance 0"));
+        assertNull(ShellProtocol.setSystem(null));
+        assertNull(ShellProtocol.setSystem("SETSYS master_mono 2"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_mono 1; reboot"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_mono $(id)"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_balance 1.5"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_balance -1.01"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_balance 0.1234"));    // more than three decimals
+        assertNull(ShellProtocol.setSystem("SETSYS master_balance NaN"));
+        assertNull(ShellProtocol.setSystem("SETSYS master_balance 1e0"));
+        assertNull(ShellProtocol.setSystem("SETSYS screen_off_timeout 1000"));   // not on the allow-list
+        assertNull(ShellProtocol.setSystem("SETSYS master_mono"));
+        assertNull(ShellProtocol.setSystem("setsys master_mono 1"));
+        assertNull(ShellProtocol.setSystem("FORCESTOP com.example.app"));
+    }
 }
