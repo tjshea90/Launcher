@@ -102,7 +102,7 @@ final class SsBatteryStats {
                 @Override public void run() {
                     long end = System.currentTimeMillis() + limitMs;
                     while (!finished.get() && System.currentTimeMillis() < end) { try { Thread.sleep(50); } catch (InterruptedException e) { return; } }
-                    if (!finished.get()) p.destroy();
+                    if (!finished.get()) { timedOut.set(true); p.destroy(); }
                 }
             }, "TjSsBattWatch");
             watchdog.setDaemon(true);
