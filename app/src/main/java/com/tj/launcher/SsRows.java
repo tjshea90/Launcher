@@ -90,10 +90,10 @@ final class SsRows {
 
     static Drawable glyph(Context c, int res) { return c.getDrawable(res); }
 
-    /** A hairline divider (1 px, the theme's list divider colour). */
+    /** A hairline divider: 1 px, #DADCE0 (measured on Tj's screenshots of the Battery and Languages pages). */
     static View divider(Context c) {
         View v = new View(c);
-        v.setBackgroundColor(themeColor(c, android.R.attr.listDivider == 0 ? 0 : android.R.attr.colorControlHighlight, 0x1F000000));
+        v.setBackgroundColor(0xFFDADCE0);
         v.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
         return v;
     }
