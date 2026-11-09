@@ -32,7 +32,7 @@ adbsh pm path "$PKG" | grep -q package: || { echo "The launcher ($PKG) is not in
 
 if [ "$STATUS_ONLY" = 0 ]; then
   say "== 1. permissions (each survives updates; undo: research/ADB_TODO.md)"
-  for p in WRITE_SECURE_SETTINGS DUMP CHANGE_CONFIGURATION READ_EXTERNAL_STORAGE; do
+  for p in WRITE_SECURE_SETTINGS DUMP CHANGE_CONFIGURATION READ_EXTERNAL_STORAGE PACKAGE_USAGE_STATS; do
     r="$(adbsh pm grant "$PKG" android.permission.$p)"; if [ -z "$r" ]; then ok "granted $p"; else bad "$p: $r"; fi
   done
   for op in GET_USAGE_STATS WRITE_SETTINGS RUN_IN_BACKGROUND RUN_ANY_IN_BACKGROUND; do
