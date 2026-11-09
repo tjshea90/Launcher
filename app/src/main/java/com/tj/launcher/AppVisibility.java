@@ -11,8 +11,8 @@ import java.util.Set;
  * Our own package is never shown (Launcher control must not be visible in the custom launcher), except components in {@link #ALWAYS_SHOWN_OWN_COMPONENTS}.
  */
 public final class AppVisibility {
-    /** Own components that DO appear in the custom drawer (later: the Settings clone). */
-    public static final Set<String> ALWAYS_SHOWN_OWN_COMPONENTS = new HashSet<>();
+    /** Own components that DO appear in the custom drawer: the Settings look-alike's alias (BN1; the alias itself is enabled only while {@link SettingsSpoof#aliasWanted} says so). */
+    public static final Set<String> ALWAYS_SHOWN_OWN_COMPONENTS = Collections.unmodifiableSet(new HashSet<>(Collections.singletonList(SettingsSpoof.ALIAS)));
 
     private AppVisibility() {}
 
