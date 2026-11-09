@@ -1,0 +1,49 @@
+package com.tj.launcher;
+
+import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import com.android.launcher3.R;
+
+/**
+ * BN1: builds the content of one {@link SsPage}. Each page is a ScrollView of rows from {@link SsRows}; a page is rebuilt when the activity is created (and by the pages that watch system values).
+ * M0 (this file's first version): the home page; the other pages answer a placeholder until their milestone (M1 static pages, M2 Battery and Display, M3 Sound and Storage, M4 Accessibility).
+ */
+final class SsPages {
+    private SsPages() {}
+
+    static View build(final Activity a, SsPage page) {
+        LinearLayout list = new LinearLayout(a);
+        list.setOrientation(LinearLayout.VERTICAL);
+        switch (page) {
+            case HOME: home(a, list); break;
+            default:
+                list.addView(SsRows.row(a, null, page.title, "This page is not built yet.", null));
+        }
+        ScrollView sv = new ScrollView(a);
+        sv.setFillViewport(true);
+        sv.addView(list, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        return sv;
+    }
+
+    /** The seven home entries in Tj's order; coloured tiles and the stock summaries (AOSP strings; the page-specific summaries are refined in M1). */
+    private static void home(final Activity a, LinearLayout list) {
+        Object[][] e = {
+            { SsPage.BATTERY, 0xFF258982, R.drawable.ss_glyph_battery, "" },
+            { SsPage.DISPLAY, 0xFFFFA727, R.drawable.ss_glyph_display, "Wallpaper, sleep, font size" },
+            { SsPage.SOUND, 0xFF01B1AF, R.drawable.ss_glyph_sound, "Volume, vibration, Do Not Disturb" },
+            { SsPage.STORAGE, 0xFFC14CE6, R.drawable.ss_glyph_storage, "" },
+            { SsPage.ACCESSIBILITY, 0xFF5011C1, R.drawable.ss_glyph_accessibility, "Screen readers, display, interaction controls" },
+            { SsPage.SYSTEM, 0xFF9E9E9E, R.drawable.ss_glyph_system, "Languages, gestures, time, backup" },
+            { SsPage.ABOUT, 0xFF6F86DA, R.drawable.ss_glyph_about, "" },
+        };
+        for (Object[] x : e) {
+            final SsPage p = (SsPage) x[0];
+            View.OnClickListener go = new View.OnClickListener() { @Override public void onClick(View v) { a.startActivity(SsPageActivity.intent(a, p)); } };
+            list.addView(SsRows.row(a, SsRows.tile(a, (Integer) x[1], (Integer) x[2]), p.title, (String) x[3], go));
+        }
+    }
+}
