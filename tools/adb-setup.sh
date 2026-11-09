@@ -26,6 +26,7 @@ run adb shell cmd appops set "$PKG" RUN_IN_BACKGROUND allow
 run adb shell cmd appops set "$PKG" RUN_ANY_IN_BACKGROUND allow
 run adb shell pm grant "$PKG" android.permission.DUMP
 run adb shell pm grant "$PKG" android.permission.CHANGE_CONFIGURATION
+run adb shell pm grant "$PKG" android.permission.PACKAGE_USAGE_STATS
 run adb shell cmd appops set "$PKG" GET_USAGE_STATS allow
 run adb shell cmd appops set "$PKG" WRITE_SETTINGS allow
 echo; echo "The invisible clean-up helper is separate (it must be started again after every restart):  bash tools/adb-setup.sh --helper"
