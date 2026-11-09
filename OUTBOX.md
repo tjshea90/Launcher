@@ -1946,3 +1946,7 @@
 ## 2026-11-09T22:47:17Z
 > Run #474 is still going after 12 minutes, which fits a `base` plus `legacy` run. I check again at 22:49:30 UTC.
 <!-- sha:5fd6728b34a5 -->
+
+## 2026-11-09T22:55:13Z
+> Everything for v0.9.0 is in place except the emulator proof. The local checks and the three reruns finish around 23:05 UTC.
+<!-- sha:3087c62fc780 -->
