@@ -504,7 +504,7 @@ final class SsPagesStorage {
                         cachedAt = SystemClock.elapsedRealtime();
                     }
                     post(gen, full);
-                    report(app, vol, s.why, s.packages, sizes, SystemClock.elapsedRealtime() - t0);
+                    if (gen == generation) report(app, vol, s.why, s.packages, sizes, SystemClock.elapsedRealtime() - t0);   // a scan the page itself cancelled says nothing about the system: keep the last real status
                 }
             }, "TjSsStor");
             t.setDaemon(true);
