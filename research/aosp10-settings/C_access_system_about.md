@@ -103,8 +103,8 @@ class `accessibility/AccessibilitySettings.java`. XML order (a `PreferenceCatego
   `Settings.System.putFloat(FONT_SCALE, values[index])`). No icon. `settings:searchable=false`.
 - **DIFF**: the tablet report says font scale 1.2, yet the row shows "Default". r47 arrays would give "Large" for 1.2 (1.2 < 1.225). So the tablet build uses other
   `entryvalues_font_size` (probably Default = 1.2); the real values are NF here. Read them from the installed Settings app at run time or measure the page.
-- Gotchas: `Settings.System.FONT_SCALE` is public; writing needs WRITE_SETTINGS (appop) or WRITE_SECURE_SETTINGS (held); the change is applied system-wide by SettingsProvider -> Configuration update (a
-  non-system app that writes the setting directly gets the new scale after the config broadcast; `Settings.System.putFloat` public).
+- Gotchas: `Settings.System.FONT_SCALE` and `Settings.System.putFloat` are public; writing needs WRITE_SETTINGS (appop) or WRITE_SECURE_SETTINGS (held). The activity manager observes the
+  System key `font_scale` and pushes the new Configuration to all apps (memory); no extra call is needed.
 
 ### 1.3 Display size
 - Row: key `accessibility_settings_screen_zoom`; class `display/ScreenZoomPreference` (extends Preference); title `screen_zoom_title` "Display size" (strings line 9441);
