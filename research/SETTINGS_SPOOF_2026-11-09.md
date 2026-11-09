@@ -84,6 +84,21 @@ Useful tags to read first: `res/layout/preference_*`, `res/values/dimens.xml`, `
 - The platform theme that gives all of this for free: `Theme.DeviceDefault.Settings` (framework `themes_device_defaults.xml` line 1452: light status bar, `ic_ab_back_material_settings`,
   solid action bar, white navigation bar with divider, `colorListDivider`). Its resource id can be looked up by name at run time (`getIdentifier("Theme.DeviceDefault.Settings", "style", "android")`).
 
+### 4c. Theme facts read from the AOSP 10 source (r47)
+
+- `android.R.style.Theme_DeviceDefault_Settings` is PUBLIC API since level 21 (`api-versions.xml`), so `parent="@android:style/Theme.DeviceDefault.Settings"` compiles and gives the
+  tablet's own colours / toolbar / switch / dialogs. Settings' own `Theme.Settings` adds on top: `android:listPreferredItemHeight` 72dip, `android:homeAsUpIndicator` = its own
+  24 dp vector `ic_arrow_back` (path `M20,11H7.83l5.59-5.59L12,4l-8,8l8,8l1.41-1.41L7.83,13H20V11z`, tint `colorControlNormal`, autoMirrored), `android:navigationBarColor` transparent,
+  `android:actionBarStyle` = `Widget.ActionBar` = `Widget.DeviceDefault.Light.ActionBar.Solid` + `contentInsetStart` 16 dp.
+- Page frame (`settings_base_layout.xml`): a vertical LinearLayout with `fitsSystemWindows`, a `Toolbar` (`style=?attr/actionBarStyle`, `theme=?attr/actionBarTheme`), then the content.
+- Category heading: `TextAppearance.CategoryTitle` = `TextAppearance.DeviceDefault.Body2` + all caps + 11 sp + letter spacing 0.0727 (0.8 / 11).
+- Battery header icon colour measured #008577 (the DeviceDefault light accent); the big icon is 70 x 106 px at x 390-459, y 136-241; "84" digits 36 sp (`battery_header.xml`:
+  a 170 dp wide text column with 72 dp start margin, percent text `textSize` 36 sp, margin top 12 dp, `summary1` min 2 lines margin top 8 dp).
+- Volume slider row (`preference_volume_slider.xml`): icon frame min width 44 dp, icon 24 dp, title padding start 12 dp, row margins top/bottom 8 dp; measured: track 2 px
+  thick, spans x 77-565, thumb 11 px, inactive track #D7D7D7, active #008577; dividers on the Battery page are 1 px #DADCE0.
+- Storage row (`storage_item.xml`): padding top/bottom 14 dp, icon frame min width 56 dp (icon 24 dp), title + the size on the right (`layout_alignParentEnd`), progress bar 8 dp
+  high with top margin 12 dp and bottom margin 4 dp under the title (the screenshot shows the visible bar about 5 px thick: the theme's progress drawable).
+
 ## 5. Hard facts about this container (so nobody re-derives them)
 
 - No `/dev/kvm`, no emulator, no system image here: the look can only be checked on the CI emulator (`emulator.yml`) and ONLY through numbers (RESULTS block), no pictures.
