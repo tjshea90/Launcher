@@ -1234,3 +1234,10 @@ About tablet - only legal information, model and hardware, android version, and 
 
 No settings page should have the search icon
 ```
+
+## 2026-11-09T02:33:15Z
+```
+For the home screen on custom launcher, the wallpaper patch doesn't load fast enough, and the power menu shows screenshot button the first time I press the side key, but hides it every other time. Make sure the wallpaper patch loads immediately, or as fast as possible, when the custom launcher opens to the home screen, so that the screenshot button is covered and hidden, even on the first side key press.  
+
+Also the wallpaper patch on the lock screen shows up and flashes sometimes when I pull the pin pad up, maybe this can't be fixed, but try to make the wallpaper patch disappear immediately or as fast as possible when I pull up to enter pin so that it doesn't flash
+```
