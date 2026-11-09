@@ -544,6 +544,7 @@ final class SsPagesSound {
              * comes after the set, so a refused set leaves nothing half done.) A SecurityException is Android's "Not allowed to change Do Not Disturb state": on a tablet without vibrator a ring-type stream
              * (Notification aliases Ring there) that reaches 0 switches the ringer to silent, which an app may do only with Do Not Disturb access. The slider then snaps back to the real value.
              */
+            @SuppressLint("WrongConstant")   // FLAG_SHOW_UI_WARNINGS is hidden, so the SDK's flag list for setStreamVolume does not know it
             private void writeVolume(int stream, int progress) {
                 try {
                     int adjust = SsSoundRules.muteAdjustment(am.isStreamMute(stream), progress);
