@@ -496,6 +496,7 @@ public class TjAccessibilityService extends AccessibilityService {
             try {
                 String reason = i == null ? null : i.getStringExtra("reason");
                 if ("recentapps".equals(reason) || "globalactions".equals(reason)) return;
+                if (overlayShown) menuClosedAtMs = android.os.SystemClock.uptimeMillis();   // BN2: the menu we covered is being dismissed: its window lingers while it fades out (see evaluateScan)
                 startClose(android.os.SystemClock.uptimeMillis(), "close system dialogs (" + reason + ")");
             } catch (Throwable t) { Log.e(TAG, "close dialogs receiver failed", t); }
         }
