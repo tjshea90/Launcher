@@ -3916,6 +3916,20 @@ adb shell settings put system accelerometer_rotation "$SSROT" >/dev/null 2>&1
 sstap "Brightness level"; sleep 3; resumed > "$OUT/ss-bright-resumed.txt"; shot ss-13-brightness
 info "SS18: brightness tap -> $(tr -s ' \n' ' ' < $OUT/ss-bright-resumed.txt | cut -c1-200)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+ssseek(){ python3 -I - "$1" "$2" <<'EOF'
+import re,sys
+s=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+n=0
+for m in re.finditer(r'<node [^>]*>', s):
+    t=m.group(0)
+    if 'class="android.widget.SeekBar"' in t:
+        n+=1
+        if n==int(sys.argv[2]):
+            b=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', t)
+            if b: print(' '.join(b.groups()))
+            break
+EOF
+}
 # ---- M3: Accessibility (four headings, seven rows) and its sub pages: Text-to-speech output, Magnification, the Touch & hold delay dialog (Tj's screenshots 2a288d48 / 3d280fbe / 8d14938a / d9d18032 / 8052f043)
 SSLP=$(adb shell settings get secure long_press_timeout | tr -d '\r'); SSMONO=$(adb shell settings get system master_mono | tr -d '\r'); SSBAL=$(adb shell settings get system master_balance | tr -d '\r')
 sstap "Accessibility"; sleep 2; ssdump "$OUT/ss-access.xml"; shot ss-14-access
@@ -3931,21 +3945,22 @@ check "SS21c: choosing Medium wrote Settings.Secure long_press_timeout = 1000 (w
 ssdump "$OUT/ss-access2.xml"
 check "SS21d: the Touch & hold delay row now reads Medium and the dialog is gone" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Medium' --exact)\" ] && [ -z \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Long' --exact)\" ]"
 adb shell settings put secure long_press_timeout "$SSLP" >/dev/null 2>&1
-# Mono audio and Audio balance are PRIVATE system settings: an app's own write throws (SettingsProvider), only the shell can store them. So: no helper = nothing stored and the control goes back to the stored state
-# (never a lie, a toast says so); helper running = the fixed SETSYS verb stores it. (Run #455: the first version flipped the control and stored nothing.)
+# Mono audio and Audio balance are PRIVATE system settings: an app's own write throws (SettingsProvider), only the shell can store them. So: no helper = nothing stored, and (BN1l, Tj: "it only needs to look
+# identical") the control still shows what Tj set, with no toast; helper running = the fixed SETSYS verb stores it. (Run #455: the first version flipped the control and stored nothing.)
 ssrestore(){ if [ -z "$2" ] || [ "$2" = null ]; then adb shell settings delete system "$1" >/dev/null 2>&1; else adb shell settings put system "$1" "$2" >/dev/null 2>&1; fi; }
 ssswitch(){ tr '>' '\n' < "$1" | grep 'class="android.widget.Switch"' | grep -o 'checked="[a-z]*"' | head -1 | cut -d'"' -f2; }
 adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
-sstap "Mono audio"; sleep 1; ssdump "$OUT/ss-mono-toast.xml"; sleep 2
+sstap "Mono audio"; sleep 3
 SSMONO2=$(adb shell settings get system master_mono | tr -d '\r')
 ssdump "$OUT/ss-mono1.xml"
 check "SS22: without the helper, tapping 'Mono audio' stores nothing (master_mono was $SSMONO, now $SSMONO2)" test "$SSMONO" = "$SSMONO2"
-check "SS22b: and the Mono audio switch is back at its stored state (switch checked=$(ssswitch $OUT/ss-mono1.xml), stored $SSMONO2)" bash -c "s=\$(tr '>' '\n' < $OUT/ss-mono1.xml | grep 'class=\"android.widget.Switch\"' | grep -o 'checked=\"[a-z]*\"' | head -1 | cut -d'\"' -f2); if [ '$SSMONO2' = 1 ]; then [ \"\$s\" = true ]; else [ \"\$s\" = false ]; fi"
-info "SS22c: the toast after the refused write (best effort, it lasts 2 s): $(tr '>' '\n' < $OUT/ss-mono-toast.xml | grep -oE "text=\"[^\"]*can't be changed[^\"]*\"" | head -1)"
-SSL=$(ssbounds "$OUT/ss-mono1.xml" "Left"); set -- $SSL
-if [ "$#" -ge 4 ]; then SSBY=$(( $2 - 30 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 2; fi
+check "SS22b: and the Mono audio switch shows the tap although nothing was stored (look only; checked=$(ssswitch $OUT/ss-mono1.xml))" test "$(ssswitch $OUT/ss-mono1.xml)" = true
+info "SS22c: no refusal toast any more (look only): $(tr '>' '\n' < $OUT/ss-mono1.xml | grep -c "can't be changed")"
+SSL=$(ssseek "$OUT/ss-mono1.xml" 1); set -- $SSL
+if [ "$#" -ge 4 ]; then SSBY=$(( ($2 + $4) / 2 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 2; fi
 SSBAL2=$(adb shell settings get system master_balance | tr -d '\r')
 check "SS23: without the helper, dragging the Audio balance bar stores nothing (master_balance was $SSBAL, now $SSBAL2)" test "$SSBAL" = "$SSBAL2"
+sstap "Mono audio"; sleep 2   # the look-only switch back to off, so the helper phase starts from off
 # with the helper (the same start line as every other section)
 adb shell 'CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/data/local/tmp/tjshell.log 2>&1 &' >/dev/null 2>&1; sleep 5
 sstap "Mono audio"; sleep 3
@@ -3954,8 +3969,8 @@ check "SS22d: with the helper running, tapping 'Mono audio' stores master_mono =
 ssdump "$OUT/ss-mono2.xml"
 check "SS22e: and the switch shows it is on (checked=$(ssswitch $OUT/ss-mono2.xml))" test "$(ssswitch $OUT/ss-mono2.xml)" = true
 ssrestore master_mono "$SSMONO"
-SSL=$(ssbounds "$OUT/ss-mono2.xml" "Left"); set -- $SSL
-if [ "$#" -ge 4 ]; then SSBY=$(( $2 - 30 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 3; fi
+SSL=$(ssseek "$OUT/ss-mono2.xml" 1); set -- $SSL
+if [ "$#" -ge 4 ]; then SSBY=$(( ($2 + $4) / 2 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 3; fi
 SSBAL3=$(adb shell settings get system master_balance | tr -d '\r')
 check "SS23b: with the helper running, dragging the Audio balance bar to the left stores a negative balance (was $SSBAL, now $SSBAL3)" bash -c "awk -v b='$SSBAL3' 'BEGIN{exit !(b+0 < -0.3)}'"
 shot ss-16-balance
@@ -4001,20 +4016,6 @@ SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M4: Sound and Storage (written by the page agents from Tj's screenshots 0b8dab8c / 4cd04033 / 52ef06ee); both start at the home page
-ssseek(){ python3 -I - "$1" "$2" <<'EOF'
-import re,sys
-s=open(sys.argv[1],encoding='utf-8',errors='replace').read()
-n=0
-for m in re.finditer(r'<node [^>]*>', s):
-    t=m.group(0)
-    if 'class="android.widget.SeekBar"' in t:
-        n+=1
-        if n==int(sys.argv[2]):
-            b=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', t)
-            if b: print(' '.join(b.groups()))
-            break
-EOF
-}
 ssvol(){ adb shell settings list system | tr -d '\r' | grep -E '^volume_music(_[a-z_]+)?=' | head -1 | cut -d= -f2; }
 sstap "Sound"; sleep 3; ssdump "$OUT/ss-sound.xml"; shot ss-21-sound
 check "SS29: the Sound page lists the four volumes, the two default sounds, the heading Other sounds and the three switches, in Tj's order" ssorder "$OUT/ss-sound.xml" "Media volume" "Call volume" "Alarm volume" "Notification volume" "Default notification sound" "Default alarm sound" "Other sounds" "Screen locking sounds" "Charging sounds and vibration" "Touch sounds"
