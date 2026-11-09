@@ -3871,6 +3871,8 @@ ssdump "$OUT/ss-home.xml"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
 check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
+check "SS5b: the Battery row on the home page carries a live summary ('NN% - ...', the percentage and the header sentence of the Battery page)" bash -c "tr '>' '\n' < $OUT/ss-home.xml | grep -qE 'text=\"[0-9]+ ?% - '"
+info "SS5c: home summaries = $(tr '>' '\n' < $OUT/ss-home.xml | grep -oE 'text=\"([0-9]+ ?% [^\"]*)\"' | head -3 | tr '\n' ' ')"
 # ---- M2: Battery (+ Battery usage), Display (+ Font size, Display size)
 ssbc(){ python3 -I tools/uinode.py "$1" --contains "$2" | head -1; }   # bounds of the first node whose text CONTAINS $2
 ssy(){ local f="$1" t="$2" v b; for v in "$t" "$(echo "$t" | tr 'a-z' 'A-Z')"; do b=$(ssbounds "$f" "$v"); if [ -n "$b" ]; then echo "$b" | awk '{print $2}'; return; fi; done; }   # y of a node by its exact text, also as capitals (a category heading)
