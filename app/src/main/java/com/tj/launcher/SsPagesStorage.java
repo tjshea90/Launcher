@@ -191,7 +191,7 @@ final class SsPagesStorage {
             s.why = "denied";
             return s;
         } catch (Throwable e) {
-            s.why = "error";   // the shared-storage part is missing; the per-app part below does not depend on it
+            s.why = "error-ext";   // the shared-storage part is missing; the per-app part below does not depend on it
         }
         final List<ApplicationInfo> installed;
         try { installed = app.getPackageManager().getInstalledApplications(0); } catch (Throwable t) { s.why = "error"; return s; }
