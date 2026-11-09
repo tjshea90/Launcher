@@ -3871,13 +3871,24 @@ ssdump "$OUT/ss-home.xml"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
 check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
-# ---- M1: System > Languages & input, About tablet > Legal information (static pages)
+# ---- M2: Battery (+ Battery usage), Display (+ Font size, Display size)
 ssbc(){ python3 -I tools/uinode.py "$1" --contains "$2" | head -1; }   # bounds of the first node whose text CONTAINS $2
 ssy(){ local f="$1" t="$2" v b; for v in "$t" "$(echo "$t" | tr 'a-z' 'A-Z')"; do b=$(ssbounds "$f" "$v"); if [ -n "$b" ]; then echo "$b" | awk '{print $2}'; return; fi; done; }   # y of a node by its exact text, also as capitals (a category heading)
 ssorder(){ local f="$1" prev=-1 y t; shift; for t in "$@"; do y=$(ssy "$f" "$t"); if [ -z "$y" ] || [ "$y" -le "$prev" ]; then info "ssorder: '$t' is missing or out of order (y '$y' after '$prev')"; return 1; fi; prev=$y; done; return 0; }
 ssabsent(){ local f="$1" t; shift; for t in "$@"; do if [ -n "$(ssy "$f" "$t")" ]; then info "ssabsent: '$t' is on screen"; return 1; fi; done; return 0; }
 sstap(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbounds "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
 sstapc(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbc "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
+sstap "Battery"; sleep 7; ssdump "$OUT/ss-battery.xml"; shot ss-08-battery
+check "SS13: Battery shows 'Last full charge', 'Screen usage since full charge' and the approximate-data note, in that order" ssorder "$OUT/ss-battery.xml" "Last full charge" "Screen usage since full charge" "Battery usage data is approximate and can change based on usage"
+check "SS13b: Battery has none of the stock extras (no Battery Saver, Battery Manager, Apps are running normally, Battery percentage)" ssabsent "$OUT/ss-battery.xml" "Battery Saver" "Battery Manager" "Apps are running normally" "Battery percentage"
+info "SS13c: battery header texts = $(tr '>' '\n' < $OUT/ss-battery.xml | grep -oE 'text="[^"]+"' | head -12 | tr '\n' ' ' | cut -c1-300)"
+info "SS13d: $(adb shell run-as $PKG cat shared_prefs/tj_features.xml 2>/dev/null | tr '<' '\n' | grep 'ss_battery_status' | head -1 | cut -c1-200)"
+adb shell input tap 575 56; sleep 2; ssdump "$OUT/ss-overflow.xml"; shot ss-09-overflow
+check "SS14: the Battery toolbar menu has ONE item, 'Battery usage'" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-overflow.xml --contains 'Battery usage' --exact)\" ]"
+sstap "Battery usage"; sleep 3; ssdump "$OUT/ss-usage.xml"; shot ss-10-usage
+check "SS14b: Battery usage lists exactly one app row, Solitaire" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-usage.xml --contains 'Solitaire' --exact)\" ]"
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+# ---- M1: System > Languages & input, About tablet > Legal information (static pages)
 sstap "System"; sleep 2; ssdump "$OUT/ss-system.xml"; shot ss-04-system
 check "SS8: System has only 'Languages & input' (no Gestures, Date & time, Backup, Reset options)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-system.xml --contains '& input')\" ]"
 check "SS8b: System shows none of the other stock rows" bash -c "! tr '>' '\n' < $OUT/ss-system.xml | grep -E 'text=\"(Gestures|Date &amp; time|Backup|Reset options)\"'"
