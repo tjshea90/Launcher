@@ -29,7 +29,8 @@ cat > "$PL/hooks.json" <<'EOJ'
 {"hooks":{"PreCompact":[{"matcher":"*","hooks":[{"type":"command","command":"\"${CLAUDE_PLUGIN_ROOT}/hooks/precompact-handoff.sh\""}]}]}}
 EOJ
 chmod +x "$PL/precompact-handoff.sh"
-guard() { HOME="$FH" COMPACT_GUARD_REPO="$REPO" python3 -I "$D/tools/compact_guard.py" "$@"; }
+# the test must not inherit THIS session's real protection (settings env makes HANDOFF_STALE_SECONDS huge): unset it for the controls
+guard() { env -u HANDOFF_STALE_SECONDS -u CLAUDE_PROJECT_DIR HOME="$FH" COMPACT_GUARD_REPO="$REPO" python3 -I "$D/tools/compact_guard.py" "$@"; }
 
 # 1. the 2026-11-09 failure, reproduced: HANDOFF.md two hours old -> the guard must call it a VETO (exit 1)
 echo "# handoff" > "$REPO/HANDOFF.md"; touch -d '2 hours ago' "$REPO/HANDOFF.md"
@@ -91,9 +92,10 @@ check "no HANDOFF.md anywhere -> none is invented (the tree stays clean)" '[ ! -
 
 # 8. the REAL plugin script, when this container has it: the guard must see its veto, and keepalive must clear it
 REALH="$(ls "$HOME"/.claude/plugins/synced/*/*/hooks/precompact-handoff.sh 2>/dev/null | head -1)"
+REAL_PLUGINS="$HOME/.claude/plugins"
 if [ -n "$REALH" ]; then
   R="$T/real"; mkdir -p "$R" "$T/eh"; echo "# h" > "$R/HANDOFF.md"; touch -d '2 hours ago' "$R/HANDOFF.md"
-  RG() { HOME="$T/eh" COMPACT_GUARD_PLUGINS="$HOME/.claude/plugins" COMPACT_GUARD_REPO="$R" python3 -I "$D/tools/compact_guard.py" "$@"; }
+  RG() { env -u HANDOFF_STALE_SECONDS -u CLAUDE_PROJECT_DIR HOME="$T/eh" COMPACT_GUARD_PLUGINS="$REAL_PLUGINS" COMPACT_GUARD_REPO="$R" python3 -I "$D/tools/compact_guard.py" "$@"; }
   RG >/dev/null 2>&1; RR1=$?
   check "REAL session-handoff hook: a stale HANDOFF.md is seen as a veto" '[ "$RR1" = 1 ]'
   KEEPALIVE_FILE="$R/HANDOFF.md" bash "$D/tools/keepalive.sh" --once
