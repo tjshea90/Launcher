@@ -522,7 +522,7 @@ pen_cover_state(){ # shown | hidden | none: the pencil cover window's own flags 
   [ -n "$blk" ] || { echo none; return; }
   if echo "$blk" | grep -q 'NOT_TOUCHABLE'; then echo hidden; else echo shown; fi
 }
-kg_state(){ adb shell dumpsys window policy 2>/dev/null | grep -o 'showing=[a-z]*' | head -1; }   # showing=true | showing=false
+# (kg_state and b6unlock are defined at the top of this file: the sections fp and last need them without b6)
 # NO uiautomator dump inside the sampling: a UiAutomation session SUPPRESSES (unbinds) the accessibility services while it runs, so every dump would restart the very service that is measured (gate triage 2026-11-08, runs #408 / #409:
 # the 2nd and 3rd opening read 'none' in one phase of each run). Only the window state and the keyguard state are read here; ONE dump is taken at the very end of the phase.
 pen_sample(){ # "cover=<shown|hidden|none> showing=<keyguard> sb=<the StatusBar window's frame>": unlocked, a closed shade is [0,0][600,24] and an open panel is full height, so a cover with a small frame would sit over NOTHING
