@@ -56,7 +56,7 @@ mark: must
 why: On the tablet open a file manager > Downloads > launcher-probe and send tablet-report.txt to Claude first (it is small). Cannot attach a file? Tap "2b. Share a SHORT summary as text" on the setup screen and send that text instead. If you pressed "4", zip the whole folder and send it as well. Do not restart the tablet before you have collected: the helper stops at a restart.
 note: Claude saves what you send into the project (serial numbers, addresses and e-mail addresses are removed first) and reads it before anything else.
 ##- FALLBACK: if "Do everything" failed, do the same steps by hand from the phone (about 5 minutes)
-@ Permissions the launcher needs (4 lines)
+@ Permissions the launcher needs (5 lines)
 why: Only for this app; they survive updates. Lets the launcher switch the keyboard, the quick-settings tiles per launcher, the animation speed-up, the status-bar hiding, read what is in front, and (for the lock-screen patch) read the wallpaper.
 cmd: pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 cmd: pm grant com.tj.launcher android.permission.DUMP
