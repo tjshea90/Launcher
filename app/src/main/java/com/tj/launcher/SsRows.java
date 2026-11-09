@@ -57,11 +57,12 @@ final class SsRows {
         appearance(t, android.R.attr.textAppearanceListItem);
         t.setText(title);
         col.addView(t);
-        if (summary != null && summary.length() > 0) {
+        if (summary != null) {   // an empty summary keeps its (hidden) view so a page can fill it in later with setSummary
             TextView s = new TextView(c);
             appearance(s, android.R.attr.textAppearanceListItemSecondary);
             s.setTextColor(themeColor(c, android.R.attr.textColorSecondary, Color.GRAY));
             s.setText(summary);
+            if (summary.length() == 0) s.setVisibility(View.GONE);
             col.addView(s);
         }
         r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -70,6 +71,30 @@ final class SsRows {
             if (c.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, tv, true)) r.setBackgroundResource(tv.resourceId);
             r.setOnClickListener(click);
         }
+        return r;
+    }
+
+    /** Changes the summary of a row made by {@link #row} (the row must have been created with a non-null summary); an empty text hides the line. */
+    static void setSummary(View row, CharSequence text) {
+        if (!(row instanceof ViewGroup) || ((ViewGroup) row).getChildCount() < 2) return;
+        View col = ((ViewGroup) row).getChildAt(1);
+        if (!(col instanceof ViewGroup) || ((ViewGroup) col).getChildCount() < 2) return;
+        TextView s = (TextView) ((ViewGroup) col).getChildAt(1);
+        s.setText(text);
+        s.setVisibility(text == null || text.length() == 0 ? View.GONE : View.VISIBLE);
+    }
+
+    /** What a switch row reports. */
+    interface Toggle { void onToggle(boolean checked); }
+
+    /** A row with a switch at the right edge (AOSP SwitchPreference: the whole row toggles, the switch itself is not touched separately). */
+    static LinearLayout switchRow(Context c, CharSequence title, CharSequence summary, final android.widget.Switch sw, final Toggle t) {
+        LinearLayout r = row(c, null, title, summary, new View.OnClickListener() {
+            @Override public void onClick(View v) { boolean to = !sw.isChecked(); sw.setChecked(to); t.onToggle(to); }
+        });
+        sw.setClickable(false);
+        sw.setFocusable(false);
+        r.addView(sw, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return r;
     }
 
