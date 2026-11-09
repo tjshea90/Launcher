@@ -5,7 +5,7 @@
 set -uo pipefail
 D="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"; cd "$D" || exit 0
 command -v python3 >/dev/null 2>&1 || exit 0
-if [ "${1:-}" = "--report" ]; then python3 -I "$D/tools/ctxwatch.py" "$@" 2>/dev/null; exit 0; fi
+if [ "${1:-}" = "--report" ] || [ "${1:-}" = "--top" ]; then python3 -I "$D/tools/ctxwatch.py" "$@" 2>/dev/null; exit 0; fi
 IN=""; [ ! -t 0 ] && IN="$(timeout 2 cat 2>/dev/null || true)"
 printf '%s' "$IN" | timeout 10 python3 -I "$D/tools/ctxwatch.py" "$@" 2>/dev/null
 exit 0
