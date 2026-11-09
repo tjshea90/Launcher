@@ -67,6 +67,7 @@ undo: pm revoke com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 undo: pm revoke com.tj.launcher android.permission.DUMP
 undo: pm revoke com.tj.launcher android.permission.CHANGE_CONFIGURATION
 undo: pm revoke com.tj.launcher android.permission.READ_EXTERNAL_STORAGE
+undo: pm revoke com.tj.launcher android.permission.PACKAGE_USAGE_STATS
 @ Background, usage and battery settings (5 lines)
 why: So Android does not freeze the helper on this low-memory tablet, and the clean-up still works with the screen off. Usage access: which app was used last (read-only). Modify system settings: for later features.
 cmd: cmd appops set com.tj.launcher GET_USAGE_STATS allow
