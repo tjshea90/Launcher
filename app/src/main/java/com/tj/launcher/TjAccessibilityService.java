@@ -706,40 +706,51 @@ public class TjAccessibilityService extends AccessibilityService {
         if (getPackageName().contentEquals(pk)) return;                                  // our own windows (the patch itself, the cards, the Launcher)
         if (cn != null && cn.toString().contains("ActionsDialog")) return;               // the stock power menu
         final String foreignName = pk + " " + cn;
-        // BN2 (Tj, 2026-11-09 03:02 UTC, tablet report): SystemUI's status-bar window announces itself while the KEYGUARD goes away, so every plain unlock started the 2.5 s guard below and a side-key press within 2.5 s
-        // of the unlock found "the patch is not resting" (the composite was fresh 0.35 s earlier): the stock Screenshot entry showed. Right after the keyguard was up such an event is judged 400 ms later by the Launcher's
-        // window focus instead (the shade takes the focus, the keyguard's exit does not); the patch is hidden meanwhile (cheap), nothing is guarded.
-        if (HomePatchRules.foreignTreatment("com.android.systemui".contentEquals(pk), since(lastKeyguardUpMs)) == HomePatchRules.FOREIGN_UNLOCK_CHECK) {
-            homeForeignPendingName = foreignName;
-            if (patchResting) { patchResting = false; patchView.setAlpha(0f); }   // restable stays as it is: nothing is guarded yet, the recheck puts it back
-            Log.i(TAG, "HOMEPATCH away (checking): SystemUI window " + cn + " " + since(lastKeyguardUpMs) + " ms after the keyguard was up");
-            handler.removeCallbacks(homeForeignRecheck); handler.postDelayed(homeForeignRecheck, HomePatchRules.FOREIGN_RECHECK_MS);
-            return;
-        }
-        homeForeignApply(foreignName);
+        // BN2 (Tj, 2026-11-09 03:02 UTC, tablet report): the keyguard's own window (SystemUI's status-bar window, a plain FrameLayout) announces itself while the keyguard GOES AWAY, so every plain unlock started the 2.5 s
+        // guard below and a side-key press within 2.5 s of the unlock found "the patch is not resting" (the composite was fresh 0.35 s earlier): the stock Screenshot entry showed. Such an event right after the keyguard was
+        // up starts the guard as ever, but PROVISIONALLY: 400 ms later the Launcher's window focus decides (the shade takes the focus, the keyguard's exit does not) and the guard is lifted if the Launcher still has it.
+        // Nothing can paint over a real window meanwhile (the guard holds); a Dialog (volume panel, power menu) is never judged this way.
+        final boolean provisional = HomePatchRules.foreignTreatment(HomePatchRules.isKeyguardWindow(pk.toString(), cn == null ? "" : cn.toString()), since(lastKeyguardUpMs)) == HomePatchRules.FOREIGN_UNLOCK_CHECK;
+        homeForeignApply(foreignName, provisional);
+        handler.removeCallbacks(homeForeignRecheck);
+        if (provisional) handler.postDelayed(homeForeignRecheck, HomePatchRules.FOREIGN_RECHECK_MS);   // a newer event re-arms it; a final guard (above) cancels it: nothing may lift a guard another window set
     }
 
     private String homeForeignPendingName = "";
-    /** BN2: the verdict on a SystemUI window event right after the unlock: the Launcher still has the window focus = it was the keyguard going away (the patch comes back at once); else it was a real window over the home. */
+    private long homeForeignProvisionalUntilMs = 0;   // the guard end a PROVISIONAL event set (0 = the guard is final)
+    private volatile int homeForeignUnlockIgnored = 0;
+    /** BN2: the verdict on a provisional guard: the Launcher has the window focus again = it was the keyguard going away (the guard is lifted, the patch comes back at once); no focus = a real window over the home (counted now). */
     private final Runnable homeForeignRecheck = new Runnable() { @Override public void run() {
         try {
-            if (patchView == null || !patchHomeMode || overlayShown) return;
+            if (patchView == null || !patchHomeMode || overlayShown) return;   // (the guard simply runs its course)
             com.android.launcher3.Launcher l = TjHooks.launcher();
-            if (HomePatchRules.unlockEventWasForeign(l != null && l.hasWindowFocus())) { homeForeignApply(homeForeignPendingName); return; }
-            Log.i(TAG, "HOMEPATCH unlock window ignored: the Launcher has the focus (the keyguard went away)");
+            int verdict = HomePatchRules.recheck(l != null && l.hasWindowFocus(), homeForeignUntilMs, homeForeignProvisionalUntilMs);
+            if (verdict == HomePatchRules.RECHECK_NOT_OURS) return;
+            homeForeignProvisionalUntilMs = 0;
+            if (verdict == HomePatchRules.RECHECK_KEEP) { homeForeignCounted(homeForeignPendingName); Log.i(TAG, "HOMEPATCH away: another window (" + homeForeignPendingName + ")"); return; }
+            homeForeignUnlockIgnored++;
+            homeForeignUntilMs = 0;
+            handler.removeCallbacks(homeShowCheck);
+            Log.i(TAG, "HOMEPATCH unlock window ignored: the Launcher has the focus (the keyguard went away), guard lifted");
             patchShow(false);
         } catch (Throwable t) { Log.e(TAG, "home foreign recheck failed", t); }
     } };
 
-    /** A foreign window is over the home: count it (tablet report BI1: how often, which ones), keep the patch away for {@link #HOME_FOREIGN_AWAY_MS}. */
-    private void homeForeignApply(String foreignName) {
+    private void homeForeignCounted(String foreignName) {
         // for the tablet report (BI1): how often does a foreign window take the patch away on THIS tablet, and which ones? (gate runs #356 / #358: a named window a few seconds after the patch first rested made the menu use the card)
         homeForeignCount++; homeForeignLast = foreignName; homeForeignLastAtMs = android.os.SystemClock.uptimeMillis();
         if (homeForeignNames.length() < 260 && !homeForeignNames.contains(foreignName)) homeForeignNames = homeForeignNames.isEmpty() ? foreignName : homeForeignNames + "; " + foreignName;
+    }
+
+    /** A window is over the home (or may be): keep the patch away for {@link #HOME_FOREIGN_AWAY_MS}. {@code provisional}: only a possible one (the keyguard going away), counted and logged by the recheck. */
+    private void homeForeignApply(String foreignName, boolean provisional) {
+        homeForeignPendingName = foreignName;
+        if (!provisional) homeForeignCounted(foreignName);
         homeForeignUntilMs = android.os.SystemClock.uptimeMillis() + HOME_FOREIGN_AWAY_MS;
+        homeForeignProvisionalUntilMs = provisional ? homeForeignUntilMs : 0;
         if (patchView != null && (patchRestable || patchResting)) {
             patchRestable = false; patchResting = false; patchView.setAlpha(0f);
-            Log.i(TAG, "HOMEPATCH away: another window (" + foreignName + ")");
+            Log.i(TAG, provisional ? "HOMEPATCH away (checking): SystemUI window " + foreignName + ", " + since(lastKeyguardUpMs) + " ms after the keyguard was up" : "HOMEPATCH away: another window (" + foreignName + ")");
         }
         handler.removeCallbacks(homeShowCheck); handler.postDelayed(homeShowCheck, HOME_FOREIGN_AWAY_MS + 40);
     }
