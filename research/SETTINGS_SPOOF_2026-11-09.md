@@ -76,7 +76,25 @@ Useful tags to read first: `res/layout/preference_*`, `res/values/dimens.xml`, `
 - No `/dev/kvm`, no emulator, no system image here: the look can only be checked on the CI emulator (`emulator.yml`) and ONLY through numbers (RESULTS block), no pictures.
 - `rm -rf` inside a Bash command is refused by a plugin hook.
 
-## 6. Still to read
+## 6. The last five screenshots (read 2026-11-09; ALL 18 uploads are now read: 16 Settings + 2 chat screenshots)
 
-Uploaded files not yet looked at (ids are the first 8 characters of the file names in the session uploads folder): be456e72, cc4fb931, d6bbbc77, df7cd971, e895669e
-(probably System, the Battery overflow menu / Battery usage page, and the Settings home list).
+- **Settings home** (2 screenshots, top and bottom of the scroll): a search card at the top (white card y 43-95 px, teal magnifier at x 44, hint "Search settings": REMOVE),
+  then rows with a 38 px rounded-square coloured icon (x 17-55) and title at x 77, pitch 87 px, in this stock order and with these stock summaries:
+  Network & internet (Wi-Fi, data usage, and hotspot; blue), Connected devices (Bluetooth; green), Apps & notifications (Recent apps, default apps; orange),
+  **Battery** ("90% - Should last until about 2:00 PM"; dark teal), **Display** ("Wallpaper, sleep, font size"; amber), **Sound** ("Volume, vibration, Do Not Disturb";
+  teal), **Storage** ("95% used - 1.57 GB free"; purple), Privacy (Permissions, account activity, personal data; periwinkle), Location (On - 4 apps have access to
+  location; cyan), Security (Screen lock; green), Accounts (e.g. Telegram; pink), **Accessibility** ("Screen readers, display, interaction controls"; deep purple),
+  DuraSpeed (an OEM row with no summary; blue), **System** ("Languages, gestures, time, backup"; gray), **About tablet** ("711" = the model; indigo). Bold = the seven
+  Tj wants, in his order (the stock order already is Battery, Display, Sound, Storage, Accessibility, System, About tablet). No title bar on the home page (the search card
+  is where it would be); the spoof has NO search card, so the first row starts right under the status bar area (the exact top padding is in the AOSP layout).
+- **System page** (stock): Languages & input (summary "Android Keyboard (AOSP)", globe icon), Gestures, Date & time (GMT-05:00 Eastern Standard Time, clock icon),
+  Backup (Off, cloud icon), Reset options (Network, apps, or device can be reset, history icon); small gray 24 dp line icons at x 30. WANTED: only Languages & input.
+  **Not shown by Tj: the Languages & input page itself** (and none of Magnification, Touch & hold delay, Text-to-speech, Font size, Display size, Battery usage, Legal
+  information, Model & hardware): those are built from the AOSP 10 layouts and strings, and Tj gets the list of them to compare.
+- **Battery**, two more screenshots of the same page with other values: "86 %" "Should last until about 9:45 AM" / "10:00 AM"; "Last full charge" shows
+  "109 minutes ago" / "113 minutes ago" / "2 hours ago"; "Screen usage since full charge" shows "59 min" / "1 hr, 3 min" / "1 hr, 16 min". (The estimate and the
+  history figures come from Android's own battery statistics.) The row label on screen is "Screen usage since full charge" (Tj wrote "since last full charge").
+
+## 7. Where each stock number comes from (to implement "functions identically")
+
+Filled in as the AOSP source is read (`PowerUsageSummary`, `BatteryUtils.calculateLastFullChargeTime`, `StorageSummaryDonutPreference`, `AudioSummaryPreference`, ...).
