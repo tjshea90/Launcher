@@ -243,6 +243,12 @@ public final class HomePatchRules {
     /** What the recheck of a provisional guard does: lift it (the keyguard went away), keep it (a real window: it is counted now), or nothing (another window set or extended the guard since: it is not ours to lift). */
     public static final int RECHECK_LIFT = 0, RECHECK_KEEP = 1, RECHECK_NOT_OURS = 2;
 
+    /**
+     * A recheck that finds the Launcher WITHOUT the focus looks again this long later while the guard has at least that much to run: after an unlock the Launcher's resume (its window gets the focus at the end of it)
+     * can take longer than {@link #FOREIGN_RECHECK_MS} on the tablet, and the keyguard's window event comes at the START of the exit. At the guard's own end the window is counted as a real one.
+     */
+    public static boolean recheckAgain(long nowMs, long provisionalUntilMs) { return nowMs + FOREIGN_RECHECK_MS < provisionalUntilMs; }
+
     /** @param guardUntilMs the guard end now; @param provisionalUntilMs the guard end the deferred event set (0 = none) */
     public static int recheck(boolean launcherHasFocus, long guardUntilMs, long provisionalUntilMs) {
         if (provisionalUntilMs == 0 || guardUntilMs != provisionalUntilMs) return RECHECK_NOT_OURS;

@@ -256,6 +256,12 @@ public class HomePatchRulesTest {
         assertEquals("the guard is final (no provisional event)", HomePatchRules.RECHECK_NOT_OURS, HomePatchRules.recheck(true, 5000, 0));
         assertEquals(HomePatchRules.RECHECK_NOT_OURS, HomePatchRules.recheck(false, 5300, 5000));
     }
+    @Test public void aRecheckWithoutFocusLooksAgainUntilTheGuardEndsThenCountsTheWindow() {
+        assertEquals("a slow resume after the unlock: the focus may come at +900 ms", true, HomePatchRules.recheckAgain(1400, 3500));
+        assertEquals(true, HomePatchRules.recheckAgain(3500 - HomePatchRules.FOREIGN_RECHECK_MS - 1, 3500));
+        assertEquals("less than one more look fits before the guard ends: it is a real window now", false, HomePatchRules.recheckAgain(3500 - HomePatchRules.FOREIGN_RECHECK_MS, 3500));
+        assertEquals(false, HomePatchRules.recheckAgain(4000, 3500));
+    }
     @Test public void theGraceRecheckIsShorterThanTheGuardItMayLift() {
         assertEquals(true, HomePatchRules.FOREIGN_RECHECK_MS < 2500);
     }

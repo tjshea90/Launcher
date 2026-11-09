@@ -725,22 +725,30 @@ public class TjAccessibilityService extends AccessibilityService {
     private String homeForeignPendingName = "";
     private long homeForeignProvisionalUntilMs = 0;   // the guard end a PROVISIONAL event set (0 = the guard is final)
     private volatile int homeForeignUnlockIgnored = 0;
-    /** BN2: the verdict on a provisional guard: the Launcher has the window focus again = it was the keyguard going away (the guard is lifted, the patch comes back at once); no focus = a real window over the home (counted now). */
+    /**
+     * BN2: the verdict on a provisional guard, every {@link HomePatchRules#FOREIGN_RECHECK_MS} until the guard's own end: the Launcher has the window focus = it was the keyguard going away (the guard is lifted, the patch
+     * comes back at once); still no focus = a real window over the home, or a Launcher that is slow to get the focus back after the unlock (look again); at the guard's end: a real window, counted now.
+     */
     private final Runnable homeForeignRecheck = new Runnable() { @Override public void run() {
         try {
             if (patchView == null || !patchHomeMode || overlayShown) return;   // (the guard simply runs its course)
             com.android.launcher3.Launcher l = TjHooks.launcher();
             int verdict = HomePatchRules.recheck(l != null && l.hasWindowFocus(), homeForeignUntilMs, homeForeignProvisionalUntilMs);
             if (verdict == HomePatchRules.RECHECK_NOT_OURS) return;
+            if (verdict == HomePatchRules.RECHECK_LIFT) { homeForeignLift(); return; }
+            if (HomePatchRules.recheckAgain(android.os.SystemClock.uptimeMillis(), homeForeignProvisionalUntilMs)) { handler.postDelayed(this, HomePatchRules.FOREIGN_RECHECK_MS); return; }
             homeForeignProvisionalUntilMs = 0;
-            if (verdict == HomePatchRules.RECHECK_KEEP) { homeForeignCounted(homeForeignPendingName); Log.i(TAG, "HOMEPATCH away: another window (" + homeForeignPendingName + ")"); return; }
-            homeForeignUnlockIgnored++;
-            homeForeignUntilMs = 0;
-            handler.removeCallbacks(homeShowCheck);
-            Log.i(TAG, "HOMEPATCH unlock window ignored: the Launcher has the focus (the keyguard went away), guard lifted");
-            patchShow(false);
+            homeForeignCounted(homeForeignPendingName);
+            Log.i(TAG, "HOMEPATCH away: another window (" + homeForeignPendingName + ")");
         } catch (Throwable t) { Log.e(TAG, "home foreign recheck failed", t); }
     } };
+
+    /** BN2: a provisional guard ends early: the Launcher has the focus (the keyguard went away). The patch is looked at again at once (it comes back as soon as its own timers allow). */
+    private void homeForeignLift() {
+        homeForeignProvisionalUntilMs = 0; homeForeignUntilMs = 0; homeForeignUnlockIgnored++;
+        Log.i(TAG, "HOMEPATCH unlock window ignored: the Launcher has the focus (the keyguard went away), guard lifted");
+        patchShow(false);   // (the guard's own homeShowCheck stays posted: a harmless second look)
+    }
 
     private void homeForeignCounted(String foreignName) {
         // for the tablet report (BI1): how often does a foreign window take the patch away on THIS tablet, and which ones? (gate runs #356 / #358: a named window a few seconds after the patch first rested made the menu use the card)
@@ -763,7 +771,13 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** TjHooks: the Launcher's window got or lost the focus. Regained: the patch may come back (after a shade, a dialog, the power menu). Lost: nothing here (the dialog's own event must find the patch ready). */
     void homeFocusChanged(boolean has) {
-        try { if (has && patchView != null && patchHomeMode && !overlayShown) { patchShow(false); scheduleHomeBuild(); } } catch (Throwable t) { Log.e(TAG, "home focus failed", t); }
+        try {
+            if (has && patchView != null && patchHomeMode && !overlayShown) {
+                if (HomePatchRules.recheck(true, homeForeignUntilMs, homeForeignProvisionalUntilMs) == HomePatchRules.RECHECK_LIFT) { handler.removeCallbacks(homeForeignRecheck); homeForeignLift(); }   // BN2: the focus is back while the guard was only provisional: the keyguard is gone
+                else patchShow(false);
+                scheduleHomeBuild();
+            }
+        } catch (Throwable t) { Log.e(TAG, "home focus failed", t); }
     }
 
     /** "Is there a crop for this wallpaper position?", remembered until a crop is stored or forgotten or the wallpaper or the position changes (the answer is asked on every layer refresh). */
