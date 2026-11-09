@@ -1,13 +1,13 @@
-# CHECKPOINT 785 — read me first, then TASKS.md
+# CHECKPOINT 786 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T04:34:54Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `3ea693a` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T04:45:22Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `edbf66d` (this checkpoint is the commit after it)
 
 ## Just done
-ship.sh v0.8.13 (code 38) DONE: handoff test, unit suite green, pushed; HEAD=branch=main 3ea693a. Waiting ONLY for the fresh pt solo on ref main: run 450 id 42562320225 (started 04:31:37, ETA 04:46). android.yml NOT dispatched yet
+GATE v0.8.13 GREEN: 450 pt solo on main = SUCCESS (id 42562320225); every other section green (441 x1,v,rb; 443 b6,o,ad,ae,hf,fp; 442 base; 445/449 last; 447 e1,n,ac; 448 hp). Only app diff vs gated 6702e72 = version bump. android.yml full_build=true dispatched on main at 04:44 UTC on edbf66d
 
 ## Do this next
-when run 450 (id 42562320225) is SUCCESS (actions_get get_workflow_run): dispatch android.yml full_build=true ref main (mcp__github__actions_run_trigger run_workflow), +3 min get_release_by_tag v0.8.13, bash tools/record-release.sh v0.8.13 with the note from ship.log, link to Tj as plain text. If 450 fails only PT timing yardsticks: pt solo with ref v0.8.12 to compare. Then tick BN2-BN4 boxes, start BN1 M0 (research/SETTINGS_BUILD_PLAN_2026-11-09.md; AppVisibility.ALWAYS_SHOWN_OWN_COMPONENTS is the hook for the drawer entry; switch pattern = policy class with KEY + defaultOn(debuggable))
+at +3 min (list android.yml runs: resource_id android.yml, branch main, event workflow_dispatch, perPage 1) read the conclusion, then get_release_by_tag v0.8.13; if success: bash tools/record-release.sh v0.8.13 with the note from scratchpad ship.log, tick BN2-BN4 boxes, give Tj the Release link as plain text on its own line + research/TABLET_CHECKLIST_v0.8.13.md; then BN1 M0
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ when run 450 (id 42562320225) is SUCCESS (actions_get get_workflow_run): dispatc
 
 ## Last ten checkpoints
 ```
+  295dc13 ckpt 785: ship.sh v0.8.13 (code 38) DONE: handoff test, unit suite green, pushed; HEAD=b
   3ea693a ckpt 784: gated v0.8.13 (code 38) and pushed it: the handoff self-test, the full unit su
   b466126 ckpt 783: 444 pt solo cancelled at 20 min (emulator died in phase H: 3 FAIL = PT timing 
   53ea1f0 ckpt 782: GATE v0.8.13: ALL GREEN except 444 still running: 445 last, 447 e1,n,ac (id 42
@@ -25,5 +26,7 @@ when run 450 (id 42562320225) is SUCCESS (actions_get get_workflow_run): dispatc
   437946a ckpt 778: gate triage: 445 last SOLO = SUCCESS (443's last FAIL was chain-dependent); 44
   ae3a6e2 ckpt 777: tools/gate.sh: pt and rg now SOLO runs (+ bins grow when a run would pass 40 m
   19360e7 ckpt 776: gate 6702e72 read: 441=4 FAIL all in pt (BC2 closetap + 3 PB, patch -6.6 level
-  cfa0b53 ckpt 775: gate 6702e72: run 441 (x1,v,pt,rb) FAILED, 443 (b6,o,ad,ae,hf,fp,last) FAILED,
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
