@@ -48,7 +48,10 @@ final class SsRows {
         r.setMinimumHeight(dp(c, 48));
         FrameLayout frame = new FrameLayout(c);   // the icon frame: 56 dp wide even when there is no icon (the text of every row starts at 72 dp)
         frame.setMinimumWidth(dp(c, 56));
-        if (icon != null) frame.addView(icon, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL));
+        if (icon != null) {   // an icon that brings its own FrameLayout size (the 36 dp tile, the 32 dp app icon) keeps it
+            ViewGroup.LayoutParams own = icon.getLayoutParams();
+            frame.addView(icon, own instanceof FrameLayout.LayoutParams ? own : new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.START | Gravity.CENTER_VERTICAL));
+        }
         r.addView(frame, new LinearLayout.LayoutParams(dp(c, 56), ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout col = new LinearLayout(c);
         col.setOrientation(LinearLayout.VERTICAL);
@@ -124,7 +127,7 @@ final class SsRows {
         TextView t = new TextView(c);
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         t.setTextColor(themeColor(c, android.R.attr.textColorSecondary, Color.GRAY));
-        t.setPadding(0, dp(c, 16), 0, dp(c, 16));
+        t.setPaddingRelative(0, dp(c, 16), dp(c, 16), dp(c, 16));   // measured: Tj's footer wraps "...based on / usage", the text area ends about 16 dp before the row's own padding
         t.setText(text);
         r.addView(t, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         return r;

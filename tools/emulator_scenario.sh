@@ -3878,6 +3878,10 @@ ssorder(){ local f="$1" prev=-1 y t; shift; for t in "$@"; do y=$(ssy "$f" "$t")
 ssabsent(){ local f="$1" t; shift; for t in "$@"; do if [ -n "$(ssy "$f" "$t")" ]; then info "ssabsent: '$t' is on screen"; return 1; fi; done; return 0; }
 sstap(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbounds "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
 sstapc(){ local b; ssdump "$OUT/ss-t.xml"; b=$(ssbc "$OUT/ss-t.xml" "$1"); set -- $b; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); return 0; fi; return 1; }
+adb shell pm grant "$PKG" android.permission.DUMP >/dev/null 2>&1   # a section-only run starts without the base section's grants
+info "SS13e: shell dumpsys = $(adb shell dumpsys batterystats --charged 2>&1 | grep -E 'Statistics since|Start clock|  Screen on:|Battery time remaining|Charge time remaining' | head -6 | tr '\n' '|' | cut -c1-420)"
+info "SS13f: app dumpsys = $(adb shell run-as $PKG dumpsys batterystats --charged 2>&1 | head -3 | tr '\n' '|' | cut -c1-300)"
+info "SS13g: DUMP grant = $(adb shell dumpsys package $PKG | grep -E 'android.permission.DUMP' | head -2 | tr -s ' ' | tr '\n' '|' | cut -c1-200)"
 sstap "Battery"; sleep 7; ssdump "$OUT/ss-battery.xml"; shot ss-08-battery
 check "SS13: Battery shows 'Last full charge', 'Screen usage since full charge' and the approximate-data note, in that order" ssorder "$OUT/ss-battery.xml" "Last full charge" "Screen usage since full charge" "Battery usage data is approximate and can change based on usage"
 check "SS13b: Battery has none of the stock extras (no Battery Saver, Battery Manager, Apps are running normally, Battery percentage)" ssabsent "$OUT/ss-battery.xml" "Battery Saver" "Battery Manager" "Apps are running normally" "Battery percentage"
