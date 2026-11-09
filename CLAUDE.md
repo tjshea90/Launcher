@@ -64,8 +64,14 @@ Rules that make the ladder work:
 - **New request from Tj:** write it into `TASKS.md` in his own words as `[ ]` boxes and `ckpt` **before** any code.
   Tick a box only when written, tested and committed; name the test that proves it.
 - **Low on usage?** Spend what is left on `ckpt` with an honest "next", not on one more edit.
-- **Long conversation** (many compactions, a big task just finished): `ckpt`, then tell Tj *"Handoff ready: start a
-  new session, it resumes from CHECKPOINT.md"*. `tools/toobig.sh` (PreCompact) saves and says this too.
+- **Long conversation:** compaction is NORMAL now and the session carries on (it fires at ~392K tokens: `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=40` in
+  `.claude/settings.json`; the SessionStart hook re-reads the briefing). `ckpt` with an exact "next" when `tools/ctxwatch.py` says so (it speaks at
+  60 / 85 % of that point and ALARMS when the context is above it = compaction is NOT firing). Tell Tj to start a new session only on that alarm or
+  when he asks. **Why (2026-11-09, TASKS BM1, `research/COMPACTION_BLOCKED_2026-11-09.md`):** four sessions died with "Prompt is too long" at
+  969K-978K tokens because the account plugin `session-handoff` vetoes EVERY compaction unless `HANDOFF.md` was touched in the last 600 s. Protection:
+  `tools/keepalive.sh` (daemon), `HANDOFF_STALE_SECONDS` env, `tools/compact_guard.sh` (one line in the briefing; a VETO line is the first thing to
+  fix), `tools/ctxwatch.sh --report` / `--top` (how full, what filled it), PostToolUse matcher `*`. Never remove them; never add a PreCompact hook that
+  can answer block. At effort max the model's own thinking is about half of a long turn's growth: say less, ckpt more.
 - **Push failure is never silent.** Autosave warns when commits exist only in this container (they are lost when
   the session ends). Fix the connection and `git push origin HEAD` at once.
 
