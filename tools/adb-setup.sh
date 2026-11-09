@@ -15,7 +15,7 @@ start_helper(){
 }
 if [ "${1:-}" = "--helper" ]; then start_helper; exit 0; fi
 if [ "${1:-}" = "--check" ]; then
-  adb shell dumpsys package "$PKG" | grep -E "WRITE_SECURE_SETTINGS|READ_EXTERNAL_STORAGE|android.permission.DUMP|CHANGE_CONFIGURATION" | sort -u
+  adb shell dumpsys package "$PKG" | grep -E "WRITE_SECURE_SETTINGS|READ_EXTERNAL_STORAGE|android.permission.DUMP|CHANGE_CONFIGURATION|PACKAGE_USAGE_STATS" | sort -u
   exit 0
 fi
 run(){ echo "+ $*"; "$@" >/dev/null 2>&1 && echo "  ok" || echo "  skipped (older release without this permission, or already set)"; }
