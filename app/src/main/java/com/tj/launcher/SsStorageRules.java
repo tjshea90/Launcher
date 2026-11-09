@@ -289,6 +289,14 @@ final class SsStorageRules {
     }
 
     /**
+     * Review A #2: which row sizes the page shows after a rescan. A scan that timed out, failed or was refused ({@code scanComplete} false) gives no numbers: when rows are already on screen (the last complete read,
+     * {@code previous}) they stay; only a page that has nothing yet shows the scan's own (possibly unknown) rows. A complete scan always replaces them.
+     */
+    static long[] keepOnScreen(boolean scanComplete, long[] previous, long[] fresh) {
+        return !scanComplete && previous != null ? previous : fresh;
+    }
+
+    /**
      * The seven row sizes in {@link Row} order, from StorageItemPreferenceController.onLoadFinished (l.249-290): Photos &amp; videos = photo apps + image + video files; Music &amp; audio = music apps +
      * audio files; Games, Movie &amp; TV apps and Other apps = the app sums; Files = shared storage total minus audio, video, image and app bytes; System = what is left of the used bytes after every
      * attributed byte (apps + shared storage without the app part), at least {@link #SYSTEM_FLOOR}. {@code apps} or {@code ext} null means that part could not be read: every row that needs it is
