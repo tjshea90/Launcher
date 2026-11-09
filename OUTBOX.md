@@ -1790,3 +1790,11 @@
 >
 > 💡 The code word is off in this chat. Type `/amcodeword` and I'll start every reply with "Yes Boss!", so you'll notice if I start losing track.
 <!-- sha:e382ea44e190 -->
+
+## 2026-11-09T04:45:48Z
+> The gate is fully green, and the signed v0.8.13 build is running on GitHub. I dispatched it at about 04:45 UTC, and builds finish in about 3 minutes.
+>
+> `pt` alone on `main` passed. Every other section passed too, and the only app change since the gated code is the two version lines. I've also ticked the three FIX items for your three complaints in TASKS.md with the tests that back them. The "proven on the tablet" items stay open until you send a report.
+>
+> Next I'll confirm the Release exists and send you the link, along with the v0.8.13 tablet checklist.
+<!-- sha:5a87dfe37e57 -->
