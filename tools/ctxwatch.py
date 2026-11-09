@@ -74,40 +74,52 @@ def read_tail(path, nbytes):
 
 def measure(path):
     """-> dict(prompt=int, est=int, compaction=dict|None) or None. prompt = tokens of the last model call."""
+    size = os.path.getsize(path)
     for window in (400000, 3000000, 30000000):
         try:
             lines = read_tail(path, window)
         except OSError:
             return None
-        after = 0
-        compaction = None
+        after, found, compaction = 0, None, None
         for raw in reversed(lines):
             if not raw.strip():
                 continue
+            if found is not None:
+                # usage entry already found: older lines matter only for the most recent compaction marker
+                if b"compact_boundary" not in raw:
+                    continue
             try:
                 o = json.loads(raw)
             except ValueError:
-                after += len(raw)
+                if found is None:
+                    after += len(raw)
                 continue
             if not isinstance(o, dict):
-                after += len(raw)
+                if found is None:
+                    after += len(raw)
                 continue
             if compaction is None and (o.get("subtype") == "compact_boundary" or o.get("type") == "compact_boundary"):
                 md = o.get("compactMetadata") or o.get("compact_metadata") or {}
                 compaction = {"trigger": md.get("trigger"), "pre": md.get("preTokens") or md.get("pre_tokens"),
                               "at": o.get("timestamp")}
-            if o.get("type") == "assistant" and not o.get("isSidechain"):
+                if found is not None:
+                    break
+            if found is None and o.get("type") == "assistant" and not o.get("isSidechain"):
                 msg = o.get("message") or {}
                 u = msg.get("usage")
                 if isinstance(u, dict) and msg.get("model") != "<synthetic>":
                     prompt = int(u.get("input_tokens") or 0) + int(u.get("cache_read_input_tokens") or 0) \
                         + int(u.get("cache_creation_input_tokens") or 0)
                     if prompt > 0:
-                        return {"prompt": prompt, "est": prompt + int(u.get("output_tokens") or 0) + int(after / CHARS_PER_TOKEN),
-                                "compaction": compaction}
-            after += len(raw)
-        if len(lines) < 2 or window >= os.path.getsize(path):
-            break
+                        found = {"prompt": prompt, "est": prompt + int(u.get("output_tokens") or 0) + int(after / CHARS_PER_TOKEN)}
+                        continue
+            if found is None:
+                after += len(raw)
+        if found is not None:
+            found["compaction"] = compaction
+            return found
+        if window >= size:
+            break                                   # the whole file was covered and holds no usage entry
     return None
 
 
@@ -138,7 +150,7 @@ def message(level, m, t):
                 "'next' (file, function, command, CI run ids) so the compaction summary and the cold-resume briefing agree."
                 % (now, k(t)), True)
     if level == 3:
-        return ("CONTEXT ALARM: the last model call already had %s tokens, ABOVE the auto-compact point (%s): auto-compact did NOT "
+        return ("CONTEXT ALARM: the last model call already had %s tokens, ABOVE the auto-compact point (~%s): auto-compact did NOT "
                 "fire, something is blocking it. (1) `bash tools/compact_guard.sh` names any PreCompact hook that vetoes. (2) `bash "
                 "tools/ckpt.sh` with an exact next. (3) Tell Tj plainly: 'Auto-compact is not firing, context is %s of ~%s; start a "
                 "new session now or send /compact'. At ~%s every message fails with Prompt is too long."
