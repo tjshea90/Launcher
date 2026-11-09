@@ -1942,3 +1942,7 @@
 ## 2026-11-09T22:37:16Z
 > Run #474 (`base,legacy` in one run) is going and should finish around 22:47 UTC. The audit is still running too. If #474 is green, I ship v0.9.0.
 <!-- sha:47578a4cd032 -->
+
+## 2026-11-09T22:47:17Z
+> Run #474 is still going after 12 minutes, which fits a `base` plus `legacy` run. I check again at 22:49:30 UTC.
+<!-- sha:5fd6728b34a5 -->
