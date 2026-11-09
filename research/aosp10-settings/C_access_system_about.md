@@ -301,7 +301,7 @@ Rows by `order` (key; title res; notes). Hidden on the tablet per SPOOF: owner h
 
 ### 3.2 Model & hardware
 - Row `device_model` (order 31), controller `deviceinfo/HardwareInfoPreferenceController` (shown if `config_show_device_model`, true): summary = `model_summary` "Model: %1$s" with
-  `Build.MODEL + DeviceInfoUtils.getMsvSuffix()`; msv suffix = " (ENGINEERING)" if `/sys/board_properties/soc/msv` parses as hex 0, else "" (file absent -> ""). Tablet: "Model: 711" (SPOOF).
+  `Build.MODEL + DeviceInfoUtils.getMsvSuffix()`; msv suffix = " (ENGINEERING)" if `/sys/board_properties/soc/msv` parses as hex 0, else "" (file absent -> ""). Tablet: the Settings home About row shows "711" = `Build.MODEL` (SPOOF section 6).
   Click = fragment `deviceinfo/hardwareinfo/HardwareInfoFragment` (`res/xml/hardware_info.xml`, key `hardware_info_screen`, title "Model & hardware"), rows (all `enableCopying`, placeholder summary):
   `hardware_info_device_model` "Model" = `Build.MODEL` + msv suffix; `hardware_info_device_serial` "Serial number" (`status_serial_number`) = `Build.getSerial()`;
   `hardware_info_device_revision` "Hardware version" (`hardware_revision`) = `SystemProperties.get("ro.boot.hardware.revision")` (shown with an empty summary when unset).
