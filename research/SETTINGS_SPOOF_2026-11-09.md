@@ -5,7 +5,7 @@ pages Battery, Display, Sound, Storage, Accessibility, System, About tablet; no 
 session uploads folder (never in the repo: they show an IP, a MAC, an uptime, the model and build strings). THIS file keeps words and numbers only.
 If a new session needs the pictures it must ask Tj to send them again; everything needed to START is below.
 
-## 1. What each screenshot showed (read 2026-11-09; 13 of 18 uploaded files seen when this was written, 5 still to read: see section 6)
+## 1. What each screenshot showed (read 2026-11-09; the last five screenshots are in section 6)
 
 Common chrome: status bar 0-26 px light gray with the clock at the left; toolbar y 26-86 px (about 56 dp), slightly lighter gray, thin shadow under it;
 back arrow at x 30 px; page title at x 77 px (72 dp) in a medium weight, about 20 sp; search icon at the right (TO REMOVE on every page); page background
