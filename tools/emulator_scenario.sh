@@ -40,9 +40,14 @@ heal(){ local n; n=$(command adb logcat -d -b all 2>/dev/null | grep -c "Fatal s
     echo "INFO  NATIVE CRASH #$n of $PKG inside an Android system library (not a Java exception); re-asserting the default home and the helper so the rest of the run is meaningful. Checks that FAIL within ~15 s after this line are caused by the crash." | tee -a "$OUT/results.txt"
     command adb logcat -d -b all 2>/dev/null | grep -A14 "Fatal signal.*($PKG)" | tail -30 > "$OUT/native-crash-$n.txt"
     # the first frames in the RESULTS block itself (run 462: the saved file is only in the artifact, so a crash could not be told apart from a product bug without downloading it)
-    # run 466: the frames are logged by debuggerd under its own DEBUG tag, far from the Fatal signal line: take the last six of them from the whole log
-    local NCFR; NCFR=$(command adb logcat -d -b all 2>/dev/null | grep -E ' F DEBUG +: +#0[0-5] +pc ' | tail -6 | sed -E 's/^.* F DEBUG +: +//; s/ +\(BuildId.*$//' | cut -c1-120 | tr '\n' ';')
-    echo "INFO  NATIVE CRASH #$n detail: $(grep -m1 'Fatal signal' "$OUT/native-crash-$n.txt" | sed 's/^.*Fatal signal/Fatal signal/' | cut -c1-150) | frames: ${NCFR:0:520}" | tee -a "$OUT/results.txt"
+    # run 466: the frames are logged by debuggerd under its own DEBUG tag, far from the Fatal signal line: take them from the whole log.
+    # run 474 (three crashes in one run, every one inside jemalloc, so the first two frames say nothing about WHO allocated): up to 12 frames of the LAST backtrace block, paths shortened,
+    # 3 per INFO line (the results block cuts a line at about 330 characters)
+    local NCFR; NCFR=$(command adb logcat -d -b all 2>/dev/null | awk '/ F DEBUG +: +backtrace:/{n=0; buf=""} / F DEBUG +: +#[0-9]+ +pc /{ if (n<12) { buf = buf $0 "\n"; n++ } } END{printf "%s", buf}' | sed -E 's/^.* F DEBUG +: +//; s/ +\(BuildId.*$//; s#/apex/com\.android\.runtime/lib/bionic/##; s#/apex/com\.android\.art/lib/##; s#/system/lib/##; s#/data/app/[^ ]*/##; s#/data/dalvik-cache/[^ ]*/##' | cut -c1-84)
+    echo "INFO  NATIVE CRASH #$n detail: $(grep -m1 'Fatal signal' "$OUT/native-crash-$n.txt" | sed 's/^.*Fatal signal/Fatal signal/' | cut -c1-150)" | tee -a "$OUT/results.txt"
+    local NCK=0 NCCH="" NCL
+    while IFS= read -r NCL; do [ -n "$NCL" ] || continue; NCCH="$NCCH$NCL;"; NCK=$((NCK+1)); if [ $((NCK % 3)) -eq 0 ]; then echo "INFO  NATIVE CRASH #$n frames up to #$((NCK-1)): $NCCH" | tee -a "$OUT/results.txt"; NCCH=""; fi; done <<< "$NCFR"
+    if [ -n "$NCCH" ]; then echo "INFO  NATIVE CRASH #$n frames up to #$((NCK-1)): $NCCH" | tee -a "$OUT/results.txt"; fi
     adb shell cmd package set-home-activity "$PKG/com.tj.launcher.RouterActivity" >/dev/null 2>&1
     declare -F rebind >/dev/null && rebind
   fi; }
