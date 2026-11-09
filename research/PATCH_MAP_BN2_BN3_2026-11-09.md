@@ -1,0 +1,237 @@
+# Patch map for BN2 and BN3 (read-only map, 2026-11-09)
+
+Facts from the code and notes of the working tree after v0.8.12 (ckpt 758): `file:line` plus short quotes. "NOT FOUND" = neither the code nor the notes say. No design is proposed here.
+Short names: TAS = `app/src/main/java/com/tj/launcher/TjAccessibilityService.java`; TJH = `app/src/main/java/com/tj/launcher/TjHooks.java`; HPR = `app/src/main/java/com/tj/launcher/HomePatchRules.java`; ES = `tools/emulator_scenario.sh`; TASKS = `TASKS.md`. Any other file is named by its repo-relative path.
+Evidence limit: no tablet report in the repo holds a `PATCH` line (`research/tablet/LATEST.md` has none). Every number below is from the CI emulator (600x1024) or is code reading; nothing is measured on Tj's tablet.
+
+## 0. Basics both numbers rely on
+
+- ONE window class serves both screens: title `TjWallpaperPatch`, `TYPE_ACCESSIBILITY_OVERLAY`, `FLAG_NOT_FOCUSABLE|FLAG_LAYOUT_IN_SCREEN|FLAG_LAYOUT_NO_LIMITS|FLAG_NOT_TOUCHABLE`, `PixelFormat.TRANSLUCENT` (TAS 3576-3586, 1289-1293). The lock flavour adds `FLAG_WATCH_OUTSIDE_TOUCH` (TAS 1290), kept on every flag rewrite (TAS 3846).
+- `patchLockMode` is true for BOTH flavours, `patchHomeMode` marks the home one: `patchLockMode = targetIsLock; patchHomeMode = targetIsHome;` (TAS 1294); `if (homeReal != null) { targetIsLock = true; targetIsHome = true; return homeReal; }` (TAS 1007).
+- Lock pixels = a stored crop of a real lock-screen screenshot (`PatchShot`). Home pixels = a stored wallpaper-only crop (`HomeShot`) composed with a live `PixelCopy` of the Launcher window (`HomeLayer`); correct only while the home is at rest (HPR 3-9).
+- Three booleans: `patchRestable` = could rest now; `patchResting` = restable AND visible; `overlayShown` = the stock menu is open and the patch is in its open look (TAS 389, 3795-3798). Hiding = `patchView.setAlpha(0f)`; the window stays attached (TAS 3798).
+- The home patch needs power mode `hide_screenshot` (TAS 605); `Features.powerMode` returns `off` when nothing is stored (`app/src/main/java/com/tj/launcher/Features.java:43-46`). Switch `home_patch`: release ON, debug OFF (HPR 16). `lock_patch` default true (TAS 997), `lock_patch_always` default ON (`app/src/main/java/com/tj/launcher/PatchRest.java:10-11`).
+- NOT FOUND: which power mode and switch values Tj's tablet has stored (the report prints them; none is in the repo).
+- Service config: `accessibilityEventTypes="typeWindowStateChanged|typeWindowsChanged|typeWindowContentChanged|typeViewClicked|typeNotificationStateChanged"`, `notificationTimeout="0"` (`app/src/main/res/xml/tj_accessibility.xml:7,12`). No touch-interaction event type is subscribed.
+- Logcat tag is `TjA11y` (TAS 31). The tablet's logcat keeps about three minutes (`app/src/main/java/com/tj/launcher/LockLog.java:8`).
+
+## 1. Home patch objects: where each is created, where it dies
+
+Objects (home flavour):
+- A. Window `patchView` (+ `patchAt`, `patchRot`). Created only by `addPatch` (TAS 1212-1308), reached from `refreshLayers()` (`if (patchView == null) { removeOverlay(); addPatch(want); warmUp(); }`, TAS 1199) and `ensurePatch()` (TAS 1206-1210; callers `warmUp` 4372, `showOverlay` 4387, `showStock` 3832).
+  - It starts NOT restable and hidden: `if (patchHomeMode) { patchResting = false; patchRestable = false; homeBuiltAtMs = 0; homeBuiltStep = -1; }` (TAS 1303). The same line posts `restRecheck` at +400 ms and +1600 ms; for home that runs `patchShow(overlayShown); scheduleHomeBuild();` (TAS 219-222).
+  - `addPatch` loads the wallpaper crop synchronously on the main thread: `if (targetIsHome) { patchShotBmp = null; loadHomeWall(rect); }` (TAS 1217; `loadHomeWall` decodes a PNG through `HomeShot.load`, TAS 712-738).
+- B. Composite `patchShotBmp` (+ `patchShotLeft/Top`, `homeBuiltAtMs`, `homeBuiltStep`). Set only in the PixelCopy callback of `buildHomePatchNow` (TAS 787-832): `patchShotBmp = comp; patchShotLeft = l; patchShotTop = t; homeBuiltAtMs = reqAt; homeBuiltStep = builtStep;` (TAS 823). `HomeLayer.copy` = `PixelCopy.request(w, new Rect(src), b, listener, h)` (`app/src/main/java/com/tj/launcher/HomeLayer.java:26-44`), asynchronous, callback on the service handler (main thread).
+- C. Wallpaper crop in memory `homeWallBmp` (+ `homeWallLeft/Top/Step`): `loadHomeWall` (TAS 712-738), again in `buildHomePatchNow` when the step changed or nothing is loaded (TAS 798-808).
+- D. Crops on disk: files `homeshot_r<rot>_x<step>.png`, preferences `home_shot_r<rot>_x<step>` = `sig#left#top`, index `home_shot_idx` (HPR 133-136; `app/src/main/java/com/tj/launcher/HomeShot.java:27-28,124,139`). `findStep` accepts a stored step within +-2 of the wanted one (HomeShot 48-60). `sig` = wallpaper id + rotation + display size (HPR 120). Memo `homeCropValid`, keyed by `HomeShot.generation()` and `sig#step` (TAS 696-701). Written only by the home calibration (screenshot with the Launcher hidden, TAS 834-982).
+- E. Learned stock-panel rectangle ('CARD area'): preference `power_card_rect_r<rot>` (`cachedCard()`, TAS 276-287) and `power_geo_r<rot>` (TAS 464), written by every scan that finds the menu: `Features.setString(this, cardKey(), shot.left + "," + shot.top + ...` (TAS 3038-3039). Home reads it as `f.rectKnown = cachedCard() != null` (TAS 614).
+- F. Wallpaper position: `wallpaperX = 0.5f` placeholder and `wallpaperReported = false` (TJH 103-105), set by `TjHooks.onWallpaperOffset` (TJH 107-111), which the Launcher's `WallpaperOffsetInterpolator` calls from its own background looper (`launcher3/src/com/android/launcher3/util/WallpaperOffsetInterpolator.java:240` first message even when the offset equals the placeholder; `:273` on every change). Used as `homeStepNow()` = `HomePatchRules.step(TjHooks.wallpaperX)` (TAS 597) and in `f.cropValid = f.rectKnown && TjHooks.wallpaperReported && homeCropValid(homeStepNow(), homeSig());` (TAS 615). Never reset inside a process.
+- G. Launcher state read as statics in TJH: `lastHomeDrawMs` (an `OnDrawListener` on `Launcher.getDragLayer()`'s view tree observer, registered by `watchHomeDraw` at every `onResume`, TJH 64-76, 84), `lastHomeTouchMs` (TJH 122), `launcherResumed` / `launcherNormal` (`homeScreenShowing()`, TJH 145; set at TJH 83, 86 and by the state listener TJH 160-172).
+- H. Guards: `homeForeignUntilMs` (+2500 ms after any foreign window, TAS 653-688), `homeOpenShown` (decided once when a menu opens, TAS 655, 3784), `homeCalRunning`.
+- I. The replacement card `overlay` (a second window). Pre-built hidden by `warmUp()` only when `cardWanted()`: `if (!cardWanted()) return;` (TAS 4373); `warmUp` runs from `onServiceConnected` (TAS 302) and `refreshLayers` (TAS 1195, 1199). On the home `cardWanted()` ends in `return !homePatchReady();` (TAS 421-426) and `homePatchReady()` = `patchView != null && patchHomeMode && patchRestable && !homeCalRunning` (TAS 636).
+- J. Open look: the scrim measured on the LOCK screen (preference `patch_scrim_r<rot>[n]`, `app/src/main/java/com/tj/launcher/ScrimMeasure.java:18`) is reused: `reloadScrim();   // the scrim measured on the lock screen applies to anything under the stock dialog` (TAS 737). Per-window `warmedKind` (TAS 1238-1264): the open look is drawn once, invisibly (1/255 alpha), in the first RESTING frame of each patch window (`if (rest) warmOpenLookOnce(c);`, TAS 1230, 1236; `boolean rest = patchResting && patchLockMode;`, TAS 1224).
+- K. Timers on the service's main-thread handler: `homeBuild` (TAS 776; `scheduleHomeBuild` posts it `waitMs(...) + 20` ms later, TAS 779-785), `homeShowCheck` (775), `homeCalTrigger` (836), `restRecheck`, `homeOffsetSettled` (535).
+- L. NOT part of the patch: the BL1 home curtain (a cover at unlock; `scheduleCurtain()` TAS 745, capture rules TAS 1884-1897).
+
+Created / (re)armed by (every item reaches `refreshLayers()`, which re-reads all facts):
+- Service start: `onServiceConnected` (TAS 298-320) calls `warmUp()` (302) and `startPatchWatch()` (308), which calls `refreshLayers()` (TAS 511).
+- Mode switch: `prefWatch` on keys `mode` / power mode: `handler.post(layerRefresh); handler.post(lockEval);` (TAS 474). `Mode.set` stores with `commit()` (`app/src/main/java/com/tj/launcher/Mode.java:62-71`).
+- Every SCREEN_ON / SCREEN_OFF / USER_PRESENT broadcast: `handler.post(layerRefresh);` (TAS 2275); SCREEN_ON and USER_PRESENT once more at +400 ms (TAS 2296, 2297).
+- Unlock decision (`applyUnlockChoice` / `applyUnlockChoiceBody`, TAS 1664-1729): NOT FOUND any call there that arms or builds the home patch; it only flips the stored mode (`Mode.set(app, Mode.CUSTOM);`, TAS 1708).
+- Home resume: `launcher3/src/com/android/launcher3/Launcher.java:948` -> `TjHooks.onLauncherResumed` -> `s.refreshLayersSoon();` (TJH 87); end of a state transition -> `setNormal` (TJH 169-172); pause (TJH 183).
+- First wallpaper report of a process, and every later change of the step: `onWallpaperOffset()` -> 200 ms later `refreshLayersSoon()` (TAS 527-535).
+- Window events: `scheduleLayerRefresh()` (TAS 537-542) begins with `if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this)) && patchView == null && !lockPatchWanted()) return;`, i.e. it does nothing on the unlocked home in `hide_screenshot` mode while no patch window exists.
+- A Launcher draw while no window exists: `homeDrew()` asks for a layer refresh at most every 2000 ms (TAS 752-755).
+- The first power-menu scan that finds the menu: `if ((Features.POWER_WALLPAPER.equals(mode) || locked || homeSwitchOn()) && patchView == null) refreshLayers();` (TAS 3042). Also calibration end (TAS 980) and "no crop for this position" in `buildHomePatchNow` (TAS 804).
+- Composite build requests after the window exists: `scheduleHomeBuild()` from `refreshLayers` (TAS 1201), `homeDrew` (758, 762), `homeFocusChanged` (692), `restRecheck` (222), `buildHomePatchNow` (792, 828).
+
+Destroyed / invalidated by:
+- `removePatch()` (TAS 1357-1364): removes the window; `patchHomeMode = false; homeBuiltAtMs = 0; homeBuiltStep = -1; homeWallBmp = null;` ... `patchShotBmp = null;` ... `touchAwayUntilMs = 0;`. Callers: `refreshLayers` when the target is null (TAS 1192: any `whyNot` reason such as Quickstep, lock screen, not on the plain home) and when `!PatchRest.sameWindow(rectArr(patchAt), rectArr(want), 2) || patchRot != rotation() || patchLockMode != targetIsLock || patchHomeMode != targetIsHome` (TAS 1198); `wallpaperReceiver` (TAS 487, also clears `homeWallId`, `homeWallBmp`, `homeBuiltAtMs`); calibration start (TAS 885) and ingest (TAS 4334).
+- Lock <-> home flavour switch = remove + add (TAS 1198). Every lock and every unlock therefore destroys and rebuilds the window, masks, composite and `warmedKind`.
+- Screen off: the home flavour is only hidden: `if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); }` (TAS 2287). Window and bitmaps stay until the lock-time refresh (`lockPrepare`, TAS 1593) swaps the flavour.
+- A Launcher draw marks the composite stale: `patchRestable = false; if (patchResting) { patchResting = false; patchView.setAlpha(0f); }` + `scheduleHomeBuild()` (TAS 759-762). Fresh = `keyMatches && builtAtMs > 0 && builtAtMs >= lastDrawMs` (HPR 77-79).
+- A finger down in the Launcher: alpha 0 in the same frame, window and restable kept: `homeTouchDown` (TAS 766-773; from `TjHooks.onTouch`, TJH 121-123, called at `Launcher.java:1735`); visible again after `TOUCH_AWAY_MS = 700` (HPR 19, 91-96).
+- A foreign window (shade, volume panel, dialog): away 2500 ms and until the Launcher has the focus (TAS 660-688, 645-651).
+- Wallpaper change: crops carry the wallpaper id in `sig`; the receiver clears memory (TAS 487). Rotation: crops and the panel rectangle are per rotation (HPR 133, TAS 279). Theme (light/dark): `onConfigurationChanged` only reloads the scrim and invalidates the view (TAS 2741-2748) and the home crop signature has no theme part (HPR 120). NOT FOUND: any home-crop or composite invalidation on a theme change.
+
+## 2. The first burst after the custom home appeared
+
+State at the moment of the press (each is a code state; none is measured on the tablet):
+- (a) no window: `fastDecline()` returns `"no patch window yet"` (TAS 153).
+- (b) window present, composite missing or stale (`patchRestable == false`): `"the patch is not resting (PIN pad up, or no valid crop)"` (TAS 155).
+- (c) restable but not visible (a finger < 700 ms ago or a Launcher draw < 250 ms ago): the fast path IS taken, `fastDecline` refuses only `!patchResting && (!patchRestable || lastBouncer || padSignFresh())` (TAS 155); HPR 88-90: "The stock dialog's own window event shows it regardless of the two timers when it is restable".
+- (d) resting: fast path.
+
+Step by step (stock power-menu burst):
+1. The side key opens the stock `GlobalActionsDialog`. There is no earlier signal for an app: "There is NO earlier signal on Android 10: the side key is consumed before the key filter" (TAS 2456-2458; `research/FAST_UNLOCK_AND_HOME_POWERMENU_2026-11-08.md:13`). `noteWindowEvent` marks a burst start when the last window event is older than 250 ms (TAS 359-360).
+2. `onAccessibilityEvent` (TAS 65-102) runs `fastMenuOpen(event)` first for window-type events (TAS 72). It acts only on `TYPE_WINDOW_STATE_CHANGED` whose class contains `ActionsDialog` (TAS 128-130).
+3. First event of the burst (not yet the dialog's own): `quietBurst` (TAS 193-214). On home: `boolean ready = !overlayShown && now >= quietUntilMs && event != null && EventNoise.windowsJustChanged(event.getEventType()) && fastDecline() == null; int t = HomePatchRules.burstTreatment(overlayShown, now, quietUntilMs, ready);` (TAS 203-204). `burstTreatment`: `if (now < quietUntilMs) return BURST_QUIET; return !menuOpen && startReady ? BURST_START : BURST_NORMAL;` (HPR 213-216).
+   - Patch ready -> `BURST_START`: `deferWork(now, FAST_WAIT_MS)` (120 ms, TAS 185, 207); heavy work waits for the dialog's own event ("follows the first window event of its burst by 15-45 ms", TAS 184).
+   - Patch not ready -> `BURST_NORMAL`: `quietBurst` returns false and the same event runs `scheduleLockUpdate(); scheduleLayerRefresh(); schedulePencil(event);` (TAS 91) and then `leadingEdge(event)` (TAS 101) -> `evaluate()` (TAS 110-113).
+4. `evaluateScan` (TAS 2970-3064), slow path: `getWindows()` (2978); `dialogWindowPresent(windows)` = a window title containing `ActionsDialog` (2979, 289-295); `if (cached != null && dialogUp) { showOverlay(cached);   // instant: no node scan yet` (TAS 2991-2992); otherwise a node search for `Power off` and `Screenshot` in every SystemUI window (TAS 3004-3005) -> `showOverlay(shot)` (TAS 3040), then `refreshLayers()` when `patchView == null` (TAS 3042).
+5. `showOverlay` (TAS 4383-4406) begins `if (!cardWanted()) { showStock(full); return; }`. Patch not ready -> `cardWanted()` true -> the card path: the card `overlay` is shown (`overlay.setAlpha(1f)`, TAS 4401) if `warmUp()` pre-built it, else built and added in this call (TAS 4386-4396). `patchShow(true)` runs first: for home `homeOpenShown = patchRestable` (TAS 3784), so a not-restable patch stays hidden. `recordLatency()` writes preference `power_latency` (TAS 2463-2469).
+6. The dialog's own event: `fastMenuOpen` -> `fastDecline()` (TAS 152-160). When null: `showOverlay(cached)` (TAS 147) -> `showStock` (TAS 3831-3842): `overlayShown = true; patchShow(true);`. `startFade()` (TAS 3590-3604) anchors the stock 300 ms fade at `dialogEventMs` or the burst's first event; `PatchFade`: `OPEN_MS = 300`, `LEAD_MS = 10`, `FRESH_MS = 600`, `SETTLE_MS = OPEN_MS + 30` (`app/src/main/java/com/tj/launcher/PatchFade.java:17,24,26,28`). The node scan waits for `scanNotBeforeMs = now + SETTLE_MS` (TAS 163-167, 2984-2988).
+   - When `fastDecline()` is non-null: logcat only, `Log.i(TAG, "PATCH fast skip: " + why + " (the normal path follows)");` (TAS 136); on home also `quietUntilMs = 0` and `quietWork` cancelled (TAS 138).
+
+Preconditions (where computed; eager or lazy; time; what the code does when it is missing):
+- `cardWanted()`: computed on every call, cheap (TAS 421-426). Missing readiness -> steps 4-5 (card, after the scan result).
+- `burstTreatment`: pure, depends on `fastDecline()`. Not ready -> no wait; scans run on the burst's first event. Emulator, v0.8.9 before BJ1: "ran the node scan, the layer refresh and the pencil search on the burst's FIRST window event (56 ms, then 207 ms)"; fast path in 1 of 10 films, in 10 of 10 with the wait (HPR 195-198).
+- `wallpaperReported` / `wallpaperX`: eager, per process; first set by the Launcher's interpolator on its looper. Before that `cropValid` is false, `whyNot` says `not calibrated for this wallpaper and page yet` (HPR 65), no window exists; `calDecision` answers `the wallpaper position is not known yet` (HPR 164) and is NOT polled: "the Launcher's first report re-evaluates by itself (onWallpaperOffset -> homeOffsetSettled -> refreshLayersSoon)" (TAS 872). NOT FOUND: the delay between process start and that first report.
+- Stored crop for the current step: looked up on every `homeFacts()` (memo, TAS 696-701); the PNG is decoded synchronously in `addPatch` / `buildHomePatchNow`. Missing -> no window, `homeNeedsCal = true` (TAS 626) -> `homeCalTrigger` -> calibration only when quiet: touch 3000 ms, draw 1500 ms, screen on 5000 ms, 60 s between starts, 6 a day (HPR 141-142, 167-173); Launcher hidden `HIDE_SETTLE_MS = 150`, up to `HIDE_MAX_MS = 4500` (HPR 182). A crop that exists but cannot be loaded: `homeLoadFailed`, retry every 5 s, at most 6 times (TAS 800-806).
+- Learned panel rectangle: persisted preference (item E), rewritten at every scan. Missing -> `whyNot` `open the power menu once so the menu's place is learned` (HPR 64) and `fastDecline` `"the menu geometry is not learned yet"` (TAS 158); that first menu uses the scan path and teaches it. NOT FOUND: whether it is stored for the rotation Tj uses.
+- Composite (built by PixelCopy): lazy, after the home was quiet. `scheduleHomeBuild` waits until 250 ms after the last Launcher draw (`HomePatchRules.waitMs`, HPR 99-103); `buildHomePatchNow` (TAS 787-832): `if (!TjHooks.homeScreenShowing() || TjHooks.homeFloatingViewOpen() || TjHooks.homeBusy()) { if (++homeBuildWaits <= 10) { ... postDelayed(homeBuild, 400); } return; }` (TAS 793-796); a failed copy retries up to 5 times 1500 ms apart (TAS 818). NOT FOUND: any measured time of the PixelCopy / compose step.
+- `homeRestable()` additionally needs `!homeCalRunning`, `TjHooks.homeScreenShowing()`, `uptime >= homeForeignUntilMs` and `l.hasWindowFocus()` (TAS 645-651).
+- Measured scrim / open look: taken from the lock-screen measurement (item J); without it the generic dim is used (kind 1 vs 2, TAS 1248). The measuring stage runs from `maybeAutoCalibrate` on the lock screen (TAS 3939, 4051-4074).
+- Node scan: lazy; only on the slow path (TAS 3004-3005) or after the fade (`deferScan`, TAS 163-167).
+- Debounces and delays: `DRAW_QUIET_MS = 250`, `TOUCH_AWAY_MS = 700` (HPR 19-21); `FAST_WAIT_MS = 120` (TAS 185); `HOME_FOREIGN_AWAY_MS = 2500` (TAS 660); `homeOffsetSettled` 200 ms (TAS 532); `restRecheck` 400 / 1600 ms (TAS 1303).
+- What the code does when the patch is missing: declines the fast path and the card (or the cardless stock path, when the patch became ready in between) comes with the scan result; there is no default-drawn patch: `homeOpenShown` false keeps it hidden (TAS 3784).
+- Emulator timing of the card path, home, after the fast path was fixed: first patch frame after the dialog's event "home 5 - 28 ms" (`research/HOME_PATCH_2026-11-08.md:61`). NOT FOUND: any measured delay of the card path (steps 4-5) on the tablet.
+
+Fresh process versus a long-lived process that just left Quickstep:
+- After a Quickstep session the plain-PIN path runs `Mode.set(app, Mode.CUSTOM); startRouter("custom"); ReturnReset.run(app);` (TAS 1708-1710): a cover, closing apps, clearing the shade. `ES 2938-2940` records the consequence for the patch: "The patch is deliberately away for 2.5 s after ANY foreign window (the shade, a dialog), and the clean-up of a custom session opens the shade when a notification of an earlier section is still posted." TAS 678: "gate runs #356 / #358: a named window a few seconds after the patch first rested made the menu use the card".
+- The tablet report counts those: `foreign windows seen N (names; the last X s ago)` (`homePatchInfo`, TAS 985-991).
+- In a fresh process `wallpaperReported` is false until the interpolator's first message; in a long-lived one it stays true (item F).
+- Emulator, after a restart with the crop stored: "after the restart the patch rested after 0 s: `HOMEPATCH patch built, fresh=true step 0`, `PATCH rest on`" (TASKS 1014, run #347; 1-second polling).
+
+## 3. First press versus later presses
+
+State that exists after the first burst:
+- `power_card_rect_r<rot>` / `power_geo_r<rot>` (TAS 3038-3039): persisted; new only when never learned.
+- `menuSeenMs`: `if (menuSeenMs == 0) menuSeenMs = now;` (TAS 142, 2982), never reset; `power_latency` = `cardShownMs - menuSeenMs` is the card latency of the FIRST menu of a process only (TAS 2463-2469).
+- `warmedKind` per patch window: the first resting frame draws the open look invisibly (log `PATCH warm-up: the open look (...) was drawn once, invisibly (home)`, TAS 1262). For home that frame exists only once `patchResting` is true. Lock-screen measurement of the same effect: first opening in a fresh process 3 frames, one gap of 278 ms, warm process 0.04-0.06 (`research/BK1_LOCK_FIRST_PRESS_PENCIL_UNLOCK_2026-11-08.md:8-12`). NOT FOUND: a measurement of the home flavour's first opening in a fresh process (section `fp` is lock-only).
+- `fadeFirstSummary` keeps the first fade of the process apart (TAS 3764; report line, `app/src/main/java/com/tj/launcher/ReportState.java:88`).
+- The card `overlay` stays attached and hidden after its first use (`hideOverlay`, TAS 4409-4426).
+- The composite is fresh until the Launcher draws again (TAS 759-762).
+
+What survives what:
+- Process restart / reboot: survives = crops (files + preferences), panel rectangle and geometry, scrim slots, switches. Lost = `wallpaperReported`, `wallpaperX`, `lastHomeDrawMs`, window, composite, `homeWallBmp`, `warmedKind`, `menuSeenMs`, fade summaries, `homeForeignUntilMs`, all timers.
+- Mode switch inside a live process: TJH statics survive; the window is created at the `mode` preference change when `whyNot` is empty (TAS 474, 1198-1199); a running calibration is cut (`homeCalInterrupted`, TAS 475).
+- Screen off: home flavour hidden (TAS 2287), swapped to the lock flavour at the lock-time refresh (TAS 1593, 1198).
+- Unlock: lock flavour removed, home flavour added at the first refresh that finds the home target; everything per-window is new (section 1).
+
+Difference between the first and later presses in the code:
+- NOT FOUND: any branch named for a "first press". The differences are the readiness state of the patch at that moment and the one-time items above.
+- Recorded design statement for a quick second press: "Tj closing the menu and pressing the side key again within about a second gets the same fallback card on a real tablet (designed: a patch that could be stale never shows)" (`research/HOME_PATCH_2026-11-08.md:60`).
+- NOT FOUND: which precondition was missing at Tj's first press. No persistent line is written when `fastDecline` declines (TAS 136 is logcat only). The one persistent line for the home fast path is `PATCH menu opened while the patch was away (...)` (TAS 144; allowed through `logPatch` for home, TAS 3713).
+
+## 4. Emulator sections and the very first press
+
+Debug builds have `home_patch` OFF (HPR 16); only hp, hf and cu switch it on (`hpkey home_patch true`, ES 2919, 3210, 3068). `setmode` force-stops the app (ES 31), so each phase starts a fresh process.
+- hp, before the first press with the patch ON (ES 2919-2923): `hpkey home_patch true` / `setmode custom; rebind; adb logcat -c; home` / `HP_T1="$(hpwait 'HOMEPATCH calibration end' 70)"` / `HP_T2="$(hpwait 'PATCH rest on' 40)"` / `sleep 3`.
+- hp then waits for a quiet home (ES 2941-2946): `for HP_I in $(seq 1 25); do sleep 2; ... [ "$HP_QS" -ge 3 ] && break; done`, `adb logcat -c`, `hpopen` (ES 106: `adb shell input keyevent --longpress KEYCODE_POWER; sleep 3`). Phase A (switch OFF) already pressed once to learn the rectangle (ES 2908: `hpopen; hpclose; sleep 2`). HP4 (ES 2951) checks the cardless path on that press; the patch had rested before it (HP2, ES 2929).
+- hf (ES 3176-3181): `setmode custom; rebind; adb logcat -c; home` / `t="$(hpwait 'PATCH rest on' 40)"; sleep 3` / `hfrun "${1}f1" warm` / `for k in 2 3 4 5; do hfrun "${1}f$k" quick; done`. `warm` = "an unfilmed opening and the quiet wait first (after a restart)" (ES 3154): `if [ "$W" = warm ]; then hpopen; hpclose; hfquiet; else sleep 4; fi` (ES 3155). Phase A learns the rectangle with up to 3 presses (ES 3198-3203).
+- cu (ES 3060-3066): one learning press with the switches OFF; no press with the patch on.
+- HP13 (ES 3019-3033): lock + unlock, waits up to 40 s for a NEW `PATCH rest on` (`HP_T5`), checks that it rests again and that no calibration starts; no press.
+- pt, fp, ae, ps are lock-screen sections. `pt` skips the first opening: "`pt` always skips the first opening of a lock cycle; only `fp` films it" (`research/BK1_LOCK_FIRST_PRESS_PENCIL_UNLOCK_2026-11-08.md:14`; ES 2194 comment "one unfilmed opening first").
+- Result: NOT FOUND any section that presses the side key as the first thing after the custom home appears, before the patch has rested. TASKS 1065 (BM1i): in group B (#429) "the FIRST home long press never logged a CARD area line (HP0-HP4 FAIL)"; same code passed solo (#431).
+- Gate map: hf (`tools/gate-map.txt:45`) pins `quietBurst|deferWork|deferScan|fastMenuOpen|fastDecline|startFade|...`; cu line 47; fp line 46.
+
+## 5. Lock patch: every show / arm / pre-create / draw / refresh path and every hide path
+
+Show / arm / pre-create / draw / refresh:
+- S1 `lockPrepare` (TAS 1571-1596): `if (locked) { try { refreshLayers(); } catch (Throwable t) { ... } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst` (TAS 1593). Callers: `lockPrepareLater` at SCREEN_OFF +700 ms and +6500 ms (TAS 1563, 2292-2294) and `handleLockedWake()` at SCREEN_ON (TAS 1599, 2296).
+- S2 `lockReceiver` (TAS 2269-2303): `handler.post(layerRefresh);` first (2275), `handler.post(lockEval); handler.postDelayed(lockEval, 400);` (2276), SCREEN_ON `handler.postDelayed(layerRefresh, 400)` (2296), USER_PRESENT the same (2297), SCREEN_OFF `patchShow(overlayShown)` after `lastBouncer = false` (2290-2291).
+- S3 `refreshLayers` -> `addPatch`: the lock window's alpha comes from `patchResting = !overlayShown && PatchRest.visible(false, lockPatchAlways(), true, lastBouncer); patchRestable = patchResting;` and `v.setAlpha(overlayShown || patchResting ? 1f : 0f);` (TAS 1303). It does not read `touchAwayUntilMs` or `pinHiddenUntilMs`; `removePatch` clears `touchAwayUntilMs`, `touchBack`, `padBack` but not `pinHiddenUntilMs` / `pinHide` (TAS 1362). `restRecheck` +400 / +1600 ms (TAS 219-228).
+- S4 `patchShow(boolean)` (TAS 3774-3801) is the single place that sets alpha. Lock branch: `boolean can = PatchRest.visible(false, lockPatchAlways(), true, lastBouncer); patchRestable = can; ... vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs;` then `patchView.setAlpha(vis ? 1f : 0f);` (TAS 3790-3798). `PatchRest.visible`: `if (menuOpen) return true; return always && !pinPadUp;` (`PatchRest.java:22-26`). `lockPatchAlways()` makes binder calls (`keyguardLocked()`, TAS 443).
+  - Callers of `patchShow`: `touchBack` (392), `padBack` (399), `restRecheck` (224), `updateLockNumber` when `lastBouncer` changes (2341), SCREEN_OFF (2291), `calibrationChanged` (4271), `maybeCalibrateLock` end (1121), `hideOverlay` / `removeOverlay` (4412, 4418, 4430, 4431), `showStock` / `showOverlay` (3836, 4390, 4400), `pinPadCameUp` (3678, 3680), and for home `buildHomePatchNow` (826), `homeFocusChanged` (692), `homeShowCheck` (775).
+- S5 Fast open `fastMenuOpen` (TAS 124-149): clears the away guards `touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0;` (145) and calls `showOverlay(cached)`. `fastDecline` accepts a merely away patch: `if (!patchResting && (!patchRestable || lastBouncer || padSignFresh())) return "the patch is not resting (PIN pad up, or no valid crop)";` (TAS 155). `padSignFresh()` = a pad sign < 1500 ms ago (TAS 3703).
+- S6 Scan path `evaluateScan` -> `showOverlay` / `showStock`; `showStock` clears the same guards on the first call: `if (first) { touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0; }` (TAS 3834).
+- S7 Calibration flows hide and restore it: `maybeCalibrateLock` (TAS 1062-1124; needs `ShellHelper.reachable()` 1075; `patchView.setAlpha(0f)` 1080; restore through `patchShow` 1121); `maybeAutoCalibrate` (TAS 3917-3953) and `calibrationChanged` (TAS 4263-4272: `layerRefresh.run(); patchShow(overlayShown);`); `ingestShot` ends `removeOverlay(); removePatch(); refreshLayers();` (TAS 4334); `maybeMeasureScrim` (TAS 4051-4074) opens the stock menu itself. The two deciders refuse to START while the pad is up: `if (s.pinPadUp) return "waiting: the PIN pad is up";` (`AutoCalibration.java:53`, `ScrimMeasure.java:93`); `pinPadUp` is `lastBouncer`, a scan result (TAS 3932).
+- S8 `warmOpenLookOnce` (TAS 1247-1264): a 1/255-alpha invisible draw in the first resting frame of each window ("at most 0.2 of one brightness level, in one frame", TAS 1243).
+- S9 Redraw only, alpha unchanged: `onWallpaperOffset` -> `patchRedraw` after 40 ms (TAS 527-528, 471).
+- S10 Layer refresh from events: `scheduleLayerRefresh` runs `refreshLayers()` on a non-quiet event at most every 150 ms and again 250 ms later (TAS 537-542); `refreshLayers` only calls `patchShow` through `addPatch`'s own state, never for an existing window.
+
+Hide / remove / fade:
+- H1 `onOutsideTouch` (TAS 3689-3699): finger DOWN, ACTION_OUTSIDE; acts only when `patchResting && !overlayShown && !pinHide` (3691).
+- H2 `pinPadCameUp(why)` (TAS 3663-3683): from a keyguard view event (TAS 3722-3727) or the pad scan (TAS 2341).
+- H3 Menu close follow-up (menu open): `startClose` (TAS 3621-3651) from a click in the stock dialog (3730-3733), `ACTION_CLOSE_SYSTEM_DIALOGS` (TAS 494-502), our own BACK on the hidden spot (TAS 1299); `dialogGone` when the dialog window is removed (TAS 3734-3736); `finishClose`.
+- H4 `removePatch()` (TAS 1357-1364) with the callers of section 1.
+- H5 `maybeCalibrateLock` hides it for its photo (TAS 1080).
+- H6 Return timers after H1 / H2: `touchBack` and `padBack` (section 6).
+
+Debounce / thresholds (lock flavour): `TOUCH_AWAY_MS = 900` (TAS 390), `PAD_CALM_MS = 1200` (391), `pinHiddenUntilMs` +2500 ms (3671), `padBack` 2600 ms (3672, 3681), `padSignFresh` 1500 ms (3703), `lastTouchLogMs` 3000 ms (3697; limits the LOG line only), `restRecheck` 400 / 1600 ms, `scheduleLockUpdate` 60 ms immediate + 120 ms deferred (TAS 2328-2329).
+
+## 6. The PIN-pad pull
+
+6.1 Window state at the pull: the lock window was pre-created (S1); when `patchResting` its alpha is 1 and it paints only the Screenshot slot. Flags: `FLAG_NOT_TOUCHABLE` + `FLAG_WATCH_OUTSIDE_TOUCH` (TAS 1289-1290); `patchTouchable = false` (TAS 1294). While the stock menu is open the window becomes touchable `PatchFade.SETTLE_MS + 20` after the open (`setPatchTouchable`, TAS 3860-3878; `touchableOn` refuses when `pinHide`, TAS 3858). Emulator check: the resting window exists and is NOT touchable (ES 1793).
+
+6.2 Sequence (code comments and notes; times are CI-emulator values):
+1. Finger DOWN on the lock screen: `ACTION_OUTSIDE` reaches the patch window's listener: `if (e.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { onOutsideTouch(); return false; }` (TAS 1297). "delivered before any MOVE, the earliest sign there is" (TAS 383-384). `onOutsideTouch` runs `patchView.setAlpha(0f);` first (TAS 3695), then sets `touchAwayUntilMs = now + TOUCH_AWAY_MS` and posts `touchBack` after `TOUCH_AWAY_MS + 20` (3694, 3696). `patchResting` is left true.
+2. The stock bouncer scrim starts to darken the wallpaper: "The stock bouncer scrim (ScrimState.BOUNCER, ~220 ms) starts at the first MOVE of the drag" (`research/RECENTS_AND_UNLOCK_AUDIT_2026-11-07.md:48`); "the pull-up is announced by keyguard view events only AFTER the stock bouncer scrim has started to darken the wallpaper" (TAS 383).
+3. Keyguard view events: package `com.android.systemui`, class starting `com.android.keyguard.` and containing `PINView`, `PasswordView`, `PatternView`, `SecurityContainer` or `HostView`; types WINDOW_STATE_CHANGED or WINDOW_CONTENT_CHANGED (TAS 3722-3726) -> `pinPadCameUp("event " + ...)`. `fastMenuClose` runs before the noise filter (TAS 73 vs 81) and only while `overlayShown || patchResting || lastBouncer || touchAwayUntilMs > awayNow || pinHiddenUntilMs > awayNow` (TAS 3722).
+4. The scan: `lockEval` / `updateLockNumber` -> `bouncerShown()` (`boolean bouncer = (enabled || locked) && on && locked && bouncerShown();`, TAS 2339; ids `keyguard_pin_view`, `keyguard_password_view`, `keyguard_pattern_view`, `pinEntry`, `passwordEntry`, `lockPatternView`, TAS 2346) -> `if (bouncer) pinPadCameUp("the PIN pad scan found it");` (TAS 2341). "the PIN-pad scan (lastBouncer) is ~120 ms slower than the first sign" (TAS 381).
+5. `pinPadCameUp` (TAS 3663-3683): `lastPadSignMs = now; pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + 2500);` (3670-3671); if already away returns after re-posting `padBack` (3672); else logs, `patchView.setAlpha(0f);` first (3675), then (menu open) `pinHide = true; ... patchShow(true); applyPatchTouchable(false);` or (resting) `patchShow(false);` (3676-3680), `padBack` after 2600 ms (3681).
+- Emulator numbers: TASKS 968 "the resting patch hides at the finger's DOWN 64-73 ms before the PIN-pad scan finds the pad"; TASKS 976 "pin hide 64 ms after the finger went down"; `research/RECENTS_AND_UNLOCK_AUDIT_2026-11-07.md:65` "the finger-down hide fires 66 ms before the PIN-pad scan finds the pad; ACTION_OUTSIDE does reach the patch window on Android 10". Tablet: NOT FOUND.
+
+6.3 Which signal hides first: the finger-down ACTION_OUTSIDE (H1). It returns without hiding when `patchView == null || !patchLockMode || overlayShown || !patchResting || pinHide` (TAS 3691). Over an open stock menu H1 does nothing; the keyguard event or the scan hides it (`pinHide`).
+
+6.4 Paths that can show or redraw the patch after the touch hide (conditions):
+- `touchBack` (TAS 392): `if (android.os.SystemClock.uptimeMillis() >= touchAwayUntilMs) patchShow(overlayShown);` at +920 ms after the DOWN. The patch is visible again unless a pad sign set `pinHiddenUntilMs` in the meantime or `lastBouncer` is true (TAS 3790-3793). A DOWN that is NOT followed by a pad sign within 920 ms (tap, slow drag, notification pull) brings it back at +920 ms.
+- `padBack` (TAS 393-401): 2600 ms after the newest sign, waits until `lastPadSignMs + 1200` has passed, runs `updateLockNumber()` (a fresh scan), then `patchShow(overlayShown)`; `lastBouncer` decides. Audit note on why: "`lastBouncer` is a scan result and can be false for a moment during the pad's animation" (`research/RECENTS_AND_UNLOCK_AUDIT_2026-11-07.md:51`).
+- `fastMenuOpen` / `showStock` at a stock dialog event: clear `touchAwayUntilMs` and, unless a pad sign is < 1500 ms old, `pinHiddenUntilMs` (TAS 145, 3834); the patch is shown in its open look.
+- `restRecheck` +400 / +1600 ms after any (re)created window (TAS 219-228); `updateLockNumber` on a `lastBouncer` change (TAS 2341); SCREEN_OFF (TAS 2291); `calibrationChanged` (TAS 4271); `maybeCalibrateLock` end (TAS 1121); `hideOverlay` / `removeOverlay`: each ends in `patchShow`, whose lock branch respects both guards (TAS 3793).
+- A re-created lock window (`refreshLayers` rect / rotation / flavour change TAS 1198, wallpaper change TAS 487, calibration ingest TAS 4334, `POWER_CARD_KEY` change TAS 477): `touchAwayUntilMs` is reset in `removePatch` and `addPatch` decides alpha from `lastBouncer` only (S3).
+- `warmOpenLookOnce` (S8) and `patchRedraw` (S9) redraw without changing the alpha.
+- No call site found that sets alpha 1 on the lock window while `pinHide` is set (`patchShow` keeps it gone: `vis = (!patchHomeMode || homeOpenShown) && !pinHide;`, TAS 3784).
+
+6.5 When the starting touch is not delivered as ACTION_OUTSIDE:
+- NOT FOUND in code and notes: any case list for multi-touch, a touch that starts on another overlay, a fast flick, the first touch after the screen came on. The only evidence is the emulator (BE1 check, ES 2349) and the audit note above.
+- Facts around it: only the lock flavour carries `FLAG_WATCH_OUTSIDE_TOUCH` (TAS 1290, 3846). Other windows of this app on the lock screen: the lock-number overlay is `FLAG_NOT_TOUCHABLE` (TAS 2391-2392); the Solitaire hotspot exists only when `!keyguardLocked()` (TAS 2637). Whether they change delivery to the patch window: NOT FOUND.
+- Code-side early returns of `onOutsideTouch`: patch not resting (including a lock window created with `lastBouncer` true or `lockPatchAlways()` false), menu open, `pinHide`.
+- The listener returns false for ACTION_OUTSIDE and, for other actions, `if (!patchTouchable) return false;` (TAS 1297-1298).
+- Device: the tablet's real pull timing (finger DOWN to first MOVE to the bouncer scrim) is NOT FOUND.
+
+## 7. Logging
+
+Persistent lock log (`files/lock-events.log` through `LockLog`; ring of 48 KB, trimmed to 32 KB; line = `HH:mm:ss.SSS EVENT detail`, cut at 200 characters; written on a background thread with the time of the caller, wall clock: `LockLog.java:17-18,25-30,56-58`):
+- Event `PATCH` (through `logPatch`, TAS 3710-3716; home lines are dropped unless they start with `home calibration` or `menu opened`, TAS 3713):
+  - `window created, resting=<bool>, <N> ms after the screen came on` / `screen-on time unknown`, `, screen on` / `, screen OFF (prepared in the dark)` (TAS 1303; lock flavour).
+  - hidden by touch: `resting patch hidden at the finger's DOWN` (TAS 3697; at most one per 3 s).
+  - hidden by the pad: `PIN pad sign (<why>), <N> ms after the finger went down` or `, no finger-down seen first`, then `, menu open` or `, resting patch hidden` (TAS 3674; only when the patch was visible: the already-away branch writes nothing, TAS 3672).
+  - `menu opened while the patch was away (touch <bool>, PIN guard <bool>): shown at the dialog's own event` (TAS 144; also home).
+  - `home calibration ok|failed: <msg>` (TAS 979).
+- Neighbouring events: `PAD shown` / `PAD hidden` (TAS 2341), `SCREEN_OFF` / `SCREEN_ON` / `USER_PRESENT locked=<bool> mode=<mode>` (TAS 2284), `LOCKPREP <why>: locked=... armed=... mode=...` (TAS 1577), `UNLOCK ...` (TAS 1697, 1713, 1718, 1725), `UNLOCKSUM custom home on screen <N> ms after the Enter tap | the keyguard went away [... Launcher resumed +X, first frame +Y ...]` (TAS 2533-2549).
+- NOT in the lock log: patch shown / redrawn / returned (`touchBack`, `padBack`), `PATCH rest on|off`, `fast skip`, fades. "Patch redrawn" has no persistent line anywhere.
+- The report prints only the tail: `int n = full ? 40 : 12;` ... `LockLog.tail(c, n)` (`app/src/main/java/com/tj/launcher/ReportState.java:158-159`); Launcher control shows 8 lines (`ControlActivity.java:359`).
+
+Logcat only (tag `TjA11y`, level I; times are the device clock of logcat, `t=` fields are uptime ms):
+- `PATCH touch hide (a finger went down) t=<ms>` (TAS 3697).
+- `PATCH pin hide (<why>) t=<ms> menu open|resting [<N> ms after the finger went down]` (TAS 3673); `PATCH pin sign (<why>) t=<ms>: the patch is already away` (TAS 3672).
+- `PATCH rest on|off [(PIN pad up)] top=<n>` (TAS 3800), `PATCH rest on (new window) top=<n>` and `PATCH window created: resting=... [always=... switch=... wanted=... calibrating=... shot=... bouncer=... overlayShown=...]` (TAS 1303), `PATCH shown <rect>` (TAS 1307), `PATCH removed` (TAS 1363).
+- `PATCH fast open: ...` (TAS 146), `PATCH fast skip: <why> (the normal path follows)` (TAS 136), `PATCH fade start|none lag=<ms> ms t=<ms> lead=<ms>` (TAS 3603), `PATCH fade end home|lock first=<ms> ms frames=<n> slow=<n> worst=<ms> ms scale=<f> t=<ms>` (TAS 3763), `PATCH menu closed t=<ms>` (TAS 3775), `PATCH close start|end ...` (TAS 3626, 3637, 3649), `PATCH warm-up: ...` (TAS 1262), `PATCH hold: ...` (TAS 3055).
+- Home: `HOMEPATCH away: a finger went down` (TAS 770), `HOMEPATCH away: another window (<pkg> <class>)` (TAS 685), `HOMEPATCH stale: the Launcher drew ...` (TAS 761), `HOMEPATCH patch built, fresh=<bool> step <n>` (TAS 825), `HOMEPATCH calibration starts|end` (TAS 883, 978), `HOMEPATCH layer copy failed: <problem>` (TAS 818).
+- Debug builds only: `PATCHEV t=<ms> type=0x.. pkg=.. cls=.. age=<ms> rest=<0|1> open=<0|1> wid=.. dlg=.. wc=..` (TAS 53-62; a per-event timeline), `PATCH scan took N ms`, `PATCH pencil took N ms`, `HOMEPATCH draw burst ...` (TAS 750). NOT FOUND: any per-event timeline in a release build.
+
+Report lines and preferences:
+- `accessibility helper load (AD8): ...` = `perfLine()` (TAS 2953-2959): "the last menu opening was noticed N ms after the stock fade began", "last fade seen from the patch (BJ1): ...", "FIRST fade since this process started (BK1a): ..." (`ReportState.java:88`).
+- `home-screen patch (BI1, ...)` = `homePatchInfo()` (TAS 985-991; `ReportState.java:127`): switch, mode, crops stored, window `resting` / `present, away` / `none`, fresh, calibrating, foreign windows seen, `home_patch_status`.
+- Allow-listed preferences in the report (`ReportState.java:22-29`): `power_latency`, `unlock_sum`, `patch_rest_info` (TAS 436-442: `restRecheck rest=<bool> menuOpen=<bool> [always=.. switch=.. wanted=.. calibrating=.. shot=.. bouncer=..]`, written twice per new window), `patch_fade`, `wallpaper_patch_status`, `patch_shot_status`, `patch_auto_note`.
+
+## 8. Existing tests that pin sections 5 and 6
+
+JVM (`app/src/test/java/com/tj/launcher/`):
+- `PatchRestTest`: `neverRestsOverThePinPad` (lines 19-22: `assertFalse(PatchRest.visible(false, true, true, true)); assertTrue("an open power menu still gets its patch over the pad", PatchRest.visible(true, true, true, true));`), `switchOffKeepsTheOldBehaviourInvisibleUntilTheMenuOpens` (14), `switchOnRestsVisibleOnTheLockScreen` (18), `theHomeScreenPatchNeverRests` (23), plus the window / mask geometry tests (28-165).
+- `HomePatchRulesTest`: `eachConditionAloneTakesThePatchAway` (33), `theFirstFailingConditionIsTheOneReported` (49), `aPatchBuiltAfterTheLastDrawIsFreshAndOneBuiltBeforeItIsNot` (65), `aBuildIsDueOnlyWhenNothingFreshIsThereNothingIsBuildingAndTheHomeIsQuiet` (79), `thePatchIsVisibleOnlyWhenRestableAndBothTimersAreOver` (88), `waitMsIsTheLongerOfTheTwoRemainingTimers` (97), `aClockThatWentBackwardsNeverHidesThePatchForEver` (106), `theCalibrationWaitsForTheFingerTheDrawsAndTheWake` (173), the burst tests (203-225: `theFirstWindowEventOfABurstStartsAWaitWhenTheDialogsOwnEventWillOpenThePatch`, `everyEventInsideARunningWaitIsQuiet`, `anOpenMenuNeverStartsAnotherWait`).
+- `PatchFadeTest` (open and close curves, `theLeadMakesTheFrameRightWhenItIsSeen` 99), `LockLogTest` (line format, trim, tail, size; 11-45), `EventNoiseTest` (`aNewWindowIsRecognisedFromTheEventType` 45, SystemUI content changes are never noise 28), `AutoCalibrationTest` (PIN-pad refusals, lines 40, 79-80), `ScrimMeasureTest` (37, 74).
+- NOT FOUND: any JVM test of `onOutsideTouch`, `pinPadCameUp`, `touchBack`, `padBack`, `fastDecline` or `patchShow` (private members of the service). No test file references `TjAccessibilityService` constants; the lock constants `TOUCH_AWAY_MS = 900` and `PAD_CALM_MS = 1200` (TAS 390-391) are not pinned by a test. `HomePatchRulesTest` uses `HomePatchRules.TOUCH_AWAY_MS` (700, home), lines 90, 100, 102.
+
+Emulator checks (ES):
+- Section `pt`: BC5 (ES 2335: PIN pad over an open menu, `PATCH pin hide` logged, only when a pad appeared), BC5b (ES 2346: plain lock screen, `PATCH pin hide.*resting`, only when a pad appeared; the swipe is `input swipe 300 900 300 300 250`, ES 2341), BE1 (ES 2349: `PATCH touch hide` logged, unconditional; ES 2350: the touch hide comes BEFORE the first `PATCH pin (hide|sign)` line, only when a pad appeared), BC2 (ES 2352-2353: close by tap, mismatch within 15 %). The film itself is not judged for BC5: "The film itself is not judged" (ES 2330-2331). NOT FOUND: any check of what is on screen, or of the patch's brightness, while the bouncer scrim darkens (BE1 and BC5 read log lines and their order).
+- Section `ae`: AE3 (ES 1792-1795): `PATCH rest on` with the switch on; the resting window is not touchable; `PATCH rest off (PIN pad up)`; a second `PATCH rest on` when the pad is gone. Gate map line: `ae` matches `onOutsideTouch|touchAwayUntilMs|padBack|FLAG_WATCH_OUTSIDE_TOUCH` (`tools/gate-map.txt:29`).
+- Section `ps`: PS A-C (ES 1985-2064): no rest before calibration, resting patch invisible (MAE < 0.5 %), the open Screenshot spot covered, a tap on it closes the menu.
+- Section `x1`: X1 (ES 425-426): the lock number overlay is gone when the PIN pad is pulled up (not the patch).
+- Section `fp`: FP1-FP4 (ES 3324-3332): the first lock opening of a cold process; `PATCH warm-up` before the first press.
+- Sections `hp`, `hf`, `cu`: section 4.
+- Section `pt` BB2 (ES 2420-2431): measurement slots per theme; no measurement restart on a theme flip.
+
+## 9. NOT FOUND (collected)
+
+- Any tablet record (report, lock log, logcat) of a first-press leak on the home screen or of a flash during a PIN pull; `research/tablet/LATEST.md` holds no `PATCH` line.
+- Which power mode, switches and stored crops Tj's tablet has; whether the panel rectangle is stored for the rotation Tj uses.
+- Time from the unlock (or the home's first frame) to `patchRestable` / `PATCH rest on` on the tablet; time of the PixelCopy + compose step; delay from process start to the interpolator's first offset report.
+- Measured delay of the card path (steps 4-5 of section 2) on the tablet.
+- A persistent line when `fastDecline` declines on the home; a persistent line when the lock patch returns (`touchBack`, `padBack`) or is redrawn.
+- A section that presses the side key as the first thing after the custom home appears.
+- Behaviour of ACTION_OUTSIDE for multi-touch, another overlay, a very fast flick, the first touch after the screen came on.
+- A check of the screen (film or pixels) during the bouncer scrim's darkening.
+- Home-crop invalidation on a theme change.
