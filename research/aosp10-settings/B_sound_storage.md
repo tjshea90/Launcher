@@ -16,8 +16,10 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
 - Theme: activity theme Theme.Settings (settings10/res/values/themes.xml) -> @android:style/Theme.DeviceDefault.Settings (fwbase/core/res/res/values/
   themes_device_defaults.xml l.1452, parent Theme.DeviceDefault.Light). Settings adds listPreferredItemHeight 72dip and PreferenceTheme
   (settings10/res/values/styles_preference.xml: parent PreferenceThemeOverlay.SettingsBase -> androidx PreferenceThemeOverlay.v14.Material; androidx
-  preference layouts/styles are NOT in the checkout; the framework twins fwbase/core/res/res/layout/preference_material.xml and
-  preference_category_material.xml are quoted below and reproduce the measured heights).
+  preference layouts/styles are NOT in the checkout). Their framework twins reproduce the measured numbers: fwbase/core/res/res/layout/preference_material.xml =
+  row paddingStart/End 16dp, minHeight 48dp, icon_frame (marginStart -4dp, minWidth 60dp, paddingEnd 12dp, paddingTop/Bottom 4dp, icon max 48dp), text
+  RelativeLayout paddingTop/Bottom 16dp (title ListItem 16sp singleLine marquee; summary below it, ListItemSecondary 14sp, textColorSecondary, maxLines 10),
+  widget_frame paddingStart 16dp: title x = 17-4+64 = 77 = [tablet] (same x with or without an icon), rows 62/87 px; preference_category_material.xml: see below.
 - Resolved colours: colorAccent = accent_device_default_light -> accent_material_light -> material_deep_teal_500 = #FF008577. colorPrimary (toolbar) =
   material_grey_100 #F5F5F5. colorPrimaryDark (status bar) = material_grey_300 #E0E0E0. colorBackground = grey_50 #FAFAFA. textColorPrimary #DE000000
   (primary_text_default_material_light), textColorSecondary #8A000000, colorControlNormal = textColorSecondary, colorControlActivated = colorAccent,
