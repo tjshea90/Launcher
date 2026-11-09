@@ -3031,6 +3031,12 @@ info "HP F: after a lock cycle the home patch rested again after $HP_T5 s (never
 check "HP13: after the lock and the unlock the home patch RESTS again by itself (log 'PATCH rest on')" bash -c "[ '$HP_T5' != never ]"
 check "HP13: ... without a new home calibration (the crop for this wallpaper was kept)" bash -c "! grep -q 'HOMEPATCH calibration starts' $OUT/hp-f-log.txt"
 check "HP13: ... and the crop file is still there (exactly one)" bash -c "[ \"$(hpcrops)\" = 1 ]"
+# ---- HP14 (BN2, Tj 2026-11-09 03:02 UTC, tablet report): the keyguard's own SystemUI window at the unlock is NOT a shade over the home. v0.8.12 started the 2.5 s away guard at every unlock (the tablet's "foreign windows seen" counter
+#      named com.android.systemui android.widget.FrameLayout, the last one = the unlock) and the first side-key press after it found "the patch is not resting". Only the lines after the home window's creation count (the lock phase
+#      has its own SystemUI windows while the lock-flavour window is still being swapped).
+awk '/PATCH window created: resting=false/{n=NR} {l[NR]=$0} END{ if (n) for (i=n;i<=NR;i++) print l[i] }' "$OUT/hp-f-log.txt" > "$OUT/hp-f-after-unlock.txt"
+info "HP14: lines after the unlock's home window: $(cut -c25-125 "$OUT/hp-f-after-unlock.txt" | tr '\n' '|' | cut -c1-420); 'unlock window ignored' count: $(grep -c 'unlock window ignored' "$OUT/hp-f-log.txt")"
+check "HP14: the unlock started no 'HOMEPATCH away: another window (com.android.systemui' guard" bash -c "! grep -q 'away: another window (com.android.systemui' $OUT/hp-f-after-unlock.txt"
 # ---------------- phase E: the fallbacks
 hpkey home_patch false
 setmode custom; rebind; home; sleep 4
