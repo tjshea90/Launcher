@@ -1938,3 +1938,7 @@
 ## 2026-11-09T22:28:34Z
 > Alive: the `legacy` runs and the audit are still going, and the 22:34 UTC timer is set.
 <!-- sha:e30715bbabfb -->
+
+## 2026-11-09T22:37:16Z
+> Run #474 (`base,legacy` in one run) is going and should finish around 22:47 UTC. The audit is still running too. If #474 is green, I ship v0.9.0.
+<!-- sha:47578a4cd032 -->
