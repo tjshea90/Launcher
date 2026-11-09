@@ -177,7 +177,7 @@ Debounce / thresholds (lock flavour): `TOUCH_AWAY_MS = 900` (TAS 390), `PAD_CALM
 
 6.5 When the starting touch is not delivered as ACTION_OUTSIDE:
 - NOT FOUND in code and notes: any case list for multi-touch, a touch that starts on another overlay, a fast flick, the first touch after the screen came on. The only evidence is the emulator (BE1 check, ES 2349) and the audit note above.
-- Facts around it: only the lock flavour carries `FLAG_WATCH_OUTSIDE_TOUCH` (TAS 1290, 3846). Other windows of this app on the lock screen: the lock-number overlay is `FLAG_NOT_TOUCHABLE` (TAS 2391-2392); the Solitaire hotspot exists only when `!keyguardLocked()` (TAS 2637). Whether they change delivery to the patch window: NOT FOUND.
+- Facts around it: both real-pixel flavours carry `FLAG_WATCH_OUTSIDE_TOUCH` (TAS 1290, 1007, 3846); the window covers only the slot rectangle (`patchRect`, TAS 1022-1045), so the flag is what makes a touch elsewhere visible to it. Other windows of this app on the lock screen: the lock-number overlay is `FLAG_NOT_TOUCHABLE` (TAS 2391-2392); the Solitaire hotspot exists only when `!keyguardLocked()` (TAS 2637). Whether they change delivery to the patch window: NOT FOUND.
 - Code-side early returns of `onOutsideTouch`: patch not resting (including a lock window created with `lastBouncer` true or `lockPatchAlways()` false), menu open, `pinHide`.
 - The listener returns false for ACTION_OUTSIDE and, for other actions, `if (!patchTouchable) return false;` (TAS 1297-1298).
 - Device: the tablet's real pull timing (finger DOWN to first MOVE to the bouncer scrim) is NOT FOUND.
