@@ -57,7 +57,7 @@ public class GuideTest {
         StringBuilder all = new StringBuilder();
         for (String l : lines()) all.append(l).append('\n');
         String s = all.toString();
-        String[] must = { "WRITE_SECURE_SETTINGS", "DUMP", "CHANGE_CONFIGURATION", "READ_EXTERNAL_STORAGE", "GET_USAGE_STATS", "WRITE_SETTINGS", "RUN_IN_BACKGROUND", "RUN_ANY_IN_BACKGROUND",
+        String[] must = { "WRITE_SECURE_SETTINGS", "DUMP", "CHANGE_CONFIGURATION", "READ_EXTERNAL_STORAGE", "PACKAGE_USAGE_STATS", "GET_USAGE_STATS", "WRITE_SETTINGS", "RUN_IN_BACKGROUND", "RUN_ANY_IN_BACKGROUND",
                 "deviceidle whitelist +com.tj.launcher", "enabled_accessibility_services", "accessibility_enabled", "com.tj.launcher.ShellServer", "cmd package compile -m speed -f com.tj.launcher",
                 "pm disable-user --user 0 com.android.browser", "pm get-max-users", "pm list users", "ro.crypto.type", "power_menu_actions", "device_demo_mode", "pkill -f com.tj.launcher.ShellServer", "pm enable com.android.browser" };
         for (String m : must) assertTrue("missing: " + m, s.contains(m));
