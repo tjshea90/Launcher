@@ -1296,3 +1296,10 @@ Continue work where you left off. Also, is there any way to make Claude automati
 ```
 Continue work where you left off. Also, is there any way to make Claude automatically resume work when it is interrupted and  usage resets later on ? If so, do it 
 ```
+
+## 2026-11-09T17:45:35Z
+```
+For the tts sliders, allow them to move and slide, but they don't actually do anything or change any settings 
+Under tts preferred engine, it should say Pico TTS, and have a settings gear to the very right of this that doesn't do anything. Under language it should say "Use system language". Both the play and reset links should not be grayed out, but they don't do anything. 
+The tts sliders are the same color as the sliders in the sound settings 
+```
