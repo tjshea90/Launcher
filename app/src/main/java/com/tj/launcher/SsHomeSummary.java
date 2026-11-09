@@ -83,8 +83,17 @@ final class SsHomeSummary implements SsPages.Live {
         t.start();
     }
 
+    /** "95% used - 1.57 GB free": two StorageStatsManager calls, so on a worker thread; blank (the row keeps no summary line) when the volume could not be read. */
     private void loadStorage() {
         if (storageRow == null) return;
-        // M3: wired to SsPagesStorage.homeSummary once the Storage page exists
+        final Context app = a.getApplicationContext();
+        Thread t = new Thread(new Runnable() {
+            @Override public void run() {
+                final String text = SsPagesStorage.homeSummary(app);
+                main.post(new Runnable() { @Override public void run() { if (started) SsRows.setSummary(storageRow, text); } });
+            }
+        }, "TjSsHomeStor");
+        t.setDaemon(true);
+        t.start();
     }
 }
