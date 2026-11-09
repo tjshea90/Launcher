@@ -1978,3 +1978,9 @@
 ## 2026-11-09T23:51:41Z
 > Helper started; it reads the six confirmation runs now.
 <!-- sha:c645000061b9 -->
+
+## 2026-11-09T23:58:24Z
+> Run #497's single failure was a native crash 0.85 s later, and #492 died with the emulator. The breaker fix held in all 5 completed `base` runs.
+>
+> Two last `base,legacy` runs (#498 on `main`, #499 on the branch) started at 23:56 UTC. I read them at about 00:10 UTC. If they are clean or every failure follows a native crash, I start the v0.9.0 release build.
+<!-- sha:8e53485d727c -->
