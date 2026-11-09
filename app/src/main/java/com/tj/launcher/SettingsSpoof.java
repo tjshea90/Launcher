@@ -24,6 +24,8 @@ public final class SettingsSpoof {
     public static final String KEY = "settings_spoof";
     /** Name of the manifest activity-alias (no class behind it: the target is {@link SsPageActivity}). */
     public static final String ALIAS = "com.tj.launcher.SettingsAlias";
+    /** The alias's label (res/values/ss_strings.xml: ss_label): the same word as the real Settings', so a Recents card of either is titled "Settings". */
+    public static final String LABEL = "Settings";
     /** The stock Settings app: hidden from the custom drawer while the look-alike replaces it. */
     public static final String REAL_SETTINGS_PACKAGE = "com.android.settings";
     /** Text preference (allow-listed in the tablet report): what the last alias sync did. */
