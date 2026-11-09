@@ -110,7 +110,7 @@ final class SsRows {
         t.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         t.setLetterSpacing(0.072727f);
         t.setTextColor(themeColor(c, android.R.attr.colorAccent, 0xFF008577));
-        t.setPaddingRelative(dp(c, 72), dp(c, 16), dp(c, 16), dp(c, 16));
+        t.setPaddingRelative(dp(c, 72), dp(c, 32) - dp(c, 8), dp(c, 16), dp(c, 8));
         return t;
     }
 
