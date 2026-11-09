@@ -119,8 +119,8 @@ public class GuideTest {
     @Test public void theByHandFallbackAndTheUndoLinesAreStillThere() throws Exception {
         GuideParser.Guide g = guide();
         GuideParser.Card perms = part(g, "FALLBACK").cards.get(0);
-        assertEquals("one card, four grants", 4, perms.cmds.size());
-        assertEquals("each grant keeps its own undo line", 4, perms.undos.size());
+        assertEquals("one card, five grants (the fifth, PACKAGE_USAGE_STATS, is for the Settings look-alike's Battery numbers)", 5, perms.cmds.size());
+        assertEquals("each grant keeps its own undo line", 5, perms.undos.size());
         assertTrue(part(g, "UNDO").cards.size() >= 5);
         assertTrue(part(g, "EXTRAS").cards.size() >= 15);
     }
