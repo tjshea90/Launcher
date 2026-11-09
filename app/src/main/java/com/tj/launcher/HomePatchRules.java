@@ -214,4 +214,27 @@ public final class HomePatchRules {
         if (now < quietUntilMs) return BURST_QUIET;
         return !menuOpen && startReady ? BURST_START : BURST_NORMAL;
     }
+
+    // ================================================================ BN2: the keyguard's own window is not "a shade over the home"
+    // Tj, 2026-11-09 03:02 UTC, about v0.8.12, with a tablet report: the FIRST side-key press after the custom home opened showed the stock Screenshot entry, later ones did not. The report's log: the composite was
+    // fresh 1.08 s after the unlock and the press came 0.35 s later, but the patch was "not resting": every plain unlock fires SystemUI's status-bar window event (android.widget.FrameLayout, the keyguard going away)
+    // and homeForeignWindow kept the patch away for HOME_FOREIGN_AWAY_MS (2.5 s) after it, as if the shade had been pulled. "foreign windows seen 8 ... the last 35 s ago" = the unlock itself.
+
+    /** A SystemUI window event this soon after the keyguard was last seen up is (most likely) the keyguard going away, not the shade. */
+    public static final long UNLOCK_GRACE_MS = 3000;
+    /** Such an event is judged again this long later, by the Launcher's window focus (the shade takes the focus from the Launcher, the keyguard's exit does not). */
+    public static final long FOREIGN_RECHECK_MS = 400;
+    /** {@link #FOREIGN_NOW}: start the away guard now (a shade, a volume panel, a dialog); {@link #FOREIGN_UNLOCK_CHECK}: hide the patch at once but start no guard, and decide at {@link #FOREIGN_RECHECK_MS}. */
+    public static final int FOREIGN_NOW = 0, FOREIGN_UNLOCK_CHECK = 1;
+
+    /**
+     * @param systemUiWindow the event's package is SystemUI (the shade, the keyguard and the volume panel all announce themselves with it)
+     * @param sinceKeyguardUpMs ms since the keyguard was last seen up ({@code Long.MAX_VALUE} = never)
+     */
+    public static int foreignTreatment(boolean systemUiWindow, long sinceKeyguardUpMs) {
+        return systemUiWindow && sinceKeyguardUpMs >= 0 && sinceKeyguardUpMs < UNLOCK_GRACE_MS ? FOREIGN_UNLOCK_CHECK : FOREIGN_NOW;
+    }
+
+    /** The deferred judgement of {@link #FOREIGN_UNLOCK_CHECK}: the Launcher kept (or regained) the window focus = it was the keyguard going away, nothing to guard; else it was a real window over the home. */
+    public static boolean unlockEventWasForeign(boolean launcherHasFocus) { return !launcherHasFocus; }
 }
