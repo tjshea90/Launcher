@@ -11,7 +11,6 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.util.PathParser;
 
 /**
  * BN1: the big battery of the Battery page, drawn the way AOSP 10 does (SettingsLib ThemedBatteryDrawable, the single-tone branch the Settings page uses; research/aosp10-settings/icons/BATTERY_METER.md): the
@@ -26,10 +25,10 @@ final class SsBatteryIcon extends Drawable {
     private static final int CRITICAL_LEVEL = 5;          // config_criticalBatteryWarningLevel
     private static final int LOW_LEVEL = 15;              // ThemedBatteryDrawable.CRITICAL_LEVEL: the level rectangle is painted twice at or under it
 
-    private final Path perimeter = PathParser.createPathFromPathData(PERIMETER);
-    private final Path fillMask = PathParser.createPathFromPathData(FILL_MASK);
-    private final Path bolt = PathParser.createPathFromPathData(BOLT);
-    private final Path plus = PathParser.createPathFromPathData(PLUS);
+    private final Path perimeter = SsPathData.parse(PERIMETER);
+    private final Path fillMask = SsPathData.parse(FILL_MASK);
+    private final Path bolt = SsPathData.parse(BOLT);
+    private final Path plus = SsPathData.parse(PLUS);
     private final Path sPerimeter = new Path(), sFillMask = new Path(), sBolt = new Path(), sPlus = new Path(), unified = new Path(), levelPath = new Path();
     private final RectF fillRect = new RectF(), levelRect = new RectF();
     private final Matrix scale = new Matrix();
