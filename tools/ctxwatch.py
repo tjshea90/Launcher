@@ -227,6 +227,12 @@ def main():
         path = argv[argv.index("--transcript") + 1]
     path = path or find_transcript(hook)
     t = threshold()
+    if "--top" in argv:
+        if path and os.path.isfile(path):
+            top_report(path)
+        else:
+            print("no transcript found")
+        return
     m = measure(path) if path and os.path.isfile(path) else None
     if "--report" in argv:
         if not m:
