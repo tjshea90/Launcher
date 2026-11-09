@@ -177,6 +177,7 @@ final class SsPagesStorage {
      * and a SecurityException ends the scan at once (every package call would be refused the same way). A package that vanished during the scan is skipped (it really is gone); any other failure drops the whole
      * per-app result instead of showing a sum with a hole in it. Runs on a worker thread and obeys {@code deadline} (elapsedRealtime) and {@code cancel}.
      */
+    @SuppressWarnings("deprecation")   // FLAG_IS_GAME: deprecated since API 26 but the stock code still reads it for apps that set no category
     private static Scan scan(Context app, long deadline, Cancel cancel) {
         final Scan s = new Scan();
         final StorageStatsManager ssm;
