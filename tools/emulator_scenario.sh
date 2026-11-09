@@ -3928,18 +3928,37 @@ check "SS21c: choosing Medium wrote Settings.Secure long_press_timeout = 1000 (w
 ssdump "$OUT/ss-access2.xml"
 check "SS21d: the Touch & hold delay row now reads Medium and the dialog is gone" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Medium' --exact)\" ] && [ -z \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Long' --exact)\" ]"
 adb shell settings put secure long_press_timeout "$SSLP" >/dev/null 2>&1
-# Mono audio: the row toggles the real setting
-sstap "Mono audio"; sleep 2
+# Mono audio and Audio balance are PRIVATE system settings: an app's own write throws (SettingsProvider), only the shell can store them. So: no helper = nothing stored and the control goes back to the stored state
+# (never a lie, a toast says so); helper running = the fixed SETSYS verb stores it. (Run #455: the first version flipped the control and stored nothing.)
+ssrestore(){ if [ -z "$2" ] || [ "$2" = null ]; then adb shell settings delete system "$1" >/dev/null 2>&1; else adb shell settings put system "$1" "$2" >/dev/null 2>&1; fi; }
+ssswitch(){ tr '>' '\n' < "$1" | grep 'class="android.widget.Switch"' | grep -o 'checked="[a-z]*"' | head -1 | cut -d'"' -f2; }
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+sstap "Mono audio"; sleep 1; ssdump "$OUT/ss-mono-toast.xml"; sleep 2
 SSMONO2=$(adb shell settings get system master_mono | tr -d '\r')
-check "SS22: tapping 'Mono audio' flipped master_mono (was $SSMONO, now $SSMONO2)" test "$SSMONO" != "$SSMONO2"
-adb shell settings put system master_mono "$SSMONO" >/dev/null 2>&1
-# Audio balance: a drag from the middle to the left end stores a negative balance
-ssdump "$OUT/ss-access3.xml"; SSL=$(ssbounds "$OUT/ss-access3.xml" "Left"); set -- $SSL
+ssdump "$OUT/ss-mono1.xml"
+check "SS22: without the helper, tapping 'Mono audio' stores nothing (master_mono was $SSMONO, now $SSMONO2)" test "$SSMONO" = "$SSMONO2"
+check "SS22b: and the Mono audio switch is back at its stored state (switch checked=$(ssswitch $OUT/ss-mono1.xml), stored $SSMONO2)" bash -c "s=\$(tr '>' '\n' < $OUT/ss-mono1.xml | grep 'class=\"android.widget.Switch\"' | grep -o 'checked=\"[a-z]*\"' | head -1 | cut -d'\"' -f2); if [ '$SSMONO2' = 1 ]; then [ \"\$s\" = true ]; else [ \"\$s\" = false ]; fi"
+info "SS22c: the toast after the refused write (best effort, it lasts 2 s): $(tr '>' '\n' < $OUT/ss-mono-toast.xml | grep -oE "text=\"[^\"]*can't be changed[^\"]*\"" | head -1)"
+SSL=$(ssbounds "$OUT/ss-mono1.xml" "Left"); set -- $SSL
 if [ "$#" -ge 4 ]; then SSBY=$(( $2 - 30 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 2; fi
 SSBAL2=$(adb shell settings get system master_balance | tr -d '\r')
-check "SS23: dragging the Audio balance bar to the left stored a negative balance (was $SSBAL, now $SSBAL2)" bash -c "awk -v b='$SSBAL2' 'BEGIN{exit !(b+0 < -0.3)}'"
+check "SS23: without the helper, dragging the Audio balance bar stores nothing (master_balance was $SSBAL, now $SSBAL2)" test "$SSBAL" = "$SSBAL2"
+# with the helper (the same start line as every other section)
+adb shell 'CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/data/local/tmp/tjshell.log 2>&1 &' >/dev/null 2>&1; sleep 5
+sstap "Mono audio"; sleep 3
+SSMONO3=$(adb shell settings get system master_mono | tr -d '\r')
+check "SS22d: with the helper running, tapping 'Mono audio' stores master_mono = 1 (was $SSMONO, now $SSMONO3)" test "$SSMONO3" = 1
+ssdump "$OUT/ss-mono2.xml"
+check "SS22e: and the switch shows it is on (checked=$(ssswitch $OUT/ss-mono2.xml))" test "$(ssswitch $OUT/ss-mono2.xml)" = true
+ssrestore master_mono "$SSMONO"
+SSL=$(ssbounds "$OUT/ss-mono2.xml" "Left"); set -- $SSL
+if [ "$#" -ge 4 ]; then SSBY=$(( $2 - 30 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 3; fi
+SSBAL3=$(adb shell settings get system master_balance | tr -d '\r')
+check "SS23b: with the helper running, dragging the Audio balance bar to the left stores a negative balance (was $SSBAL, now $SSBAL3)" bash -c "awk -v b='$SSBAL3' 'BEGIN{exit !(b+0 < -0.3)}'"
 shot ss-16-balance
-adb shell settings put system master_balance "$SSBAL" >/dev/null 2>&1
+ssrestore master_balance "$SSBAL"
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1
+ssdump "$OUT/ss-access3.xml"
 # Font size / Display size / Magnification rows
 info "SS24: font / display size summaries = $(tr '>' '\n' < $OUT/ss-access3.xml | grep -oE 'text="(Default|Small|Large|Larger|Largest|Custom[^"]*|Off)"' | head -6 | tr '\n' ' ')"
 sstap "Magnification"; sleep 2; ssdump "$OUT/ss-mag.xml"; shot ss-17-magnification
