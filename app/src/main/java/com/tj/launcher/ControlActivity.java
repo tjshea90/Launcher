@@ -270,7 +270,7 @@ public class ControlActivity extends Activity {
         if (!pickerStatus.isEmpty()) note("Wallpaper picker, last: " + pickerStatus);
 
         group("settings", "Settings look-alike", false);
-        toggle("Settings look-alike in the custom launcher", "On = the custom drawer has a \"Settings\" icon that opens a look-alike with only Battery, Display, Sound, Storage, Accessibility, System and About tablet, and the real Settings is kept out of the custom drawer. Off = the real Settings is the only one. The Quickstep drawer always keeps the real Settings.", SettingsSpoof.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, SettingsSpoof.KEY, v); SettingsSpoof.syncSoon(ControlActivity.this, "switch " + (v ? "on" : "off")); } });
+        toggle("Settings look-alike in the custom launcher", "On = the custom drawer has a \"Settings\" icon that opens a look-alike with only Battery, Display, Sound, Storage, Accessibility, System and About tablet, and the real Settings is kept out of the custom drawer. Off = the real Settings is the only one. The Quickstep drawer always keeps the real Settings.", SettingsSpoof.switchOn(this), new Chg() { public void on(boolean v) { if (v) SsFuse.rearm(ControlActivity.this); Features.set(ControlActivity.this, SettingsSpoof.KEY, v); SettingsSpoof.syncSoon(ControlActivity.this, "switch " + (v ? "on" : "off")); } });
         String ssStatus = Features.getString(this, SettingsSpoof.STATUS_KEY, "");
         if (!ssStatus.isEmpty()) note("Settings entry, last change: " + ssStatus);
 
