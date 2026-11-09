@@ -1,6 +1,6 @@
 # AOSP 10 Settings icons: index (android-10.0.0_r47)
 
-Read-only lookup for Launcher task BN1 (re-create the stock Settings look). Every `.xml` in this folder is a byte-for-byte copy
+Read-only lookup for Launcher task BN1 (re-create the stock Settings look). Every `.xml` in this folder (65 files) is a byte-for-byte copy
 (`cp -p`, checked with `cmp`) of the file in the "Source path" column; nothing was retyped. File names are the originals; each name
 exists exactly once across both clones, so no module prefix was needed. Anything that is not in the clones is marked **NOT FOUND**, never guessed.
 PNG, bitmap-wrapper and state-list drawables are marked as such; PNGs are given by path only (not copied).
