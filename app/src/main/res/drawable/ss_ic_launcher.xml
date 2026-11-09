@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BN1: the icon of the Settings look-alike = the stock Android 10 Settings icon (AOSP res/drawable/ic_launcher_settings.xml, Apache-2.0): a teal background and the light-grey gear
+     (mipmap ss_ic_launcher_foreground = AOSP mipmap/ic_launcher_settings.png, copied unchanged). The custom drawer draws it through the same icon pipeline as any other app. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ss_icon_background"/>
+    <foreground android:drawable="@mipmap/ss_ic_launcher_foreground"/>
+</adaptive-icon>
