@@ -53,7 +53,9 @@ final class SsPagesTts {
         list.addView(language);
         list.addView(SsRows.divider(a));
 
-        final SeekBar rate = SsRows.discreteSeekBar(a), pitch = SsRows.discreteSeekBar(a);
+        // BN1m: a PLAIN seek bar. Widget.Material.SeekBar.Discrete draws one tick mark per step, and with 590 / 375 steps the marks run together into a thick dark line (CI darkest grey 0.204);
+        // Tj's screenshot has a thin light-grey track (0.843). Look beats the style name; the max stays so the stored value still maps.
+        final SeekBar rate = new SeekBar(a), pitch = new SeekBar(a);
         rate.setMax(SsAccessRules.RATE_PROGRESS_MAX);
         pitch.setMax(SsAccessRules.PITCH_PROGRESS_MAX);
         rate.setProgress(SsAccessRules.rateProgress(stored(a, RATE)));
