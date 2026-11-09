@@ -100,4 +100,36 @@ public class SsBatteryStatsTest {
         for (String l : DISCHARGING.split("\n")) { p.line(l); if (p.done()) break; }
         assertTrue(p.done());
     }
+
+    // ---- the shared reading (review A #3 / B #4): a page started soon after a good read takes it instead of spawning another dumpsys
+    @Test public void aGoodReadIsSharedWithinTheLimitOnly() {
+        SsBatteryStats.forget();
+        SsBatteryStats.Data d = SsBatteryStats.parse(DISCHARGING, UTC);
+        assertTrue(d.any());
+        assertNull(SsBatteryStats.recent(30_000, 1_000));            // nothing read yet
+        SsBatteryStats.remember(d, 10_000);
+        assertSame(d, SsBatteryStats.recent(30_000, 10_000));        // the same instant
+        assertSame(d, SsBatteryStats.recent(30_000, 39_999));        // 29.999 s later: still shared
+        assertNull(SsBatteryStats.recent(30_000, 40_000));           // exactly the limit: read again
+        assertSame(d, SsBatteryStats.recent(60_000, 40_000));        // the home page's longer limit still takes it
+        SsBatteryStats.forget();
+    }
+
+    @Test public void aFailedReadIsNeverShared() {
+        SsBatteryStats.forget();
+        SsBatteryStats.Data good = SsBatteryStats.parse(DISCHARGING, UTC);
+        SsBatteryStats.remember(good, 5_000);
+        SsBatteryStats.remember(SsBatteryStats.parse("nothing useful\n", UTC), 6_000);   // empty: must not replace the good one nor extend its life
+        SsBatteryStats.remember(null, 7_000);
+        assertSame(good, SsBatteryStats.recent(30_000, 6_000));
+        assertNull(SsBatteryStats.recent(30_000, 35_000));           // the good one is still dated 5 s: expired at 35 s
+        SsBatteryStats.forget();
+    }
+
+    @Test public void aTimeThatWentBackwardsIsNotShared() {
+        SsBatteryStats.forget();
+        SsBatteryStats.remember(SsBatteryStats.parse(DISCHARGING, UTC), 100_000);
+        assertNull(SsBatteryStats.recent(30_000, 50_000));           // never negative ages
+        SsBatteryStats.forget();
+    }
 }
