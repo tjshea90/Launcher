@@ -315,7 +315,7 @@ Rows by `order` (key; title res; notes). Hidden on the tablet per SPOOF: owner h
   1. `os_firmware_version` "Android version" = `Build.VERSION.RELEASE`; three taps within 500 ms (array of 3 `uptimeMillis` stamps) start `com.android.internal.app.PlatLogoActivity` in package `android`
      (blocked by `DISALLOW_FUN`).
   2. `security_key` "Android security patch level" (`security_patch`) = `DeviceInfoUtils.getSecurityPatch()`: `Build.VERSION.SECURITY_PATCH` parsed as `yyyy-MM-dd`, shown with the best pattern for "dMMMMyyyy"
-     (e.g. "5 November 2019"); raw string if unparsable; row hidden if empty. Click = `ACTION_VIEW https://source.android.com/security/bulletin/` if a handler exists.
+     (en-US: "November 5, 2019"); raw string if unparsable; row hidden if empty. Click = `ACTION_VIEW https://source.android.com/security/bulletin/` if a handler exists.
   3. `module_version` "Google Play system update" (`module_version`) = `versionName` of the package in `config_defaultModuleMetadataProvider`; hidden if empty.
   4. `base_band` "Baseband version" = `SystemProperties gsm.version.baseband` (default `device_info_default`); hidden on Wi-Fi-only devices (`Utils.isWifiOnly`).
   5. `kernel_version` "Kernel version" = `Os.uname()` formatted as `release` + newline + `#N date`: regex `(#\d+) (?:.*?)?((Sun|Mon|Tue|Wed|Thu|Fri|Sat).+)`; no match -> `status_unavailable`.
