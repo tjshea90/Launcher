@@ -1441,3 +1441,27 @@
 ## 2026-11-09T01:48:31Z
 > Checkpoint 751 is saved with everything a cold resume needs: the build run id, the verbatim release note, and the order of the next steps. The signed v0.8.12 build is running (run #39, id 42547336189). I'll check it at about 01:57 UTC and then confirm the Release, record it, and send you the link.
 <!-- sha:dea56d334384 -->
+
+## 2026-11-09T01:59:39Z
+> **v0.8.12 is released.** After an unlock, the cover that hides Quickstep's clean-up is now a saved picture of your current home screen instead of black. Touches are swallowed exactly as before.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.8.12
+>
+> **How sure I am:** the old session's gate looked red, but nothing pointed at the app code.
+> - **Group A:** the CI emulator crashed partway through, so seven sections never finished and the job hung for 39 minutes.
+> - **Group B:** an `hp` check failed once.
+> - **Group C:** a `cs` check failed right after a known native-crash blip.
+>
+> I re-ran everything that failed or never ran, on identical code (`e1,b6,n,x,ac,se,uf`, `hp,hf`, `o,hp`, `cs`, `uf`). All of it is green. The local lint and unit-test gate, the signed build and the signature check on the APK also passed. One `uf` failure in the big re-run was the same native-crash flake. `uf` passes on its own.
+>
+> **Your part (tablet check):** install it over the current one and unlock from the lock screen, once with a plain PIN and once with the Quickstep handshake. You should see your home screen where the black cover used to be. The checklist is `research/TABLET_CHECKLIST_v0.8.12.md`. Send the tablet report or tell me what you see.
+>
+> **"Prompt is too long":** it's fixed here and proven live. This session compacted itself at 392,147 tokens and carried on. The one thing left is on your side. Turn off the `session-handoff` plugin in claude.ai, or novig and Mirage can still hit it.
+>
+> I also found a CI step that hangs after the emulator dies. It cost 39 Actions minutes. It's logged as BM1h and not fixed.
+>
+> **Still waiting on you:**
+> - The v0.8.12 tablet check.
+> - The older tablet checks for v0.8.9 and v0.8.11.
+> - The open questions in `TASKS.md`.
+<!-- sha:e71127202f01 -->
