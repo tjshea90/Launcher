@@ -107,7 +107,7 @@ Page layout facts for the header and toolbar are in `BATTERY_METER.md` (section 
 
 ## 3. Sound page (volume rows)
 
-Rows are in `settings10/res/xml/sound_settings.xml`. Row layout `settings10/res/layout/preference_volume_slider.xml`: icon frame minWidth 44 dp, icon ImageView 24 x 24 dp, SeekBar height 48 dp (no tint attribute in the layout, so each icon keeps its own tint).
+Rows are in `settings10/res/xml/sound_settings.xml`. Row layout `settings10/res/layout/preference_volume_slider.xml`: icon frame minWidth 44 dp, paddingEnd 12 dp, padding 4 dp top and bottom (lines 29-37), icon ImageView 24 x 24 dp (lines 39-41), SeekBar height 48 dp (line 85); no tint attribute in the layout, so each icon keeps its own tint.
 Icon choice per row: `VolumeSeekBarPreference.updateIconView` order is: `showIcon` override, then the mute icon if muted (and not zen-muted), then the XML icon.
 On a tablet that is not voice-capable the Ring row is hidden and the Notification row is shown.
 
