@@ -223,7 +223,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (patchView == null || !patchLockMode) return;
             if (patchHomeMode) { patchShow(overlayShown); scheduleHomeBuild(); return; }   // BI1: nothing of the lock screen's calibration applies
             if (patchShotBmp == null && PatchShot.has(TjAccessibilityService.this, rotation(), shotSig())) loadStoredShot();
-            patchShowCause = "restRecheck"; patchShow(overlayShown);
+            showWithCause("restRecheck");
             maybeAutoCalibrate("the patch window settled");   // AW5
             restInfo("restRecheck rest=" + patchResting + " menuOpen=" + overlayShown);   // the diagnostic is written here (twice per new window), not on every menu open / close
         } catch (Throwable t) { Log.e(TAG, "rest recheck failed", t); }
@@ -403,7 +403,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try {
             if (android.os.SystemClock.uptimeMillis() < touchAwayUntilMs) return;
             if (!patchHomeMode) updateLockNumber();   // BN3: a FRESH look at the PIN pad first (as padBack does): a pad that is up, or being pulled up, calls pinPadCameUp and keeps the patch away
-            patchShowCause = "touchBack"; patchShow(overlayShown);
+            showWithCause("touchBack");
         } catch (Throwable ignored) { }
     } };
     private final Runnable padBack = new Runnable() { @Override public void run() {
@@ -412,7 +412,7 @@ public class TjAccessibilityService extends AccessibilityService {
             long wait = lastPadSignMs + PAD_CALM_MS - now;
             if (wait > 0) { handler.postDelayed(this, wait); return; }                  // a newer sign of the pad: wait for calm
             updateLockNumber();                                                          // a FRESH look at the pad (lastBouncer is a scan result and can be stale), then decide
-            patchShowCause = "padBack"; patchShow(overlayShown);
+            showWithCause("padBack");
         } catch (Throwable ignored) { }
     } };
 
@@ -420,9 +420,15 @@ public class TjAccessibilityService extends AccessibilityService {
      * BN3: the lock patch went from invisible to VISIBLE (a return after a finger, a PIN pad, a menu). No path wrote this down before, so a flash Tj saw could not be matched to the path that caused it. Logcat always; the
      * persistent lock log (it is in the tablet report) only when a finger or a PIN-pad sign was less than 4 s ago, at most one line per 700 ms.
      */
+    /** patchShow with the path that asked for it, for {@link #noteReturn}; the cause never outlives the call (a stale one would name the wrong path for a later return). */
+    private void showWithCause(String cause) {
+        patchShowCause = cause;
+        try { patchShow(overlayShown); } finally { patchShowCause = ""; }
+    }
+
     private void noteReturn() {
         long now = android.os.SystemClock.uptimeMillis();
-        String cause = patchShowCause.isEmpty() ? "other" : patchShowCause; patchShowCause = "";
+        String cause = patchShowCause.isEmpty() ? "other" : patchShowCause;
         long f = lastTouchDownMs > 0 ? now - lastTouchDownMs : -1, p = lastPadSignMs > 0 ? now - lastPadSignMs : -1;
         String what = "patch visible again (" + cause + "), " + (f >= 0 && f < 60_000 ? f + " ms after the finger" : "no finger lately") + ", " + (p >= 0 && p < 60_000 ? p + " ms after the last PIN pad sign" : "no PIN pad sign lately") + ", pad scan " + (lastBouncer ? "says UP" : "says gone");
         Log.i(TAG, "PATCH " + what);
@@ -3913,7 +3919,7 @@ public class TjAccessibilityService extends AccessibilityService {
         patchResting = rest;
         final boolean wasHidden = patchView.getAlpha() < 0.5f;   // BN3: a return (invisible -> visible) is written down (noteReturn)
         patchView.setAlpha(vis ? 1f : 0f);
-        if (rest && wasHidden) noteReturn(); else if (!patchShowCause.isEmpty() && !on) patchShowCause = "";
+        if (rest && wasHidden) noteReturn();
         if (!on) setPatchTouchable(false);   // review of v0.8.0: whenever our menu is NOT open the patch can never swallow a touch, whichever path closed the menu (no disk write and no extra binder call in this time-critical path any more)
         if (changed || opening) { patchView.invalidate(); if (changed) Log.i(TAG, "PATCH rest " + (rest ? "on" : "off") + (lastBouncer ? " (PIN pad up)" : "") + " top=" + patchRestTop); }
     }
