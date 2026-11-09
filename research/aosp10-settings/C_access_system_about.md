@@ -239,7 +239,7 @@ class `accessibility/AccessibilitySettings.java`. XML order (a `PreferenceCatego
   (AppCompat: NF), `textAppearanceListItem`.
 - List row (`locale_drag_cell.xml`): minHeight `listPreferredItemHeight`, background `colorBackground`; `checkbox` paddingStart 16 dp (style `LanguageCheckboxAndLabel`, remove mode only);
   `label` paddingStart 48 dp; `miniLabel` (position number 1, 2, 3 in `colorAccent`, minWidth 24 sp, centred); `l10nWarn` (`locale_not_translated`, second line, paddingStart 48 dp, marginTop -28 dp,
-  `textAppearanceListItemSecondary`, `textColorSecondary`; shown only for languages without a translation); `dragHandle` (`drag_handle`) at the end with paddingStart/End 16 dp; 1 dp bottom divider `?android:attr/listDivider`.
+  `textAppearanceListItemSecondary`, `textColorSecondary`; its visibility rule was NOT READ); `dragHandle` (`drag_handle`) at the end with paddingStart/End 16 dp; 1 dp bottom divider `?android:attr/listDivider`.
   Drag-and-drop reorders; the first row is the system language.
 - Add flow: `LocalePickerWithRegionActivity` (internal `LocalePickerWithRegion` fragment, with a search icon in its action bar): rows `fwbase/core/res/res/layout/language_picker_item.xml` (TextView, minHeight
   `listPreferredItemHeight`, paddingStart/End 16 dp, paddingTop/Bottom 8 dp, `textAppearanceListItem`) and section headers `language_picker_section_header.xml` (36 dp high, `colorAccent`, bold, style
