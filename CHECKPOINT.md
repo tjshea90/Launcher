@@ -1,13 +1,13 @@
-# CHECKPOINT 779 — read me first, then TASKS.md
+# CHECKPOINT 780 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T04:20:36Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `07c0194` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T04:21:53Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `7b7d9d4` (this checkpoint is the commit after it)
 
 ## Just done
-446 fp,last FAILED = TEST order problem (picture: lock screen + PIN pad up, stock menu over it): fp left the device locked. Scenario fixed: kg_state+b6unlock global, fp unlocks with the PIN before clearing it, last unlocks first + prints keyguard state. No app change. 444 pt, 447 e1,n,ac, 448 hp still running
+TASKS: gate story v0.8.13 written (441/442/443 triage, fixes: gate.sh solo pt+rg, scenario fp/last unlock). Waiting 444 pt, 447 e1,n,ac, 448 hp, 449 fp,last (timer 04:27:30)
 
 ## Do this next
-dispatch fp,last again on the branch (shots=true), read 444/447/448/that run (actions_get get_workflow_run, then failed_only tail 45); all green -> versionCode 38 / 0.8.13, ship.sh, android.yml full_build, get_release_by_tag v0.8.13, record-release, link to Tj
+at 04:27:30 read 444, 447, 448, 449 (actions_get get_workflow_run; failed_only tail 45 for any failure); all green -> versionCode 38 / 0.8.13 in app/build.gradle.kts, ship.sh, android.yml full_build=true on main, +3 min get_release_by_tag v0.8.13, record-release, link to Tj
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch fp,last again on the branch (shots=true), read 444/447/448/that run (ac
 
 ## Last ten checkpoints
 ```
+  7adb7fa ckpt 779: 446 fp,last FAILED = TEST order problem (picture: lock screen + PIN pad up, st
   437946a ckpt 778: gate triage: 445 last SOLO = SUCCESS (443's last FAIL was chain-dependent); 44
   ae3a6e2 ckpt 777: tools/gate.sh: pt and rg now SOLO runs (+ bins grow when a run would pass 40 m
   19360e7 ckpt 776: gate 6702e72 read: 441=4 FAIL all in pt (BC2 closetap + 3 PB, patch -6.6 level
@@ -25,8 +26,7 @@ dispatch fp,last again on the branch (shots=true), read 444/447/448/that run (ac
   fde8b51 ckpt 772: BN1j: Tj 03:42Z 'Continue and finish the spoof settings app also' written into
   e90495a ckpt 771: BN2-4: gate runs 441/442/443 on 6702e72 started 03:40Z (x1,v,pt,rb / base,e1,n
   6702e72 ckpt 770: BN2: provisional unlock guard now POLLS (400 ms until guard end) + focus-regai
-  14b4971 ckpt 769: BN2-4 review done (research/BN2_BN3_BN4_REVIEW): 6 fixed (provisional unlock g
 ```
 
-(8 automatic checkpoint(s) since the last deliberate one — the
+(7 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
