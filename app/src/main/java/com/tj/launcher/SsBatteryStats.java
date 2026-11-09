@@ -89,6 +89,22 @@ final class SsBatteryStats {
         return p.data;
     }
 
+    // ------------------------------------------------------------------ one shared reading (review A #3, review B #4)
+    // The Settings home and the Battery page both need the dump, and every start of either used to spawn its own `dumpsys batterystats` (a lock in system_server, up to 6 s, twice in a row for home -> Battery).
+    // A page that starts within its throttle of the last GOOD read takes that one. Time = SystemClock.elapsedRealtime() (counts sleep, never jumps with the clock), passed in so the rule is a JVM test.
+    private static Data lastGood;
+    private static long lastGoodAt;
+
+    static synchronized void remember(Data d, long nowMs) { if (d != null && d.any()) { lastGood = d; lastGoodAt = nowMs; } }
+
+    /** The last good reading when it is younger than {@code maxAgeMs}, else null (a failed read is never remembered: the next start tries again). */
+    static synchronized Data recent(long maxAgeMs, long nowMs) {
+        long age = nowMs - lastGoodAt;
+        return lastGood != null && age >= 0 && age < maxAgeMs ? lastGood : null;
+    }
+
+    static synchronized void forget() { lastGood = null; lastGoodAt = 0; }
+
     /** Runs {@code dumpsys batterystats --charged}; blocks up to {@code limitMs}. Never throws. */
     static Data read(long limitMs) {
         final AtomicBoolean finished = new AtomicBoolean(false);
