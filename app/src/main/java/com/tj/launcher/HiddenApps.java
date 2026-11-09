@@ -49,6 +49,7 @@ public final class HiddenApps {
 
     public static boolean isPackageShown(Context c, String pkg) {
         try {
+            if (SettingsSpoof.hidesRealSettings(c, pkg)) return false;   // BN1: same rule as isShown (the Recents sweep asks by package)
             synchronized (LOCK) { return AppVisibility.isShown(allowed(c), pkg, null, c.getPackageName()); }
         } catch (Throwable t) { return true; }
     }
