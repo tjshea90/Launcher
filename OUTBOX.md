@@ -1465,3 +1465,7 @@
 > - The older tablet checks for v0.8.9 and v0.8.11.
 > - The open questions in `TASKS.md`.
 <!-- sha:e71127202f01 -->
+
+## 2026-11-09T02:12:13Z
+> This is a new, large request, so per the project rules I'll first confirm the safety net is active and that your message was captured. Then I'll write it into `TASKS.md` in your words before any code. I'm also checking what this container can do (emulator, image tools), because that decides how I can verify "identical".
+<!-- sha:17901decc604 -->
