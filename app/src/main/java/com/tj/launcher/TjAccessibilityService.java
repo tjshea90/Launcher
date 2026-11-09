@@ -2300,6 +2300,8 @@ public class TjAccessibilityService extends AccessibilityService {
         }
     }
 
+    private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.WATCH_MS); }
+
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
     private void hidePencil(String why) {
         if (penView == null || !penShown) return;
