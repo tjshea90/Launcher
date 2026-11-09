@@ -171,6 +171,12 @@ public class SsStorageRulesTest {
         assertEquals(506, SsStorageRules.barFillPx(506, 250));
     }
 
+    @Test public void barLevelIsComputedInFloatLikeProgressBar() {
+        int[] progress = { 0, 1, 10, 39, 53, 59, 78, 100 };
+        int[] level = { 0, 100, 1000, 3899, 5299, 5899, 7799, 10000 };   // (int) ((float) p / 100f * 10000): the four odd ones lose 1 to float rounding
+        for (int i = 0; i < progress.length; i++) assertEquals("progress " + progress[i], level[i], SsStorageRules.barLevel(progress[i]));
+    }
+
     /** The seven rows of Tj's screenshot from bytes to text, bar and pixels: if one of these moves, the page no longer looks like the stock one. */
     @Test public void stockScreenshotGolden() {
         long total = 32_000_000_000L;
