@@ -1691,3 +1691,9 @@
 > - **Settings look-alike app (BN1):** starts as soon as v0.8.13 is built.
 > - **Your tablet checks:** the v0.8.9, v0.8.11 and v0.8.12 checks, plus disabling the `session-handoff` plugin (it can block auto-compaction in your other projects).
 <!-- sha:808fa9684c1e -->
+
+## 2026-11-09T04:15:20Z
+> Nothing was unpushed: `HEAD`, the remote branch and `origin/main` are all at 963beb0, so the hook fired during an autosave push.
+>
+> I cancelled gate run 442 (`base,e1,n,ac,hp`) because it had hung (the known CI hang, BM1h). A cancelled run still prints its results, so I'll read them in a minute to see which sections finished. The three reruns are still going: 444 `pt` alone, 445 `last` alone, and 446 `fp,last` with screenshots. v0.8.13 is not shipped yet.
+<!-- sha:532cb876a7e7 -->
