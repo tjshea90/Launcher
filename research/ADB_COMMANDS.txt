@@ -48,6 +48,8 @@ SECTION 6 - ADVANCE PERMISSIONS FOR LATER FEATURES [v0.3.5+]
 adb shell pm grant com.tj.launcher android.permission.DUMP
 # CHANGE_CONFIGURATION: font size / orientation / locale changes by the launcher (used by later features).
 adb shell pm grant com.tj.launcher android.permission.CHANGE_CONFIGURATION
+# PACKAGE_USAGE_STATS (BN1, 2026-11-09): the look-alike Settings app's Battery page reads "last full charge" and "screen time" with the app's own `dumpsys batterystats --charged`; that needs DUMP (above) AND this grant. Without it the Battery page shows the percentage only.
+adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS
 # Usage access: lets the launcher see which app was used last (read-only list).
 adb shell cmd appops set com.tj.launcher GET_USAGE_STATS allow
 # Modify system settings (brightness, screen timeout ...) for later features.
