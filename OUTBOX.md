@@ -1645,3 +1645,18 @@
 > - Your v0.8.9, v0.8.11 and v0.8.12 tablet checks.
 > - Turning off the `session-handoff` plugin in claude.ai.
 <!-- sha:1d7ae6220d0c -->
+
+## 2026-11-09T03:50:20Z
+> The plugin is **`session-handoff`**.
+>
+> **Why:** it refuses every automatic compaction unless `HANDOFF.md` was edited in the last 10 minutes. That is how four earlier sessions ended in "Prompt is too long" at about 970K tokens.
+>
+> **This project already works around it.** A background keep-alive refreshes that file and compaction runs at about 392K tokens, so a session carries on. That has worked live. The plugin is still installed on your claude.ai account, though, and it can still hit your other projects (`novig`, `Mirage`).
+>
+> **What to do:** turn it off in your claude.ai plugin list. I can't do that from here, and I don't know the exact menu path, so I won't guess at the steps. It isn't urgent for Launcher.
+>
+> **Still open:**
+> - v0.8.13 ships after the gate, around 04:02 UTC.
+> - The BN1 Settings build starts right after that.
+> - Your v0.8.9, v0.8.11 and v0.8.12 tablet checks.
+<!-- sha:0ab34e43d7c3 -->
