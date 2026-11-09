@@ -127,9 +127,15 @@ for t in chosen:
 SOLO = {"pt", "rg"}
 solo_units = [u for u in units if all(t["name"] in SOLO for t in u)]
 units = [u for u in units if u not in solo_units]
-g = [{"w": 0, "s": []} for _ in range(min(max(1, groups - len(solo_units)), len(units)) if units else 0)]
-for unit in sorted(units, key=lambda u: -sum(t["wait"] for t in u)):
-    lo = min(g, key=lambda x: x["w"]); lo["s"].extend(unit); lo["w"] += sum(t["wait"] for t in unit)
+def balance(n):   # longest unit first into the lightest of n bins
+    bins = [{"w": 0, "s": []} for _ in range(n)]
+    for unit in sorted(units, key=lambda u: -sum(t["wait"] for t in u)):
+        lo = min(bins, key=lambda x: x["w"]); lo["s"].extend(unit); lo["w"] += sum(t["wait"] for t in unit)
+    return bins
+nb = min(max(2, groups - len(solo_units)), len(units)) if units else 0
+g = balance(nb)
+while units and nb < len(units) and max(3 + 2.5 * x["w"] / 60.0 for x in g) > 40:   # a run of more than ~40 min would meet the 45 min step limit: more bins
+    nb += 1; g = balance(nb)
 for unit in solo_units:
     g.append({"w": sum(t["wait"] for t in unit), "s": list(unit)})
 g = g or [{"w": 0, "s": []}]
