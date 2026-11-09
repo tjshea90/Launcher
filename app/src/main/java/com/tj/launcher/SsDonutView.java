@@ -65,16 +65,14 @@ final class SsDonutView extends View {
         bigSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 30, dm);
         signSize = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, 20, dm);
 
-        final Locale locale = res.getConfiguration().getLocales().get(0);
-        final int bidiFlags = TextUtils.getLayoutDirectionFromLocale(locale) == View.LAYOUT_DIRECTION_LTR ? Paint.BIDI_LTR : Paint.BIDI_RTL;
+        // Stock: both paints also get setBidiFlags(BIDI_LTR or BIDI_RTL by the locale's layout direction). Paint.setBidiFlags is hidden API (not in the SDK), so it is left out: the page is for an English tablet and the
+        // default flags give the same drawing for a left-to-right locale.
         labelPaint.setColor(accent);
         labelPaint.setTextSize(labelSize);
         labelPaint.setTextAlign(Paint.Align.CENTER);
-        labelPaint.setBidiFlags(bidiFlags);
         bigPaint.setColor(accent);
         bigPaint.setTextSize(bigSize);
         bigPaint.setTypeface(headlineTypeface());
-        bigPaint.setBidiFlags(bidiFlags);
     }
 
     /**
