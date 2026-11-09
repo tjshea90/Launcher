@@ -62,6 +62,7 @@ cmd: pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 cmd: pm grant com.tj.launcher android.permission.DUMP
 cmd: pm grant com.tj.launcher android.permission.CHANGE_CONFIGURATION
 cmd: pm grant com.tj.launcher android.permission.READ_EXTERNAL_STORAGE
+cmd: pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS
 undo: pm revoke com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 undo: pm revoke com.tj.launcher android.permission.DUMP
 undo: pm revoke com.tj.launcher android.permission.CHANGE_CONFIGURATION
