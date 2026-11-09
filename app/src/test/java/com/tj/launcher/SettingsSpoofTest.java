@@ -58,9 +58,9 @@ public class SettingsSpoofTest {
         assertFalse(SettingsSpoof.isLookAlikeComponent(null));
     }
 
-    /** WORK IN PROGRESS pin: the look-alike is OFF by default until its gate is green; the finishing commit changes this test together with {@link SettingsSpoof#defaultOn}. */
-    @Test public void wipDefaultIsOff() {
-        assertFalse(SettingsSpoof.defaultOn(false));
+    /** v0.9.0 (BN1 finished): ON in a release build, OFF in a debug build (the CI emulator's older sections must not see a second Settings in the drawer). */
+    @Test public void releaseDefaultIsOnAndDebugDefaultIsOff() {
+        assertTrue(SettingsSpoof.defaultOn(false));
         assertFalse(SettingsSpoof.defaultOn(true));
     }
 
