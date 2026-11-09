@@ -32,3 +32,15 @@ Product code is identical to the gated head (`git diff 09215cc HEAD -- app launc
 | #471 | `base`, head 4a49b3f | 42685347862 | **29 PASS, 0 FAIL, no native crash** |
 
 Reading: `base` fails on the released tag with the same native crash (so the crash is the emulator's, not BN1's) and passes clean on the head. The head's earlier `base` failures (#464, #466) were crash-poisoned runs. `legacy` is the one section still to prove: dispatched solo on `main` and on `v0.8.13` side by side (ids in the checkpoint).
+
+## `legacy` (written 2026-11-09 23:00 UTC)
+
+| Run | Sections / ref | Id | Result |
+| :- | :- | :- | :- |
+| #472 | `legacy` SOLO, head | 42711379205 | 17 PASS, 3 FAIL: `reset2`, `W5` x2; NATIVE CRASH in `launcher-loader` (`extent_deregister_impl` <- `extent_recycle`, fault addr 0x8) |
+| #473 | `legacy` SOLO, TAG v0.8.13 | 42711385101 | 19 PASS, 1 FAIL: `reset2`; no crash |
+| #474 | `base,legacy` ONE run, head 306152a | 42713242884 | 40 PASS, 4 FAIL: `recents` (Clock in Recents), `W5` x2, `W3b`; THREE native crashes (main `arena_bin_malloc_hard`; `launcher-loader` `a0ialloc`; `launcher-loader` `extent_deregister_impl`); all `base` checks passed, `reset2` PASSED (it passes only after `base`) |
+
+Readings. (1) `reset2` fails on the TAG too when `legacy` runs solo: by design it needs `base` in the same run (HANDOFF 0e RS1). The gate plan had split them (a gap in `gate.sh`, FIXED 2026-11-09: `BIND` now has `legacy -> base`). (2) Every other FAIL (`W5`, `recents`, `W3b`, earlier `startup`) sits in a run with a native crash right before it (`W5 after: resumed: ...com.android.launcher3/.Launcher`: the crash cleared the default home). (3) The crashes are ALL inside jemalloc (bionic libc.so), in three different threads and call sites = a corrupted native heap, the crashing thread is only the victim. The released tag crashes too (#470). New lead for a separate task: TASKS BN6.
+
+Reruns on the release commit (version 0.9.0 / code 39, 3da7cb8): #475 id 42715672216 (`main`, `base,legacy`), #476 id 42715676675 (branch, `base,legacy`), #477 id 42715681398 (`main`, `base,legacy,last`). The first one with 0 FAIL is the proof for `base` + `legacy`; heal() prints up to 12 frames of the crash backtrace now.
