@@ -21,6 +21,7 @@ public class TjApplication extends Application {
         try { CrashGuard.clearIfNewer(this); } catch (Throwable ignored) { }   // CBR1: a tripped breaker is cleared by the first start of a NEWER version (a fair try)
         try { if (main) ProcessLife.noteStart(this); } catch (Throwable ignored) { }   // BG1: how often does Android restart this process on the tablet? (one preference write with apply())
         try { if (main) AnimationSpeedup.reconcileAsync(this); } catch (Throwable ignored) { }   // an interrupted reset must never leave the animations off; BF1: and the Quickstep hold is re-decided from the facts (after a kill, a reboot, an update). Main process only: a picker process starting in the middle of a reset must not end it
+        try { if (main) SettingsSpoof.syncSoon(this, "process start"); } catch (Throwable ignored) { }   // BN1: the Settings look-alike's drawer entry follows the switch and the mode (after a kill, an update or Clear data); 3 s late, background thread
         try { if (main) SwitchMigration.run(this); } catch (Throwable ignored) { }   // v0.7.3: undo the old breaker reset's "false" values once (all three switches stored as off = its signature)
         try { if (main) EntranceWatcher.start(this); } catch (Throwable ignored) { }   // AD4: the rotation-tile and charger entrances (the page flick is fed by the Launcher touch hook)
         try { if (main) LockQuiet.applyNotificationsAsync(this); } catch (Throwable ignored) { }   // AK1: the lock screen shows no app notifications (setting written / put back by the switch)
