@@ -1842,3 +1842,15 @@
 > 1. **Font size and Display size pages:** none of your screenshots show them. I built Font size with steps 1.05 / 1.2 / 1.35 / 1.5 (your "Default" is 1.2), a guess, and Display size from the stock layout. A screenshot of each page, with the slider at each position if it's quick, would let me copy them exactly.
 > 2. **Battery usage:** should the Solitaire row show a percentage? I built it without one.
 <!-- sha:31ff3581dd76 -->
+
+## 2026-11-09T07:16:33Z
+> Nothing else is useful until the CI run and the review agents report back. The tree is checkpointed and pushed.
+>
+> - **Run #460** (`ss` section with the chat fix and the new SS28f check) is due about 07:27.
+> - **Three review agents** are still reading the Ss* diff in three slices.
+> - **Run #459** is green, 64 PASS, and the Font size page matches your shots: line pitch is identical at all four sizes (18, 21, 23 and 24 px).
+> - **Display size chat** bubbles were 8 px too tall against your Default shot (83 vs 75 px) and are fixed in the code. Run #460 is the proof.
+> - **Review findings:** the ten earlier ones are recorded as BN5a–c in `TASKS.md`.
+>
+> I'll read the run and the agents' findings as they land, then fix what is real, run the gate and ship v0.9.0.
+<!-- sha:6d9b6238e36a -->
