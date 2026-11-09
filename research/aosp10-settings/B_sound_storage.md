@@ -324,10 +324,10 @@ numbers. [tablet] Tj's screenshots / measurements (research/SETTINGS_SPOOF_2026-
 - Unit consistency check [calc, matches [tablet]]: used 30.28e9 / total 32e9 = 0.94625 -> "95%"; the header number 30.28 is therefore decimal (SI) too:
   Formatter.formatBytes(res, bytes, 0) in this release counts 1000 per step (FLAG_IEC_UNITS absent) [mem]. Rules [mem, android.text.format.Formatter, not in checkout]:
   pick the first unit where the value is <= 900 (B, kB, MB, GB, TB); value >= 100 or unit bytes -> "%.0f"; value < 1 -> "%.2f"; 1 <= value < 10 -> "%.2f" without
-  FLAG_SHORTER ("%.1f" with it); 10 <= value < 100 -> "%.2f" without FLAG_SHORTER ("%.0f" with it). So the header ("30.28") uses flags 0 (two decimals), the total ("32 GB")
-  and the Settings-home free ("1.57 GB" via formatFileSize, no SHORTER) / total via formatShortFileSize (SHORTER) differ, and the rows use FileSizeFormatter (always GB,
-  1 decimal below 10, none from 10). Strings (fwbase core/res/res/values/strings.xml l.27-39): megabyteShort "MB", gigabyteShort "GB", terabyteShort "TB", fileSizeSuffix
-  "%1$s %2$s".
+  FLAG_SHORTER ("%.1f" with it); 10 <= value < 100 -> "%.2f" without FLAG_SHORTER ("%.0f" with it). So: header number = formatBytes flags 0 (two decimals, "30.28");
+  header "Used of 32 GB" = formatShortFileSize (SHORTER: no decimals from 10); Settings-home free = formatFileSize (no SHORTER: "1.57 GB"); the seven rows = FileSizeFormatter
+  (always GB, 1 decimal below 10, none from 10, 2 below 1). Strings (fwbase core/res/res/values/strings.xml l.27-39): megabyteShort "MB", gigabyteShort "GB",
+  terabyteShort "TB", fileSizeSuffix "%1$s %2$s".
 - Secondary users: SecondaryUserController adds one StorageItemPreference per extra user under "Other users"; none on a single-user tablet.
 
 ### 2.6 Gotchas for a non-system app (Storage)
