@@ -4027,7 +4027,8 @@ SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
 # the emulator's stable density is 160 (the run forces 170), so the page above reads "Custom (170)": for the comparison with Tj's Default shot show the page at its own default density for a moment
 adb shell wm density reset; sleep 4; shot ss-20b-displaysize-d160
-SSD160=$(tr '>' '\n' < <(ssdump "$OUT/ss-dsize160.xml"; cat "$OUT/ss-dsize160.xml") | grep -oE 'text="(Small|Default|Large|Larger|Largest|Custom[^"]*)"' | head -3 | tr '\n' ' ')
+ssdump "$OUT/ss-dsize160.xml"
+SSD160=$(tr '>' '\n' < "$OUT/ss-dsize160.xml" | grep -oE 'text="(Small|Default|Large|Larger|Largest|Custom[^"]*)"' | head -3 | tr '\n' ' ')
 info "SS28e: Display size at the stable density = $SSD160"
 adb shell wm density 170; sleep 4
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
