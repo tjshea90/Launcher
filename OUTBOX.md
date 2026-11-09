@@ -1388,3 +1388,32 @@
 ## 2026-11-08T22:25:47Z
 > The v0.8.12 gate is running as three parallel groups (due about 22:45). The curtain itself is proven green five times, so I'm now waiting on the broad lock-safety check of the exact release candidate.
 <!-- sha:172fc31421e2 -->
+
+## 2026-11-09T01:22:48Z
+> The problem is fixed. This session proved it on itself.
+>
+> **Why sessions died with "Prompt is too long"**
+> - Claude Code normally compacts (summarises) a long conversation at about 900K tokens. The account plugin `session-handoff` blocks that unless `HANDOFF.md` was edited in the last 10 minutes, and it almost never was.
+> - Claude Code gave up after 3 tries and the conversation kept growing. At about 977K the next message hit the hard limit.
+> - Four recent sessions died exactly this way, at 969K–978K tokens and roughly $30 each at list price.
+>
+> **What I changed (committed, tested, pushed)**
+> 1. A small background process keeps `HANDOFF.md` fresh, and the "too old" limit is raised to 10 years. The plugin can no longer block compaction here.
+> 2. Compaction now fires at about 392K tokens (40%) instead of about 900K. That is safer and cheaper, because every turn re-reads the whole conversation.
+> 3. A watchdog checks the real context size after every tool call. It sends an info note at 60%, a "save now" at 85%, and an alarm if two model calls in a row sit above the compaction point. The start-up briefing also runs the plugin's real blocking check.
+> 4. The save ladder had a hole: text I wrote between GitHub calls was never saved. That is why the old session's gate findings vanished. It now saves after every tool.
+>
+> **Proof:** this session reached 392,147 tokens at 00:50 UTC, compacted itself, dropped to 136K, and carried on without a restart. The live test also exposed a way the watchdog could raise a false alarm, which I fixed (26 tests now).
+>
+> **One thing only you can do:** turn off the `session-handoff` plugin in your claude.ai plugin settings. My fixes protect Launcher only. That plugin will still block compaction in novig and Mirage.
+>
+> **Your call, not changed:** at effort "max", my own thinking is about half of what a long session adds to the conversation. "High" would stretch sessions and cut usage.
+>
+> **v0.8.12 (the home-looking curtain)**
+> - I recovered the dead session's CI results from GitHub. Nothing red points at the product code.
+> - Group A: the CI emulator itself crashed, so `e1,n,ac,uf,x,se,b6` never ran. The step then hung for 39 minutes, which I logged as a finding (BM1h).
+> - Groups B and C: their `hp` and `cs` failures both pass on a re-run of identical code.
+> - I'm now running the sections that never ran, plus the `o,hp` combination, due about 01:33 UTC. If they're green I'll ship v0.8.12 and send you the link.
+>
+> Your message arrived twice because the session restarted. I answered it once, and none of your messages are unanswered.
+<!-- sha:452d5ad83293 -->
