@@ -283,7 +283,7 @@ Rows by `order` (key; title res; notes). Hidden on the tablet per SPOOF: owner h
 
 ### 3.1 Legal information (`settings10/src/.../LegalSettings.java`, `res/xml/about_legal.xml`, key `legal_screen`, title "Legal information")
 - Rows in order: `copyright` "Copyright", `license` "License", `terms` "Terms and conditions", `module_license` "Google Play system update licenses", `webview_license` "System WebView License",
-  `wallpaper_attributions` "Wallpapers" (summary `wallpaper_attributions_values` "Satellite imagery providers:\n(c)2014 CNES / Astrium, DigitalGlobe, Bluesky"; no intent or fragment, so it does nothing;
+  `wallpaper_attributions` "Wallpapers" (summary `wallpaper_attributions_values` "Satellite imagery providers:\n©2014 CNES / Astrium, DigitalGlobe, Bluesky"; no intent or fragment, so it does nothing;
   shown if `config_show_wallpaper_attribution`, true in r47).
 - Behaviour (`deviceinfo/legal/LegalPreferenceController`): the first four rows are visible only if `PackageManager.queryIntentActivities(Intent(action))` finds an activity of a SYSTEM app
   (`FLAG_SYSTEM`). The row's intent becomes that explicit component and its TITLE becomes that activity's label, so the XML titles above are NOT shown when a handler exists. Actions:
