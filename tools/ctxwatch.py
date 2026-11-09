@@ -296,25 +296,39 @@ def main():
     if not m:
         return
     state_path = os.path.join(".git", "ctxwatch.state")
-    st = {"level": 0, "calls": 0, "comp": ""}
+    st = {"level": 0, "calls": 0, "comp": "", "over": 0, "last_prompt": 0}
     try:
         with open(state_path) as f:
             st.update(json.load(f))
     except (OSError, ValueError):
         pass
     st["calls"] = int(st.get("calls", 0)) + 1
+    prev = int(st.get("last_prompt") or 0)
+    if m["compaction"] is None and prev and 0 < m["prompt"] < 0.7 * prev:
+        m["compaction"] = find_compaction(path)     # the context fell by 30 %: look further back than the window for the marker
     c = m["compaction"]
     if c and str(c.get("at")) != st.get("comp"):
         st["comp"] = str(c.get("at"))
         logline("COMPACTION SEEN trigger=%s pre=%s at=%s" % (c.get("trigger"), c.get("pre"), c.get("at")))
     level = level_of(m, t)
+    if level == 3:
+        # One big tool result can push the last call past the point + slack right before a compaction that is about to run
+        # (a lagging transcript shows the same). Believe "auto-compact did not fire" only after TWO different model calls over the line.
+        if m["prompt"] != prev:
+            st["over"] = int(st.get("over") or 0) + 1
+        if int(st.get("over") or 0) < 2:
+            level = 2
+    else:
+        st["over"] = 0
+    st["last_prompt"] = m["prompt"]
     speak = False
     if level > st["level"]:
         speak = True
     elif level >= 3 and st["calls"] % REPEAT_EVERY == 0:
         speak = True
     if level != st["level"]:
-        logline("level %d -> %d est=%s last_call=%s T=%s" % (st["level"], level, m["est"], m["prompt"], t))
+        logline("level %d -> %d est=%s last_call=%s T=%s over=%s%s" % (st["level"], level, m["est"], m["prompt"], t, st.get("over"),
+                                                                       " fresh" if m.get("fresh") else ""))
     elif st["calls"] % 25 == 0:
         logline("tick level=%d est=%s last_call=%s T=%s" % (level, m["est"], m["prompt"], t))
     st["level"] = level
