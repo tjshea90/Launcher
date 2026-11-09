@@ -1870,3 +1870,18 @@
 >
 > Still waiting on you: the tablet checks from the earlier releases, which you haven't answered yet. v0.9.0 will come with a new checklist.
 <!-- sha:ead15abf3e0c -->
+
+## 2026-11-09T17:56:07Z
+> The TTS page now looks the way you described, and none of it does anything. I'm waiting for an emulator run (about 9 minutes) to prove it.
+>
+> - **Preferred engine:** says "Pico TTS", with a settings gear at the far right that does nothing.
+> - **Language:** says "Use system language".
+> - **Sliders:** Speech rate and Pitch move and slide, and write no setting. They use the same slider style as the Sound page, so the colour should match.
+> - **Play and Reset:** both active (teal, not grey), and neither does anything.
+>
+> The new run checks the texts, that all four controls are enabled, that dragging moves the thumb while the setting stays unchanged, and that the slider colour matches Sound's. I'll look at the screenshot myself before calling it done.
+>
+> I have no photo of the real page with an engine installed, so the gear (a thin divider and a grey gear) follows the stock Android 10 design. If yours looks different, a screenshot would let me match it exactly.
+>
+> The previous run (#461) is green: Display size now says "Default" everywhere and the chat bubbles match your screenshot. Two more code reviews of the Sound/Storage and Display/Accessibility pages are still running. Then comes the gate and v0.9.0.
+<!-- sha:0fc38ab9f300 -->
