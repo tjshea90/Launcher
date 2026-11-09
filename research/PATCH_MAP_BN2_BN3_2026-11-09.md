@@ -97,7 +97,7 @@ Fresh process versus a long-lived process that just left Quickstep:
 ## 3. First press versus later presses
 
 State that exists after the first burst:
-- `power_card_rect_r<rot>` / `power_geo_r<rot>` (TAS 3038-3039): persisted; new only when never learned.
+- `power_card_rect_r<rot>` / `power_geo_r<rot>` (TAS 3038-3039): persisted; rewritten by every scan that finds the menu, so after the first menu of a rotation it exists for good (survives a restart).
 - `menuSeenMs`: `if (menuSeenMs == 0) menuSeenMs = now;` (TAS 142, 2982), never reset; `power_latency` = `cardShownMs - menuSeenMs` is the card latency of the FIRST menu of a process only (TAS 2463-2469).
 - `warmedKind` per patch window: the first resting frame draws the open look invisibly (log `PATCH warm-up: the open look (...) was drawn once, invisibly (home)`, TAS 1262). For home that frame exists only once `patchResting` is true. Lock-screen measurement of the same effect (section `fp`, CI emulator, `research/BK1_LOCK_FIRST_PRESS_PENCIL_UNLOCK_2026-11-08.md:7-8,12`): first opening in a freshly started process "only 3 patch frames drawn, one gap of 278 ms" (7); warm process "first opening of a lock cycle 0.040-0.064" open_shape (8); after the warm-up fix "8 frames and a worst gap of 107 ms" (12). NOT FOUND: a measurement of the home flavour's first opening in a fresh process (section `fp` is lock-only).
 - `fadeFirstSummary` keeps the first fade of the process apart (TAS 3764; report line, `app/src/main/java/com/tj/launcher/ReportState.java:88`).
