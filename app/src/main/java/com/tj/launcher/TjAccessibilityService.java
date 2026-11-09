@@ -391,16 +391,43 @@ public class TjAccessibilityService extends AccessibilityService {
     private volatile boolean patchRestable = false;    // the patch COULD rest right now (switch on, real pixels known, PIN pad not up), whatever the time guards say
     static final long TOUCH_AWAY_MS = 900;             // a finger went down: the resting patch stays away this long (a harmless tap costs nothing: the patch is invisible when it matches)
     static final long PAD_CALM_MS = 1200;              // the resting patch returns only this long after the newest sign of the PIN pad
-    private final Runnable touchBack = new Runnable() { @Override public void run() { try { if (android.os.SystemClock.uptimeMillis() >= touchAwayUntilMs) patchShow(overlayShown); } catch (Throwable ignored) { } } };
+    /**
+     * BN3 (Tj, 2026-11-09 02:33 UTC, about v0.8.12: "the wallpaper patch on the lock screen shows up and flashes sometimes when I pull the pin pad up"): on the LOCK screen a finger that went down keeps the patch away for
+     * this long (a harmless tap costs nothing: the stock dialog's own event brings an away patch back at once, the lock log says "menu opened while the patch was away"). A slow pull whose first PIN-pad sign comes late
+     * must not find the patch back in front of the darkening wallpaper. The home flavour keeps {@link #TOUCH_AWAY_MS} (its own timers decide).
+     */
+    static final long LOCK_TOUCH_AWAY_MS = 1500;
+    private String patchShowCause = "";                // BN3: who asks patchShow() for a RETURN (touchBack, padBack, restRecheck), for the lock log line "patch visible again"
+    private long lastReturnLogMs = 0;
+    private final Runnable touchBack = new Runnable() { @Override public void run() {
+        try {
+            if (android.os.SystemClock.uptimeMillis() < touchAwayUntilMs) return;
+            if (!patchHomeMode) updateLockNumber();   // BN3: a FRESH look at the PIN pad first (as padBack does): a pad that is up, or being pulled up, calls pinPadCameUp and keeps the patch away
+            patchShowCause = "touchBack"; patchShow(overlayShown);
+        } catch (Throwable ignored) { }
+    } };
     private final Runnable padBack = new Runnable() { @Override public void run() {
         try {
             long now = android.os.SystemClock.uptimeMillis();
             long wait = lastPadSignMs + PAD_CALM_MS - now;
             if (wait > 0) { handler.postDelayed(this, wait); return; }                  // a newer sign of the pad: wait for calm
             updateLockNumber();                                                          // a FRESH look at the pad (lastBouncer is a scan result and can be stale), then decide
-            patchShow(overlayShown);
+            patchShowCause = "padBack"; patchShow(overlayShown);
         } catch (Throwable ignored) { }
     } };
+
+    /**
+     * BN3: the lock patch went from invisible to VISIBLE (a return after a finger, a PIN pad, a menu). No path wrote this down before, so a flash Tj saw could not be matched to the path that caused it. Logcat always; the
+     * persistent lock log (it is in the tablet report) only when a finger or a PIN-pad sign was less than 4 s ago, at most one line per 700 ms.
+     */
+    private void noteReturn() {
+        long now = android.os.SystemClock.uptimeMillis();
+        String cause = patchShowCause.isEmpty() ? "other" : patchShowCause; patchShowCause = "";
+        long f = lastTouchDownMs > 0 ? now - lastTouchDownMs : -1, p = lastPadSignMs > 0 ? now - lastPadSignMs : -1;
+        String what = "patch visible again (" + cause + "), " + (f >= 0 && f < 60_000 ? f + " ms after the finger" : "no finger lately") + ", " + (p >= 0 && p < 60_000 ? p + " ms after the last PIN pad sign" : "no PIN pad sign lately") + ", pad scan " + (lastBouncer ? "says UP" : "says gone");
+        Log.i(TAG, "PATCH " + what);
+        if (!patchHomeMode && ((f >= 0 && f < 4000) || (p >= 0 && p < 4000)) && now - lastReturnLogMs > 700) { lastReturnLogMs = now; logPatch(what); }
+    }
     private boolean patchOpenFlag = false;             // AZ1: the last patchShow() call said "menu open"
     private long scanNotBeforeMs = 0;   // AZ1: the node scan of a freshly opened menu waits for the fade
     private boolean patchFadeOn() { return Features.get(this, PATCH_FADE_KEY, true); }
