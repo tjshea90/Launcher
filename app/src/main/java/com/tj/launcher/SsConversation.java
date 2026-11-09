@@ -82,10 +82,12 @@ final class SsConversation {
             TextView msg = new TextView(c);
             msg.setText(body);
             msg.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            msg.setIncludeFontPadding(false);   // run #458 vs Tj's shot: the default font padding made every bubble 8 px too tall (83 vs 75 px at 170 dpi); with none, 16 + 12 + 3 dp of padding fit all five of his stops (63 / 75 / 88 / ... px)
             msg.setTextColor(incoming ? TEXT_IN : TEXT_OUT);
             TextView status = new TextView(c);
             status.setText(time);
             status.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            status.setIncludeFontPadding(false);
             status.setTextColor(incoming ? TIME_IN : TIME_OUT);
             status.setPaddingRelative(0, 0, SsRows.dp(c, 4), 0);
             bubble.addView(msg, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
