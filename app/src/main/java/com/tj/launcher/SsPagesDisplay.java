@@ -132,7 +132,7 @@ final class SsPagesDisplay {
     /** AOSP's TimeoutListPreference dialog: a single-choice list; a tap stores the value and closes it (no OK button), Cancel closes it. */
     static void openTimeout(final Activity a) {
         int checked = SsDisplayRules.timeoutIndex(timeoutMs(a));
-        new AlertDialog.Builder(a).setTitle("Screen timeout")
+        SsPageActivity.track(a, new AlertDialog.Builder(a).setTitle("Screen timeout")
                 .setSingleChoiceItems(SsDisplayRules.TIMEOUT_LABELS, checked, new android.content.DialogInterface.OnClickListener() {
                     @Override public void onClick(android.content.DialogInterface d, final int which) {
                         write(a, new Runnable() { @Override public void run() {
@@ -142,6 +142,6 @@ final class SsPagesDisplay {
                     }
                 })
                 .setNegativeButton(android.R.string.cancel, null)
-                .show();
+                .show());
     }
 }
