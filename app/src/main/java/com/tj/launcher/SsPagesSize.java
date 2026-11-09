@@ -12,7 +12,6 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.TypedValue;
