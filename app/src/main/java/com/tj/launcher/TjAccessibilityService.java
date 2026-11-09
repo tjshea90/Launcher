@@ -2176,12 +2176,35 @@ public class TjAccessibilityService extends AccessibilityService {
     /** {@code allowFull}: a whole-tree search may run now if the known pencil cannot be followed. Without it a failed refresh just leaves the cover as it is until the next allowed search. */
     private void updatePencil(boolean allowFull) {
         try {
-            penSearched = false;
+            penSearched = false; penFollowed = PencilRules.NO_KNOWN;
             Rect r = findPencil(allowFull);
-            if (r == null) { if (penSearched) hidePencil(); return; }
+            if (r == null) {
+                // BN4 (Tj, 2026-11-09 03:02 UTC: "as soon as I slide the notification panel back up I see a white box on the lock screen"): a pencil that was being followed and is gone (hidden, collapsed, INVISIBLE views
+                // cannot be refreshed) takes the cover away AT ONCE; before, only a whole-tree search that found nothing did, and that one waits for its spacing gap: the opaque white cover stayed on the lock screen.
+                if (PencilRules.hideCover(penFollowed, penSearched, false)) hidePencil(penFollowed == PencilRules.LOST ? "the followed pencil is gone" : "no pencil found");
+                if (PencilRules.searchGapWaived(penFollowed)) {   // it may only have been a failed refresh: search promptly (the gap is waived once) and cover the pencil again if it is still there
+                    lastPenFullMs = 0;
+                    if (!penPending) { penPending = true; handler.postDelayed(penEval, 30); }
+                }
+                return;
+            }
+            penConfirmedMs = android.os.SystemClock.uptimeMillis();
             showPencil(r);
         } catch (Throwable t) { Log.e(TAG, "pencil update failed", t); removePencil(); }
     }
+
+    private int penFollowed = PencilRules.NO_KNOWN;   // BN4: what following the known node gave in the last findPencil
+    private long penConfirmedMs = 0;                  // BN4: the last time a visible pencil was seen (for the "hidden N ms after" line)
+    private long penLateLoggedMs = 0;
+    /** BN4: while the cover is up it is looked at every {@link PencilRules#WATCH_MS} even without an event (the events stop when the panel stops moving, and the last one can come before SystemUI hides the pencil). One node refresh. */
+    private final Runnable penWatch = new Runnable() { @Override public void run() {
+        try {
+            if (penView == null || !penShown) return;
+            if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
+            updatePencil(false);
+            if (penView != null && penShown) handler.postDelayed(this, PencilRules.WATCH_MS);
+        } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
+    } };
 
     private void dropPenNode() {
         AccessibilityNodeInfo n = penNode;
