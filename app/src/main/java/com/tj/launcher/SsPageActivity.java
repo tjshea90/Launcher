@@ -32,6 +32,7 @@ public class SsPageActivity extends Activity {
         page = SsPage.fromId(in == null ? null : in.getStringExtra(EXTRA_PAGE));   // no extra = the entry through the alias = the home page
         setTheme(page == SsPage.HOME ? R.style.SsTheme_Home : R.style.SsTheme);   // before super.onCreate: the window decor is not installed yet
         super.onCreate(b);
+        if (!SettingsSpoof.pageAllowed(this)) { finish(); return; }   // review C #4: a tap on the alias while it is still enabled in a Quickstep session must not build the page first (onResume checks again)
         View content = SsPages.build(this, page, live);
         setContentView(content);
         ActionBar bar = getActionBar();
