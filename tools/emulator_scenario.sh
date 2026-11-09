@@ -4000,6 +4000,57 @@ info "SS28c: wm density as the app = $(adb shell run-as $PKG wm density 2>&1 | t
 SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'); [ -z "$SSDEN" ] && SSDEN=$(adb shell wm density | tr -d '\r' | grep -i physical | sed 's/[^0-9]//g')
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+# ---- M4: Sound and Storage (written by the page agents from Tj's screenshots 0b8dab8c / 4cd04033 / 52ef06ee); both start at the home page
+ssseek(){ python3 -I - "$1" "$2" <<'EOF'
+import re,sys
+s=open(sys.argv[1],encoding='utf-8',errors='replace').read()
+n=0
+for m in re.finditer(r'<node [^>]*>', s):
+    t=m.group(0)
+    if 'class="android.widget.SeekBar"' in t:
+        n+=1
+        if n==int(sys.argv[2]):
+            b=re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', t)
+            if b: print(' '.join(b.groups()))
+            break
+EOF
+}
+ssvol(){ adb shell settings list system | tr -d '\r' | grep -E '^volume_music(_[a-z_]+)?=' | head -1 | cut -d= -f2; }
+sstap "Sound"; sleep 3; ssdump "$OUT/ss-sound.xml"; shot ss-21-sound
+check "SS29: the Sound page lists the four volumes, the two default sounds, the heading Other sounds and the three switches, in Tj's order" ssorder "$OUT/ss-sound.xml" "Media volume" "Call volume" "Alarm volume" "Notification volume" "Default notification sound" "Default alarm sound" "Other sounds" "Screen locking sounds" "Charging sounds and vibration" "Touch sounds"
+check "SS29b: Sound has none of what Tj removed or the tablet does not have (no Do Not Disturb, Shortcut to prevent ringing, Sound enhancement, Ring volume, Phone ringtone, 'and vibrations', search)" ssabsent "$OUT/ss-sound.xml" "Do Not Disturb" "Shortcut to prevent ringing" "Sound enhancement" "Ring volume" "Phone ringtone" "Other sounds and vibrations" "Advanced"
+check "SS29c: nothing to search on the Sound page" bash -c "! tr '>' '\n' < $OUT/ss-sound.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
+info "SS29d: sound texts = $(tr '>' '\n' < $OUT/ss-sound.xml | grep -oE 'text="[^"]+"' | head -24 | tr '\n' ' ' | cut -c1-520); seekbars = $(tr '>' '\n' < $OUT/ss-sound.xml | grep -c 'class="android.widget.SeekBar"')"
+# a switch really changes its system setting (Touch sounds = Settings.System sound_effects_enabled)
+SSTS=$(adb shell settings get system sound_effects_enabled | tr -d '\r')
+sstap "Touch sounds"; sleep 2
+SSTS2=$(adb shell settings get system sound_effects_enabled | tr -d '\r')
+check "SS29e: tapping 'Touch sounds' flipped sound_effects_enabled (was $SSTS, now $SSTS2)" test "$SSTS" != "$SSTS2"
+ssrestore sound_effects_enabled "$SSTS"
+# the Media volume slider: a drag to the right end and back to the left end moves the real stream volume
+SSK=$(ssseek "$OUT/ss-sound.xml" 1); set -- $SSK
+if [ "$#" -ge 4 ]; then
+  SSCY=$(( ($2+$4)/2 )); SSX1=$(( $1 + 4 )); SSX2=$(( $3 - 4 ))
+  adb shell input swipe $SSX1 $SSCY $SSX2 $SSCY 700; sleep 3; SSVR=$(ssvol)
+  adb shell input swipe $SSX2 $SSCY $SSX1 $SSCY 700; sleep 3; SSVL=$(ssvol)
+  info "SS29f: media volume after a drag to the right end = '$SSVR', after a drag to the left end = '$SSVL' (key $(adb shell settings list system | tr -d '\r' | grep -E '^volume_music' | head -2 | tr '\n' ' '))"
+  check "SS29g: dragging the Media volume slider from end to end moved the stream volume (right end '$SSVR' > left end '$SSVL')" bash -c "[ -n '$SSVR' ] && [ -n '$SSVL' ] && [ '$SSVR' -gt '$SSVL' ]"
+else info "SS29f: no SeekBar found on the Sound page"; fi
+adb shell input keyevent KEYCODE_BACK; sleep 2
+# Storage: seven rows, the header, real sizes (they need usage access, allowed here like on Tj's tablet), the System dialog
+adb shell cmd appops set "$PKG" GET_USAGE_STATS allow >/dev/null 2>&1
+sstap "Storage"; sleep 4
+for SSK in 1 2 3 4 5 6 7 8 9 10; do ssdump "$OUT/ss-storage.xml"; [ "$(tr '>' '\n' < $OUT/ss-storage.xml | grep -cE 'text="[0-9]+(\.[0-9]+)? (B|kB|MB|GB|TB)"')" -ge 7 ] && break; sleep 3; done
+shot ss-22-storage
+check "SS30: the Storage page lists Photos & videos, Music & audio, Games, Movie & TV apps, Other apps, Files, System, in Tj's order" ssorder "$OUT/ss-storage.xml" "Photos & videos" "Music & audio" "Games" "Movie & TV apps" "Other apps" "Files" "System"
+check "SS30b: Storage has no Free up space button and nothing to search" bash -c "! tr '>' '\n' < $OUT/ss-storage.xml | grep -iE '(text|content-desc)=\"[^\"]*(free up space|search)'"
+check "SS30c: the header says 'Used of N GB' and shows the used size" bash -c "tr '>' '\n' < $OUT/ss-storage.xml | grep -qE 'text=\"Used of [0-9]+(\.[0-9]+)? GB\"' && tr '>' '\n' < $OUT/ss-storage.xml | grep -qE 'text=\"[0-9]+(\.[0-9]+)? (B|kB|MB|GB|TB)\"'"
+check "SS30d: with usage access the sizes of the rows are real numbers (at least 7 size texts on the page)" bash -c "[ \"\$(tr '>' '\n' < $OUT/ss-storage.xml | grep -cE 'text=\"[0-9]+(\.[0-9]+)? (B|kB|MB|GB|TB)\"')\" -ge 7 ]"
+info "SS30f: storage texts = $(tr '>' '\n' < $OUT/ss-storage.xml | grep -oE 'text="[^"]+"' | head -24 | tr '\n' ' ' | cut -c1-520); status = $(adb shell run-as $PKG cat shared_prefs/tj_features.xml 2>/dev/null | tr -d '\r' | grep -o 'ss_storage_status[^<]*' | head -1 | cut -c1-200)"
+sstap "System"; sleep 2; ssdump "$OUT/ss-storage-sys.xml"; shot ss-23-storage-system
+check "SS30e: the System row opens a dialog with the one sentence (and OK)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-storage-sys.xml --contains 'System includes files used to run Android version')\" ] && [ -n \"\$(python3 -I tools/uinode.py $OUT/ss-storage-sys.xml --contains 'OK' --exact)\" ]"
+sstap "OK"; sleep 1
+adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M1: System > Languages & input, About tablet > Legal information (static pages)
 sstap "System"; sleep 2; ssdump "$OUT/ss-system.xml"; shot ss-04-system
 check "SS8: System has only 'Languages & input' (no Gestures, Date & time, Backup, Reset options)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-system.xml --contains '& input')\" ]"
