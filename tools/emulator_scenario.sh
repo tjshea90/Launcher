@@ -3913,6 +3913,43 @@ adb shell settings put system accelerometer_rotation "$SSROT" >/dev/null 2>&1
 sstap "Brightness level"; sleep 3; resumed > "$OUT/ss-bright-resumed.txt"; shot ss-13-brightness
 info "SS18: brightness tap -> $(tr -s ' \n' ' ' < $OUT/ss-bright-resumed.txt | cut -c1-200)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
+# ---- M3: Accessibility (four headings, seven rows) and its sub pages: Text-to-speech output, Magnification, the Touch & hold delay dialog (Tj's screenshots 2a288d48 / 3d280fbe / 8d14938a / d9d18032 / 8052f043)
+SSLP=$(adb shell settings get secure long_press_timeout | tr -d '\r'); SSMONO=$(adb shell settings get system master_mono | tr -d '\r'); SSBAL=$(adb shell settings get system master_balance | tr -d '\r')
+sstap "Accessibility"; sleep 2; ssdump "$OUT/ss-access.xml"; shot ss-14-access
+check "SS20: Accessibility lists Text-to-speech output, Font size, Display size, Magnification, Touch & hold delay, Mono audio, Audio balance under their four headings, in Tj's order" ssorder "$OUT/ss-access.xml" "Screen readers" "Text-to-speech output" "Display" "Font size" "Display size" "Magnification" "Interaction controls" "Touch & hold delay" "Audio & on-screen text" "Mono audio" "Audio balance"
+check "SS20b: Accessibility has none of the other stock rows" ssabsent "$OUT/ss-access.xml" "Volume key shortcut" "Downloaded services" "Dark theme" "Color correction" "Color inversion" "Large mouse pointer" "Remove animations" "Dwell timing" "Auto-rotate screen" "Time to take action" "Vibration" "Caption preferences" "High contrast text" "Experimental"
+info "SS20c: accessibility texts = $(tr '>' '\n' < $OUT/ss-access.xml | grep -oE 'text="[^"]+"' | head -26 | tr '\n' ' ' | cut -c1-560)"
+# Touch & hold delay: the dialog, a choice stores the value and closes it
+sstap "Touch & hold delay"; sleep 2; ssdump "$OUT/ss-hold.xml"; shot ss-15-hold
+check "SS21: the Touch & hold delay dialog lists Short, Medium, Long and Cancel" ssorder "$OUT/ss-hold.xml" "Short" "Medium" "Long"
+check "SS21b: the dialog has a Cancel button" bash -c "tr '>' '\n' < $OUT/ss-hold.xml | grep -qi 'text=\"cancel\"'"
+sstap "Medium"; sleep 2
+check "SS21c: choosing Medium wrote Settings.Secure long_press_timeout = 1000 (was $SSLP)" bash -c "[ \"\$(adb shell settings get secure long_press_timeout | tr -d '\r')\" = 1000 ]"
+ssdump "$OUT/ss-access2.xml"
+check "SS21d: the Touch & hold delay row now reads Medium and the dialog is gone" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Medium' --exact)\" ] && [ -z \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Long' --exact)\" ]"
+adb shell settings put secure long_press_timeout "$SSLP" >/dev/null 2>&1
+# Mono audio: the row toggles the real setting
+sstap "Mono audio"; sleep 2
+SSMONO2=$(adb shell settings get system master_mono | tr -d '\r')
+check "SS22: tapping 'Mono audio' flipped master_mono (was $SSMONO, now $SSMONO2)" test "$SSMONO" != "$SSMONO2"
+adb shell settings put system master_mono "$SSMONO" >/dev/null 2>&1
+# Audio balance: a drag from the middle to the left end stores a negative balance
+ssdump "$OUT/ss-access3.xml"; SSL=$(ssbounds "$OUT/ss-access3.xml" "Left"); set -- $SSL
+if [ "$#" -ge 4 ]; then SSBY=$(( $2 - 30 )); adb shell input swipe 330 $SSBY 100 $SSBY 400; sleep 2; fi
+SSBAL2=$(adb shell settings get system master_balance | tr -d '\r')
+check "SS23: dragging the Audio balance bar to the left stored a negative balance (was $SSBAL, now $SSBAL2)" bash -c "awk -v b='$SSBAL2' 'BEGIN{exit !(b+0 < -0.3)}'"
+shot ss-16-balance
+adb shell settings put system master_balance "$SSBAL" >/dev/null 2>&1
+# Font size / Display size / Magnification rows
+info "SS24: font / display size summaries = $(tr '>' '\n' < $OUT/ss-access3.xml | grep -oE 'text="(Default|Small|Large|Larger|Largest|Custom[^"]*|Off)"' | head -6 | tr '\n' ' ')"
+sstap "Magnification"; sleep 2; ssdump "$OUT/ss-mag.xml"; shot ss-17-magnification
+check "SS25: the Magnification page lists Magnify with triple-tap and Magnify with shortcut (each with its On / Off state)" ssorder "$OUT/ss-mag.xml" "Magnify with triple-tap" "Magnify with shortcut"
+info "SS25b: magnification texts = $(tr '>' '\n' < $OUT/ss-mag.xml | grep -oE 'text="[^"]+"' | head -8 | tr '\n' ' ')"
+adb shell input keyevent KEYCODE_BACK; sleep 2
+sstap "Text-to-speech output"; sleep 2; ssdump "$OUT/ss-tts.xml"; shot ss-18-tts
+check "SS26: the Text-to-speech output page lists Preferred engine, Language, Speech rate, Pitch, Play and Reset" bash -c "for t in 'Preferred engine' 'Language' 'Speech rate' 'Pitch'; do tr '>' '\n' < $OUT/ss-tts.xml | grep -q \"text=\\\"\$t\"; done; tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"play\"' && tr '>' '\n' < $OUT/ss-tts.xml | grep -qi 'text=\"reset\"'"
+info "SS26b: tts engines on this image = $(adb shell dumpsys package | grep -c 'android.intent.action.TTS_SERVICE' | tr -d '\r'); page texts = $(tr '>' '\n' < $OUT/ss-tts.xml | grep -oE 'text="[^"]+"' | head -10 | tr '\n' ' ' | cut -c1-300)"
+adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M1: System > Languages & input, About tablet > Legal information (static pages)
 sstap "System"; sleep 2; ssdump "$OUT/ss-system.xml"; shot ss-04-system
 check "SS8: System has only 'Languages & input' (no Gestures, Date & time, Backup, Reset options)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-system.xml --contains '& input')\" ]"
