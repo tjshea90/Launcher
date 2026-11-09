@@ -73,9 +73,14 @@ public final class SettingsSpoof {
     private static volatile String whyNext = "";
     private static final Runnable RUN = new Runnable() { @Override public void run() { Context a = appCtx; if (a != null) syncNow(a, whyNext); } };
 
-    private static synchronized Handler bg() {
-        if (bg == null) { thread = new HandlerThread("TjSsSync"); thread.start(); bg = new Handler(thread.getLooper()); }
-        return bg;
+    /** Its OWN lock: {@link #syncNow} holds the class monitor across package-manager binder calls, and {@link #syncSoon} runs on the unlock path (review C #5, BK1: an unlock must stay fast). */
+    private static final Object BG_LOCK = new Object();
+
+    private static Handler bg() {
+        synchronized (BG_LOCK) {
+            if (bg == null) { thread = new HandlerThread("TjSsSync"); thread.start(); bg = new Handler(thread.getLooper()); }
+            return bg;
+        }
     }
 
     /** Re-reads the facts a few seconds from now on a background thread (one pending run at most: a burst of calls is one sync). Never throws. */
