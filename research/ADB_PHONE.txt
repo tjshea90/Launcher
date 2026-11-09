@@ -40,6 +40,7 @@ pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS
 pm grant com.tj.launcher android.permission.DUMP
 pm grant com.tj.launcher android.permission.CHANGE_CONFIGURATION
 pm grant com.tj.launcher android.permission.READ_EXTERNAL_STORAGE
+pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS
 cmd appops set com.tj.launcher GET_USAGE_STATS allow
 cmd appops set com.tj.launcher WRITE_SETTINGS allow
 cmd appops set com.tj.launcher RUN_IN_BACKGROUND allow
