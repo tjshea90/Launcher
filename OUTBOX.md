@@ -1660,3 +1660,12 @@
 > - The BN1 Settings build starts right after that.
 > - Your v0.8.9, v0.8.11 and v0.8.12 tablet checks.
 <!-- sha:0ab34e43d7c3 -->
+
+## 2026-11-09T03:54:05Z
+> Will do. The three gate runs started at 03:40 UTC and should finish around 04:02.
+>
+> - **All green:** I ship v0.8.13 straight away. I bump it to version 0.8.13 (code 38), run the release gates, have GitHub build and sign it, confirm the Release exists, and send you the link.
+> - **Any section red:** I look at that first, rerunning it alone and comparing with v0.8.12, and I don't ship it red.
+>
+> I'll message you when the Release is up.
+<!-- sha:213d5e68d246 -->
