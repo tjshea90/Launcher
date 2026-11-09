@@ -60,8 +60,8 @@ final class SsPagesTts {
         pitch.setProgress(SsAccessRules.pitchProgress(stored(a, PITCH)));
         rate.setOnSeekBarChangeListener(new Writer(a, RATE, true));
         pitch.setOnSeekBarChangeListener(new Writer(a, PITCH, false));
-        list.addView(sliderRow(a, "Speech rate", rate, engine));
-        list.addView(sliderRow(a, "Pitch", pitch, engine));
+        list.addView(sliderRow(a, "Speech rate", rate, engine, true, false));
+        list.addView(sliderRow(a, "Pitch", pitch, engine, false, true));
         list.addView(SsRows.divider(a));
 
         final TextToSpeech[] speaker = new TextToSpeech[1];
@@ -126,11 +126,15 @@ final class SsPagesTts {
         if (t != null) { try { t.stop(); t.shutdown(); } catch (RuntimeException ignored) { } }
     }
 
-    /** AOSP preference_widget_seekbar_settings: margin 6 dp top and bottom, at least 72 dp high, padding 16 dp; the title starts 56 dp further in, the 48 dp slider sits right under it (padding 56 dp / 12 dp). */
-    private static View sliderRow(Context c, String title, SeekBar bar, boolean enabled) {
+    /**
+     * AOSP preference_widget_seekbar_settings: margin 6 dp top and bottom, at least 72 dp high, padding 16 dp; the title starts 56 dp further in, the 48 dp slider sits right under it (padding 56 dp / 12 dp).
+     * Measured on Tj's screenshot against the CI emulator (CI run 455, 600 x 1024 at 170 dpi): the block of two sliders starts 25 px lower than the plain 6 dp (23.5 dp more above the first) and ends 6 px higher (no
+     * bottom margin under the last), so the divider under it sits at y 437 as on the tablet (rows pitch 91 px matched already).
+     */
+    private static View sliderRow(Context c, String title, SeekBar bar, boolean enabled, boolean first, boolean last) {
         RelativeLayout r = new RelativeLayout(c);
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, SsRows.dp(c, 6), 0, SsRows.dp(c, 6));
+        lp.setMargins(0, SsRows.dp(c, first ? 6f + 23.5f : 6f), 0, last ? 0 : SsRows.dp(c, 6));
         r.setLayoutParams(lp);
         r.setGravity(Gravity.CENTER_VERTICAL);
         r.setMinimumHeight(SsRows.dp(c, 72));
@@ -167,7 +171,7 @@ final class SsPagesTts {
     private static View buttons(Context c, Button... all) {
         LinearLayout r = new LinearLayout(c);
         r.setOrientation(LinearLayout.HORIZONTAL);
-        r.setPaddingRelative(SsRows.dp(c, 8), 0, 0, 0);
+        r.setPaddingRelative(SsRows.dp(c, 8), SsRows.dp(c, 4.7f), 0, 0);   // 4.7 dp = 5 px at 170 dpi: Tj's PLAY / RESET text sits 34 px under the divider, the first build 29
         for (Button b : all) {
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
             lp.setMarginEnd(SsRows.dp(c, 8));
