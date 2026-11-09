@@ -24,7 +24,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import com.android.launcher3.R;
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.List;
