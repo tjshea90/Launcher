@@ -1885,3 +1885,19 @@
 >
 > The previous run (#461) is green: Display size now says "Default" everywhere and the chat bubbles match your screenshot. Two more code reviews of the Sound/Storage and Display/Accessibility pages are still running. Then comes the gate and v0.9.0.
 <!-- sha:0fc38ab9f300 -->
+
+## 2026-11-09T18:16:47Z
+> The TTS page is proven in CI, and the final gate for v0.9.0 is running.
+>
+> - **TTS page (your 17:45 message):** CI run #462 passed every TTS check, and I looked at the screenshots.
+>   - Preferred engine reads "Pico TTS", with a thin divider and a gear at the far right that does nothing.
+>   - Language reads "Use system language".
+>   - Speech rate and Pitch are enabled and the same teal as the Sound sliders. Dragging moved the thumb from about 15% to 86% and changed no setting.
+>   - PLAY and RESET are teal and do nothing.
+>   - I have no photo of the real page with an engine installed, so the gear follows the stock Android 10 design. If yours looks different, send a screenshot and I'll match it.
+> - **Run #462 had one failure, "SS7: switch off: the drawer's Settings is the real one".** That run also logged a native crash of the launcher process, and its last screenshot shows the "Select a Home app" chooser. It is the known emulator crash that clears the default home, not the look-alike. The final gate checks it again, and the scenario now prints the crash's first stack frames so the next one is self-explaining.
+> - **Reviews:** three independent code reviews of the look-alike are done. They found no serious defects in the Sound, Storage, Battery, Display, Accessibility or System pages. I fixed 11 small ones: the balance slider jumping a notch, a Do Not Disturb change freezing a slider, Storage rows going blank after a failed rescan, repeated battery reads, dialogs outliving their page, a bad extra on the Settings icon, and a few others. All 864 unit tests and lint pass. I skipped two that only affect function, not look: swiping between the Display size previews, and the Audio balance slider under keyboard or TalkBack.
+> - **Gate:** three emulator runs started at 18:12 UTC. The short one finishes in about 8 minutes, the two long ones in about 36. I'll read each, rerun any failing section on its own, then ship v0.9.0 and send you the link.
+>
+> The auto-resume heartbeat is armed. Its first scheduled fire is at 18:27 UTC, and I'll confirm it when it arrives.
+<!-- sha:2a2868621fa2 -->
