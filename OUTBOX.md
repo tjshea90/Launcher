@@ -1905,3 +1905,11 @@
 ## 2026-11-09T18:23:59Z
 > Gate run #465 (`rg`) passed. Runs #463 and #464 are still going and should finish around 18:49 UTC. I'll read them when the timer fires, then bump to v0.9.0 and ship.
 <!-- sha:6e501f189603 -->
+
+## 2026-11-09T18:28:54Z
+> The auto-resume heartbeat fired at 18:27:33 UTC and woke this session while it was idle. Nothing was waiting on you, and no other branch is ahead, so I carried on.
+>
+> It has not been tested during an actual usage cap, because I can't trigger one on purpose. If a fire lands while the cap blocks the session, it fails and the next one (every 2 hours at :27 UTC) retries.
+>
+> The gate runs #463 and #464 are still going, with a timer set for about 18:47 UTC. After that I bump to v0.9.0 and ship.
+<!-- sha:753db3631a80 -->
