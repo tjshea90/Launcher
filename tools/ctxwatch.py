@@ -31,6 +31,7 @@ import time
 
 HARD = int(os.environ.get("CTXWATCH_HARD", "977000"))        # the CLI's own blocking limit (window 1M - 20K - 3K)
 BASE = 980000                                                # effective window the percentage is applied to
+POST_COMPACT_BASE = 40000                                    # tokens of system prompt + tools + skills that are not lines of the transcript
 CHARS_PER_TOKEN = 3.4
 ALARM_SLACK = 30000
 REPEAT_EVERY = 12
