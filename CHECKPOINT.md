@@ -1,13 +1,13 @@
-# CHECKPOINT 802 — read me first, then TASKS.md
+# CHECKPOINT 803 — read me first, then TASKS.md
 
-**Written:** 2026-11-09T06:22:43Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `98982aa` (this checkpoint is the commit after it)
+**Written:** 2026-11-09T06:26:41Z · **tests:** all 7 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `a49012a` (this checkpoint is the commit after it)
 
 ## Just done
-BN1: case STORAGE + Home Storage summary wired (SsHomeSummary.loadStorage -> SsPagesStorage.homeSummary); scenario SS5b/5d (home summaries) + SS8 (alias off in Quickstep mode); NOT compiled yet (agents' files in flux)
+BN1: Storage agent done (SsPagesStorage/SsDonutView/SsStorageRules, 25 tests), all compile, Ss tests 95/0; CI ss+shots dispatched run #456 id 42572859909 on head 1b36635 (Sound agent still editing); report keys ss_battery/storage_status added
 
 ## Do this next
-WHEN both agents report: 1) bash tools/gradle.sh :app:compileDebugJavaWithJavac :app:testDebugUnitTest (cmd itself in background, read GRADLE_EXIT=), fix compile errors in agent files; 2) dispatch emulator.yml ss shots=true ref main; read RESULTS (SS5b/5d, SS8, SS22*, SS23*, SS27/28); view ss-18-tts (sliders y=319/410, divider 437, PLAY text y=471 expected), ss-19/20 size pages, Sound, Storage vs Tj shots; 3) add SS29+ checks for Sound/Storage; 4) /code-review high vs v0.8.13, gate, ship v0.9.0
+1) read run 42572859909: get_job_logs run_id failed_only tail_lines 60 (RESULTS: SS5b/5d home summaries, SS8 alias in quickstep, SS22/22b/22d/22e/23/23b private settings, SS27/28 size pages); fetch shots: git fetch origin ci-shots; git archive origin/ci-shots | tar -x -C <fresh scratchpad dir>; view ss-18-tts (sliders y 319/410, divider 437, PLAY y 471), ss-19/20 size pages, Sound, Storage vs Tj shots (Sound 0b8dab8c/4cd04033, Storage 52ef06ee); 2) Sound agent ab5081fb57ba48f4d still running: when done compile+tests; 3) write SS29+ checks (Sound titles order, absent DND/Shortcut/Sound enhancement, Touch sounds flips sound_effects_enabled, slider drag; Storage per agent report); 4) /code-review high vs v0.8.13, tools/gate.sh, ship v0.9.0 (defaultOn !debuggable + test wipDefaultIsOff), TABLET_CHECKLIST, Tj questions: Font/Display size screenshots, Solitaire percentage
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ WHEN both agents report: 1) bash tools/gradle.sh :app:compileDebugJavaWithJavac 
 
 ## Last ten checkpoints
 ```
+  fd1acac ckpt 802: BN1: case STORAGE + Home Storage summary wired (SsHomeSummary.loadStorage -> S
   9d560b7 ckpt 801: BN1: Home Battery summary (SsHomeSummary), case SOUND wired, TTS spacing fixed
   f98f160 ckpt 800: BN1: SETSYS for private mono/balance; PACKAGE_USAGE_STATS grant in every guide
   f0e2bbb ckpt 799: BN1: run #455 ss = 40 PASS 2 FAIL (mono/balance are PRIVATE system settings, a
@@ -25,8 +26,7 @@ WHEN both agents report: 1) bash tools/gradle.sh :app:compileDebugJavaWithJavac 
   9fae60b ckpt 795: BN1 M2: Display page (SsPagesDisplay, SsDisplayRules+7 tests, switchRow), run 
   57bdfd4 ckpt 794: BN1 M2: SsDisplayRules (+Test) written, not yet run; CI ss shots run dispatche
   993c798 ckpt 793: BN1 M2: scenario ss steps SS13-SS14b (Battery page rows, overflow Battery usag
-  17b92a3 ckpt 792: BN1 M2 part 1: Battery page code (SsBatteryText/Stats/Icon, SsPagesBattery, Li
 ```
 
-(12 automatic checkpoint(s) since the last deliberate one — the
+(6 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
