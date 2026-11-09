@@ -1,7 +1,8 @@
 <!--
-  Material Design "alarm" icon (outline, 24 dp), Apache License 2.0 (the icon set's own licence; the same glyph AOSP's framework drawable
-  ic_audio_alarm shows on the Alarm volume slider of Settings). Written out here because that framework drawable is private and not part of
-  the app. Tinted like the other slider icons (ss_ic_media_stream, ss_ic_notifications): the theme's colorControlNormal.
+  Alarm clock glyph of the Alarm volume slider (Material Design "alarm" icon, outline, Apache License 2.0). It is the same outline as AOSP's framework drawable
+  ic_audio_alarm (core/res, android-10.0.0_r47), which is private to the platform: that file draws it on a 48-unit grid at 32 dp, this one on the 24-unit grid
+  at 24 dp (every coordinate is half of the framework's), so the 24 dp icon cell of the slider row shows the same picture. Tinted like the other slider icons
+  (ss_ic_media_stream, ss_ic_notifications): the theme's colorControlNormal.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.

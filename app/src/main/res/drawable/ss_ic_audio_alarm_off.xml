@@ -1,7 +1,7 @@
 <!--
-  Material Design "alarm off" icon (outline, 24 dp), Apache License 2.0 (the icon set's own licence). The Alarm volume row shows it when the alarm
-  stream is muted; the Settings app of the tablet shows its framework drawable ic_audio_alarm_mute there, which the page prefers when the platform
-  has it (SsPagesSound.Row.alarmMutedIcon) and which is private, so this is the fallback. Tinted with the theme's colorControlNormal.
+  Crossed alarm clock glyph shown when the alarm stream is muted (Material Design "alarm off" icon, outline, Apache License 2.0). It is the same outline as AOSP's
+  framework drawable ic_audio_alarm_mute (core/res, android-10.0.0_r47), which is private to the platform: that file draws it on a 48-unit grid at 32 dp, this one on the
+  24-unit grid at 24 dp (every coordinate is half of the framework's). Tinted with the theme's colorControlNormal.
 
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
