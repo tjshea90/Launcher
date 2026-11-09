@@ -3028,7 +3028,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     if (fading) { deferScan(android.os.SystemClock.uptimeMillis()); return; }   // AZ1: the fade is running: the scan (and everything after it) waits for its end
                 }
             }
-            if (windows != null) {
+            if (windows != null && !dying) {
                 for (AccessibilityWindowInfo w : windows) {
                     CharSequence wt = w.getTitle();
                     if (!EventNoise.mayHoldPowerMenu(dialogUp, wt != null && wt.toString().contains("ActionsDialog"), w.getType(), everyWindow)) continue;   // AB2: never fetch + search the foreground app's own tree
