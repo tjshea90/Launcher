@@ -326,8 +326,8 @@ Rows by `order` (key; title res; notes). Hidden on the tablet per SPOOF: owner h
   `show_dev_already` "No need, you are already a developer." (long). Ignored for monkey, secondary non-demo users, an unprovisioned device, `DISALLOW_DEBUGGING_FEATURES`. Enabling =
   `DevelopmentSettingsEnabler.setDevelopmentSettingsEnabled(ctx, true)` (Global `development_settings_enabled` = 1, and the Developer options component is enabled).
 - "Custom build version" (tablet text "vnd_tb8168p1_bsp 1779111601"): NOT FOUND in r47 (vendor row; its source property is unknown; candidates only from the shape of the string).
-- Gotchas: `Build.VERSION.RELEASE`, `Build.VERSION.SECURITY_PATCH`, `Build.DISPLAY`, `Build.MODEL`, `android.system.Os.uname()`, `PackageManager.getPackageInfo` are public. `PlatLogoActivity` is not exported
-  to other apps. Writing `development_settings_enabled` needs WRITE_SECURE_SETTINGS (held) but also the component switch; leave the counter out unless Tj wants it (Build number is REMOVE on the tablet spoof).
+- Gotchas: `Build.VERSION.RELEASE`, `Build.VERSION.SECURITY_PATCH`, `Build.DISPLAY`, `Build.MODEL`, `android.system.Os.uname()`, `PackageManager.getPackageInfo` are public. Whether `PlatLogoActivity` can be started by another app: NOT CHECKED.
+  Writing `development_settings_enabled` needs WRITE_SECURE_SETTINGS (held) but also the component switch; leave the counter out unless Tj wants it (Build number is REMOVE on the tablet spoof).
 
 ## 4. Summary of every DIFF and NF
 - DIFF Font size: r47 maps font scale 1.2 to "Large"; the tablet shows "Default" at 1.2. Read the tablet's own array values.
