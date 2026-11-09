@@ -269,6 +269,11 @@ public class ControlActivity extends Activity {
         String pickerStatus = Features.getString(this, PickerGuard.STATUS_KEY, "");
         if (!pickerStatus.isEmpty()) note("Wallpaper picker, last: " + pickerStatus);
 
+        group("settings", "Settings look-alike", false);
+        toggle("Settings look-alike in the custom launcher", "On = the custom drawer has a \"Settings\" icon that opens a look-alike with only Battery, Display, Sound, Storage, Accessibility, System and About tablet, and the real Settings is kept out of the custom drawer. Off = the real Settings is the only one. The Quickstep drawer always keeps the real Settings.", SettingsSpoof.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, SettingsSpoof.KEY, v); SettingsSpoof.syncSoon(ControlActivity.this, "switch " + (v ? "on" : "off")); } });
+        String ssStatus = Features.getString(this, SettingsSpoof.STATUS_KEY, "");
+        if (!ssStatus.isEmpty()) note("Settings entry, last change: " + ssStatus);
+
         group("return", "Return to the custom launcher (from Quickstep)", false);
         toggle("Run the return reset", "Master switch: when you go back to the custom launcher from Quickstep (double Home, the Back-to-custom icon or tile, a plain PIN) the apps you opened there are closed and the notifications cleared.", ReturnReset.enabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ReturnReset.KEY, v); } });
         if (ReturnReset.enabled(this)) {
