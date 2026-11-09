@@ -1921,3 +1921,7 @@
 ## 2026-11-09T19:26:51Z
 > Product code is unchanged since the gated commit `09215cc`, so the reruns count as proof for it. Four solo reruns are running on `main`: `base`, `o`, `legacy` and `lq`. They should all finish by about 19:36 UTC; the timer is set for 19:36:30. If a section fails again I'll run it on the v0.8.13 tag to see whether it already failed before this release. If all four pass, I bump to v0.9.0 and ship.
 <!-- sha:8862bd079862 -->
+
+## 2026-11-09T19:40:17Z
+> Waiting on the v0.8.13 baseline (#470) and the frame-capture run on `main` (#471); the timer is set for 19:47 UTC. If v0.8.13 `base` is clean, this is a regression from this release and I'll bisect. If it also shows the native crashes and the same four failures, the emulator itself has become unstable and I'll treat the reruns as the proof.
+<!-- sha:27ba3d3eb230 -->
