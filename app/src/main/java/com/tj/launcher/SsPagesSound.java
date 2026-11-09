@@ -419,6 +419,7 @@ final class SsPagesSound {
                 boolean zen = SsSoundRules.zenMuted(f.filter, s, f.allowAlarms, f.allowMedia, f.allowRinger);
                 setIcon(SsSoundRules.iconKind(index, f.ringerMode, l.muted, zen));
                 bar.setEnabled(!zen);
+                if (zen) tracking = false;   // review A #1: a bar that was disabled under a finger never gets onStopTrackingTouch, the flag would freeze this row's refreshes for good
                 if (tracking) return;
                 if (bar.getMax() != l.max) bar.setMax(l.max);   // the maximum first: a new minimum above the old maximum would be clamped
                 if (bar.getMin() != l.min) bar.setMin(l.min);
