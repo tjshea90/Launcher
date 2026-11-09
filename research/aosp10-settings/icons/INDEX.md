@@ -215,7 +215,7 @@ Layout `settings10/res/layout/settings_base_layout.xml`: a Toolbar with `style="
 Toolbar facts (values with line numbers in `VALUES_EXCERPTS.md`, section E):
 - Height 56 dp (`action_bar_default_height_material`); elevation 4 dp (`action_bar_elevation_material`), static on normal pages. Background colorPrimary #FFF5F5F5; status bar colorPrimaryDark #FFE0E0E0 (`windowLightStatusBar`).
 - Content inset start: 16 dp on the home page (`Widget.ActionBar`), 72 dp on sub pages (`Widget.ActionBar.SubSettings`, `actionbar_subsettings_contentInsetStart`). The framework style `Widget.Material.ActionBar` also sets
-  `contentInsetStartWithNavigation` = 72 dp (`action_bar_content_inset_with_nav`, `styles_material.xml` line 1015 region), which applies whenever the up arrow is shown.
+  `contentInsetStartWithNavigation` = 72 dp (`action_bar_content_inset_with_nav`, `styles_material.xml` line 1017), which applies whenever the up arrow is shown.
 - Title style `TextAppearance.DeviceDefault.Widget.ActionBar.Title` (`styles_device_defaults.xml` line 345; parent `TextAppearance.Material.Widget.ActionBar.Title`, `styles_material.xml` line 362): size
   `text_size_title_material_toolbar` = **20dp** (`dimens_material.xml` line 78; dp, not sp, so it does not follow the font scale), colour textColorPrimary (#DE000000), font `config_headlineFontFamilyMedium`.
 - Entity-header pages (Battery, Storage): `EntityHeaderController.styleActionBar` (`settings10/src/com/android/settings/widget/EntityHeaderController.java` lines 310-327) sets the toolbar background to colorPrimaryDark #FFE0E0E0 and elevation 0,
