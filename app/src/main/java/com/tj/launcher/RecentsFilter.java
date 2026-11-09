@@ -143,6 +143,9 @@ final class RecentsFilter {
                 try { into.add(String.valueOf(pm.getApplicationLabel(ri.activityInfo.applicationInfo))); } catch (Throwable ignored) { }
             }
         } catch (Throwable t) { Log.e(TAG, "could not list the apps", t); }
+        // BN1 (review C #2): our own package is skipped above, so the look-alike's label ("Settings", the word of the real Settings that is hidden now) never reached the drawer set and this closer pressed Close on the
+        // look-alike's own Recents card. While the look-alike is the wanted entry its label belongs to the drawer.
+        if (SettingsSpoof.pageAllowed(c)) drawer.add(SettingsSpoof.LABEL);
         Set<String> qs = new HashSet<>();
         try {
             PackageManager pm = c.getPackageManager();
