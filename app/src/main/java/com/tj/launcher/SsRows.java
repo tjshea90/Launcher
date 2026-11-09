@@ -12,6 +12,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import com.android.launcher3.R;
 
 /**
  * BN1: the row factory of the Settings look-alike. One hand-built row = exact by construction and easy to measure (the AOSP rows are androidx.preference layouts that nobody can read here). Numbers are the
