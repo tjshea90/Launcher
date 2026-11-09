@@ -61,22 +61,30 @@ final class SsPagesAccessibility {
         list.addView(SsRows.heading(a, "Audio & on-screen text"));
         final Switch mono = new Switch(a);
         mono.setChecked(monoOn(a));
+        final Runnable monoRefresh = new Runnable() { @Override public void run() { if (mono.isChecked() != monoOn(a)) mono.setChecked(monoOn(a)); } };
         list.addView(SsRows.switchRow(a, "Mono audio", "Combine channels when playing audio", mono, new SsRows.Toggle() {
             @Override public void onToggle(final boolean checked) {
-                SsPagesDisplay.write(a, new Runnable() { @Override public void run() { Settings.System.putInt(a.getContentResolver(), MONO, checked ? 1 : 0); } });
+                applyPrivate(a, MONO, checked ? "1" : "0", monoRefresh);
             }
         }));
         final BalanceBar bar = new BalanceBar(a);
         bar.setProgress(SsAccessRules.balanceProgress(balance(a)));
+        final Runnable balanceRefresh = new Runnable() {
+            @Override public void run() { int p = SsAccessRules.balanceProgress(balance(a)); if (!bar.tracking && bar.getProgress() != p) bar.setProgress(p); }
+        };
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar s, int progress, boolean fromUser) {
                 if (!fromUser) return;
                 final int snapped = SsAccessRules.snapBalance(progress);
                 if (snapped != progress) s.setProgress(snapped);
-                SsPagesDisplay.write(a, new Runnable() { @Override public void run() { Settings.System.putFloat(a.getContentResolver(), BALANCE, SsAccessRules.balanceValue(snapped)); } });
+                // while the finger is down the app writes the value itself when this build lets it; when it does not, the shell helper is asked ONCE, when the finger lifts
+                if (!privateBlocked) try { Settings.System.putString(a.getContentResolver(), BALANCE, SsAccessRules.balanceText(snapped)); } catch (SecurityException | IllegalArgumentException e) { privateBlocked = true; }
             }
             @Override public void onStartTrackingTouch(SeekBar s) { ((BalanceBar) s).tracking = true; }
-            @Override public void onStopTrackingTouch(SeekBar s) { ((BalanceBar) s).tracking = false; }
+            @Override public void onStopTrackingTouch(SeekBar s) {
+                ((BalanceBar) s).tracking = false;
+                if (privateBlocked) applyPrivate(a, BALANCE, SsAccessRules.balanceText(s.getProgress()), balanceRefresh);
+            }
         });
         list.addView(balanceRow(a, bar));
 
@@ -85,9 +93,8 @@ final class SsPagesAccessibility {
                 SsRows.setSummary(font, SsPagesDisplay.fontSummary(a));
                 SsRows.setSummary(magnify, magnificationSummary(a));
                 SsRows.setSummary(hold, holdSummary(a));
-                if (mono.isChecked() != monoOn(a)) mono.setChecked(monoOn(a));
-                int p = SsAccessRules.balanceProgress(balance(a));
-                if (!bar.tracking && bar.getProgress() != p) bar.setProgress(p);
+                monoRefresh.run();
+                balanceRefresh.run();
             }
         };
         live.add(new SsWatcher(a, refresh, SsWatcher.sec(LONG_PRESS), SsWatcher.sec(MAG_TRIPLE), SsWatcher.sec(MAG_SHORTCUT),
@@ -106,6 +113,31 @@ final class SsPagesAccessibility {
                 SsRows.setSummary(shortcut, SsAccessRules.onOff(flag(a, MAG_SHORTCUT)));
             }
         }, SsWatcher.sec(MAG_TRIPLE), SsWatcher.sec(MAG_SHORTCUT)));
+    }
+
+    // ------------------------------------------------------------------ private system settings
+    /** Set when Android refused a direct write of master_mono / master_balance (Settings.System.PRIVATE_SETTINGS): from then on the shell helper does it. */
+    private static volatile boolean privateBlocked;
+
+    /**
+     * Writes master_mono / master_balance: the app itself first (a build that allows it), else the shell helper (new verb SETSYS), on a worker thread. When neither could, the control goes back to the value the
+     * system really holds ({@code revert} runs on the main thread) and a short note says so: the page never shows a value Android does not have.
+     */
+    static void applyPrivate(final Activity a, final String key, final String value, final Runnable revert) {
+        new Thread(new Runnable() {
+            @Override public void run() {
+                boolean ok = false;
+                if (!privateBlocked) {
+                    try { ok = Settings.System.putString(a.getContentResolver(), key, value); } catch (SecurityException | IllegalArgumentException e) { privateBlocked = true; }
+                }
+                if (!ok) ok = ShellHelper.enabled(a) && ShellHelper.setSystem(key, value);
+                if (ok) return;
+                a.runOnUiThread(new Runnable() { @Override public void run() {
+                    android.widget.Toast.makeText(a, "This setting can't be changed from here.", android.widget.Toast.LENGTH_SHORT).show();
+                    revert.run();
+                } });
+            }
+        }, "ss-private").start();
     }
 
     // ------------------------------------------------------------------ readers

@@ -46,6 +46,12 @@ final class SsAccessRules {
     /** The value stored for a slider position: (progress - 100) * 0.01. */
     static float balanceValue(int progress) { return (progress - BALANCE_CENTER) * 0.01f; }
 
+    /** The text stored for a slider position: "0" in the middle, else two decimals with a dot ("-0.50", "0.06"); always inside what ShellProtocol.setSystem accepts. */
+    static String balanceText(int progress) {
+        if (progress == BALANCE_CENTER) return "0";
+        return String.format(java.util.Locale.US, "%.2f", balanceValue(progress));
+    }
+
     /** BalanceSeekBar: a position within 3 % of the range around the middle (exclusive) is pulled to the middle. */
     static int snapBalance(int progress) {
         int threshold = (int) (BALANCE_MAX * BALANCE_SNAP);

@@ -1,6 +1,7 @@
 package com.tj.launcher;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import org.junit.Test;
 
@@ -64,5 +65,14 @@ public class SsAccessRulesTest {
         assertEquals(590, SsAccessRules.rateProgress(10_000));
         assertEquals(600, SsAccessRules.rateValue(10_000));
         assertEquals(25, SsAccessRules.pitchValue(-3));
+    }
+
+    @Test public void balanceTextIsWhatTheHelperAccepts() {
+        assertEquals("0", SsAccessRules.balanceText(100));
+        assertEquals("-1.00", SsAccessRules.balanceText(0));
+        assertEquals("1.00", SsAccessRules.balanceText(200));
+        assertEquals("-0.50", SsAccessRules.balanceText(50));
+        assertEquals("0.06", SsAccessRules.balanceText(106));
+        for (int p = 0; p <= 200; p++) assertNotNull("progress " + p, ShellProtocol.setSystem("SETSYS master_balance " + SsAccessRules.balanceText(p)));
     }
 }
