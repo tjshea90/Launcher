@@ -321,12 +321,13 @@ final class SsPagesSound {
         private void loadTitle(int type, final View row) {
             String text = null;
             try {
-                Uri uri = RingtoneManager.getActualDefaultRingtoneUri(a, type);
+                final Context app = a.getApplicationContext();   // a background thread must not hold the activity
+                Uri uri = RingtoneManager.getActualDefaultRingtoneUri(app, type);
                 String title = null;
                 if (uri != null) {
-                    Ringtone r = RingtoneManager.getRingtone(a, uri);
+                    Ringtone r = RingtoneManager.getRingtone(app, uri);
                     if (r != null) {
-                        try { title = r.getTitle(a); } finally { r.stop(); }   // getRingtone prepares a player: release it at once
+                        try { title = r.getTitle(app); } finally { r.stop(); }   // getRingtone prepares a player: release it at once
                     }
                 }
                 text = SsSoundRules.ringtoneSummary(uri != null, title);
