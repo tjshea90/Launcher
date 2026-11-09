@@ -4016,7 +4016,7 @@ SSDEN=$(adb shell wm density | tr -d '\r' | grep -i override | sed 's/[^0-9]//g'
 info "SS28d: same-value write as the app (wm density $SSDEN) -> $(adb shell run-as $PKG wm density $SSDEN 2>&1 | tr -d '\r' | head -2 | tr '\n' '|' | cut -c1-200)"
 adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 2
 # ---- M4: Sound and Storage (written by the page agents from Tj's screenshots 0b8dab8c / 4cd04033 / 52ef06ee); both start at the home page
-ssvol(){ adb shell settings list system | tr -d '\r' | grep -E '^volume_music(_[a-z_]+)?=' | head -1 | cut -d= -f2; }
+ssvol(){ L=$(adb shell settings list system | tr -d '\r'); v=$(echo "$L" | grep -E '^volume_music_speaker=' | head -1 | cut -d= -f2); [ -z "$v" ] && v=$(echo "$L" | grep -E '^volume_music=' | head -1 | cut -d= -f2); echo "$v"; }   # the emulator plays music on the speaker device: its volume lives in volume_music_speaker (run #457: the plain key never moved)
 sstap "Sound"; sleep 3; ssdump "$OUT/ss-sound.xml"; shot ss-21-sound
 check "SS29: the Sound page lists the four volumes, the two default sounds, the heading Other sounds and the three switches, in Tj's order" ssorder "$OUT/ss-sound.xml" "Media volume" "Call volume" "Alarm volume" "Notification volume" "Default notification sound" "Default alarm sound" "Other sounds" "Screen locking sounds" "Charging sounds and vibration" "Touch sounds"
 check "SS29b: Sound has none of what Tj removed or the tablet does not have (no Do Not Disturb, Shortcut to prevent ringing, Sound enhancement, Ring volume, Phone ringtone, 'and vibrations', search)" ssabsent "$OUT/ss-sound.xml" "Do Not Disturb" "Shortcut to prevent ringing" "Sound enhancement" "Ring volume" "Phone ringtone" "Other sounds and vibrations" "Advanced"
@@ -4078,7 +4078,7 @@ setmode custom; rebind; home; sleep 8
 SSQ3=$(adb shell pm query-activities --brief -a android.intent.action.MAIN -c android.intent.category.LAUNCHER | grep -c 'SettingsAlias')
 check "SS8: switch on: the look-alike's launcher entry is listed in the custom mode (now $SSQ1), gone in the Quickstep mode (now $SSQ2), back with the custom mode (now $SSQ3)" test "$SSQ1/$SSQ2/$SSQ3" = "1/0/1"
 # the switch OFF: the entry goes, the real Settings is the one in the drawer again (the emulator seeds it as allowed)
-ssfeat false; setmode custom; rebind; home; sleep 8
+adb logcat -c; ssfeat false; setmode custom; rebind; home; sleep 8   # logcat cleared first: SS8's Quickstep phase already logged one 'Settings entry OFF' (run #457)
 adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-off.txt" 2>&1
 check "SS6: with the switch off the Settings entry was switched OFF again" grep -q "Settings entry OFF" "$OUT/ss-log-off.txt"
 ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-03-real-settings; resumed > "$OUT/ss-resumed2.txt"
