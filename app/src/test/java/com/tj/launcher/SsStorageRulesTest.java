@@ -58,6 +58,9 @@ public class SsStorageRulesTest {
         assertEquals("32.00 GB", SsStorageRules.formatFileSize(32_000_000_000L, US));
         assertEquals("128 GB", SsStorageRules.formatFileSize(128_000_000_000L, US));   // 100 and up: no decimals
         assertEquals("-1.50 kB", SsStorageRules.formatFileSize(-1500, US));
+        assertEquals("1.50 TB", SsStorageRules.formatFileSize(1_500_000_000_000L, US));
+        assertEquals("2.00 PB", SsStorageRules.formatFileSize(2_000_000_000_000_000L, US));
+        assertEquals("5000 PB", SsStorageRules.formatFileSize(5_000_000_000_000_000_000L, US));   // petabytes are the last unit
     }
 
     @Test public void shortFileSizeDropsDecimals() {
