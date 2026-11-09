@@ -3865,7 +3865,8 @@ check "SS1: the Settings entry (the manifest alias) was switched ON in the custo
 ssdrawer "$OUT/ss-drawer.xml"; shot ss-01-drawer
 check "SS2: exactly ONE 'Settings' in the custom drawer (the look-alike; the real Settings is kept out)" bash -c "[ \"\$(tr '>' '\n' < $OUT/ss-drawer.xml | grep -c 'text=\"Settings\"')\" = 1 ]"
 SB=$(ssbounds "$OUT/ss-drawer.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-02-home; resumed > "$OUT/ss-resumed.txt"
-check "SS3: the look-alike's own page activity is on screen (not com.android.settings)" grep -q "com.tj.launcher/.SsPageActivity" "$OUT/ss-resumed.txt"
+info "SS3: resumed = $(tr -s ' \n' ' ' < $OUT/ss-resumed.txt | cut -c1-200)"
+check "SS3: the look-alike's own page activity is on screen (not com.android.settings)" grep -qE "com.tj.launcher/(\.|com\.tj\.launcher\.)(SsPageActivity|SettingsAlias)" "$OUT/ss-resumed.txt"
 ssdump "$OUT/ss-home.xml"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1

@@ -72,12 +72,12 @@ final class SsRows {
         return r;
     }
 
-    /** The coloured square of a home-page row: 36 dp, small rounded corners, a white 24 dp glyph inset 6 dp (AOSP dashboard_tile_image_size / _foreground_image_size / _inset). */
+    /** The coloured square of a home-page row: 36 dp, corner radius 2.9 dp, a white 24 dp glyph inset 6 dp (AOSP dashboard_tile_image_size / _foreground_image_size / _inset). */
     static View tile(Context c, int color, int glyphRes) {
         FrameLayout f = new FrameLayout(c);
         GradientDrawable bg = new GradientDrawable();
         bg.setColor(color);
-        bg.setCornerRadius(dp(c, 6));
+        bg.setCornerRadius(dp(c, 2.9f));   // the stock icon mask: 8 % of the 36 dp tile (measured on Tj's screenshot: the corner cuts 3, 2, 1, 0 px from the top row down)
         f.setBackground(bg);
         ImageView g = new ImageView(c);
         g.setImageResource(glyphRes);

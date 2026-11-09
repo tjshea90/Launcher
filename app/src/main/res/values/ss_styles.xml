@@ -16,6 +16,8 @@
     <style name="SsTheme.Home">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
+        <!-- measured on Tj's screenshot of the stock home page: pure white (#FFFFFF), while every sub page is #FAFAFA -->
+        <item name="android:windowBackground">@android:color/white</item>
     </style>
 
     <style name="SsActionBarSub" parent="@android:style/Widget.DeviceDefault.Light.ActionBar.Solid">
