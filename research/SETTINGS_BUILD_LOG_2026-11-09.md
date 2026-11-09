@@ -37,6 +37,13 @@ A contact sheet of all of them can be made in a minute with PIL (scratchpad only
    restriction would hit any other private key. (c) Accessibility page render matches Tj's screenshots (rows, headings, Magnification icon, Touch & hold dialog, balance bar with centre tick; Left/Right labels are the SECONDARY
    colour, measured #737373). (d) scenario bug: `settings put system K "$VAR"` with VAR=null (absent key) writes the literal string "null": restore with `settings delete` when the old value was null.
 
+10. (done 2026-11-09 06:20 UTC, ckpt 800+) The two TO-DOs of 9 are in: `PACKAGE_USAGE_STATS` is in tools/adb-setup.sh (grant + --check), tools/adb-all.sh / .bat (loop; status grep had it), research/ADB_COMMANDS.txt, ADB_TODO.md,
+    ADB_PHONE.txt, the phone guide (`phoneguide/.../steps.txt` = `research/ADB_PHONE_COMMANDS.txt`, GuideTest now pins FIVE grants), the in-app adb guide (`AdbGuideActivity` step 5 + status tick), the helper's
+    "Do everything" job list (`ShellProtocol.RUN` id GRANT_USAGE, `SetupActivity` item) and the tablet report's permission list. Mono audio / Audio balance: `SsPagesAccessibility.applyPrivate` = own write, else the helper verb
+    SETSYS (`ShellProtocol.setSystem`: master_mono 0|1, master_balance -1..1 with at most 3 decimals, nothing else), else revert + toast. After an UPDATE the helper process must be restarted (an old helper does not know SETSYS:
+    it answers an error and the control goes back). Scenario: SS22/SS22b (no helper: nothing stored, switch back), SS22d/e + SS23b (helper: stored 1 / negative), restore by `settings delete` when the value was absent.
+11. Home page summaries: Battery = "NN% - <header sentence>" (`SsHomeSummary`, same sources as the Battery page; scenario SS5b), Storage = "NN% used - X GB free" (AOSP TopLevelStoragePreferenceController; wired from the Storage page code).
+
 ## Open questions for Tj (ask ONCE, batched, only if his answer changes the work)
 - Font size page of his tablet (Settings > Display > Font size): a screenshot of the page with the slider at each of the 4 positions, or at least the labels and the preview, so the steps (1.05 / 1.2 / 1.35 / 1.5 are guesses) and the page layout can be copied.
 - Display size page of his tablet (the same, 5 stops expected: Small, Default, Large, Larger, Largest).
