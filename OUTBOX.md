@@ -1798,3 +1798,28 @@
 >
 > Next I'll confirm the Release exists and send you the link, along with the v0.8.13 tablet checklist.
 <!-- sha:5a87dfe37e57 -->
+
+## 2026-11-09T04:50:08Z
+> Tj, v0.8.13 is built, signed and published, and it fixes the three things you reported. None of it has run on your tablet yet.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.8.13
+>
+> Install `Launcher-v0.8.13.apk` over the old one. It uses the same key, so your permissions, Home choice and accessibility setting stay. The adb helper does not survive an install.
+>
+> **What changed**
+> - **First side-key press on the custom home:** the status-bar window that announces itself at every unlock no longer keeps the patch away for 2.5 seconds, so the first press should hide Screenshot.
+> - **Tall power menu flash after Home:** the fading-out stock menu is no longer mistaken for a new one. The old tall card should not flash.
+> - **White box when the notification panel slides back up:** losing the pencil now removes the cover at once.
+> - **Lock-screen patch flash when you pull up the PIN pad:** I haven't proven the cause. The patch now stays away 1.5 seconds after a finger touches the screen. Every time it comes back, the lock log records the path that brought it back.
+>
+> Presses within about 1 second of the unlock can still show Screenshot; it's a known limit.
+>
+> **Testing:** `research/TABLET_CHECKLIST_v0.8.13.md` has the steps. Most useful: press the side key 1.5 to 2 seconds after the home screen appears, 4 or 5 times. If you see a flash, a leak or the white box, send the tablet report within a minute so the log holds it.
+>
+> **Release gate:** it needed triage. The `pt` timing section passed alone but failed when chained after other sections, so `gate.sh` now always runs it alone. A scenario test that left the emulator on the lock screen is fixed. Everything is green, and the only app change after the tested code is the version number.
+>
+> **Still open**
+> - **Settings look-alike app (BN1):** starting now. The first milestone is the entry point, the switch and the app-list entry.
+> - **Your tablet checks:** v0.8.9, v0.8.11, v0.8.12 and now v0.8.13.
+> - **`session-handoff` plugin:** disabling it in claude.ai is still open. It can block auto-compaction in your other projects.
+<!-- sha:572bdd2bce2d -->
