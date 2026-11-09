@@ -1727,3 +1727,18 @@
 >
 > When it's green I'll bump the version to 0.8.13, run `ship.sh`, have GitHub build it, confirm the Release exists and send you the link. If it's red, I'll triage it against v0.8.12 first and won't ship it red.
 <!-- sha:1ab68ceeeba4 -->
+
+## 2026-11-09T04:33:16Z
+> v0.8.13 is still not shipped. All the gate reruns are green except `pt`, the power-menu timing section, and that one is being rerun.
+>
+> - **Green:** `last`, `e1,n,ac`, `hp`, and `fp,last` with the fixed test.
+> - **The `pt` rerun that hung:** it ran 20 minutes with the emulator going silent near the end. I cancelled it. The two `pt` timing checks and the BE1 check it failed look like a dying emulator, not the app. The same code passed those timing checks earlier.
+> - **Next:** a fresh `pt` on `main` is running and should finish around 04:45 UTC.
+>
+> In parallel I set the version to 0.8.13 (code 38) and `ship.sh` is running its local checks. As soon as the fresh `pt` is green, I'll have GitHub build and sign the release, confirm the Release exists and send you the link. If `pt` fails the same timing checks again, I'll compare against v0.8.12 first and won't ship it on a guess.
+>
+> Still open from your messages:
+> - **Settings look-alike app (BN1):** starts once v0.8.13 is built.
+> - **Your tablet checks:** v0.8.9, v0.8.11 and v0.8.12.
+> - **`session-handoff` plugin:** disabling it is still open.
+<!-- sha:ee346ad2503f -->
