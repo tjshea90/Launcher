@@ -1854,3 +1854,19 @@
 >
 > I'll read the run and the agents' findings as they land, then fix what is real, run the gate and ship v0.9.0.
 <!-- sha:6d9b6238e36a -->
+
+## 2026-11-09T17:45:31Z
+> Yes, partly, and it's set up. A scheduled task now wakes this session every 2 hours (next at 18:27 UTC) and carries on from `CHECKPOINT.md` and `TASKS.md`. The 2-hour wake is armed and visible in the scheduled-task list, but I haven't seen it fire yet.
+>
+> - **What it does:** each wake picks up the first open item I own. It answers any message of yours first. It stops itself when nothing is left for me, or if another session has taken over. The same rule is now in `CLAUDE.md` and `HANDOFF.md`, so a new session arms its own wake. When a cut-off notice names a reset time, the rule is a one-shot wake 2 minutes after it.
+> - **What it can't do:** Claude can't see the usage cap. A wake needs usage, so during the cap it fails and the next one retries. A dead session can't restart itself, and nothing helps if the session itself is deleted. The gap from 07:20 to 17:14 UTC would have been 2 hours at most, not 10.
+>
+> The Settings look-alike is mostly done. I'm waiting on a fresh `ss` run and two more code reviews.
+> - **Run #460:** 65 pass, 0 fail. The chat bubbles on Display size now match your Default screenshot to the pixel (75 px each).
+> - **"Custom":** Display size can now only read Small, Default, Large, Larger or Largest, with unit tests. Run #460 was built before that fix and still showed "Custom (170)". The new run (due about 17:49 UTC) checks that no page says "Custom".
+> - **TTS sliders:** they are now thin and light grey like yours, with a pixel check added.
+> - **Earlier review:** it found 6 real problems, all fixed in code. They include the home-screen Settings icon turning into "Launcher control" and a page crash counting toward the 3-crash breaker. Two more reviews (Sound/Storage and Size/Display/Accessibility) are running.
+> - **Release:** it ships as v0.9.0 with the look-alike on by default. I'll then run the emulator test gate (a few runs, about an hour of runner time).
+>
+> Still waiting on you: the tablet checks from the earlier releases, which you haven't answered yet. v0.9.0 will come with a new checklist.
+<!-- sha:ead15abf3e0c -->
