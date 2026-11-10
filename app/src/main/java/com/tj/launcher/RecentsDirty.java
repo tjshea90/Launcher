@@ -30,21 +30,6 @@ public final class RecentsDirty {
         return true;
     }
 
-    /** BN8d, pure: is a window whose root belongs to {@code pkg} one of the stock launcher's (the Recents screen lives there)? {@code stockPkg} = the resolved stock launcher, may be null. */
-    public static boolean isStockLauncherWindow(String pkg, String stockPkg) {
-        if (pkg == null || pkg.isEmpty() || "-".equals(pkg)) return false;
-        return pkg.startsWith("com.android.launcher3") || pkg.equals(stockPkg);
-    }
-
-    /**
-     * BN8d, pure: the diagnosis line of a Recents clean-up that found nothing. The stock launcher's windows come FIRST and are never pushed out by the others: the line is cut to {@code max} characters from the END
-     * (the report cuts every value at 600), so what is lost is the list of the other windows, not the node classes and texts of the Recents screen itself.
-     */
-    public static String diagLine(String head, String stock, String others, int max) {
-        String s = (head == null ? "" : head) + "; stock launcher:" + (stock == null || stock.isEmpty() ? " NO WINDOW" : stock) + "; others:" + (others == null || others.isEmpty() ? " none" : others);
-        return max > 0 && s.length() > max ? s.substring(0, max) : s;
-    }
-
     /** Pure rule (JVM-testable): does a window of {@code pkg} appearing mean Recents may now hold another app? */
     public static boolean shouldMark(String pkg, String ourPkg, String stockLauncherPkg, String imePkg, String targetPkg, boolean otherAppsLandInRecents) {
         if (!otherAppsLandInRecents || pkg == null || pkg.isEmpty()) return false;

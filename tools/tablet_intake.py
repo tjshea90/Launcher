@@ -295,7 +295,6 @@ def facts_markdown(rep, source, when):
     row("Last unlock", kv.get("unlock_speed") or kv.get("unlock_pick_last"), "state section (allow-listed)")
     row("Last unlock, start to finish (BK1c)", kv.get("unlock_sum"), "state section (allow-listed): Enter tap -> custom home on screen, with the cover and the Launcher resume")
     row("Last clean-up", kv.get("reset_last"), "state section")
-    row("Recents clean-up found nothing: what the screen held (BN8d)", kv.get("recents_diag"), "state section")
     logt = rep.get("logcat -d -v time")
     if logt is not None:
         lines = [l for l in logt.splitlines() if l.strip()]
