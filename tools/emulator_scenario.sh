@@ -597,9 +597,10 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   info "BK1b ($1 mode) every PENCIL line of the whole phase, with its time (the log was cleared before the lock cycle; the marker is the moment the panel was asked to open), 1/3: $(echo "$PL" | sed -n 1,3p | tr '\n' '|')"
   info "BK1b ($1 mode) PENCIL lines 2/3: $(echo "$PL" | sed -n 4,6p | tr '\n' '|')"
   info "BK1b ($1 mode) PENCIL lines 3/3 ($(echo "$PL" | wc -l | tr -d ' ') in all): $(echo "$PL" | sed -n 7,9p | tr '\n' '|')"
-  # BQ3 (debug builds): what the followed pencil node and its ancestors report; up to 4 probes before the panel was asked to open (the lock transition), 2 after
-  awk '/BK1b marker expand/{m=1} /PENCIL probe/{ if (!m && nb<4) {print; nb++} else if (m && na<2) {print; na++} }' "$OUT/pencil-lock-$1-log.txt" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' > "$OUT/pencil-lock-$1-probes.txt" 2>&1
-  while IFS= read -r PROBE_L; do info "BQ3 ($1 mode) ${PROBE_L:0:320}"; done < "$OUT/pencil-lock-$1-probes.txt"
+  # BQ3 (debug builds): what the followed pencil node, its ancestors and the shade window's id'd nodes report (A: the first probe of the phase = the lock transition, B: panel OPEN at rest on the lock screen, C: panel CLOSED again)
+  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BQ3 marker none' 0 "A first probe" "$1"
+  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BK1b marker expand' 1 "B open" "$1"
+  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BQ3 marker collapse 1' 0 "C closed" "$1"
   info "BK1b ($1 mode): NO panel open, unlocked / PIN set / lock screen: $BK_P0 / $BK_P1 / $BK_P2"
   info "BK1b ($1 mode): panel opened on the lock screen, 1st / 2nd / 3rd time: $BK_O1 / $BK_O2 / $BK_O3; pencil nodes on screen after the 3rd: $(cat $OUT/pencil-lock-$1-edit.txt)"
   BK_LL="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -E ' (SERVICE|RESET|ROUTER|PROFILE|LOCKPREP|HOME|SWEEP) ' | tail -10 | cut -c1-62 | tr -d '\r')"
