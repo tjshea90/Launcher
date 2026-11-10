@@ -4,15 +4,22 @@ Send ONE message (OUTBOX.md must show it afterwards). Put the Release link alone
 
 ---
 
-Tj, I found the causes of both problems in your v0.9.1 report and fixed them in v0.9.2. The screenshot fix is proven by the tests and by your own report; the white-box fix is proven on the emulator (the cover goes within about 0.1 s when the panel closes and no white box is left), not yet on your tablet.
-
-**1. The screenshots of the lock screen.** They were real screenshots: the "menu dimming measurement" takes two of them (one of the lock screen, one with the power menu opening by itself) to learn how dark the stock power menu makes the screen. Your lock screen picture and the normal-look dimming were each measured ONCE (the dimming on 7 Nov) and stay valid while the wallpaper, size and rotation do not change. What kept repeating was a SECOND measurement for the dark look of the lock screen: after you use Quickstep the battery saver is on, so the lock screen wakes dark for a few seconds before the app switches the saver off, and the app tried to measure that look as well. It never finished (an interruption was not counted as a failed try), so it started again at your next lock, up to four times a day. You asked why it does not just measure once: it does now. The dimming is measured ONLY in the normal look, once per wallpaper; the dark look reuses that measurement and never gets screenshots of its own. With your wallpaper unchanged there will be no more screenshots. Only a new wallpaper, a different screen size or rotation, or the "Measure again" button can start one (it then waits until the lock screen has been on for 10 seconds, runs once per lock and gives up for good after two tries that stored nothing).
-
-**2. The white box when you slide the notification panel back up.** The cover over the pencil could only be taken away after the app had looked at the panel, and each look is a slow call into the system (up to 1.3 seconds on your tablet, 834 of them in your report), so the box stayed behind. Now the cover is taken away the instant your finger touches the screen, and the moment the pencil is gone, before the app starts its slow search, and it comes back only when the panel has been still for about half a second. The price: after you touch the open panel the pencil is visible for about half a second before it is covered again.
-
-If either happens again, send the report right after it: the lock-screen log now has a timeline (`SCRIM run starts / run ends`, `PENCIL cover shown / hidden (why)`), so I can see which visit did what.
+Tj, v0.9.2 is out. It fixes both problems in your report.
 
 https://github.com/tjshea90/Launcher/releases/tag/v0.9.2
+
+**1. The lock-screen screenshots.** They were real system screenshots: the menu-dimming measurement takes two of them to learn how dark the stock power menu makes the screen. After a Quickstep session the battery saver makes the lock screen wake dark for a few seconds, and the app tried to measure that dark look as well. That measurement never finished, an interrupted try was not counted, so it started again at your next lock (the two or three screenshots you saw). Now the dimming is measured only in the normal look, once for your wallpaper; the dark look reuses it and never gets screenshots of its own. With your wallpaper unchanged there will be no more screenshots. Only a new wallpaper, a different screen size or rotation, or the "Measure again" button can start one (it waits until the lock screen has been on for 10 seconds, runs once per lock, and gives up after two tries that stored nothing).
+
+**2. The white box when you slide the panel back up.** The cover over the pencil was only taken away after the app had looked at the panel, and each look is a slow call into the system (up to 1.3 seconds on your tablet), so the box lagged behind the panel. Now the cover goes the instant your finger touches the screen, and again as soon as the pencil is gone, and it comes back only after the panel has been still for about half a second. The price: after you touch the open panel, the pencil is visible for about half a second before it is covered again.
+
+What is proven: the screenshot fix by the unit tests and an emulator run (no dark-look measurement starts). The white-box fix on the emulator: when the panel closes the cover is gone about 0.1 to 0.2 seconds later, in both modes, and the pictures show no white box. One check of my long emulator test was red twice (the third panel closing in the custom-mode run). I looked at the pictures: the test's swipe made the emulator show the PIN pad with the panel still open behind it, and the cover was correctly on the pencil, so the test's assumption was wrong, not the app. I fixed the test and it is re-running (CI run 517); the result goes into TASKS.md. Neither fix has run on your tablet yet.
+
+If either happens again, send the tablet report right after it: the lock-screen log now has a timeline (`SCRIM run starts / run ends`, `PENCIL cover shown / hidden` with the reason), so I can see which visit did what.
+
+Still waiting on you (nothing new):
+- The tablet report right after the FIRST side-key press on the custom home (the Screenshot button / visible patch you saw), and one before you open more Quickstep apps (they showed in the custom Recents).
+- Start the shell helper and tap "Do everything that is missing" (usage access), so the Battery page can show real numbers.
+- Two answers about notifications (where you saw one: banner, status-bar icon, shade or lock screen, and which app) and about the slow unlock (which unlock, what is on screen, about how many seconds).
 
 ---
 
