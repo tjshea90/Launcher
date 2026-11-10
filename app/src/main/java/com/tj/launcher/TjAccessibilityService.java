@@ -2251,9 +2251,20 @@ public class TjAccessibilityService extends AccessibilityService {
                 return;
             }
             penConfirmedMs = android.os.SystemClock.uptimeMillis();
+            // BN8b: a pencil that moves UP is a panel sliding away; a cover that follows it trails it over the lock screen as a white box. Keep the cover away until two looks agree (the panel at rest).
+            if (!penSlide.allowCover(r.top, penConfirmedMs)) {
+                boolean wasUp = penShown;
+                if (penShown) hidePencil("the panel is sliding up");
+                if (wasUp && penConfirmedMs - penHeldLoggedMs > 1500) { penHeldLoggedMs = penConfirmedMs; LockLog.add(getApplicationContext(), "PENCIL", "cover held away: the panel is sliding up (the pencil is at a new place at every look)"); }
+                if (!penPending) { penPending = true; handler.postDelayed(penEval, PencilRules.SlideGuard.RELOOK_MS); }   // the events stop when the panel stops: look again soon, the cover comes back when two looks agree
+                return;
+            }
             showPencil(r);
         } catch (Throwable t) { Log.e(TAG, "pencil update failed", t); removePencil(); }
     }
+
+    private final PencilRules.SlideGuard penSlide = new PencilRules.SlideGuard();   // BN8b
+    private long penHeldLoggedMs = 0;
 
     private int penFollowed = PencilRules.NO_KNOWN;   // BN4: what following the known node gave in the last findPencil
     private long penConfirmedMs = 0;                  // BN4: the last time a visible pencil was seen (for the "hidden N ms after" line)
@@ -2389,7 +2400,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(penWatch);
         if (penView == null) return;
         try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(penView); } catch (Throwable ignored) { }
-        penView = null; penAt.setEmpty(); penShown = false;
+        penView = null; penAt.setEmpty(); penShown = false; penSlide.reset();
         Log.i(TAG, "PENCIL cover removed");
     }
 

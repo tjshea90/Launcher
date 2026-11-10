@@ -43,6 +43,73 @@ public class PencilRulesTest {
         assertEquals(false, PencilRules.searchGapWaived(PencilRules.NO_KNOWN, false));
     }
 
+    // ---- BN8b: the cover must not trail a panel that slides up
+    @Test public void theCoverIsShownAndFollowedWhileThePanelIsAtRestOrOpening() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        assertEquals("the first look of a pull", true, g.allowCover(300, 1000));
+        assertEquals("opening: the pencil goes down, the box trails inside the white panel", true, g.allowCover(380, 1040));
+        assertEquals(true, g.allowCover(460, 1080));
+        assertEquals("at rest", true, g.allowCover(460, 1120));
+        assertEquals("jitter of a pixel or two is not a slide", true, g.allowCover(458, 1160));
+        assertEquals(false, g.holding());
+    }
+
+    @Test public void thePencilGoingUpTakesTheCoverAwayAndItComesBackWhenTheLooksAgree() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        assertEquals(true, g.allowCover(460, 1000));
+        assertEquals("the panel starts to slide up: no cover", false, g.allowCover(430, 1040));
+        assertEquals(true, g.holding());
+        assertEquals("still moving up", false, g.allowCover(380, 1080));
+        assertEquals("the finger lets go: two looks agree -> back at the new rest place", true, g.allowCover(380, 1140));
+        assertEquals(false, g.holding());
+        assertEquals(true, g.allowCover(380, 1300));
+    }
+
+    @Test public void aReversalWaitsUntilThePanelHasSettled() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        assertEquals(false, g.allowCover(400, 1040));      // up
+        assertEquals("now it goes down again: still moving, still no cover", false, g.allowCover(420, 1080));
+        assertEquals(false, g.allowCover(450, 1120));
+        assertEquals(true, g.allowCover(450, 1180));        // at rest
+    }
+
+    @Test public void aLongGapMeansANewPullAndANewGuard() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        assertEquals(false, g.allowCover(400, 1040));      // sliding up, held
+        assertEquals("the next pull of the panel (no look for more than STALE_MS) starts clean, even higher up", true, g.allowCover(300, 1040 + PencilRules.SlideGuard.STALE_MS + 1));
+        assertEquals(false, g.holding());
+    }
+
+    @Test public void aTransientLossDoesNotForgetTheSlide() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        assertEquals(false, g.allowCover(420, 1040));
+        // the pencil node is lost for 200 ms (a failed refresh) and found again, higher: still a slide, still no cover
+        assertEquals(false, g.allowCover(330, 1240));
+        assertEquals(true, g.holding());
+    }
+
+    @Test public void theCoverIsNeverKeptAwayForLongerThanTheSafetyValve() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(900, 0);
+        int top = 900; long t = 0; boolean shownAgain = false;
+        for (int i = 0; i < 100 && !shownAgain; i++) { top -= 8; t += 40; shownAgain = g.allowCover(top, t); }   // a pencil that creeps up for ever
+        assertEquals("released by the valve, not by stillness", true, shownAgain);
+        assertEquals(true, t <= PencilRules.SlideGuard.HOLD_MAX_MS + 40);
+    }
+
+    @Test public void resetForgetsEverything() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        g.allowCover(400, 1040);
+        assertEquals(true, g.holding());
+        g.reset();
+        assertEquals(false, g.holding());
+        assertEquals(true, g.allowCover(100, 1050));
+    }
+
     @Test public void theWatchdogIsFasterThanTheOldSearchGapPlusASearch() {
         assertEquals(true, PencilRules.WATCH_MS < EventNoise.minPencilSearchGapMs(0x00000800) + 50);   // 0x800 = TYPE_WINDOW_CONTENT_CHANGED
     }

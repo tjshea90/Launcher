@@ -38,4 +38,36 @@ public final class PencilRules {
      * that call did NOT already search: a search that found nothing is the answer, a second one 30 ms later (up to ~500 ms of main thread on the tablet) cannot find more (code review 2026-11-09).
      */
     public static boolean searchGapWaived(int followed, boolean fullSearchRan) { return followed == LOST && !fullSearchRan; }
+
+    /**
+     * BN8b (Tj, 2026-11-10, about v0.9.0: "The lock screen still flashed a white box after I pulled down [and] returned the notification panel for the pencil hider"). The BN4 fix above takes the cover away when the pencil is LOST,
+     * but while the panel slides UP the pencil is still found, a little higher at every look, and the cover FOLLOWED it with the lag of the look (an event every 40 ms or a whole-tree search every 200 ms, then a relayout and a
+     * frame): a white box trailing behind the retreating panel, over the lock screen (the tablet report counts 355 whole-tree searches against 26 one-node follow-ups). A cover cannot hide a pencil that moves that fast, so while the
+     * pencil goes UP the cover stays away, and it comes back when two looks in a row agree (the panel is at rest, say half open). Going DOWN (the panel opening) is followed as before: there the box trails INSIDE the white panel.
+     */
+    public static final class SlideGuard {
+        public static final int NONE = Integer.MIN_VALUE;
+        public static final int SLIDE_UP_PX = 3;          // less than this is jitter, not a slide
+        public static final long HOLD_MAX_MS = 3000;      // a safety valve: the cover is never kept away for longer than this in one go
+        public static final long STALE_MS = 800;          // no look for this long = a new pull of the panel, nothing is known about it yet
+        public static final long RELOOK_MS = 60;          // while the cover is held away the next look is due this soon (the events stop when the panel stops)
+        private int lastTop = NONE;
+        private long lastMs, holdSince;
+        private boolean holding;
+
+        /** A look found the pencil with its top edge at {@code top} at {@code nowMs}. True = the cover may be shown or followed now; false = keep it away (and look again soon). */
+        public boolean allowCover(int top, long nowMs) {
+            if (lastTop != NONE && nowMs - lastMs > STALE_MS) reset();
+            boolean up = lastTop != NONE && top < lastTop - SLIDE_UP_PX;
+            boolean still = lastTop == top;
+            lastTop = top; lastMs = nowMs;
+            if (holding && nowMs - holdSince >= HOLD_MAX_MS) { holding = false; return true; }
+            if (up) { if (!holding) { holding = true; holdSince = nowMs; } return false; }
+            if (holding) { if (still) { holding = false; return true; } return false; }
+            return true;
+        }
+
+        public boolean holding() { return holding; }
+        public void reset() { lastTop = NONE; holding = false; }
+    }
 }
