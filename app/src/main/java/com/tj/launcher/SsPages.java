@@ -53,7 +53,7 @@ final class SsPages {
             { SsPage.BATTERY, 0xFF258982, R.drawable.ss_glyph_battery, SsRows.BLANK },   // BN1p D2: the two live summaries start as one blank line, so the row has its final height at once
             { SsPage.DISPLAY, 0xFFFFA727, R.drawable.ss_glyph_display, "Wallpaper, sleep, font size" },
             { SsPage.SOUND, 0xFF01B1AF, R.drawable.ss_glyph_sound, "Volume, vibration, Do Not Disturb" },
-            { SsPage.STORAGE, 0xFFC14CE6, R.drawable.ss_glyph_storage, "" },
+            { SsPage.STORAGE, 0xFFC14CE6, R.drawable.ss_glyph_storage, SsRows.BLANK },
             { SsPage.ACCESSIBILITY, 0xFF5011C1, R.drawable.ss_glyph_accessibility, "Screen readers, display, interaction controls" },
             { SsPage.SYSTEM, 0xFF9E9E9E, R.drawable.ss_glyph_system, "Languages, gestures, time, backup" },
             { SsPage.ABOUT, 0xFF6F86DA, R.drawable.ss_glyph_about, android.os.Build.MODEL },
