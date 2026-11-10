@@ -2375,3 +2375,37 @@
 > - Start the shell helper and tap "Do everything that is missing" (usage access).
 > - Two answers: where you saw a notification (banner, status-bar icon, shade or lock screen, and which app), and which unlock is slow (what is on screen, about how many seconds).
 <!-- sha:e62ea2fb7998 -->
+
+## 2026-11-10T20:09:13Z
+> Tj, v0.9.3 is out. The gear in the notification panel now opens the Settings look-alike.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.3
+>
+> **1. The gear.** In the custom launcher, with the tablet unlocked and the panel open, tapping the gear closes the panel and opens the look-alike Settings (Battery, Display, Sound, Storage, Accessibility, System, About tablet) instead of the real one. It works through an invisible touch-catcher over the gear. That catcher exists only while the pencil cover is up, so it is never sitting over a moving panel. There is a new switch in Launcher control, "Gear opens the Settings look-alike", on by default. It needs the pencil cover and the Settings look-alike switches to be on too.
+>
+> What I tested, without the long gate as you asked:
+> - **Unit tests and lint:** both are green.
+> - **One short emulator run of just this feature:** the tap opened the look-alike and the panel closed. With the switch off, the same tap opened the real Settings.
+> - **Your tablet:** it has not run there yet.
+>
+> Two things to know:
+> - **Quick taps:** a tap on the gear within about half a second after you pull the panel down or touch it can still reach the real gear. The cover keeps out of the way while the panel may be moving.
+> - **Lock-screen panel:** it keeps the real gear. That one asks for your PIN first, and opening the look-alike over a locked screen would skip it.
+>
+> Tell me if either one bothers you.
+>
+> **2. Removing the pencil instead of covering it: I found no safe way.**
+> - **Retail-demo flag:** the only switch that really removes it. It removes the pencil and the gear, so it would undo what you just asked for. I retired it on 2026-11-05 because Android can create a demo user at boot with that flag. Nobody has tested a reboot with it, and the way out can be a factory reset. I could not read that Android service's source today (the page returned 404), so this still rests on the old audit.
+> - **Resource overlay:** an overlay installed with adb could in theory replace the panel's footer layout. It would be a separate APK built against SystemUI, and a mistake crashes the status bar and lock screen. I did not build it. I can try it on the emulator first if you want.
+> - **Accessibility:** it can only cover or click another app's icon, never remove it. So the cover stays, and the v0.9.2 white-box fix is still waiting for your tablet report.
+>
+> The notes are in `research/PENCIL_REMOVAL_2026-11-10.md`.
+>
+> Still waiting on you, unchanged:
+> - **Tablet reports:** one right after the first side-key press on the custom home, and one before you open more Quickstep apps.
+> - **Report after a screenshot:** one right after any lock-screen screenshot or white box.
+> - **Shell helper:** start it and tap "Do everything that is missing" (usage access).
+> - **Notification question:** where you saw a notification, and from which app.
+> - **Slow unlock question:** which unlock is slow, what is on screen, and about how many seconds.
+> - **New:** tell me if the gear ever opens the real Settings when it should not.
+<!-- sha:56ffadd2da78 -->
