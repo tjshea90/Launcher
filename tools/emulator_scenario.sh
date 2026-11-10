@@ -567,6 +567,14 @@ bn8_shown_after_hide(){ # bn8_shown_after_hide <logcat -v time file> <window ms>
     END { if (th=="") print "nohide"; else print n+0 }' "$1"
 }
 pen_none(){ local s; for s in "$@"; do case "$s" in cover=shown*) return 1;; esac; done; return 0; }
+bq3_pick(){ # bq3_pick <logfile> <marker regex> <probes to skip> <label> <phase>: INFO lines for the next 'PENCIL probe' after the marker (the first one of the file when the marker never appears) and the 'PENCIL tree' lines that follow it
+  local L f="$1"
+  [ -s "$f" ] || return 0
+  if ! grep -q "$2" "$f"; then L="$(awk -v skip="$3" '/PENCIL probe/ { if (k++ >= skip) { print; st=1; next } } st==1 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
+  else L="$(awk -v m="$2" -v skip="$3" 'st==0 { if ($0 ~ m) st=1; next } st==1 { if ($0 ~ /PENCIL probe/) { if (k++ >= skip) { print; st=2 } } next } st==2 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
+  fi
+  echo "$L" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | while IFS= read -r l; do [ -n "$l" ] && info "BQ3 ($5) $4: ${l:0:300}"; done
+}
 pen_all_shown(){ local s; for s in "$@"; do case "$s" in cover=shown*) ;; *) return 1;; esac; done; return 0; }
 pen_control_ok(){ case "$1" in *"showing=false"*) ;; *) return 1;; esac; case "$1" in cover=shown*) return 1;; esac; return 0; }
 b6lock(){ # b6lock <stored mode custom|quickstep>
