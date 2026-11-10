@@ -1400,3 +1400,8 @@ This session's worker process was restarted. If your previous turn was already c
 ```
 Try again
 ```
+
+## 2026-11-10T08:05:17Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
