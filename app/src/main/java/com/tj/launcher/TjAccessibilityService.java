@@ -4425,14 +4425,10 @@ public class TjAccessibilityService extends AccessibilityService {
     private void scrimFinish(String outcome) {
         scrimOutcome = outcome == null ? "" : outcome;
         scrimNote(scrimOutcome);
-        try {   // BQ1a: EVERY run that stored nothing is counted per lock screen and theme (each one already cost a real screenshot), once per run even if the finish is reached twice
-            if (!scrimCounted) {
-                scrimCounted = true;
-                android.content.Context app = getApplicationContext();
-                if (ScrimMeasure.measurementFailure(scrimOutcome)) { String k = ScrimMeasure.failKey(rotation(), scrimNight); Features.setString(app, k, ScrimMeasure.addFailure(Features.getString(app, k, ""), shotSig(), scrimNight)); }
-                Features.setString(app, ScrimMeasure.RUN_KEY, ScrimMeasure.runLine(new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), scrimNight, scrimOutcome));
-                LockLog.add(app, "SCRIM", "run ends: " + scrimOutcome);
-            }
+        try {   // BQ1a: the run was counted when it STARTED (maybeMeasureScrim); here it is only RECORDED, off the disk path (apply: the unlock path keeps no synchronous writes). The LAST outcome of a run wins: a late MEASURED overwrites an earlier "stopped".
+            android.content.Context app = getApplicationContext();
+            Features.setStringAsync(app, ScrimMeasure.RUN_KEY, ScrimMeasure.runLine(new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), scrimNight, scrimOutcome));
+            LockLog.add(app, "SCRIM", "run ends: " + scrimOutcome);
         } catch (Throwable ignored) { }
         Log.i(TAG, "SCRIM finished: " + scrimOutcome);
         scrimPoints = null; scrimRef = null;
