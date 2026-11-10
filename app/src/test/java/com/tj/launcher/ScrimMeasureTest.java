@@ -164,6 +164,7 @@ public class ScrimMeasureTest {
         assertEquals("11-10 03:11:44 dark theme: stopped: the PIN pad came up", ScrimMeasure.runLine("11-10 03:11:44", true, "stopped: the PIN pad came up"));
         assertEquals("11-10 03:11:44 light theme: MEASURED x", ScrimMeasure.runLine("11-10 03:11:44", false, " MEASURED x "));
         assertEquals("s dark theme: ", ScrimMeasure.runLine("s", true, null));
+        assertEquals("a run that never finishes still reads as one", "11-10 09:12:03 light theme: started (timer), no end recorded yet", ScrimMeasure.runLine("11-10 09:12:03", false, "started (timer), no end recorded yet"));
         assertTrue(ScrimMeasure.runLine("s", false, new String(new char[500]).replace('\0', 'x')).length() <= 160);
         assertEquals("scrim_last_run", ScrimMeasure.RUN_KEY);
     }
