@@ -4453,6 +4453,13 @@ public class TjAccessibilityService extends AccessibilityService {
     private void scrimTeardown() {
         try {
             handler.removeCallbacks(scrimTick); handler.removeCallbacks(scrimTrigger);
+            if (scrimStage != 0) {   // BQ1a: a run torn down in the middle (the run itself was counted when it started) says so in the report and the lock log
+                try {
+                    android.content.Context app = getApplicationContext();
+                    Features.setStringAsync(app, ScrimMeasure.RUN_KEY, ScrimMeasure.runLine(new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), scrimNight, "stopped: the accessibility service was restarted or switched off"));
+                    LockLog.add(app, "SCRIM", "run ends: stopped, the accessibility service was restarted or switched off");
+                } catch (Throwable ignored) { }
+            }
             if (scrimOpenedMenu && scrimStage != 0 && overlayShown && keyguardLocked() && !lastBouncer) { try { performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } }
             scrimOpenedMenu = false; scrimStage = 0; scrimPoints = null; scrimRef = null;
         } catch (Throwable ignored) { }
