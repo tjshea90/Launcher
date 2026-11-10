@@ -2303,7 +2303,7 @@ public class TjAccessibilityService extends AccessibilityService {
             updatePencil(false);
             if (penView != null && penShown) {
                 startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
-                if (debuggable()) { long up = android.os.SystemClock.uptimeMillis(); if (penProbes < 8 && up - penProbeMs >= 800) { penProbeMs = up; penProbes++; penProbe("still shown"); } }   // BQ3 (debug builds only)
+                if (debuggable()) { long up = android.os.SystemClock.uptimeMillis(); if (penProbes < 16 && up - penProbeMs >= 600) { penProbeMs = up; penProbes++; penProbe("still shown"); } }   // BQ3 (debug builds only)
             }
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
