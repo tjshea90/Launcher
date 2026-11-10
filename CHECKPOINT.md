@@ -1,21 +1,24 @@
-# CHECKPOINT 954 — read me first, then TASKS.md
+# CHECKPOINT 957 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T11:27:51Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `25a184a` (this checkpoint is the commit after it)
+**Written:** 2026-11-10T11:33:09Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `0b91b34` (this checkpoint is the commit after it)
 
 ## Just done
-v0.9.2 gated+pushed (ckpt 953, head 25a184a = main); android.yml full_build DISPATCHED 11:27Z on main; b6 rerun #515 in flight (dispatched 11:23Z, head bb453ba). Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
+v0.9.2 RELEASED (android.yml run 43 id 42807528403 on 25a184a, published 11:29:48Z) and RECORDED (0b91b34). HANDOFF 0q rewritten, TASKS BQ1a/BQ2b ticked, BQ1b stays open (waits for Tj), BQ4 N2-after-b6, BQ5 outbox check. b6 #515 (42807044513) being read. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
 
 ## Do this next
-At 11:31Z: (1) list android.yml runs (event workflow_dispatch perPage 1) -> status/conclusion; get_release_by_tag v0.9.2; if green: bash tools/record-release.sh v0.9.2 "BQ1a/BQ2: lock-screen dimming measured once per wallpaper (light look only, dark reuses it, a run counts when it starts); BQ1b: pencil cover hidden the instant a finger touches the open panel". (2) read b6 #515 (emulator.yml perPage 1; get_job_logs run_id failed_only tail 20; haiku for FAIL+BQ3 INFO). (3) tick TASKS BQ1a/BQ1b/BQ2b, HANDOFF 0q rewrite, ONE message to Tj (research/V092_RELEASE_MESSAGE_DRAFT_2026-11-10.md), delete heartbeat. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
+Read b6 #515 (haiku a0019b7a13863716f in flight): green => tick BQ3. Then send Tj the v0.9.2 message (draft research/V092_RELEASE_MESSAGE_DRAFT_2026-11-10.md) as the LAST text of a turn with no tool call after it; next session: check OUTBOX.md for 'Tj, I found the causes' (BQ5), delete heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE when only Tj-blocked items remain.
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M HANDOFF.md
+     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  0a66bfd ckpt 954: v0.9.2 gated+pushed (ckpt 953, head 25a184a = main); android.yml full_build DI
   25a184a ckpt 953: gated v0.9.2 (code 41) and pushed it: the handoff self-test, the full unit sui
   c2c75d4 ckpt 952: pre-ship: BQ1a/BQ2: the lock-screen dimming is measured once per wallpaper (li
   bb453ba ckpt 950: b6 BQ3 check now LOG-based (bq3_close_verdict: markers close/open, last 'PENCI
@@ -25,5 +28,7 @@ At 11:31Z: (1) list android.yml runs (event workflow_dispatch perPage 1) -> stat
   1857c14 ckpt 940: Run #513 b6,n 26 PASS 5 FAIL (id 42802572154, head da7e710): BK1b O1-O3 'shown
   e067780 ckpt 938: Run in flight: #513 b6,n shots=true id 42802572154 head da7e710 since 10:50:52
   f6f2eca ckpt 936: CLAUDE.md lessons v0.9.2 written; b6,n shots run dispatched 10:50Z on branch (
-  da7e710 ckpt 934: b6 scenario fixed after #512 read (BN8b=dump restarted service; control=stale 
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
