@@ -573,6 +573,31 @@ bn8_shown_after_hide(){ # bn8_shown_after_hide <logcat -v time file> <window ms>
     END { if (th=="") print "nohide"; else print n+0 }' "$1"
 }
 pen_none(){ local s; for s in "$@"; do case "$s" in cover=shown*) return 1;; esac; done; return 0; }
+bq3_close_verdict(){ # bq3_close_verdict <logcat -v time file> <n>: what the SERVICE did after "BQ3 marker close <n>" until the next "BQ3 marker open" (or the end of the file): hidden-in-<ms> | no-cover-line | STUCK-shown | no-marker
+  awk -v n="$2" 'function ms(t,  a){ split(t,a,"[:.]"); return ((a[1]*60+a[2])*60+a[3])*1000+a[4] }
+    $0 ~ ("BQ3 marker close " n "([^0-9]|$)") { st=1; t0=ms($2); seen=1; next }
+    st==1 && /BQ3 marker open/ { st=2 }
+    st==1 && /PENCIL cover (shown|hidden)/ { if ($0 ~ /cover hidden/) { last="hidden"; if (th=="") th=ms($2)-t0 } else { last="shown" } }
+    END { if (!seen) print "no-marker"; else if (last=="") print "no-cover-line"; else if (last=="shown") print "STUCK-shown"; else print "hidden-in-" th }' "$1"
+}
+bq3_closes_ok(){ # bq3_closes_ok <verdict of close 1> <close 2> <close 3>: closings 1 and 2 had the cover up (the opening before them is checked on its own), so the service must have hidden it within 1500 ms and shown none after; the last one may also find no cover at all
+  local v i=0 ms
+  for v in "$@"; do
+    i=$((i+1))
+    case "$v" in
+      hidden-in-*) ms="${v#hidden-in-}"; [ "$ms" -le 1500 ] 2>/dev/null || return 1;;
+      no-cover-line) [ "$i" = 3 ] || return 1;;
+      *) return 1;;
+    esac
+  done
+  return 0
+}
+pen_blocks(){ # one compact summary per TjPencilCover block of the window dump (session pid, touchable or hidden, frame): the INFO line that explains a window sample (run #514: samples read 'shown' while the service had hidden its cover)
+  adb shell dumpsys window windows </dev/null 2>/dev/null | awk 'function blk() { printf "[pid=%s %s %s] ", pid, (nt ? "hidden" : "touchable"), fr; inb=0 }
+    /TjPencilCover}/ { if (inb) blk(); inb=1; n=0; nt=0; pid="?"; fr="?"; next }
+    inb { n++; if ($0 ~ /NOT_TOUCHABLE/) nt=1; if (match($0, /mSession=Session\{[0-9a-f]+ [0-9]+:/)) { s=substr($0, RSTART, RLENGTH); sub(/^mSession=Session\{[0-9a-f]+ /, "", s); sub(/:$/, "", s); pid=s } if (fr=="?" && match($0, /mFrame=\[[0-9,]*\]\[[0-9,]*\]/)) fr=substr($0, RSTART+7, RLENGTH-7); if (n>=10) blk() }
+    END { if (inb) blk() }'
+}
 pen_all_shown(){ local s; for s in "$@"; do case "$s" in cover=shown*) ;; *) return 1;; esac; done; return 0; }
 pen_control_ok(){ case "$1" in *"showing=false"*) ;; *) return 1;; esac; case "$1" in cover=shown*) return 1;; esac; [ "${2:-0}" = 0 ] || return 1; return 0; }   # $2 = how many "PENCIL cover shown" log lines followed the opening (the decision of the service itself)
 b6lock(){ # b6lock <stored mode custom|quickstep>
@@ -594,9 +619,15 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   adb shell cmd statusbar expand-settings; sleep 3; shot 54-qs-panel-lock-$1
   BK_O1="$(pen_sample)"       # 1st opening, +3 s
   # BQ3 (Tj, 2026-11-10: "the pencil white cover shows when I slide the notification panel back up"): after every CLOSING of the panel on the lock screen no cover may be up (BK_Z1 / BK_Z2 = after the 1st / 2nd opening, BK_Z3 = after the 3rd)
-  for BK_I in 2 3; do adb shell input keyevent KEYCODE_BACK; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; if [ "$BK_I" = 2 ]; then shot 55-lock-closed-$1; fi; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
+  BK_BO="$(pen_blocks)"       # the cover window blocks while the panel is open (INFO)
+  for BK_I in 2 3; do
+    adb shell log -t TjA11y "BQ3 marker close $((BK_I-1))"; adb shell input keyevent KEYCODE_BACK; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""
+    if [ "$BK_I" = 2 ]; then shot 55-lock-closed-$1; BK_BC="$(pen_blocks)"; fi
+    adb shell log -t TjA11y "BQ3 marker open $BK_I"; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""
+  done
   adb shell dumpsys window windows | grep -c TjPencilCover > "$OUT/pencil-lock-$1-windows.txt" 2>&1
   adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log.txt" 2>&1
+  BQ3_V1="$(bq3_close_verdict "$OUT/pencil-lock-$1-log.txt" 1)"; BQ3_V2="$(bq3_close_verdict "$OUT/pencil-lock-$1-log.txt" 2)"
   # the ONE dump, at the very end (it unbinds the service while it runs): is the panel really open after the 3rd opening?
   adb shell uiautomator dump /sdcard/b6l.xml >/dev/null 2>&1; adb shell cat /sdcard/b6l.xml 2>/dev/null | grep -o 'resource-id="android:id/edit"' | wc -l | tr -d ' \r\n' > "$OUT/pencil-lock-$1-edit.txt"
   local T0 T1 MS; T0="$(grep 'BK1b marker' "$OUT/pencil-lock-$1-log.txt" | head -1 | awk '{print $2}')"; T1="$(sed -n '/BK1b marker/,$p' "$OUT/pencil-lock-$1-log.txt" | grep 'PENCIL cover shown' | head -1 | awk '{print $2}')"
@@ -631,10 +662,14 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     check "BN8b: the cover was up before the drag (else the drag proves nothing)" bash -c "case '$BN8_S0' in cover=shown*) exit 0;; esac; exit 1"
     check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
   fi
-  adb shell input keyevent KEYCODE_BACK; sleep 2
+  adb shell log -t TjA11y "BQ3 marker close 3"; adb shell input keyevent KEYCODE_BACK; sleep 2
   BK_Z3="$(pen_sample)"
-  info "BQ3 ($1 mode): the panel closed again on the lock screen after the 1st / 2nd / 3rd opening: $BK_Z1 / $BK_Z2 / $BK_Z3"
-  check "BQ3: (stored mode $1) when the panel is closed again on the lock screen NO pencil cover is left up (the white box Tj saw when he slid the panel back up)" pen_none "$BK_Z1" "$BK_Z2" "$BK_Z3"
+  adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log2.txt" 2>&1
+  BQ3_V3="$(bq3_close_verdict "$OUT/pencil-lock-$1-log2.txt" 3)"
+  info "BQ3 ($1 mode): what the SERVICE did after the BACK key that closed the panel the 1st / 2nd / 3rd time: $BQ3_V1 / $BQ3_V2 / $BQ3_V3 (hidden-in-<ms> = it took the cover away that many ms after the key)"
+  info "BQ3 ($1 mode): window samples after those closings (INFO only, the sampler can read a second, stale block): $BK_Z1 / $BK_Z2 / $BK_Z3"
+  info "BQ3 ($1 mode): cover window blocks while the panel was open: $BK_BO; 2 s after the 1st close: $BK_BC"
+  check "BQ3: (stored mode $1) after every closing of the panel on the lock screen the service takes the cover away at once and none is left up (the white box Tj saw when he slid the panel back up; its own log: hidden within 1.5 s of the BACK key, nothing shown afterwards)" bq3_closes_ok "$BQ3_V1" "$BQ3_V2" "$BQ3_V3"
   b6unlock; BK_U="$(kg_state)"; sleep 2
   info "BK1b ($1 mode): after the phase the keyguard reports: $BK_U (showing=false = really unlocked)"
   check "BK1b: (stored mode $1) the phase ends with the device really unlocked (the next phase and the control start from that state)" test "$BK_U" = "showing=false"

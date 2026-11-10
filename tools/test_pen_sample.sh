@@ -8,7 +8,7 @@ ex(){ # print the function text starting at "<name>(){" up to its closing brace 
   if sed -n "${s}p" "$SCEN" | grep -q '}[[:space:]]*\(#.*\)\?$' && ! sed -n "${s}p" "$SCEN" | grep -q '{[[:space:]]*#'; then sed -n "${s}p" "$SCEN"; return; fi
   local e; e=$(awk -v s="$s" 'NR>s && /^}/ {print NR; exit}' "$SCEN"); sed -n "${s},${e}p" "$SCEN"
 }
-for f in kg_state pen_cover_of pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide; do ex "$f"; done > "$OUT/fns.sh"
+for f in kg_state pen_cover_of pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide bq3_close_verdict bq3_closes_ok pen_blocks; do ex "$f"; done > "$OUT/fns.sh"
 FAKE_WIN=""; FAKE_POL=""; FAKE_PID=""; PKG=com.tj.launcher
 adb(){ # adb shell dumpsys window windows|policy, pidof
   case "$*" in *"dumpsys window windows"*) printf '%s' "$FAKE_WIN";; *"dumpsys window policy"*) printf '%s' "$FAKE_POL";; *pidof*) [ -p /dev/stdin ] && cat > /dev/null; printf '%s' "$FAKE_PID";; esac   # a real `adb shell` SWALLOWS a piped stdin (run #513): the stub does too, so a pidof inside a pipeline is caught here
@@ -63,4 +63,28 @@ L4="$OUT/drag4.txt"; printf '%s\n' '11-10 01:00:00.500 I/TjA11y( 1): PENCIL cove
 t "drag: a cover that was never hidden is reported"  "nohide" "$(bn8_shown_after_hide "$L4" 480)"
 L5="$OUT/drag5.txt"; printf '%s\n' '11-10 23:59:59.900 I/TjA11y( 1): PENCIL cover hidden (kept warm; the panel is sliding up)' '11-10 23:59:59.990 I/TjA11y( 1): PENCIL cover shown [4,300][55,351]' > "$L5"
 t "drag: shown 90 ms after the hide counts"          "1"      "$(bn8_shown_after_hide "$L5" 480)"
+# BQ3 (2026-11-10): the closings are judged by what the SERVICE logged after the BACK key (logcat -v time lines), not by a window sample
+LB="$OUT/bq3a.txt"; printf '%s\n' '11-10 11:13:46.965 I/TjA11y( 1): BK1b marker expand' '11-10 11:13:47.025 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' \
+  '11-10 11:13:50.350 I/TjA11y( 1): BQ3 marker close 1' '11-10 11:13:50.439 I/TjA11y( 1): PENCIL fast watch (SystemUI is redrawing)' '11-10 11:13:50.442 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' \
+  '11-10 11:13:52.700 I/TjA11y( 1): BQ3 marker open 2' '11-10 11:13:52.757 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' \
+  '11-10 11:13:55.850 I/TjA11y( 1): BQ3 marker close 2' '11-10 11:13:55.897 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' \
+  '11-10 11:13:58.200 I/TjA11y( 1): BQ3 marker open 3' '11-10 11:13:58.260 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' > "$LB"
+t "close 1: hidden 92 ms after the key"            "hidden-in-92"  "$(bq3_close_verdict "$LB" 1)"
+t "close 2: hidden 47 ms after the key"            "hidden-in-47"  "$(bq3_close_verdict "$LB" 2)"
+t "close 3: no marker in this file"                "no-marker"     "$(bq3_close_verdict "$LB" 3)"
+LC="$OUT/bq3b.txt"; printf '%s\n' '11-10 11:14:00.000 I/TjA11y( 1): BQ3 marker close 3' '11-10 11:14:00.100 I/TjA11y( 1): PENCIL cover hidden (x)' '11-10 11:14:00.900 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' > "$LC"
+t "a cover shown again after the hide is STUCK"    "STUCK-shown"   "$(bq3_close_verdict "$LC" 3)"
+LD="$OUT/bq3c.txt"; printf '%s\n' '11-10 11:14:00.000 I/TjA11y( 1): BQ3 marker close 3' '11-10 11:14:00.100 I/TjA11y( 1): PENCIL fast watch (SystemUI is redrawing)' > "$LD"
+t "no cover line at all"                           "no-cover-line" "$(bq3_close_verdict "$LD" 3)"
+LE="$OUT/bq3d.txt"; printf '%s\n' '11-10 23:59:59.900 I/TjA11y( 1): BQ3 marker close 1' '11-10 23:59:59.990 I/TjA11y( 1): PENCIL cover hidden (x)' > "$LE"
+t "hidden 90 ms after the key"                     "hidden-in-90"  "$(bq3_close_verdict "$LE" 1)"
+bq3_closes_ok hidden-in-92 hidden-in-47 hidden-in-100 && echo "ok    closes ok: three hides pass" || { echo "FAIL  closes ok three hides"; fails=$((fails+1)); }
+bq3_closes_ok hidden-in-92 hidden-in-47 no-cover-line && echo "ok    closes ok: the last one may find no cover" || { echo "FAIL  closes ok no cover last"; fails=$((fails+1)); }
+bq3_closes_ok no-cover-line hidden-in-47 hidden-in-100 && { echo "FAIL  closes ok: the first must hide"; fails=$((fails+1)); } || echo "ok    closes ok flags a first closing without a hide"
+bq3_closes_ok hidden-in-92 STUCK-shown hidden-in-100 && { echo "FAIL  closes ok must flag STUCK"; fails=$((fails+1)); } || echo "ok    closes ok flags a stuck cover"
+bq3_closes_ok hidden-in-92 hidden-in-47 hidden-in-1600 && { echo "FAIL  closes ok must flag a late hide"; fails=$((fails+1)); } || echo "ok    closes ok flags a hide later than 1500 ms"
+bq3_closes_ok hidden-in-92 no-marker hidden-in-100 && { echo "FAIL  closes ok must flag a missing marker"; fails=$((fails+1)); } || echo "ok    closes ok flags a missing marker"
+FAKE_PID=""; FAKE_POL=""
+FAKE_WIN="$COV_LIVE$COV_DEAD$SB_OPEN";               t "pen_blocks lists every block" "[pid=4321 touchable [4,564][55,615]] [pid=1111 touchable [4,564][55,615]] " "$(pen_blocks)"
+FAKE_WIN="$COV_LIVE_HIDDEN$SB_OPEN";                 t "pen_blocks: a hidden block"   "[pid=4321 hidden [4,564][55,615]] " "$(pen_blocks)"
 echo "failures: $fails"; exit $fails
