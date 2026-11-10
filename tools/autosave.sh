@@ -67,6 +67,18 @@ say() {
 # timeout is unambiguously dead, not just slow, so it's safe to clear.
 find .git -name '*.lock' -mmin +2 -delete 2>/dev/null || true
 
+# A MERGE WITH UNRESOLVED CONFLICTS IS NOT A CHECKPOINT (2026-11-10, TASKS BP1e).
+# `git add -A` marks every conflicted file as resolved, so the commit below would
+# publish the conflict markers: it did, and main held a Java file that could not
+# compile for two minutes. Nothing is lost by waiting (the work is in the working
+# tree and in both parents). Say so loudly and stop; the first call after the
+# conflicts are resolved and committed saves as usual.
+UNMERGED="$(git diff --name-only --diff-filter=U 2>/dev/null | head -5 | tr '\n' ' ')"
+if [ -n "$UNMERGED" ]; then
+  say "AUTOSAVE PAUSED in $(basename "$D"): a merge is in progress with unresolved conflicts in: ${UNMERGED}- nothing was committed or pushed (a commit now would publish the conflict markers). Resolve them, then: git add -A && git commit --no-edit. Autosave resumes by itself."
+  exit 0
+fi
+
 git add -A >/dev/null 2>&1
 
 if ! git diff --cached --quiet 2>/dev/null; then

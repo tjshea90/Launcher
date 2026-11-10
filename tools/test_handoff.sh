@@ -105,6 +105,16 @@ check "main is NOT touched while MIRROR_MAIN=off" '! git ls-remote --heads origi
 printf 'ghp_%s\n' "$(printf 'b%.0s' $(seq 1 36))" > leak2.txt
 check "autosave refuses a credential"  'bash tools/autosave.sh --text | grep -q "AUTOSAVE BLOCKED"; ! git log --format=%s | head -1 | grep -q leak; ! git ls-tree -r HEAD --name-only | grep -q leak2'
 rm -f leak2.txt
+# a merge with unresolved conflicts is never auto-committed (2026-11-10, TASKS BP1e: `git add -A` would mark the files resolved and publish the conflict markers)
+CONF_BR="$(git rev-parse --abbrev-ref HEAD)"
+git checkout -q -b conf_other; echo other > conf.txt; git add conf.txt; git commit -q -m "conf other"; git checkout -q "$CONF_BR"
+echo mine > conf.txt; git add conf.txt; git commit -q -m "conf mine"
+git merge conf_other >/dev/null 2>&1
+CONF_HEAD="$(git rev-parse HEAD)"
+check "autosave does NOT commit a merge with unresolved conflicts" 'bash tools/autosave.sh --text | grep -q "AUTOSAVE PAUSED" && [ "$(git rev-parse HEAD)" = "$CONF_HEAD" ] && [ -n "$(git diff --name-only --diff-filter=U)" ]'
+echo resolved > conf.txt; git add -A >/dev/null 2>&1; git commit -q --no-edit >/dev/null 2>&1
+echo more > a2.txt
+check "autosave saves again once the conflict is resolved and committed" 'bash tools/autosave.sh --text >/dev/null; git log -1 --format=%s | grep -q "^auto-checkpoint:" && [ "$(bash tools/unpushed.sh)" = 0 ]'
 
 # ---------------------------------------------------------------- ckpt numbering + CHECKPOINT.md
 bash tools/ckpt.sh "did one" "do two" >/dev/null 2>&1
