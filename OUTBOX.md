@@ -2359,3 +2359,19 @@
 > - Start the shell helper and tap "Do everything that is missing" (usage access), so the Battery page can show real numbers.
 > - Two answers: where you saw a notification (banner, status-bar icon, shade or lock screen, and which app), and about the slow unlock (which unlock, what is on screen, about how many seconds).
 <!-- sha:9877551829d7 -->
+
+## 2026-11-10T16:35:51Z
+> v0.9.2 is released and recorded, and the final emulator run is green: `b6` #517 passed 21 checks with none red. It has not run on your tablet yet.
+>
+> The one red check in the earlier reruns was the test's wrong assumption, not the app. The emulator's swipe brings up the PIN pad with the quick-settings panel still open behind it, and the cover was correctly on the pencil. I fixed the test. In the green run the cover goes away 0.19 to 0.20 s after each panel close in custom mode, and 0.17 to 0.20 s in Quickstep mode.
+>
+> The 2-hourly auto-resume timer is now switched off, so nothing will wake this session except a message from you. I couldn't delete it: the delete needs your approval in the app, and that request was closed unanswered three times. It still exists but never fires. You can delete it, or I can re-enable it for the next long job.
+>
+> All my notes in the repo are up to date, so a new session can pick up from there.
+>
+> Still waiting on you, unchanged from my release message:
+> - A tablet report right after the first side-key press on the custom home, and one before you open more Quickstep apps.
+> - A tablet report right after any lock-screen screenshot or white box.
+> - Start the shell helper and tap "Do everything that is missing" (usage access).
+> - Two answers: where you saw a notification (banner, status-bar icon, shade or lock screen, and which app), and which unlock is slow (what is on screen, about how many seconds).
+<!-- sha:e62ea2fb7998 -->
