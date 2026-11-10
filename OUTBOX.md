@@ -2267,3 +2267,17 @@
 >
 > Everything is checkpointed (ckpt 878). Auto-resume heartbeat `trig_013YUvG3qqKTpfyqZn9k2nmE` is armed.
 <!-- sha:e7ee4f30920c -->
+
+## 2026-11-10T08:52:32Z
+> It should, and for two of the three things it already does. Your lock-screen picture and the normal dimming were each taken once (the dimming on 7 Nov). Both stay valid as long as the wallpaper, screen size and rotation don't change.
+>
+> What kept repeating was a third thing I had added: a second measurement for the dark look of the lock screen. After you use Quickstep the battery saver is on, so the lock screen wakes dark for a few seconds before the app switches the saver off. The app tried to measure that look too. Your report shows the last run was exactly that ("nothing is stored yet for this lock screen in the dark theme").
+>
+> That dark measurement never got stored, so it started again at the next lock. I think each try was interrupted, but the report doesn't record how those tries ended, so that part is my reading of the code, not proof.
+>
+> You're right that this was the wrong design. I've changed it so the dimming is measured once, only in the normal look, and the dark look reuses that measurement. It never takes a screenshot of its own. With your wallpaper unchanged there should be no more screenshots. Only a new wallpaper, a different screen rotation or size, or the "Measure again" button can start one.
+>
+> This is coded and unit-tested but not released. It still has to pass a code review and the emulator tests, together with the white-box fix. I'll send the link then.
+>
+> Still open from your earlier message: the white box when you slide the notification panel back up. That fix is in the same release.
+<!-- sha:5526a56261c3 -->
