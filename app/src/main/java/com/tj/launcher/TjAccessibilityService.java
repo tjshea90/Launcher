@@ -2462,7 +2462,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(penWatch);
         if (penView == null) return;
         try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(penView); } catch (Throwable ignored) { }
-        penView = null; penAt.setEmpty(); penShown = false; penSlide.reset(); penFinger.reset();
+        penView = null; penAt.setEmpty(); penShown = false; penSlide.reset(); penFinger.reset(); penAfterFinger = false; penStaleRun = 0;
         Log.i(TAG, "PENCIL cover removed");
     }
 
