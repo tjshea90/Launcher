@@ -113,4 +113,33 @@ public class PencilRulesTest {
     @Test public void theWatchdogIsFasterThanTheOldSearchGapPlusASearch() {
         assertEquals(true, PencilRules.WATCH_MS < EventNoise.minPencilSearchGapMs(0x00000800) + 50);   // 0x800 = TYPE_WINDOW_CONTENT_CHANGED
     }
+
+    // ---- BN8b, second half: the fast watch
+    @Test public void theWatchIsFastOnlyInsideTheFastWindow() {
+        assertEquals(PencilRules.WATCH_MS, PencilRules.watchGapMs(1000, 0));                                  // never asked
+        assertEquals(PencilRules.FAST_WATCH_MS, PencilRules.watchGapMs(1000, 1000 + PencilRules.FAST_FOR_MS)); // just asked
+        assertEquals(PencilRules.FAST_WATCH_MS, PencilRules.watchGapMs(1599, 1600));                          // the last millisecond of the window
+        assertEquals(PencilRules.WATCH_MS, PencilRules.watchGapMs(1600, 1600));                               // the window is over
+        assertEquals(PencilRules.WATCH_MS, PencilRules.watchGapMs(5000, 1600));
+    }
+
+    @Test public void aDeadlineThatMakesNoSenseCountsAsSlow() {
+        assertEquals(PencilRules.WATCH_MS, PencilRules.watchGapMs(1000, 1000 + PencilRules.FAST_FOR_MS + 1));   // further away than a window can be: a clock jump, not a request
+        assertEquals(PencilRules.WATCH_MS, PencilRules.watchGapMs(0, Long.MAX_VALUE));
+    }
+
+    @Test public void theFastWatchSeesASlideWithinTwoFramesAndIsMuchFasterThanAnEvent() {
+        assertEquals(true, PencilRules.FAST_WATCH_MS <= 34);                           // two 60 Hz frames
+        assertEquals(true, PencilRules.FAST_WATCH_MS * 4 <= 100);                      // SystemUI sends content events at most every 100 ms
+        assertEquals(true, PencilRules.FAST_FOR_MS >= 2 * PencilRules.WATCH_MS);       // a finger that goes down and waits a moment before it drags is still watched fast
+    }
+
+    @Test public void aSlowStartOfASlideIsCaughtAtTheNextFastLook() {
+        // the first look sees the pencil only 2 px higher (jitter: the cover follows); 25 ms later it is 14 px higher: the cover goes
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        assertEquals(true, g.allowCover(700, 1000));
+        assertEquals(true, g.allowCover(698, 1000 + PencilRules.FAST_WATCH_MS));
+        assertEquals(false, g.allowCover(684, 1000 + 2 * PencilRules.FAST_WATCH_MS));
+        assertEquals(true, g.holding());
+    }
 }
