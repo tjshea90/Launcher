@@ -623,7 +623,7 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     check "BN8b: the cover was up before the drag (else the drag proves nothing)" bash -c "case '$BN8_S0' in cover=shown*) exit 0;; esac; exit 1"
     check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
   fi
-  adb shell cmd statusbar collapse; sleep 2
+  adb shell log -t TjA11y "BQ3 marker collapse 3"; adb shell cmd statusbar collapse; sleep 2
   BK_Z3="$(pen_sample)"
   info "BQ3 ($1 mode): the panel closed again on the lock screen after the 1st / 2nd / 3rd opening: $BK_Z1 / $BK_Z2 / $BK_Z3"
   check "BQ3: (stored mode $1) when the panel is closed again on the lock screen NO pencil cover is left up (the white box Tj saw when he slid the panel back up)" pen_none "$BK_Z1" "$BK_Z2" "$BK_Z3"
