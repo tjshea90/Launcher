@@ -1340,3 +1340,8 @@ Save all progress now, checkpoint, get everything ready for a different Claude a
 ```
 Resume Launcher: run bash tools/install-hooks.sh, then bash tools/resume.sh, read HANDOFF.md block 0p and continue from CHECKPOINT.md "Do this next". Answer all my open messages when v0.9.1 ships.
 ```
+
+## 2026-11-10T01:18:20Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
