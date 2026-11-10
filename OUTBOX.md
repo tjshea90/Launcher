@@ -2409,3 +2409,20 @@
 > - **Slow unlock question:** which unlock is slow, what is on screen, and about how many seconds.
 > - **New:** tell me if the gear ever opens the real Settings when it should not.
 <!-- sha:56ffadd2da78 -->
+
+## 2026-11-10T23:50:41Z
+> Tj, short answer to your Wi-Fi question: **yes, it looks possible**. I'm building and testing it now; nothing is released yet.
+>
+> - **What the Android 10 code says:** the Wi-Fi symbol can be hidden while the radio stays on. It's a hide list that applies to the status bar, the lock-screen status bar and the notification panel header at once.
+> - **What I built:** a switch in Launcher control, "Keep Wi-Fi on, hide its symbol". While it's on, Wi-Fi is no longer switched off on the lock screen or in the custom launcher. The symbol is hidden in both, and it shows as normal in an unlocked Quickstep session. Bluetooth works exactly as before.
+> - **What's running:** a short emulator test of the lock, custom and Quickstep cases, and a separate code review of the change.
+>
+> **Not proven:** your tablet has the manufacturer's own lock screen, which may ignore the hide list. I can only test the stock Android version here. Once this ships I'll ask you to check the lock screen and tell me whether the symbol is gone.
+>
+> **Still waiting on you:**
+> - Does the settings gear open the look-alike?
+> - Start the shell helper and tap "Do everything that is missing" (usage access).
+> - Tablet reports: one right after the first side-key press on the custom home, one before you open more Quickstep apps, and one right after any lock-screen screenshot or white box.
+> - Where you saw a notification (and which app).
+> - Which unlock is slow, and how many seconds.
+<!-- sha:3a806a6ac69b -->
