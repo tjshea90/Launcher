@@ -570,7 +570,7 @@ pen_none(){ local s; for s in "$@"; do case "$s" in cover=shown*) return 1;; esa
 bq3_pick(){ # bq3_pick <logfile> <marker regex> <probes to skip> <label> <phase>: INFO lines for the next 'PENCIL probe' after the marker (the first one of the file when the marker never appears) and the 'PENCIL tree' lines that follow it
   local L f="$1"
   [ -s "$f" ] || return 0
-  if ! grep -q "$2" "$f"; then L="$(awk -v skip="$3" '/PENCIL probe/ { if (k++ >= skip) { print; st=1; next } } st==1 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
+  if ! grep -q "$2" "$f"; then L="$(awk -v skip="$3" '/PENCIL probe/ { if (st==1) exit; if (k++ >= skip) { print; st=1; next } } st==1 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
   else L="$(awk -v m="$2" -v skip="$3" 'st==0 { if ($0 ~ m) st=1; next } st==1 { if ($0 ~ /PENCIL probe/) { if (k++ >= skip) { print; st=2 } } next } st==2 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
   fi
   echo "$L" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | while IFS= read -r l; do [ -n "$l" ] && info "BQ3 ($5) $4: ${l:0:300}"; done
@@ -588,11 +588,12 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   BK_P1="$(pen_sample)"       # PIN set, still unlocked, no panel open
   palock
   BK_P2="$(pen_sample)"       # the lock screen is up, the panel has NOT been opened yet
+  shot 53-lock-p2-$1          # BQ3: what the lock screen REALLY shows at P2 (is a quick-settings panel on it?)
   adb shell log -t TjA11y "BK1b marker expand"
   adb shell cmd statusbar expand-settings; sleep 3; shot 54-qs-panel-lock-$1
   BK_O1="$(pen_sample)"       # 1st opening, +3 s
   # BQ3 (Tj, 2026-11-10: "the pencil white cover shows when I slide the notification panel back up"): after every CLOSING of the panel on the lock screen no cover may be up (BK_Z1 / BK_Z2 = after the 1st / 2nd opening, BK_Z3 = after the 3rd)
-  for BK_I in 2 3; do adb shell log -t TjA11y "BQ3 marker collapse $((BK_I-1))"; adb shell cmd statusbar collapse; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; adb shell log -t TjA11y "BQ3 marker expand $BK_I"; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
+  for BK_I in 2 3; do adb shell log -t TjA11y "BQ3 marker collapse $((BK_I-1))"; adb shell input swipe 300 300 300 60 800; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; adb shell log -t TjA11y "BQ3 marker expand $BK_I"; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
   adb shell dumpsys window windows | grep -c TjPencilCover > "$OUT/pencil-lock-$1-windows.txt" 2>&1
   adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log.txt" 2>&1
   # the ONE dump, at the very end (it unbinds the service while it runs): is the panel really open after the 3rd opening?
@@ -644,6 +645,7 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     setmode quickstep; rebind; home; sleep 4
     adb shell cmd statusbar expand-settings; sleep 3
     BK_C="$(pen_sample)"
+    shot 56-control-quickstep   # BQ3: what the unlocked Quickstep panel shows at the control
     adb shell cmd statusbar collapse; sleep 2
     info "BK1b control (stored mode quickstep, after the unlock, panel open): $BK_C (showing=false = really unlocked)"
     adb logcat -d -v time -s TjA11y:I 2>/dev/null | grep -E 'PENCIL|SERVICE|ROUTER' | grep -v 'PENCIL probe' | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | tail -n 6 | cut -c1-90 > "$OUT/pencil-control-log.txt" 2>&1   # BQ3: why did a cover exist in unlocked Quickstep?
