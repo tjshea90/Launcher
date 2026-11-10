@@ -170,4 +170,83 @@ public class PencilRulesTest {
         assertEquals(false, g.allowCover(684, 1000 + 2 * PencilRules.FAST_WATCH_MS));
         assertEquals(true, g.holding());
     }
+
+    // ---- BQ1b (Tj, 2026-11-10, v0.9.1, the fifth report: "The pencil white cover shows when I slide the notification panel back up")
+    @Test public void withNoFingerTheCoverIsNeverHeldByTheFingerGuard() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        assertEquals(true, g.allowCover(1000)); assertEquals(false, g.waiting());
+        g.systemUiEvent(1000);                       // an event with no finger before it counts for nothing
+        assertEquals(true, g.allowCover(1001));
+    }
+
+    @Test public void aFingerKeepsTheCoverAwayForTheMinimumWait() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000);
+        assertEquals(true, g.waiting());
+        for (long dt : new long[] { 0, 1, 100, 200, PencilRules.FingerGuard.HOLD_MS - 1 }) assertEquals("at +" + dt, false, g.allowCover(10_000 + dt));
+        assertEquals("the wait is not over until a look says so", true, g.waiting());
+        assertEquals(true, g.allowCover(10_000 + PencilRules.FingerGuard.HOLD_MS));
+        assertEquals("the first true ends the wait", false, g.waiting());
+        assertEquals(true, g.allowCover(10_000 + PencilRules.FingerGuard.HOLD_MS + 5));
+    }
+
+    @Test public void systemUiRedrawingKeepsTheCoverAwayUntilItHasBeenQuiet() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000);
+        long t = 10_000;
+        for (int i = 0; i < 20; i++) { t += 100; g.systemUiEvent(t); }                 // a drag: SystemUI keeps redrawing for 2 s
+        assertEquals(false, g.allowCover(t + 1));
+        assertEquals(false, g.allowCover(t + PencilRules.FingerGuard.QUIET_MS - 1));
+        assertEquals(true, g.allowCover(t + PencilRules.FingerGuard.QUIET_MS));
+    }
+
+    @Test public void aFingerParkedOnThePanelNeverKeepsTheCoverAwayForEver() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000);
+        g.systemUiEvent(10_000 + PencilRules.FingerGuard.MAX_MS - 50);                  // still redrawing right at the end
+        assertEquals(false, g.allowCover(10_000 + PencilRules.FingerGuard.MAX_MS - 10));
+        assertEquals(true, g.allowCover(10_000 + PencilRules.FingerGuard.MAX_MS));      // the safety valve
+        assertEquals(false, g.waiting());
+    }
+
+    @Test public void aSecondFingerRestartsTheWait() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000);
+        assertEquals(false, g.allowCover(10_300));
+        g.fingerDown(10_300);                                                             // another touch on the screen
+        assertEquals(false, g.allowCover(10_000 + PencilRules.FingerGuard.HOLD_MS + 10));     // would have been over after the first finger
+        assertEquals(true, g.allowCover(10_300 + PencilRules.FingerGuard.HOLD_MS + PencilRules.FingerGuard.QUIET_MS));
+    }
+
+    @Test public void aClockThatWentBackwardsNeverHoldsTheCover() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000);
+        assertEquals(true, g.allowCover(5_000));
+        assertEquals(false, g.waiting());
+    }
+
+    @Test public void resetForgetsTheFinger() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        g.fingerDown(10_000); g.reset();
+        assertEquals(true, g.allowCover(10_001));
+    }
+
+    @Test public void theMinimumWaitIsLongerThanOneFastLookAndShorterThanASecond() {
+        assertEquals(true, PencilRules.FingerGuard.HOLD_MS > PencilRules.FAST_WATCH_MS * 4);       // the first look comes after the panel has had time to start moving
+        assertEquals(true, PencilRules.FingerGuard.HOLD_MS + PencilRules.FingerGuard.QUIET_MS < 1000);   // the pencil is exposed for well under a second after a tap
+        assertEquals(true, PencilRules.FingerGuard.MAX_MS >= PencilRules.SlideGuard.HOLD_MAX_MS);
+    }
+
+    @Test public void theTwoGuardsTogetherKeepAColdSlideAwayAndLetARestingPanelBack() {
+        // the service feeds BOTH guards at every look: a slide up keeps the cover away through the SlideGuard even after the finger's wait is over; a panel at rest gets it back
+        PencilRules.SlideGuard slide = new PencilRules.SlideGuard(); PencilRules.FingerGuard finger = new PencilRules.FingerGuard();
+        long t = 20_000;
+        assertEquals(true, slide.allowCover(700, t) && finger.allowCover(t));                 // the panel is open and at rest, the cover is up
+        finger.fingerDown(t + 10);                                                            // the finger goes down: the service hides the cover without any look
+        t += 400;                                                                             // the first look after the minimum wait: the pencil is 60 px higher
+        boolean rest = slide.allowCover(640, t), fing = finger.allowCover(t);
+        assertEquals(false, rest && fing);
+        t += 60; rest = slide.allowCover(560, t); fing = finger.allowCover(t); assertEquals(false, rest && fing);       // still sliding
+        t += 60; rest = slide.allowCover(560, t); fing = finger.allowCover(t); assertEquals("two looks agree: at rest", true, rest && fing);
+    }
 }
