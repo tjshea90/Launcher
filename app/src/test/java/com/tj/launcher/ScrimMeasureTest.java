@@ -112,6 +112,50 @@ public class ScrimMeasureTest {
         assertFalse("2 s after a reconnect no run starts", ScrimMeasure.shouldStart(s));
         s.now = now + ScrimMeasure.SETTLE_AFTER_WAKE_MS; assertTrue(ScrimMeasure.shouldStart(s));
     }
+    // ---- BQ2 (Tj, 2026-11-10: "Why doesnt it just measure/calibrate one time and never screenshot again? I'm not changing the wallpaper")
+    @Test public void theDarkLookIsNeverMeasuredItWaitsForTheLightLook() {
+        ScrimMeasure.State s = go(); s.night = true;
+        assertFalse(ScrimMeasure.shouldStart(s));
+        assertTrue("a 'waiting' reason: the service looks again in a moment, the theme flips to light a few seconds after the wake", ScrimMeasure.decision(s).startsWith("waiting"));
+        assertTrue(ScrimMeasure.decision(s).contains("dark look"));
+        s.night = false; assertTrue(ScrimMeasure.shouldStart(s));
+    }
+    @Test public void aMeasurementThatExistsAnswersInBothLooks() {
+        ScrimMeasure.State s = go(); s.haveMeasurement = true;
+        s.night = false; assertEquals("", ScrimMeasure.decision(s)); assertFalse(ScrimMeasure.shouldStart(s));
+        s.night = true; assertEquals("", ScrimMeasure.decision(s)); assertFalse(ScrimMeasure.shouldStart(s));
+    }
+    @Test public void theDarkLookUsesItsOwnOldSlotFirstAndThenTheLightOne() {
+        boolean[] dark = ScrimMeasure.slotOrder(true), light = ScrimMeasure.slotOrder(false);
+        assertEquals(2, dark.length); assertTrue(dark[0]); assertFalse(dark[1]);
+        assertEquals(1, light.length); assertFalse(light[0]);
+    }
+    @Test public void aLightMeasurementServesTheDarkLookAndNeverNeedsADarkScreenshot() {
+        ScrimFit.Transform t = new ScrimFit.Transform(new float[] { 0.8f, 0.8f, 0.8f }, new float[] { 6f, 7f, 7f }, 30000, 0.3);
+        String sig = "30|r0|600x1024", day = ScrimFit.encode(t, sig, false, 1000L);
+        // the service walks ScrimMeasure.slotOrder(night) and takes the first slot that decodes for its own look
+        for (boolean night : new boolean[] { false, true }) {
+            ScrimFit.Transform got = null;
+            for (boolean slot : ScrimMeasure.slotOrder(night)) { got = ScrimFit.decode(slot ? "" : day, sig, slot); if (got != null) break; }
+            assertNotNull("the light slot answers in the " + (night ? "dark" : "light") + " look", got);
+        }
+        assertNull("a different wallpaper: nothing answers any more", ScrimFit.decode(day, "31|r0|600x1024", false));
+    }
+    @Test public void withAnUnchangedWallpaperNoLockEverStartsARunAgain() {
+        // 500 lock visits in every combination of look, wake time and counters: once the light measurement exists (haveMeasurement) nothing starts
+        for (int i = 0; i < 500; i++) {
+            ScrimMeasure.State s = go(); s.haveMeasurement = true; s.night = (i % 2 == 0); s.screenOnMs = s.now - (i % 40) * 1000L; s.startsThisLock = i % 3; s.startsToday = i % 5; s.failures = i % 4; s.lastStartMs = i % 7 == 0 ? 0 : s.now - i * 1000L;
+            assertFalse("visit " + i, ScrimMeasure.shouldStart(s));
+        }
+    }
+    @Test public void aNewWallpaperIsMeasuredOnceInTheLightLookAfterTheWakeSettled() {
+        // the tablet wakes DARK after a Quickstep session and is light a few seconds later: no run in the dark seconds, one run once the light look has settled
+        ScrimMeasure.State s = go(); s.haveMeasurement = false;
+        s.night = true; s.screenOnMs = s.now - 2_000; assertFalse(ScrimMeasure.shouldStart(s));
+        s.night = true; s.screenOnMs = s.now - 20_000; assertFalse("still dark after 20 s: no dark run either", ScrimMeasure.shouldStart(s));
+        s.night = false; s.screenOnMs = s.now - 4_000; assertFalse("light, but the wake has not settled", ScrimMeasure.shouldStart(s));
+        s.screenOnMs = s.now - ScrimMeasure.SETTLE_AFTER_WAKE_MS; assertTrue(ScrimMeasure.shouldStart(s));
+    }
     @Test public void onlyOneRunPerLockBecauseEachOneFlashesAtOnce() {
         assertEquals(1, ScrimMeasure.MAX_PER_LOCK);
         ScrimMeasure.State s = go(); s.startsThisLock = 1; assertFalse(ScrimMeasure.shouldStart(s)); assertEquals("gave up for this lock after 1 try", ScrimMeasure.decision(s));
