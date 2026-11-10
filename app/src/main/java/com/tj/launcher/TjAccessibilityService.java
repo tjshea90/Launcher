@@ -2367,7 +2367,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     CharSequence cd = n.getContentDescription();
                     if (!n.isVisibleToUser() || cd == null || !cd.toString().toLowerCase(java.util.Locale.ROOT).contains("edit")) continue;
                     Rect b = new Rect(); n.getBoundsInScreen(b);
-                    if (pencilBoundsOk(b)) {
+                    if (pencilBoundsOk(b) && insideItsWindow(n, b)) {   // BQ3: a pencil outside its own (closed, 26 px) window is stale geometry
                         dropPenNode();
                         try { penNode = AccessibilityNodeInfo.obtain(n); } catch (Throwable ignored) { penNode = null; }
                         if (penNode == null) return null;   // a cover must always have a node it follows (penWatch hides one that has none: found without a node = no cover, not a 150 ms flicker; code review 2026-11-09)
