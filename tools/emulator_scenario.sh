@@ -583,7 +583,8 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   adb shell log -t TjA11y "BK1b marker expand"
   adb shell cmd statusbar expand-settings; sleep 3; shot 54-qs-panel-lock-$1
   BK_O1="$(pen_sample)"       # 1st opening, +3 s
-  for BK_I in 2 3; do adb shell cmd statusbar collapse; sleep 2; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
+  # BQ3 (Tj, 2026-11-10: "the pencil white cover shows when I slide the notification panel back up"): after every CLOSING of the panel on the lock screen no cover may be up (BK_Z1 / BK_Z2 = after the 1st / 2nd opening, BK_Z3 = after the 3rd)
+  for BK_I in 2 3; do adb shell cmd statusbar collapse; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
   adb shell dumpsys window windows | grep -c TjPencilCover > "$OUT/pencil-lock-$1-windows.txt" 2>&1
   adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log.txt" 2>&1
   # the ONE dump, at the very end (it unbinds the service while it runs): is the panel really open after the 3rd opening?
