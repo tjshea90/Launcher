@@ -67,14 +67,56 @@ public class ScrimMeasureTest {
         assertEquals(1, ScrimMeasure.failures(ScrimMeasure.addFailure(two, other, false), other, false));   // and a record of another lock screen is replaced, not added to
         assertEquals(0, ScrimMeasure.failures("garbage", sig, false)); assertEquals(0, ScrimMeasure.failures(sig + "#d#abc", sig, false));
     }
-    @Test public void onlyFramesThatCouldNotBeFittedCountAsFailures() {
+    // ---- BQ1a (Tj, 2026-11-10, v0.9.1: "It did two or three screenshots of the lock screen again, one time on each of the three last times I went to the lock screen")
+    @Test public void everyRunThatStoredNothingCountsAsAFailureInterruptionsToo() {
         assertTrue(ScrimMeasure.measurementFailure("not measured: the fit is not tight enough (rms 4.1 levels)"));
         assertTrue(ScrimMeasure.measurementFailure("stopped: too little plain wallpaper on this lock screen to measure (120 usable points)"));
-        assertFalse(ScrimMeasure.measurementFailure("stopped: the screen went off"));
-        assertFalse(ScrimMeasure.measurementFailure("stopped: the PIN pad came up"));
+        assertTrue("an interruption already cost a real screenshot", ScrimMeasure.measurementFailure("stopped: the screen went off"));
+        assertTrue(ScrimMeasure.measurementFailure("stopped: the PIN pad came up"));
+        assertTrue(ScrimMeasure.measurementFailure("stopped: the theme changed (battery saver / dark theme) during the measurement"));
+        assertTrue(ScrimMeasure.measurementFailure("no screenshot appeared"));
+        assertTrue(ScrimMeasure.measurementFailure("Android refused to take a screenshot"));
         assertFalse(ScrimMeasure.measurementFailure("MEASURED scale 0.800 / 0.800 / 0.800"));
-        assertFalse(ScrimMeasure.measurementFailure(null));
+        assertFalse(ScrimMeasure.measurementFailure(null)); assertFalse(ScrimMeasure.measurementFailure(""));
         assertEquals("scrim_fail_r0", ScrimMeasure.failKey(0));
+    }
+    @Test public void aSlotThatNeverFinishesFlashesAtMostTwiceNoMatterHowOftenTheTabletIsLocked() {
+        // the 2026-11-10 night: the dark slot was missing, every lock from Quickstep woke in the dark theme, every run was interrupted, nothing was ever counted: up to four flashes a day, for ever
+        String sig = PatchShot.sig(30, 0, 600, 1024), record = ""; int starts = 0;
+        for (int lock = 0; lock < 12; lock++) {
+            ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, sig, true); s.startsToday = 0; s.lastStartMs = 0; s.startsThisLock = 0;
+            if (!ScrimMeasure.shouldStart(s)) continue;
+            starts++; record = ScrimMeasure.addFailure(record, sig, true);   // scrimFinish("stopped: the PIN pad came up")
+            assertTrue(ScrimMeasure.measurementFailure("stopped: the PIN pad came up"));
+        }
+        assertEquals(ScrimMeasure.MAX_FAILURES, starts);
+        assertEquals(2, ScrimMeasure.storedFailureCount(record));
+        ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, sig, false); assertTrue("the light theme is another slot", ScrimMeasure.shouldStart(s));
+        s = go(); s.failures = ScrimMeasure.failures(record, PatchShot.sig(31, 0, 600, 1024), true); assertTrue("a new wallpaper starts afresh", ScrimMeasure.shouldStart(s));
+    }
+    @Test public void theThemeHasSettledBeforeARunStarts() {
+        // the tablet wakes in the DARK theme after a Quickstep session (battery saver ON) and only flips to light a few seconds later
+        ScrimMeasure.State s = go();
+        for (long ms : new long[] { 0, 500, 3_500, 4_000, 6_000, 9_999 }) { s.screenOnMs = s.now - ms; assertFalse("at " + ms + " ms", ScrimMeasure.shouldStart(s)); assertTrue(ScrimMeasure.decision(s).contains("only just come on")); }
+        s.screenOnMs = s.now - 10_000; assertTrue(ScrimMeasure.shouldStart(s));
+        assertTrue(ScrimMeasure.SETTLE_AFTER_WAKE_MS >= 10_000);
+    }
+    @Test public void onlyOneRunPerLockBecauseEachOneFlashesAtOnce() {
+        assertEquals(1, ScrimMeasure.MAX_PER_LOCK);
+        ScrimMeasure.State s = go(); s.startsThisLock = 1; assertFalse(ScrimMeasure.shouldStart(s)); assertEquals("gave up for this lock after 1 try", ScrimMeasure.decision(s));
+    }
+    @Test public void theLastRunIsOneReadableLine() {
+        assertEquals("11-10 03:11:44 dark theme: stopped: the PIN pad came up", ScrimMeasure.runLine("11-10 03:11:44", true, "stopped: the PIN pad came up"));
+        assertEquals("11-10 03:11:44 light theme: MEASURED x", ScrimMeasure.runLine("11-10 03:11:44", false, " MEASURED x "));
+        assertEquals("s dark theme: ", ScrimMeasure.runLine("s", true, null));
+        assertTrue(ScrimMeasure.runLine("s", false, new String(new char[500]).replace('\0', 'x')).length() <= 160);
+        assertEquals("scrim_last_run", ScrimMeasure.RUN_KEY);
+    }
+    @Test public void theReportCanReadTheFailureCountWithoutKnowingTheLockScreen() {
+        String sig = PatchShot.sig(7, 0, 600, 1024);
+        assertEquals(0, ScrimMeasure.storedFailureCount(null)); assertEquals(0, ScrimMeasure.storedFailureCount("")); assertEquals(0, ScrimMeasure.storedFailureCount("garbage"));
+        assertEquals(0, ScrimMeasure.storedFailureCount(sig + "#d#abc"));
+        assertEquals(2, ScrimMeasure.storedFailureCount(ScrimMeasure.addFailure(ScrimMeasure.addFailure("", sig, true), sig, true)));
     }
     @Test public void theSecondFrameWaitsForTheWholeFadeAndMore() { assertTrue(ScrimMeasure.OPEN_SETTLE_MS >= PatchFade.OPEN_MS + 800); }
     @Test public void aDebugBuildDoesNotMeasureUnlessAskedTo() { assertFalse(ScrimMeasure.defaultOn(true)); assertTrue(ScrimMeasure.defaultOn(false)); }
