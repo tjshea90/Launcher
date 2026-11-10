@@ -8,7 +8,7 @@ ex(){ # print the function text starting at "<name>(){" up to its closing brace 
   if sed -n "${s}p" "$SCEN" | grep -q '}[[:space:]]*\(#.*\)\?$' && ! sed -n "${s}p" "$SCEN" | grep -q '{[[:space:]]*#'; then sed -n "${s}p" "$SCEN"; return; fi
   local e; e=$(awk -v s="$s" 'NR>s && /^}/ {print NR; exit}' "$SCEN"); sed -n "${s},${e}p" "$SCEN"
 }
-for f in kg_state pen_sample pen_none pen_all_shown pen_control_ok; do ex "$f"; done > "$OUT/fns.sh"
+for f in kg_state pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide; do ex "$f"; done > "$OUT/fns.sh"
 FAKE_WIN=""; FAKE_POL=""
 adb(){ # adb shell dumpsys window windows|policy
   case "$*" in *"dumpsys window windows"*) printf '%s' "$FAKE_WIN";; *"dumpsys window policy"*) printf '%s' "$FAKE_POL";; esac

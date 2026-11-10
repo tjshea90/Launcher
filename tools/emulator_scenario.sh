@@ -560,6 +560,12 @@ pen_sample(){ # "cover=<shown|hidden|none> showing=<keyguard> sb=<the StatusBar 
   sb="$(echo "$D" | awk '/u0 StatusBar}/{f=1} f { l=tolower($0); if (match(l, /m?frame=\[[0-9,]*\]\[[0-9,]*\]/)) { s=substr(l, RSTART, RLENGTH); sub(/^m?frame=/, "", s); print s; exit } }')"
   echo "cover=$st $(kg_state) sb=${sb:-?}"
 }
+bn8_shown_after_hide(){ # bn8_shown_after_hide <logcat -v time file> <window ms>: how many 'PENCIL cover shown' lines follow the FIRST 'PENCIL cover hidden' line within the window; "nohide" when the cover was never hidden
+  awk -v w="$2" 'function ms(t,  a){ split(t,a,"[:.]"); return ((a[1]*60+a[2])*60+a[3])*1000+a[4] }
+    /PENCIL cover hidden/ && th=="" { th=ms($2); next }
+    th!="" && /PENCIL cover shown/ { d=ms($2)-th; if (d>=0 && d<=w) n++ }
+    END { if (th=="") print "nohide"; else print n+0 }' "$1"
+}
 pen_none(){ local s; for s in "$@"; do case "$s" in cover=shown*) return 1;; esac; done; return 0; }
 pen_all_shown(){ local s; for s in "$@"; do case "$s" in cover=shown*) ;; *) return 1;; esac; done; return 0; }
 pen_control_ok(){ case "$1" in *"showing=false"*) ;; *) return 1;; esac; case "$1" in cover=shown*) return 1;; esac; return 0; }
@@ -594,6 +600,21 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   info "BK1b ($1 mode): what the app logged in the lock log (newer half): $(echo "$BK_LL" | tail -5 | tr '\n' '|')"
   check "BK1b: (stored mode $1) with no panel open NO cover sits anywhere: unlocked, PIN set, lock screen" pen_none "$BK_P0" "$BK_P1" "$BK_P2"
   check "BK1b: (stored mode $1) on the LOCK screen the pencil cover is shown at each of three openings of the panel" pen_all_shown "$BK_O1" "$BK_O2" "$BK_O3"
+  if [ "$1" = custom ]; then
+    # BN8b (Tj, 2026-11-10, v0.9.0: "The lock screen still flashed a white box after I pulled down [and] returned the notification panel for the pencil hider"): a FINGER drags the open panel up on the lock screen (the panel
+    # follows the finger, no animation is involved: 240 px in 0.8 s). The cover must go when the pencil starts to rise and must not come back while the drag goes on (v0.9.0 followed the pencil with the lag of a look =
+    # a white box trailing the panel). The uiautomator dump above restarted the service, so the panel is opened afresh first.
+    adb shell cmd statusbar collapse; sleep 2; adb shell cmd statusbar expand-settings; sleep 3
+    BN8_S0="$(pen_sample)"
+    adb logcat -c; adb shell log -t TjA11y "BN8b marker drag"
+    adb shell input swipe 300 300 300 60 800; adb shell log -t TjA11y "BN8b marker end"; sleep 1
+    BN8_S1="$(pen_sample)"
+    adb logcat -d -v time -s TjA11y:I | grep -E 'PENCIL|BN8b marker' > "$OUT/pencil-drag-log.txt" 2>&1
+    BN8_N="$(bn8_shown_after_hide "$OUT/pencil-drag-log.txt" 480)"
+    info "BN8b drag: before $BN8_S0; after $BN8_S1; 'cover shown' lines within 480 ms after the first hide: $BN8_N; PENCIL lines: $(sed 's/^[0-9-]* //; s/ *I.TjA11y *([ 0-9]*): / /' "$OUT/pencil-drag-log.txt" | cut -c1-78 | head -n 9 | tr '\n' '|')"
+    check "BN8b: the cover was up before the drag (else the drag proves nothing)" bash -c "case '$BN8_S0' in cover=shown*) exit 0;; esac; exit 1"
+    check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
+  fi
   adb shell cmd statusbar collapse; sleep 2
   b6unlock; BK_U="$(kg_state)"; sleep 2
   info "BK1b ($1 mode): after the phase the keyguard reports: $BK_U (showing=false = really unlocked)"
