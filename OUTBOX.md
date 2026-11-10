@@ -2332,3 +2332,30 @@
 ## 2026-11-10T11:27:57Z
 > The v0.9.2 release build is running on GitHub (`android.yml`, `full_build=true`), and the log-based `b6` rerun (#515) is still going. A timer wakes me at 11:31 UTC to read both. Next I'll confirm the Release and record it, and then send you the one message with the link.
 <!-- sha:9302177eeaa9 -->
+
+## 2026-11-10T11:57:06Z
+> Tj, v0.9.2 is out. It fixes both problems in your report.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.2
+>
+> **1. The lock-screen screenshots.** They were real system screenshots. The menu-dimming measurement takes two of them to learn how dark the stock power menu makes the screen. After a Quickstep session the battery saver makes the lock screen wake dark for a few seconds, and the app tried to measure that dark look as well. That measurement never finished, and an interrupted try was not counted, so it started again at your next lock (the two or three screenshots you saw).
+>
+> Now the dimming is measured only in the normal look, once for your wallpaper. The dark look reuses that measurement and never gets screenshots of its own. With your wallpaper unchanged there will be no more screenshots.
+>
+> Only a new wallpaper, a different screen size or rotation, or the "Measure again" button can start one. It waits until the lock screen has been on for 10 seconds, runs once per lock, and gives up after two tries that stored nothing.
+>
+> **2. The white box when you slide the panel back up.** The cover over the pencil was only taken away after the app had looked at the panel. Each look is a slow call into the system (up to 1.3 seconds on your tablet), so the box lagged behind the panel.
+>
+> Now the cover goes the instant your finger touches the screen, and again as soon as the pencil is gone. It comes back only after the panel has been still for about half a second. The price: after you touch the open panel, the pencil is visible for about half a second before it is covered again.
+>
+> **What is proven.** The screenshot fix is covered by the unit tests and an emulator run, where no dark-look measurement starts. The white-box fix is proven on the emulator only. When the panel closes, the cover is gone about 0.1 to 0.2 seconds later, in both modes, and the pictures show no white box.
+>
+> One check of my long emulator test was red twice (the third panel closing in the custom-mode run). I looked at the pictures: the test's swipe made the emulator show the PIN pad with the panel still open behind it. The cover was correctly on the pencil, so the test's assumption was wrong, not the app. I fixed the test and it is re-running (CI run 517); the result goes into `TASKS.md`. Neither fix has run on your tablet yet.
+>
+> If either problem happens again, send the tablet report right after it. The lock-screen log now has a timeline (`SCRIM run starts / run ends`, `PENCIL cover shown / hidden` with the reason), so I can see which visit did what.
+>
+> Still waiting on you (nothing new):
+> - A tablet report right after the first side-key press on the custom home (the Screenshot button and visible patch you saw), and one before you open more Quickstep apps (they showed up in the custom Recents).
+> - Start the shell helper and tap "Do everything that is missing" (usage access), so the Battery page can show real numbers.
+> - Two answers: where you saw a notification (banner, status-bar icon, shade or lock screen, and which app), and about the slow unlock (which unlock, what is on screen, about how many seconds).
+<!-- sha:9877551829d7 -->
