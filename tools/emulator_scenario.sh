@@ -552,15 +552,17 @@ pen_cover_of(){ # pen_cover_of "<pids of the app>" < dumpsys-window-windows text
     END { flush(); if (shn > 0) print "shown"; else if (hid > 0) print "hidden"; else print "none" }'
 }
 pen_cover_state(){ # shown | hidden | none: the pencil cover window's own flags (showPencil = touchable, hidePencil = NOT_TOUCHABLE + alpha 0): needs no glyph and no pixels
-  adb shell dumpsys window windows 2>/dev/null | pen_cover_of "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')"
+  local live; live="$(adb shell pidof "$PKG" </dev/null 2>/dev/null | tr -d '\r')"   # (BEFORE the pipe, and with </dev/null: an `adb shell` inside a pipeline SWALLOWS the piped text; run #513: every sample read 'none')
+  adb shell dumpsys window windows </dev/null 2>/dev/null | pen_cover_of "$live"
 }
 # (kg_state and b6unlock are defined at the top of this file: the sections fp and last need them without b6)
 # NO uiautomator dump inside the sampling: a UiAutomation session SUPPRESSES (unbinds) the accessibility services while it runs, so every dump would restart the very service that is measured (gate triage 2026-11-08, runs #408 / #409:
 # the 2nd and 3rd opening read 'none' in one phase of each run). Only the window state and the keyguard state are read here; ONE dump is taken at the very end of the phase.
 pen_sample(){ # "cover=<shown|hidden|none> showing=<keyguard> sb=<the StatusBar window's frame>": unlocked, a closed shade is [0,0][600,24] and an open panel is full height, so a cover with a small frame would sit over NOTHING
-  local D st sb
-  D="$(adb shell dumpsys window windows 2>/dev/null)"
-  st="$(echo "$D" | pen_cover_of "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')")"
+  local D st sb live
+  live="$(adb shell pidof "$PKG" </dev/null 2>/dev/null | tr -d '\r')"   # (BEFORE the pipe, and with </dev/null: an `adb shell` inside a pipeline SWALLOWS the piped text; run #513: every sample read 'none')
+  D="$(adb shell dumpsys window windows </dev/null 2>/dev/null)"
+  st="$(echo "$D" | pen_cover_of "$live")"
   sb="$(echo "$D" | awk '/u0 StatusBar}/{f=1} f { l=tolower($0); if (match(l, /m?frame=\[[0-9,]*\]\[[0-9,]*\]/)) { s=substr(l, RSTART, RLENGTH); sub(/^m?frame=/, "", s); print s; exit } }')"
   echo "cover=$st $(kg_state) sb=${sb:-?}"
 }

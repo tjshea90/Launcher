@@ -11,7 +11,7 @@ ex(){ # print the function text starting at "<name>(){" up to its closing brace 
 for f in kg_state pen_cover_of pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide; do ex "$f"; done > "$OUT/fns.sh"
 FAKE_WIN=""; FAKE_POL=""; FAKE_PID=""; PKG=com.tj.launcher
 adb(){ # adb shell dumpsys window windows|policy, pidof
-  case "$*" in *"dumpsys window windows"*) printf '%s' "$FAKE_WIN";; *"dumpsys window policy"*) printf '%s' "$FAKE_POL";; *pidof*) printf '%s' "$FAKE_PID";; esac
+  case "$*" in *"dumpsys window windows"*) printf '%s' "$FAKE_WIN";; *"dumpsys window policy"*) printf '%s' "$FAKE_POL";; *pidof*) [ -p /dev/stdin ] && cat > /dev/null; printf '%s' "$FAKE_PID";; esac   # a real `adb shell` SWALLOWS a piped stdin (run #513): the stub does too, so a pidof inside a pipeline is caught here
 }
 . "$OUT/fns.sh"
 fails=0
