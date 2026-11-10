@@ -2335,7 +2335,10 @@ public class TjAccessibilityService extends AccessibilityService {
             } catch (Throwable ignored) { }
             penFollowed = PencilRules.follow(true, refreshed, visible, boundsOk);   // BN4
             if (penFollowed == PencilRules.FOUND) { penFast++; penSearched = true; return b; }
-            dropPenNode();   // gone, hidden or moved to a bad place: updatePencil takes the cover away; search again (below) when allowed
+            dropPenNode();   // gone, hidden or moved to a bad place: the cover goes NOW; search again (below) when allowed
+            // Review of BQ1b: the cover is taken away BEFORE the whole-tree search below (0.5-1.3 s of main thread on the tablet), not after it: a panel that collapsed without a touch on the cover (or whose finger-down came while the
+            // cover was hidden and untouchable) left the white box on the lock screen for the whole search. A pencil that is still there is covered again when the search has found it.
+            if (penShown) hidePencil("the followed pencil is gone");
         }
         if (!allowFull) return null;
         penSearched = true;
