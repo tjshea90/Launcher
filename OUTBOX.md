@@ -2139,3 +2139,7 @@
 >
 > `main`, my branch and the other account's branch are all contained in `5a469fd`, and the gated code is identical to the head. I'm now running `ship.sh` for v0.9.1 in the background (tests, lint, version check, push). When it finishes I'll build and publish on GitHub Actions, record the release, and send Tj the full answer.
 <!-- sha:a636f558d528 -->
+
+## 2026-11-10T04:47:44Z
+> The heartbeat's stand-down rule has a flaw I'll document after the release: a restart-notice commit from a stalled session counts as "work under 60 minutes old", and the rule tells the woken session to disable its own timer. The release comes first, and the timer for the build fires at 04:49:00Z.
+<!-- sha:4ebc878b6906 -->
