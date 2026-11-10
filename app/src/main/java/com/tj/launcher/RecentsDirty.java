@@ -18,6 +18,18 @@ public final class RecentsDirty {
     public static void mark(Context c) { if (!isDirty(c)) p(c).edit().putBoolean("dirty", true).commit(); }
     public static void clear(Context c) { p(c).edit().putBoolean("dirty", false).commit(); }
 
+    /** BN8e: at most one DIRTY line per package per minute in the lock log (ordinary use of Quickstep apps wrote about six a minute and pushed everything else out of the report's excerpt). */
+    public static final long LOG_GAP_MS = 60_000L;
+
+    /** Pure rule with the caller's own map: may the DIRTY line of {@code pkg} be written now? Bounded (32 packages), and a clock that went backwards logs again. */
+    public static boolean shouldLog(java.util.Map<String, Long> last, String pkg, long nowMs, long gapMs) {
+        Long at = last.get(pkg);
+        if (at != null && nowMs >= at && nowMs - at < gapMs) return false;
+        if (at == null && last.size() >= 32) last.clear();
+        last.put(pkg, nowMs);
+        return true;
+    }
+
     /** Pure rule (JVM-testable): does a window of {@code pkg} appearing mean Recents may now hold another app? */
     public static boolean shouldMark(String pkg, String ourPkg, String stockLauncherPkg, String imePkg, String targetPkg, boolean otherAppsLandInRecents) {
         if (!otherAppsLandInRecents || pkg == null || pkg.isEmpty()) return false;

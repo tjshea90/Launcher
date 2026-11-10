@@ -1864,6 +1864,8 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     // ---------------------------------------------------------------- B4: has another app been opened since Recents was last cleared?
+    private final java.util.HashMap<String, Long> dirtyLogged = new java.util.HashMap<String, Long>();   // BN8e: when each package's DIRTY line was last written (event thread only)
+
     private void trackDirty(AccessibilityEvent e) {
         try {
             if (e == null || e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || e.getPackageName() == null) return;
@@ -1879,7 +1881,8 @@ public class TjAccessibilityService extends AccessibilityService {
                     return;
                 }
                 RecentsDirty.mark(this); AppOrigin.markQuickstep(this, e.getPackageName().toString());
-                LockLog.add(getApplicationContext(), "DIRTY", e.getPackageName() + " was marked as opened in Quickstep (window " + e.getClassName() + ")");
+                if (RecentsDirty.shouldLog(dirtyLogged, e.getPackageName().toString(), System.currentTimeMillis(), RecentsDirty.LOG_GAP_MS))   // BN8e: one line per package per minute
+                    LockLog.add(getApplicationContext(), "DIRTY", e.getPackageName() + " was marked as opened in Quickstep (window " + e.getClassName() + ")");
             }
         } catch (Throwable t) { Log.e(TAG, "dirty tracking failed", t); }
     }

@@ -100,4 +100,51 @@ public final class LockLog {
     public static String tail(Context c, int n) {
         synchronized (LOCK) { return tailLines(read(c.getApplicationContext().getFileStreamPath(FILE)), n); }
     }
+
+    /** BN8e: {@link #digest} of the whole log file, for the tablet report. */
+    public static String tailDigest(Context c, int n) {
+        synchronized (LOCK) { return digest(read(c.getApplicationContext().getFileStreamPath(FILE)), n); }
+    }
+
+    private static boolean isDirty(String line) { return line.startsWith("DIRTY ", 13); }   // "HH:mm:ss.SSS DIRTY <package> was marked as opened in Quickstep (window ...)"
+
+    /**
+     * BN8e (Tj's report of 2026-11-10): the last {@code n} lines of {@code all}, with every run of consecutive DIRTY lines folded into ONE line ("first time DIRTY 7 lines (com.a x5, com.b x2; newest last time)").
+     * A DIRTY line only says that an app was opened in Quickstep; ordinary use writes dozens, and the last 40 lines of the report were all of them, so the whole custom session before them (the lock-screen and side-key events
+     * the report exists for) was cut off. Order and every other line are untouched; a run of one stays as it is. Pure.
+     */
+    public static String digest(String all, int n) {
+        if (all == null || all.isEmpty() || n <= 0) return "";
+        String[] lines = all.split("\n");
+        java.util.ArrayList<String> out = new java.util.ArrayList<String>();
+        int i = 0;
+        while (i < lines.length) {
+            String l = lines[i];
+            if (l.isEmpty()) { i++; continue; }
+            if (!isDirty(l)) { out.add(l); i++; continue; }
+            int j = i;
+            java.util.LinkedHashMap<String, Integer> by = new java.util.LinkedHashMap<String, Integer>();
+            while (j < lines.length && !lines[j].isEmpty() && isDirty(lines[j])) {
+                String rest = lines[j].substring(19);                       // after "HH:mm:ss.SSS DIRTY "
+                int sp = rest.indexOf(' ');
+                String pkg = sp > 0 ? rest.substring(0, sp) : rest;
+                Integer c = by.get(pkg);
+                by.put(pkg, c == null ? 1 : c + 1);
+                j++;
+            }
+            int count = j - i;
+            if (count == 1) out.add(l);
+            else {
+                StringBuilder b = new StringBuilder(lines[i].substring(0, 12)).append(" DIRTY ").append(count).append(" lines (");
+                boolean first = true;
+                for (java.util.Map.Entry<String, Integer> e : by.entrySet()) { if (!first) b.append(", "); first = false; b.append(e.getKey()).append(" x").append(e.getValue()); }
+                b.append("; newest ").append(lines[j - 1].substring(0, 12)).append(')');
+                out.add(b.length() > 200 ? b.substring(0, 200) : b.toString());
+            }
+            i = j;
+        }
+        StringBuilder r = new StringBuilder();
+        for (int k = Math.max(0, out.size() - n); k < out.size(); k++) r.append(out.get(k)).append('\n');
+        return r.toString();
+    }
 }

@@ -155,9 +155,9 @@ public final class ReportState {
         b.append("\n----- the launcher's switches and last results (an allow-list: nothing secret is read)\n");
         b.append(format(Features.all(c)));
         try {
-            int n = full ? 40 : 12;   // review RV4: the short form is cut from the tail and the log is oldest-first, so keep it small enough that the cut never lands inside it (the newest events matter most)
-            String log = LockLog.tail(c, n);
-            b.append("\n----- the lock screen log (last ").append(n).append(" events; key KINDS only, never a digit)\n").append(log.isEmpty() ? "(empty: lock and unlock the tablet once)\n" : log);
+            int n = full ? 100 : 12;   // review RV4: the short form is cut from the tail and the log is oldest-first, so keep it small enough that the cut never lands inside it (the newest events matter most). BN8e: 100 lines of the folded log (was 40 raw)
+            String log = LockLog.tailDigest(c, n);
+            b.append("\n----- the lock screen log (last ").append(n).append(" lines; a run of DIRTY lines is folded into one; key KINDS only, never a digit)\n").append(log.isEmpty() ? "(empty: lock and unlock the tablet once)\n" : log);
             String dump = PowerMenuDump.read(c);
             int cap = full ? 12000 : 3500;
             if (dump.length() > cap) dump = dump.substring(0, cap) + "...\n";
