@@ -173,7 +173,8 @@ public class WifiIconHoldTest {
         st.failNextSave = true;
         assertFalse(set(st, s, true, true));
         assertEquals("nfc", s.value);
-        assertTrue(events.isEmpty());
+        assertFalse(st.held);
+        assertEquals("[save(false,null)]", events.toString());   // only the clean-up of a possibly half-written marker; the setting itself was never written
     }
 
     // ---------------------------------------------------------------- ending the hold
