@@ -103,15 +103,6 @@ public final class ScrimMeasure {
         } catch (Throwable t) { return 0; }
     }
 
-    /** Pure: the count in a stored failure record whatever lock screen it belongs to (the tablet report shows it without knowing the current signature); 0 when unreadable. */
-    public static int storedFailureCount(String stored) {
-        try {
-            if (stored == null || stored.isEmpty()) return 0;
-            String[] p = stored.split("#");
-            return p.length == 3 ? Math.max(0, Integer.parseInt(p[2])) : 0;
-        } catch (Throwable t) { return 0; }
-    }
-
     /** Pure: the record with one more failure for this lock screen (a record of another lock screen starts again at 1). */
     public static String addFailure(String stored, String sig, boolean night) {
         return sig + "#" + (night ? "n" : "d") + "#" + (failures(stored, sig, night) + 1);
