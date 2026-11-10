@@ -2513,6 +2513,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** Called with the cover up at {@code pencil}: shows, moves, hides or removes the overlay, or starts learning where the gear is. */
     private void gearFollow(Rect pencil) {
         try {
+            if (gearOff == null && gearView == null && gearTries >= GearRules.MAX_LEARN_TRIES) return;   // gave up for this panel visit: nothing to do until the cover comes back (gearCoverAway resets the count)
             boolean keyOk = gearOff != null && gearKeyNow().equals(gearOffKey);
             switch (GearRules.decide(gearWanted(), penShown, gearOff != null, keyOk)) {
                 case GearRules.REMOVE: removeGear(); break;
