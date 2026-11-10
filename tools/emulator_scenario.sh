@@ -4264,6 +4264,43 @@ ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); s
 check "SS7: switch off: the drawer's Settings is the real one" grep -q "com.android.settings" "$OUT/ss-resumed2.txt"
 setfeat; setmode custom; rebind; home; sleep 6
 fi # section ss
+if want gear; then # section gear
+ensurehome
+# ---- BR1 (Tj, 2026-11-10 19:27 UTC): the gear in the notification panel opens the Settings look-alike in the custom mode on an UNLOCKED tablet (research/GEAR_TO_LOOKALIKE_2026-11-10.md).
+#      Phase A: switches on: the overlay is learned and shown over the open panel, a tap on it opens the look-alike and the shade goes. Phase B (control): gear switch off: a tap on the SAME place opens the REAL Settings (so the place is the gear).
+beat "before GEAR"
+gearfeat(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"settings_spoof\\\" value=\\\"$1\\\" /><boolean name=\\\"gear_to_lookalike\\\" value=\\\"$2\\\" /><string name=\\\"return_app_label\\\">Calendar</string></map>\" > shared_prefs/tj_features.xml'"; }
+gearmark(){ adb shell log -p i -t TjA11y "$1" >/dev/null 2>&1; }
+gearlog(){ adb logcat -d -v time -s TjA11y:I 2>/dev/null | awk -v m="$1" 'f{print} index($0,m){f=1}'; }   # the service's lines AFTER the marker
+geartap(){ # geartap <log file> <place file>: tap the middle of the newest "GEAR overlay shown [l,t][r,b]" place (nothing when there is none) and keep the place
+  local r; r="$(grep -o 'GEAR overlay shown \[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]' "$1" | tail -1 | grep -o '[0-9][0-9]*' | tr '\n' ' ')"; set -- "$2" $r
+  if [ "$#" -ge 5 ]; then echo "$2 $3 $4 $5" > "$1"; adb shell input tap $(( ($2+$4)/2 )) $(( ($3+$5)/2 )); fi; }
+b6unlock >/dev/null 2>&1 || { adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
+gearfeat true true; setmode custom; rebind; home; sleep 8
+gearmark "GEARTEST A start"
+adb shell cmd statusbar expand-settings; sleep 6
+gearlog "GEARTEST A start" > "$OUT/gear-a-log.txt"; shot gear-01-panel
+info "BR1 A: $(grep -E 'GEAR |PENCIL cover shown' "$OUT/gear-a-log.txt" | sed -e 's/^.*TjA11y *([ 0-9]*): //' | cut -c1-110 | head -6 | tr '\n' '|')"
+check "BR1-1: the gear overlay was learned and shown over the open panel (custom mode, unlocked, both switches on)" grep -q "GEAR overlay shown" "$OUT/gear-a-log.txt"
+geartap "$OUT/gear-a-log.txt" "$OUT/gear-place.txt"; sleep 5
+resumed > "$OUT/gear-a-resumed.txt"; shot gear-02-after-tap
+gearlog "GEARTEST A start" > "$OUT/gear-a-log2.txt"
+info "BR1 A after the tap: place '$(cat "$OUT/gear-place.txt" 2>/dev/null)'; resumed = $(tr -s ' \n' ' ' < "$OUT/gear-a-resumed.txt" | cut -c1-160); $(grep -E 'GEAR tap|collapsePanels' "$OUT/gear-a-log2.txt" | sed -e 's/^.*TjA11y *([ 0-9]*): //' | cut -c1-150 | head -3 | tr '\n' '|')"
+check "BR1-2: the tap opened the look-alike (its page activity is on top, not com.android.settings)" grep -qE "com.tj.launcher/(\.|com\.tj\.launcher\.)(SsPageActivity|SettingsAlias)" "$OUT/gear-a-resumed.txt"
+check "BR1-3: the log says the look-alike was opened and the shade collapsed" grep -q "GEAR tap: opened the look-alike (shade collapsed: true)" "$OUT/gear-a-log2.txt"
+info "BR1 shade after the tap: $(adb shell dumpsys activity service com.android.systemui/.SystemUIService 2>/dev/null | grep -iE 'mPanelExpanded|mQsExpanded|mExpandedHeight|isExpanded' | head -3 | tr -s ' ' | tr '\n' '|' | cut -c1-200)"
+adb shell input keyevent KEYCODE_BACK; sleep 2; home
+gearfeat true false; setmode custom; rebind; home; sleep 8
+gearmark "GEARTEST B start"
+adb shell cmd statusbar expand-settings; sleep 6
+gearlog "GEARTEST B start" > "$OUT/gear-b-log.txt"; shot gear-03-panel-off
+check "BR1-4: with the gear switch off there is no overlay" bash -c "! grep -q 'GEAR overlay shown' $OUT/gear-b-log.txt"
+set -- $(cat "$OUT/gear-place.txt" 2>/dev/null); if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 5
+resumed > "$OUT/gear-b-resumed.txt"; shot gear-04-after-tap-off
+check "BR1-5: control: with the switch off the same tap opens the REAL Settings (so the overlay sat on the gear)" grep -q "com.android.settings" "$OUT/gear-b-resumed.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 2
+setfeat; setmode custom; rebind; home; sleep 4
+fi # section gear
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
