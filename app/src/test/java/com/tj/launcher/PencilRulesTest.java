@@ -110,6 +110,34 @@ public class PencilRulesTest {
         assertEquals(true, g.allowCover(100, 1050));
     }
 
+    // ---- BN8f2: two looks closer than MIN_LOOK_GAP_MS can read the same SystemUI frame (the 60 ms re-look can land 10 ms after an event look)
+    @Test public void aLookRightAfterAnotherDoesNotConfirmThatThePanelIsAtRest() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        assertEquals(false, g.allowCover(400, 1040));      // up: held, anchor (400, 1040)
+        assertEquals("10 ms later, the same top: probably the same frame, not a second look", false, g.allowCover(400, 1050));
+        assertEquals("30 ms after the anchor: still too close", false, g.allowCover(400, 1070));
+        assertEquals(true, g.holding());
+        assertEquals("40 ms after the anchor: a real second look, the panel is at rest", true, g.allowCover(400, 1080));
+        assertEquals(false, g.holding());
+    }
+
+    @Test public void aCloseLookThatShowsAMoveUpStillHoldsAndMovesTheAnchor() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        g.allowCover(460, 1000);
+        assertEquals(false, g.allowCover(400, 1040));
+        assertEquals("20 px higher 10 ms later: still sliding", false, g.allowCover(380, 1050));
+        assertEquals("the anchor is now (380, 1050): 30 ms later is too close to count", false, g.allowCover(380, 1080));
+        assertEquals("and 50 ms after the new anchor the looks agree", true, g.allowCover(380, 1100));
+    }
+
+    @Test public void aCloseLookWhileThePanelOpensIsStillFollowed() {
+        PencilRules.SlideGuard g = new PencilRules.SlideGuard();
+        assertEquals(true, g.allowCover(300, 1000));
+        assertEquals("opening, 10 ms later: followed as before", true, g.allowCover(320, 1010));
+        assertEquals(false, g.holding());
+    }
+
     @Test public void theWatchdogIsFasterThanTheOldSearchGapPlusASearch() {
         assertEquals(true, PencilRules.WATCH_MS < EventNoise.minPencilSearchGapMs(0x00000800) + 50);   // 0x800 = TYPE_WINDOW_CONTENT_CHANGED
     }
