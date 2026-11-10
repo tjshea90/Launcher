@@ -70,4 +70,19 @@ public final class PencilRules {
         public boolean holding() { return holding; }
         public void reset() { lastTop = NONE; holding = false; }
     }
+
+    /**
+     * BN8b, second half: the FAST watch. The guard above only acts at a LOOK, and the looks were too far apart for the START of a slide: SystemUI sends content events at most every 100 ms, the slow watch runs every
+     * {@link #WATCH_MS}, so the cover could sit at its old place for about 0.1 s after the panel had begun to leave (and a first look that saw the pencil only 1-3 px higher "followed" it and then waited for the next event).
+     * While something may be moving the panel (a finger went down anywhere: ACTION_OUTSIDE on the cover; SystemUI is redrawing; the pencil was just found at a new place) the covered pencil is looked at every
+     * {@link #FAST_WATCH_MS} for {@link #FAST_FOR_MS}: a slide is then noticed within about two frames. One node refresh per look, and only while the cover is up.
+     */
+    public static final long FAST_WATCH_MS = 25;
+    public static final long FAST_FOR_MS = 600;
+
+    /** When the next look at a shown cover is due. Fast while {@code nowMs} is before {@code fastUntilMs}; a deadline that makes no sense (further away than {@link #FAST_FOR_MS}: a clock jump) counts as slow. Pure. */
+    public static long watchGapMs(long nowMs, long fastUntilMs) {
+        long left = fastUntilMs - nowMs;
+        return left > 0 && left <= FAST_FOR_MS ? FAST_WATCH_MS : WATCH_MS;
+    }
 }

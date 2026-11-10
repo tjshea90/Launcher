@@ -2228,6 +2228,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (DemoModeProfile.active(this)) { if (penView != null) removePencil(); return; }   // something else already turned the retail flag on (the pencil is gone natively); read only for SystemUI events (AB2)
         long now = android.os.SystemClock.uptimeMillis();
         int type = e == null ? 0 : e.getEventType();
+        if (sysui) penQuicken("SystemUI is redrawing");   // BN8b: a shown cover is watched closely while the panel may be moving (does nothing when no cover is up)
         if (now - lastPenMs >= 40) {
             lastPenMs = now; updatePencil(now - lastPenFullMs >= EventNoise.minPencilSearchGapMs(type));   // AN1: following a known pencil every 40 ms is cheap; a full tree search is spaced out in a burst of redraws
             if (debuggable()) { long end = android.os.SystemClock.uptimeMillis(); if (end - now >= 15) Log.i(TAG, "PATCH pencil took " + (end - now) + " ms t=" + end); }   // BJ1 diagnostic (debug builds only), see the scan line in leadingEdge
@@ -2275,9 +2276,20 @@ public class TjAccessibilityService extends AccessibilityService {
             if (penView == null || !penShown) return;
             if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
             updatePencil(false);
-            if (penView != null && penShown) handler.postDelayed(this, PencilRules.WATCH_MS);
+            if (penView != null && penShown) startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
+
+    private long penFastUntil = 0;   // BN8b: until this uptime the shown cover is looked at every PencilRules.FAST_WATCH_MS
+
+    /** BN8b: something may be about to move the panel ({@code why}: a finger went down somewhere, SystemUI is redrawing, the pencil was just found at a new place): look at the covered pencil every FAST_WATCH_MS for a while. Main thread. */
+    private void penQuicken(String why) {
+        if (penView == null || !penShown) return;
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean wasFast = PencilRules.watchGapMs(now, penFastUntil) == PencilRules.FAST_WATCH_MS;
+        penFastUntil = now + PencilRules.FAST_FOR_MS;
+        if (!wasFast) { Log.i(TAG, "PENCIL fast watch (" + why + ")"); startPenWatch(); }   // the slow look may be up to WATCH_MS away: bring the next one forward
+    }
 
     private void dropPenNode() {
         AccessibilityNodeInfo n = penNode;
@@ -2342,7 +2354,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private WindowManager.LayoutParams penParams(Rect r, boolean touchable) {
         WindowManager.LayoutParams lp = new WindowManager.LayoutParams(r.width(), r.height(), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | (touchable ? 0 : WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE),   // touchable when shown on purpose: it swallows taps meant for the pencil
+                        | (touchable ? WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH : WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE),   // touchable when shown on purpose: it swallows taps meant for the pencil; BN8b: and it is told (ACTION_OUTSIDE) when a finger goes down anywhere else
                 PixelFormat.TRANSLUCENT);
         lp.gravity = Gravity.TOP | Gravity.START;
         lp.x = r.left; lp.y = r.top;
@@ -2355,19 +2367,17 @@ public class TjAccessibilityService extends AccessibilityService {
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (penView != null) {
             if (!penShown) { penView.setAlpha(1f); penShown = true; wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); Log.i(TAG, "PENCIL cover shown " + r.toShortString()); startPenWatch(); }
-            else if (!penAt.equals(r)) { wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); }
+            else if (!penAt.equals(r)) { wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); penQuicken("the pencil moved"); }   // BN8b: it is moving: the next look is due in FAST_WATCH_MS, not at the next event
             return;
         }
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(r.width(), r.height(), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
-                PixelFormat.TRANSLUCENT);
-        lp.gravity = Gravity.TOP | Gravity.START;
-        lp.x = r.left; lp.y = r.top;
-        lp.setTitle("TjPencilCover");
+        WindowManager.LayoutParams lp = penParams(r, true);
         if (penView == null) {
             View v = new View(this);
             v.setBackgroundColor(Color.WHITE);   // the stock panel is pure white (255,255,255) in Tj's photo
-            v.setOnTouchListener(new View.OnTouchListener() { @Override public boolean onTouch(View view, android.view.MotionEvent ev) { return true; } });
+            v.setOnTouchListener(new View.OnTouchListener() { @Override public boolean onTouch(View view, android.view.MotionEvent ev) {
+                if (ev.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { penQuicken("a finger went down"); return false; }   // BN8b: the earliest sign that the panel may be about to move
+                return true;
+            } });
             wm.addView(v, lp);
             penView = v; penAt.set(r); penShown = true;
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
@@ -2378,7 +2388,7 @@ public class TjAccessibilityService extends AccessibilityService {
         }
     }
 
-    private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.WATCH_MS); }
+    private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.watchGapMs(android.os.SystemClock.uptimeMillis(), penFastUntil)); }
 
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
     private void hidePencil(String why) {
