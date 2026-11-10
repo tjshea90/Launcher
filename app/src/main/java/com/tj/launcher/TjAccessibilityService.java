@@ -2453,7 +2453,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // BN4: for the tablet report: on the lock screen a hide that came late (the white box) shows in the lock log with its age (one line a second at most)
             long up = android.os.SystemClock.uptimeMillis();
             if (age >= 150 && up - penLateLoggedMs > 1000 && keyguardLockedFast()) { penLateLoggedMs = up; LockLog.add(getApplicationContext(), "PENCIL", "cover hidden " + age + " ms after the pencil was last seen (" + why + ")"); }
-            else penLockLog("cover hidden (" + why + ")" + (age >= 0 ? ", pencil last seen " + age + " ms ago" : ""));   // BQ1b: a timeline of the cover on the lock screen for the next report
+            else penLockLog(false, "cover hidden (" + why + ")" + (age >= 0 ? ", pencil last seen " + age + " ms ago" : ""));   // BQ1b: a timeline of the cover on the lock screen for the next report
         } catch (Throwable t) { removePencil(); }
     }
 
