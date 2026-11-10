@@ -11,7 +11,14 @@ public class SsAccessRulesTest {
         assertEquals("Short", SsAccessRules.longPressSummary(400));    // Tj's tablet
         assertEquals("Medium", SsAccessRules.longPressSummary(1000));
         assertEquals("Long", SsAccessRules.longPressSummary(1500));
-        assertEquals("", SsAccessRules.longPressSummary(500));         // a value outside the list: nothing selected, no summary
+        assertEquals("Short", SsAccessRules.longPressSummary(500));    // BN1p R5: a value outside the list reads as the nearest entry, the row keeps its line
+        assertEquals("Short", SsAccessRules.longPressSummary(700));    // exactly between Short and Medium: the shorter
+        assertEquals("Medium", SsAccessRules.longPressSummary(800));
+        assertEquals("Medium", SsAccessRules.longPressSummary(1250));  // between Medium and Long: the shorter
+        assertEquals("Long", SsAccessRules.longPressSummary(1300));
+        assertEquals("Long", SsAccessRules.longPressSummary(5000));
+        assertEquals("Short", SsAccessRules.longPressSummary(-1));
+        assertEquals(-1, SsAccessRules.longPressIndex(500));           // the dialog still selects nothing for it
         assertEquals(1, SsAccessRules.longPressIndex(1000));
         assertEquals(-1, SsAccessRules.longPressIndex(-1));
         assertEquals(SsAccessRules.LONG_PRESS_VALUES.length, SsAccessRules.LONG_PRESS_LABELS.length);

@@ -39,10 +39,36 @@ public class SsDisplayRulesTest {
         assertEquals("After 1 minute of inactivity", SsDisplayRules.timeoutSummary(60_000));   // Tj's screenshot
         assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(15_000));
         assertEquals("After 30 minutes of inactivity", SsDisplayRules.timeoutSummary(1_800_000));
-        assertEquals("", SsDisplayRules.timeoutSummary(45_000));
         assertEquals(2, SsDisplayRules.timeoutIndex(60_000));
         assertEquals(-1, SsDisplayRules.timeoutIndex(-1));
         assertEquals(SsDisplayRules.TIMEOUT_VALUES.length, SsDisplayRules.TIMEOUT_LABELS.length);
+    }
+
+    /** BN1p R4: a value that is not in the list reads as the nearest entry; the line is never empty (a tie takes the shorter entry). */
+    @Test public void anOffListTimeoutReadsAsTheNearestEntry() {
+        assertEquals("After 30 seconds of inactivity", SsDisplayRules.timeoutSummary(45_000));     // exactly between 30 s and 1 min: the shorter
+        assertEquals("After 1 minute of inactivity", SsDisplayRules.timeoutSummary(46_000));
+        assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(0));
+        assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(-1));          // "never" written by a vendor tool
+        assertEquals("After 30 minutes of inactivity", SsDisplayRules.timeoutSummary(Integer.MAX_VALUE));
+        assertEquals("After 5 minutes of inactivity", SsDisplayRules.timeoutSummary(420_000));      // 7 min: closer to 5 than to 10
+        for (int i = 0; i < SsDisplayRules.TIMEOUT_VALUES.length; i++) assertEquals(i, SsDisplayRules.nearestTimeoutIndex(SsDisplayRules.TIMEOUT_VALUES[i]));
+        assertEquals(-1, SsDisplayRules.timeoutIndex(45_000));                                      // the dialog still selects nothing for it
+    }
+
+    /** BN1p R3: only a sane device range replaces the AOSP defaults. */
+    @Test public void aBrightnessRangeIsTrustedOnlyWhenSane() {
+        assertTrue(SsDisplayRules.rangeOk(10, 255));
+        assertTrue(SsDisplayRules.rangeOk(1, 255));
+        assertTrue(SsDisplayRules.rangeOk(0, 255));
+        assertFalse(SsDisplayRules.rangeOk(255, 255));
+        assertFalse(SsDisplayRules.rangeOk(100, 50));
+        assertFalse(SsDisplayRules.rangeOk(-1, 255));
+        assertFalse(SsDisplayRules.rangeOk(0, 0));
+        assertFalse(SsDisplayRules.rangeOk(10, 1023));
+        // the same raw value reads differently with another range: why the device's own one matters
+        assertEquals(0.0, SsDisplayRules.brightnessFraction(1, 1, 255), 0.0);
+        assertTrue(SsDisplayRules.brightnessFraction(15, 1, 255) > SsDisplayRules.brightnessFraction(15, 10, 255));
     }
 
     @Test public void fontIndexUsesTheMidpoints() {
