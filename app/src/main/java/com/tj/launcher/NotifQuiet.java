@@ -63,6 +63,26 @@ public final class NotifQuiet {
     }
 
     /**
+     * Fills in every fact except {@code switchOn} (the caller's own switch, already set on {@code f}). Shared with {@link WifiIconHide} (BS1): the Wi-Fi symbol is hidden in exactly the same world as the pop-up banners
+     * are quiet, so both read the same facts the same way. Binder calls only when the world could still be "not quiet" (an unlocked Quickstep candidate with everything granted).
+     */
+    static void fillFacts(Context app, NotifQuietPolicy.Facts f, AnimationSpeedup.Look look, boolean assumeHelper) {
+        f.grant = permitted(app);
+        f.automationOff = CrashGuard.automationOff(app);
+        f.quickstepMode = Mode.QUICKSTEP.equals(Mode.get(app));
+        // the helper, the screen and the lock only matter inside a Quickstep mode: in the custom launcher the answer is "quiet" whatever they say, so no binder call there
+        f.helperUp = true; f.screenOn = true; f.lockUp = false; f.unlockUndecided = false;
+        if (f.quickstepMode && f.switchOn && f.grant && !f.automationOff) {
+            f.helperUp = assumeHelper || TjAccessibilityService.get() != null;
+            if (f.helperUp) {
+                f.screenOn = look.screenOn();
+                f.lockUp = look.lockUp();
+                f.unlockUndecided = AnimationSpeedup.unlockUndecided(f.screenOn, f.lockUp);
+            }
+        }
+    }
+
+    /**
      * THE decision. Reads the facts, asks {@link NotifQuietPolicy#why}, sets or clears the hold, and logs a line (lock log + logcat) only when something changed. {@code look}: the screen and lock facts of this
      * sync (asked of Android at most once, shared with the animation rule); {@code assumeHelper}: the process has just started and its helper is about to connect. Cheap when there is nothing to do: no binder
      * call unless the hold is on or could start. Only called from {@link AnimationSpeedup#syncNow} (serialised); never throws.
