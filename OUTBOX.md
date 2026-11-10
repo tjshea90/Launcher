@@ -2328,3 +2328,7 @@
 ## 2026-11-10T11:23:31Z
 > v0.9.2 is bumped. `ship.sh` is running the local gates (handoff test, unit tests, lint) in the background, and the fixed `b6` rerun (#515) is running on CI. I'll read both when they finish.
 <!-- sha:f481cb195319 -->
+
+## 2026-11-10T11:27:57Z
+> The v0.9.2 release build is running on GitHub (`android.yml`, `full_build=true`), and the log-based `b6` rerun (#515) is still going. A timer wakes me at 11:31 UTC to read both. Next I'll confirm the Release and record it, and then send you the one message with the link.
+<!-- sha:9302177eeaa9 -->
