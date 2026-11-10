@@ -249,4 +249,42 @@ public class PencilRulesTest {
         t += 60; rest = slide.allowCover(560, t); fing = finger.allowCover(t); assertEquals(false, rest && fing);       // still sliding
         t += 60; rest = slide.allowCover(560, t); fing = finger.allowCover(t); assertEquals("two looks agree: at rest", true, rest && fing);
     }
+
+    // ---- review of BQ1b (2026-11-10, research/BQ1_REVIEW_2026-11-10.md)
+    @Test public void aWaitIsOnForAtMostThreeSecondsSoTheHoldLoopEndsByItself() {
+        PencilRules.FingerGuard g = new PencilRules.FingerGuard();
+        assertEquals(false, g.waitingAt(1_000));                                         // no finger, no wait
+        g.fingerDown(10_000);
+        assertEquals(true, g.waitingAt(10_000)); assertEquals(true, g.waitingAt(12_999));
+        assertEquals("MAX_MS is a safety valve: the re-booking stops with it", false, g.waitingAt(13_000));
+        assertEquals("the guard itself ends at the next look, not by the clock", true, g.waiting());
+        assertEquals("a clock that went backwards holds nothing", false, g.waitingAt(9_999));
+        g.reset(); assertEquals(false, g.waitingAt(10_001));
+    }
+
+    @Test public void aSlowLookIsStaleAndAQuickReLookDecides() {
+        assertEquals(false, PencilRules.staleLook(1_000, 1_030, 0));                    // a normal node refresh
+        assertEquals(false, PencilRules.staleLook(1_000, 1_000 + PencilRules.STALE_LOOK_MS, 0));   // exactly at the limit is still fresh
+        assertEquals(true, PencilRules.staleLook(1_000, 1_000 + PencilRules.STALE_LOOK_MS + 1, 0));
+        assertEquals("a whole-tree search of 1.3 s read the place 1.3 s ago", true, PencilRules.staleLook(1_000, 2_305, 0));
+        assertEquals("a clock that went backwards is no reason to hold anything", false, PencilRules.staleLook(2_000, 1_000, 0));
+    }
+
+    @Test public void aSystemUiThatIsAlwaysSlowStillGetsItsCover() {
+        // at most MAX_STALE_RUN stale looks in a row; the next one is believed, whatever its age (a pencil that is never covered is the other failure)
+        int run = 0;
+        for (int i = 0; i < PencilRules.MAX_STALE_RUN; i++) { assertEquals("look " + i, true, PencilRules.staleLook(0, 400, run)); run++; }
+        assertEquals(false, PencilRules.staleLook(0, 400, run));
+        assertEquals("a fast look in between starts the count again", true, PencilRules.staleLook(0, 400, 0));
+        assertEquals(true, PencilRules.MAX_STALE_RUN * (PencilRules.SlideGuard.RELOOK_MS + PencilRules.STALE_LOOK_MS) < 1000);   // the worst case still ends well under a second of waiting
+    }
+
+    @Test public void theStartTimeOfASlowLookKeepsTheGuardsHonest() {
+        // the service feeds the guards with the START of the look: a look of 450 ms that read the place at its start must not make the slide guard think a gap of 450 ms passed in which nothing moved
+        PencilRules.SlideGuard slide = new PencilRules.SlideGuard();
+        assertEquals(true, slide.allowCover(700, 5_000));                                // look 1 (start 5 000)
+        assertEquals("look 2 starts 20 ms later: too close to count as a second reading of a resting panel", true, slide.allowCover(700, 5_020));
+        assertEquals(false, slide.allowCover(640, 5_100));                               // look 3 reads the pencil 60 px higher: the panel slides up
+        assertEquals(true, slide.holding());
+    }
 }
