@@ -60,10 +60,28 @@ final class SsPagesDisplay {
     }
 
     // ------------------------------------------------------------------ readers
-    static int rawBrightness(Context c) { return Settings.System.getInt(c.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, SsDisplayRules.BRIGHTNESS_MIN); }
+    private static int[] brightnessRange;   // {min, max} of THIS device, resolved once (BN1p R3)
+
+    /** BN1p R3: the device's own range from PowerManager (hidden, greylisted getters, read by reflection), else the AOSP defaults 10 / 255. Never throws. */
+    static synchronized int[] brightnessRange(Context c) {
+        if (brightnessRange == null) {
+            int min = SsDisplayRules.BRIGHTNESS_MIN, max = SsDisplayRules.BRIGHTNESS_MAX;
+            try {
+                android.os.PowerManager pm = (android.os.PowerManager) c.getApplicationContext().getSystemService(Context.POWER_SERVICE);
+                int lo = (Integer) android.os.PowerManager.class.getMethod("getMinimumScreenBrightnessSetting").invoke(pm);
+                int hi = (Integer) android.os.PowerManager.class.getMethod("getMaximumScreenBrightnessSetting").invoke(pm);
+                if (SsDisplayRules.rangeOk(lo, hi)) { min = lo; max = hi; }
+            } catch (Throwable ignored) { }
+            brightnessRange = new int[] { min, max };
+        }
+        return brightnessRange;
+    }
+
+    static int rawBrightness(Context c) { return Settings.System.getInt(c.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, brightnessRange(c)[0]); }
 
     static String brightnessSummary(Context c) {
-        return NumberFormat.getPercentInstance().format(SsDisplayRules.brightnessFraction(rawBrightness(c), SsDisplayRules.BRIGHTNESS_MIN, SsDisplayRules.BRIGHTNESS_MAX));
+        int[] r = brightnessRange(c);
+        return NumberFormat.getPercentInstance().format(SsDisplayRules.brightnessFraction(rawBrightness(c), r[0], r[1]));
     }
 
     static long timeoutMs(Context c) { return Settings.System.getLong(c.getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, 30_000L); }
@@ -115,12 +133,13 @@ final class SsPagesDisplay {
         try { a.startActivity(new Intent("com.android.intent.action.SHOW_BRIGHTNESS_DIALOG")); return; } catch (Throwable ignored) { }
         final SeekBar bar = new SeekBar(a);
         bar.setMax(SsDisplayRules.GAMMA_MAX);
-        bar.setProgress(SsDisplayRules.toGamma(rawBrightness(a), SsDisplayRules.BRIGHTNESS_MIN, SsDisplayRules.BRIGHTNESS_MAX));
+        final int[] range = brightnessRange(a);
+        bar.setProgress(SsDisplayRules.toGamma(rawBrightness(a), range[0], range[1]));
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override public void onProgressChanged(SeekBar s, final int p, boolean fromUser) {
                 if (!fromUser) return;
                 write(a, new Runnable() { @Override public void run() {
-                    Settings.System.putInt(a.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, SsDisplayRules.fromGamma(p, SsDisplayRules.BRIGHTNESS_MIN, SsDisplayRules.BRIGHTNESS_MAX));
+                    Settings.System.putInt(a.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, SsDisplayRules.fromGamma(p, range[0], range[1]));
                 } });
             }
             @Override public void onStartTrackingTouch(SeekBar s) { }

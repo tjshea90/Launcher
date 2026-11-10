@@ -26,6 +26,12 @@ final class SsDisplayRules {
         return Math.round(min + (max - min) * (ret / 12f));
     }
 
+    /**
+     * BN1p R3: the device's own brightness range ({@code PowerManager.getMinimumScreenBrightnessSetting / getMaximumScreenBrightnessSetting}) is only trusted when it is a sane 0..255 span; anything else
+     * keeps the AOSP defaults above. The stock slider and its percentage use the device's range, so a different vendor range would show another number than Tj's screenshot.
+     */
+    static boolean rangeOk(int min, int max) { return min >= 0 && max > min && max <= 255; }
+
     /** The summary's fraction (0..1) of BrightnessLevelPreferenceController: the slider position as a share of 1023. */
     static double brightnessFraction(int raw, int min, int max) {
         double g = toGamma(raw, min, max);
@@ -44,10 +50,23 @@ final class SsDisplayRules {
         return -1;
     }
 
-    /** "After 1 minute of inactivity" (screen_timeout_summary); "" for a value that is not in the list. */
+    /**
+     * BN1p R4: the entry whose value is closest to {@code ms} (a tie takes the shorter one). AOSP leaves the summary EMPTY for a value that is not in the list, and the row one line shorter than its
+     * neighbours; Tj's screenshots never show that, so a value from a vendor tool or an adb command reads as the nearest entry.
+     */
+    static int nearestTimeoutIndex(long ms) {
+        int best = 0;
+        long bestDiff = Long.MAX_VALUE;
+        for (int i = 0; i < TIMEOUT_VALUES.length; i++) {
+            long diff = Math.abs(TIMEOUT_VALUES[i] - ms);
+            if (diff < bestDiff) { bestDiff = diff; best = i; }
+        }
+        return best;
+    }
+
+    /** "After 1 minute of inactivity" (screen_timeout_summary); an off-list value reads as the nearest entry (BN1p R4), so the line is never empty. */
     static String timeoutSummary(long ms) {
-        int i = timeoutIndex(ms);
-        return i < 0 ? "" : "After " + TIMEOUT_LABELS[i] + " of inactivity";
+        return "After " + TIMEOUT_LABELS[nearestTimeoutIndex(ms)] + " of inactivity";
     }
 
     // ------------------------------------------------------------------ font size

@@ -17,9 +17,20 @@ final class SsAccessRules {
         return -1;
     }
 
+    /** BN1p R5: the entry whose value is closest to {@code ms} (a tie takes the shorter one). */
+    static int nearestLongPressIndex(int ms) {
+        int best = 0;
+        long bestDiff = Long.MAX_VALUE;
+        for (int i = 0; i < LONG_PRESS_VALUES.length; i++) {
+            long diff = Math.abs((long) LONG_PRESS_VALUES[i] - ms);
+            if (diff < bestDiff) { bestDiff = diff; best = i; }
+        }
+        return best;
+    }
+
+    /** "Short" / "Medium" / "Long". BN1p R5: a stored value outside the list reads as the nearest entry (the row keeps its summary line; the dialog still selects nothing for it). */
     static String longPressSummary(int ms) {
-        int i = longPressIndex(ms);
-        return i < 0 ? "" : LONG_PRESS_LABELS[i];
+        return LONG_PRESS_LABELS[nearestLongPressIndex(ms)];
     }
 
     // ------------------------------------------------------------------ Magnification
