@@ -4304,7 +4304,7 @@ public class TjAccessibilityService extends AccessibilityService {
         st.menuOpen = overlayShown;
         st.handshakeArmed = unlock.armedMethod() != null;
         st.now = System.currentTimeMillis();
-        st.screenOnMs = screenOnEpoch;
+        st.screenOnMs = ScrimMeasure.settleFromMs(screenOnEpoch, st.now, android.os.SystemClock.elapsedRealtime(), connectedAtMs);   // BQ1a: a freshly (re)connected service has not seen the wake: it settles from the connect
         st.lastStartMs = scrimLastStartMs;
         st.startsThisLock = scrimThisLock;
         st.startsToday = AutoCalibration.startsWithinDay(Features.getString(app, ScrimMeasure.TRIES_KEY, ""), st.now);

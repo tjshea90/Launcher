@@ -43,6 +43,15 @@ public final class ScrimMeasure {
     /** The whole sequence gives up after this. */
     public static final long STAGE_LIMIT_MS = 45_000;
 
+    /**
+     * Pure: the moment (wall-clock ms) from which the lock screen counts as settling: the later of the last wake and the service's own (re)connect. A service that was just connected has not seen the wake at all
+     * ({@code screenOnEpoch} is 0 or old), yet the theme it reads is as unsettled as right after one (BQ1a). {@code connectedElapsedMs} 0 = never connected.
+     */
+    public static long settleFromMs(long screenOnEpochMs, long nowMs, long elapsedNowMs, long connectedElapsedMs) {
+        long connectedWall = connectedElapsedMs > 0 && elapsedNowMs >= connectedElapsedMs ? nowMs - (elapsedNowMs - connectedElapsedMs) : 0;
+        return Math.max(screenOnEpochMs, connectedWall);
+    }
+
     private ScrimMeasure() {}
 
     /** The default of the switch: ON in the app, OFF in a debuggable (emulator test) build. */

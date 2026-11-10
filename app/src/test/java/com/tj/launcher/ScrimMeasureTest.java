@@ -101,6 +101,17 @@ public class ScrimMeasureTest {
         s.screenOnMs = s.now - 10_000; assertTrue(ScrimMeasure.shouldStart(s));
         assertTrue(ScrimMeasure.SETTLE_AFTER_WAKE_MS >= 10_000);
     }
+    @Test public void aFreshlyConnectedServiceSettlesFromItsConnectNotFromAnOldWake() {
+        long now = 1_000_000_000L, elapsed = 50_000_000L;
+        assertEquals("the wake was 3 s ago, connected an hour ago: the wake counts", now - 3_000, ScrimMeasure.settleFromMs(now - 3_000, now, elapsed, elapsed - 3_600_000));
+        assertEquals("the wake was a minute ago but the service connected 2 s ago", now - 2_000, ScrimMeasure.settleFromMs(now - 60_000, now, elapsed, elapsed - 2_000));
+        assertEquals("never connected: only the wake", now - 5_000, ScrimMeasure.settleFromMs(now - 5_000, now, elapsed, 0));
+        assertEquals("no wake seen yet", now - 1_000, ScrimMeasure.settleFromMs(0, now, elapsed, elapsed - 1_000));
+        assertEquals("a clock that went backwards is ignored", now - 7_000, ScrimMeasure.settleFromMs(now - 7_000, now, 100, 200));
+        ScrimMeasure.State s = go(); s.now = now; s.screenOnMs = ScrimMeasure.settleFromMs(now - 60_000, now, elapsed, elapsed - 2_000);
+        assertFalse("2 s after a reconnect no run starts", ScrimMeasure.shouldStart(s));
+        s.now = now + ScrimMeasure.SETTLE_AFTER_WAKE_MS; assertTrue(ScrimMeasure.shouldStart(s));
+    }
     @Test public void onlyOneRunPerLockBecauseEachOneFlashesAtOnce() {
         assertEquals(1, ScrimMeasure.MAX_PER_LOCK);
         ScrimMeasure.State s = go(); s.startsThisLock = 1; assertFalse(ScrimMeasure.shouldStart(s)); assertEquals("gave up for this lock after 1 try", ScrimMeasure.decision(s));
