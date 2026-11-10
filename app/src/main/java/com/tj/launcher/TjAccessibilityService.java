@@ -2282,12 +2282,15 @@ public class TjAccessibilityService extends AccessibilityService {
                 return;
             }
             showPencil(r);
+            if (penAfterFinger) { penAfterFinger = false; penQuicken("the cover is back after a finger"); }
         } catch (Throwable t) { Log.e(TAG, "pencil update failed", t); removePencil(); }
     }
 
     private final PencilRules.SlideGuard penSlide = new PencilRules.SlideGuard();   // BN8b
     private final PencilRules.FingerGuard penFinger = new PencilRules.FingerGuard();   // BQ1b: a finger went down: the cover is away at once and returns when the panel is quiet
-    private long penHeldLoggedMs = 0, penLockLoggedMs = 0;
+    private boolean penAfterFinger = false;   // review of BQ1b: a finger wait has just ended: the next time the cover is shown it is watched fast
+    private int penStaleRun = 0;              // review of BQ1b: slow looks in a row (PencilRules.staleLook)
+    private long penHeldLoggedMs = 0, penLockShownMs = 0, penLockHiddenMs = 0;
 
     private int penFollowed = PencilRules.NO_KNOWN;   // BN4: what following the known node gave in the last findPencil
     private long penConfirmedMs = 0;                  // BN4: the last time a visible pencil was seen (for the "hidden N ms after" line)
