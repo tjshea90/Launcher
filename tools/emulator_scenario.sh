@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear. Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf. Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
@@ -4301,6 +4301,103 @@ check "BR1-5: control: with the switch off the same tap opens the REAL Settings 
 adb shell input keyevent KEYCODE_BACK; sleep 2
 setfeat; setmode custom; rebind; home; sleep 4
 fi # section gear
+if want wf; then # section wf
+ensurehome
+# ---- BS1 (Tj, 2026-11-10 23:27 UTC): "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher".
+#      Switch keep_wifi_hide_icon (the debug default is OFF, so it is set explicitly here). The hold = Settings.Secure icon_blacklist gets "wifi" (a MISSING setting means rotate,headset: those entries stay) in the
+#      custom launcher and on any lock screen; the original is saved in Settings.Global tj_wifi_icon_original and put back in an unlocked Quickstep session. The Wi-Fi radio is NOT switched off by the lock-screen
+#      rule (AK1) nor by the custom launcher's radio guard while the hold can work (adb grant). Pictures with shots=true (wf-*.png). The PIN is ALWAYS cleared again at the end.
+beat "before WF"
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+wffeat(){ # wffeat <keep_wifi_hide_icon true|false> <profile_radios_off true|false>   (the lock rule AK1 is ON in every phase: it is what used to switch Wi-Fi off at the lock)
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"lock_quiet\\\" value=\\\"true\\\" /><boolean name=\\\"lock_quiet_restore\\\" value=\\\"true\\\" /><boolean name=\\\"profile_radios_off\\\" value=\\\"$2\\\" /><boolean name=\\\"keep_wifi_hide_icon\\\" value=\\\"$1\\\" /></map>\" > shared_prefs/tj_features.xml'"; }
+wfwifi(){ adb shell settings get global wifi_on | tr -d '\r\n'; }
+wflist(){ adb shell settings get secure icon_blacklist | tr -d '\r\n'; }
+wfmark(){ adb shell settings get global tj_wifi_icon_original | tr -d '\r\n'; }
+wfnet(){ adb shell dumpsys wifi 2>/dev/null | grep -m1 -oE 'mNetworkInfo[^]]*\]' | tr -d '\r' | cut -c1-120; }
+wfdump(){ # wfdump <name>: ONE uiautomator dump per phase (it unbinds the accessibility helper while it runs: always the LAST step of a phase); sets WFN = the number of SystemUI nodes that mention Wi-Fi
+  adb shell uiautomator dump /sdcard/wf-$1.xml >/dev/null 2>&1; adb shell cat /sdcard/wf-$1.xml 2>/dev/null | tr '>' '\n' > "$OUT/wf-$1-dump.txt"
+  WFN="$(grep 'package="com.android.systemui"' "$OUT/wf-$1-dump.txt" | grep -ciE 'wi-?fi' | tr -d ' \r\n')"; [ -n "$WFN" ] || WFN=0
+  info "WF $1: SystemUI nodes that mention Wi-Fi: $WFN :: $(grep 'package="com.android.systemui"' "$OUT/wf-$1-dump.txt" | grep -iE 'wi-?fi' | head -3 | grep -oE 'resource-id="[^"]*"|content-desc="[^"]*"' | tr '\n' ' ' | cut -c1-260) :: SystemUI nodes in the dump: $(grep -c 'package="com.android.systemui"' "$OUT/wf-$1-dump.txt")"
+}
+adb shell settings delete secure icon_blacklist >/dev/null 2>&1; adb shell settings delete global tj_wifi_icon_original >/dev/null 2>&1      # a KNOWN original: the setting is missing
+adb shell locksettings set-pin 1234 > "$OUT/wf-setpin.txt" 2>&1
+adb shell am force-stop "$PKG"; adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
+wffeat true true; adb shell am force-stop "$PKG"; sleep 1
+setmode quickstep; rebind; home; sleep 4
+adb shell svc wifi enable; sleep 5
+# ---- A: an unlocked Quickstep session: nothing hidden, nothing held (the symbol shows as usual)
+WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
+info "WF A (unlocked Quickstep, switch on): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW net=$(wfnet)"
+check "WF1: in an unlocked Quickstep session the hidden-symbol list is untouched (still missing)" test "$WFL" = null
+check "WF1b: nothing is held there (no saved original)" test "$WFM" = null
+shot wf-1-quickstep; wfdump quickstep; WFNQ="$WFN"
+# ---- B: the custom launcher: hidden, held, and Wi-Fi stays ON although the custom radio guard is ON (it switched Wi-Fi off again before)
+setmode custom; rebind; home; sleep 8
+adb shell svc wifi disable; sleep 3; adb shell svc wifi enable; sleep 8        # something turns Wi-Fi on in the custom launcher
+WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
+info "WF B (custom launcher): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW net=$(wfnet)"
+check "WF2: in the custom launcher the list hides Wi-Fi and keeps the system default entries (rotate,headset)" test "$WFL" = "rotate,headset,wifi"
+check "WF2b: the original (the setting was missing) is saved outside the app's files, in Settings.Global" test "$WFM" = n
+check "WF3: Wi-Fi is ON in the custom launcher although its radio guard is on" test "$WFW" = 1
+shot wf-2-custom; wfdump custom; WFNC="$WFN"
+# ---- C: the lock screen (a PIN is set): Wi-Fi stays ON, the symbol stays hidden
+adb logcat -c
+palock; sleep 7
+WFKG="$(kg_state)"; WFL="$(wflist)"; WFW="$(wfwifi)"
+adb logcat -d -s TjA11y:I | grep -c "LOCKRADIOS a radio is on" > "$OUT/wf-lockradios.txt" 2>&1
+info "WF C (lock screen, $WFKG): icon_blacklist=$WFL wifi_on=$WFW net=$(wfnet); switch-offs by the lock rule: $(tr -d ' \r\n' < $OUT/wf-lockradios.txt)"
+check "WF4: the tablet is on the lock screen" test "$WFKG" = "showing=true"
+check "WF5: Wi-Fi stays ON on the lock screen (the AK1 rule used to switch it off)" test "$WFW" = 1
+check "WF5b: the lock rule did not try to switch a radio off" bash -c "[ \"\$(tr -d ' \\r\\n' < $OUT/wf-lockradios.txt)\" = 0 ]"
+check "WF6: the Wi-Fi symbol is hidden on the lock screen (list)" test "$WFL" = "rotate,headset,wifi"
+shot wf-3-lock; wfdump lock; WFNL="$WFN"
+# ---- D: a GESTURE unlock into Quickstep: the list is back, Wi-Fi never went off
+adb shell input swipe 300 900 300 300 300; sleep 4
+pad d d 1 2 3 4 e; sleep 9
+WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
+info "WF D (after the gesture unlock into Quickstep): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW"
+check "WF7: after a gesture unlock into Quickstep the list is back (missing again)" test "$WFL" = null
+check "WF7b: and nothing is held" test "$WFM" = null
+check "WF7c: Wi-Fi is still ON" test "$WFW" = 1
+shot wf-4-quickstep-again; wfdump quickstep2; WFNQ2="$WFN"
+# ---- E: lock again and a plain PIN into the custom launcher: hidden again
+lockpad; sleep 9; pad 1 2 3 4 e; sleep 8
+WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
+info "WF E (after a plain PIN, custom launcher): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW"
+check "WF8: after a plain PIN into the custom launcher the symbol is hidden again" test "$WFL" = "rotate,headset,wifi"
+check "WF8b: Wi-Fi is ON in the custom launcher" test "$WFW" = 1
+shot wf-5-custom-again
+info "WF nodes mentioning Wi-Fi: Quickstep $WFNQ, custom $WFNC, lock screen $WFNL, Quickstep again $WFNQ2"
+# ---- F: the switch OFF ends it
+wffeat false true; adb shell am force-stop "$PKG"; sleep 1; rebind; sleep 7
+WFL="$(wflist)"; WFM="$(wfmark)"
+info "WF F (switch off): icon_blacklist=$WFL marker=$WFM"
+check "WF9: with the switch off the original list is put back (missing) and nothing is held" bash -c "[ \"$WFL\" = null ] && [ \"$WFM\" = null ]"
+# ---- G: 'Clear data' (no preference file at all): the saved original in Settings.Global still puts the list back
+wffeat true true; adb shell am force-stop "$PKG"; sleep 1; rebind; sleep 7
+WFL="$(wflist)"
+check "WF10 premise: the symbol is hidden again in the custom launcher" test "$WFL" = "rotate,headset,wifi"
+adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'rm -f shared_prefs/tj_features.xml shared_prefs/tj_restore.xml shared_prefs/tj_wifi_icon.xml'" >/dev/null 2>&1
+sleep 1; rebind; sleep 7
+WFL="$(wflist)"; WFM="$(wfmark)"
+info "WF G (all preference files gone, switch back to its debug default OFF): icon_blacklist=$WFL marker=$WFM"
+check "WF10: after 'Clear data' the list is put back and nothing is held" bash -c "[ \"$WFL\" = null ] && [ \"$WFM\" = null ]"
+# ---- H: without the adb permission nothing can hide the symbol, so Wi-Fi is switched off in the custom launcher like before
+wffeat true true; adb shell pm revoke "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1; sleep 1; rebind; home; sleep 6
+adb shell svc wifi enable; sleep 8
+WFW="$(wfwifi)"; WFL="$(wflist)"
+info "WF H (no adb permission): wifi_on=$WFW icon_blacklist=$WFL"
+check "WF11: without the adb permission Wi-Fi is switched off in the custom launcher like before" test "$WFW" = 0
+check "WF11b: and the list was not touched" test "$WFL" = null
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+adb shell locksettings clear --old 1234 > "$OUT/wf-clearpin.txt" 2>&1
+adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
+check "WF: the PIN used for the test was cleared again" bash -c "! grep -qiE 'fail|error|exception' $OUT/wf-clearpin.txt"
+adb shell settings delete secure icon_blacklist >/dev/null 2>&1; adb shell settings delete global tj_wifi_icon_original >/dev/null 2>&1
+adb shell svc wifi enable; adb logcat -c
+setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
+fi # section wf
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
