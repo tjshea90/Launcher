@@ -50,6 +50,7 @@ public final class PencilRules {
         public static final int SLIDE_UP_PX = 3;          // less than this is jitter, not a slide
         public static final long HOLD_MAX_MS = 3000;      // a safety valve: the cover is never kept away for longer than this in one go
         public static final long STALE_MS = 800;          // no look for this long = a new pull of the panel, nothing is known about it yet
+        public static final long MIN_LOOK_GAP_MS = 40;    // BN8f2: two looks closer than this can read the SAME SystemUI frame: they do not count as "the looks agree"
         public static final long RELOOK_MS = 60;          // while the cover is held away the next look is due this soon (the events stop when the panel stops)
         private int lastTop = NONE;
         private long lastMs, holdSince;
