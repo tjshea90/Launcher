@@ -79,6 +79,7 @@ public final class RestoreStore {
             }
         }
         try { AnimationSpeedup.restoreIfPending(c); } catch (Throwable ignored) { }
+        try { WifiIconHide.restoreIfHeld(c); } catch (Throwable ignored) { }   // BS1: the hidden-symbol list goes back too (our own saved original in Settings.Global, not a snapshot in this store)
         try { NotifQuiet.restoreIfHeld(c); } catch (Throwable ignored) { }   // BH1: the pop-up banner setting goes back too (our own saved original, not a snapshot in this store)
         sp.edit().clear().commit();
         Features.allOff(c);
@@ -96,6 +97,7 @@ public final class RestoreStore {
         Features.set(c, ImmersiveProfile.KEY, false);   // AA1: the policy_control value was put back above (snapshot); the switch itself is off
         Features.set(c, DemoModeProfile.KEY, false);   // (the retired retail-demo option: the flag, if it was ever ours, was put back above)   // O4: restore = nothing of ours closes apps for you
         Features.set(c, AnimationPolicy.KEY, false);   // BF1: the Quickstep animation switch is ON by default in the shipped app, so restore = off (the scales themselves were put back above)
+        Features.set(c, WifiIconHold.KEY, false);   // BS1: the Wi-Fi symbol switch is ON by default in the shipped app, so restore = off (the list itself was put back above; with the switch off the Wi-Fi guards switch Wi-Fi off again as before)
         Features.set(c, NotifQuietPolicy.KEY, false);   // BH1: the pop-up banner switch is ON by default in the shipped app, so restore = off (the setting itself was put back above)
         Features.set(c, SettingsSpoof.KEY, false);   // BN1: restore = the real Settings is the only Settings again (the look-alike's drawer entry goes, the real one is no longer kept out)
         try { SettingsSpoof.syncSoon(c, "restore everything"); } catch (Throwable ignored) { }

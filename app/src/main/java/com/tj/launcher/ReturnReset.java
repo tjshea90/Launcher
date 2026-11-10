@@ -291,7 +291,10 @@ public final class ReturnReset {
 
     static void radiosOff(Context c) {
         WifiManager wm = (WifiManager) c.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-        if (wm != null && wm.isWifiEnabled()) { boolean ok = wm.setWifiEnabled(false); Log.i(TAG, "wifi off -> " + ok); }
+        if (wm != null && wm.isWifiEnabled()) {
+            if (WifiIconHide.keepsWifiOn(c)) Log.i(TAG, "wifi left on (BS1: its symbol is hidden instead)");   // BS1 (Tj): Wi-Fi stays on, only the symbol goes; Bluetooth below is unchanged
+            else { boolean ok = wm.setWifiEnabled(false); Log.i(TAG, "wifi off -> " + ok); }
+        }
         BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
         if (bt != null && bt.isEnabled()) { boolean ok = bt.disable(); Log.i(TAG, "bluetooth off -> " + ok); }
     }

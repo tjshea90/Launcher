@@ -95,7 +95,7 @@ public final class LockQuiet {
     }
 
     /** AW3: is Wi-Fi or Bluetooth on right now? Binder calls: from a worker thread or the main thread, never under a lock. */
-    public static boolean anyRadioOn(Context c) { return wifiOn(c) || btOn(); }
+    public static boolean anyRadioOn(Context c) { return (wifiOn(c) && !WifiIconHide.keepsWifiOn(c)) || btOn(); }   // BS1: a Wi-Fi we leave on is not "a radio that must go"
 
     private static boolean wifiOn(Context c) {
         try { WifiManager wm = (WifiManager) c.getApplicationContext().getSystemService(Context.WIFI_SERVICE); return wm != null && wm.isWifiEnabled(); } catch (Throwable t) { return false; }
@@ -108,7 +108,7 @@ public final class LockQuiet {
     public static void onLock(Context c) {
         try {
             if (!enabled(c) || CrashGuard.automationOff(c)) return;
-            boolean w = wifiOn(c), b = btOn();
+            boolean w = wifiOn(c) && !WifiIconHide.keepsWifiOn(c), b = btOn();   // BS1: while the Wi-Fi symbol is hidden instead, Wi-Fi is not ours to switch off (and not ours to put back)
             if (shouldRecordPrev(Features.getString(c, PREV_KEY, ""), w, b)) Features.setString(c, PREV_KEY, encodePrev(w, b));
             if (w || b) {
                 ReturnReset.radiosOff(c);

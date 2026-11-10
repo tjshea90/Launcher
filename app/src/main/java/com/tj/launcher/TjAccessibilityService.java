@@ -3270,6 +3270,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     turnedOn = st == android.bluetooth.BluetoothAdapter.STATE_ON || st == android.bluetooth.BluetoothAdapter.STATE_TURNING_ON; fullyOn = st == android.bluetooth.BluetoothAdapter.STATE_ON;
                 } else return;
                 if (!turnedOn) return;
+                if (android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION.equals(act) && WifiIconHide.keepsWifiOn(getApplicationContext())) return;   // BS1 (Tj): Wi-Fi may be on in the custom launcher and on the lock screen while its symbol is hidden; Bluetooth is still guarded
                 long now = System.currentTimeMillis();
                 if (!ProfileSession.enforceRadios(ProfileSession.radiosOff(TjAccessibilityService.this), Mode.isCustom(TjAccessibilityService.this), now, radioHist)) {
                     // AK1: not the custom account's rule: is the tablet on the LOCK SCREEN? Then a radio that comes on is switched off again, whatever launcher is active (AW3: and kept off, see lockRadiosCheck)
