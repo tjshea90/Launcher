@@ -110,7 +110,7 @@ final class SsRows {
     }
 
     /** BN1p D2: a summary that is not known yet is one no-break space, not "": the row keeps its two lines, so nothing below it moves when the real text arrives (Tj's screenshots have the line from the first frame). */
-    static final String BLANK = " ";
+    static final String BLANK = "\u00A0";
 
     /** {@code s}, or {@link #BLANK} when it is null or empty. */
     static String orBlank(String s) { return s == null || s.length() == 0 ? BLANK : s; }
