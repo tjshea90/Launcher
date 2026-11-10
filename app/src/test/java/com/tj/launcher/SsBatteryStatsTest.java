@@ -128,6 +128,40 @@ public class SsBatteryStatsTest {
         SsBatteryStats.forget();
     }
 
+    // ---- BN1p D1: where a page starts from, and what it keeps after a read
+    @Test public void aPageStartsFromTheNewestGoodReadingWhateverItsAge() {
+        SsBatteryStats.forget();
+        SsBatteryStats.Data blank = SsBatteryStats.seed();
+        assertFalse(blank.any());
+        assertFalse(blank.finished());                               // no read yet: the page must not show a status word
+        SsBatteryStats.Data good = SsBatteryStats.parse(DISCHARGING, UTC);
+        SsBatteryStats.remember(good, 10_000);
+        assertNull(SsBatteryStats.recent(30_000, 10_000_000));       // far too old to skip a new read ...
+        assertSame(good, SsBatteryStats.seed());                     // ... but still the right first frame
+        SsBatteryStats.forget();
+        assertFalse(SsBatteryStats.seed().any());
+    }
+
+    @Test public void aFinishedReadIsKnownEvenWhenItFoundNothing() {
+        assertFalse(new SsBatteryStats.Data().finished());
+        assertTrue(SsBatteryStats.parse(DISCHARGING, UTC).finished());
+        SsBatteryStats.Data empty = SsBatteryStats.parse("nothing useful\n", UTC);
+        assertFalse(empty.any());
+        assertTrue(empty.finished());                                // "empty": the status word may show now
+    }
+
+    @Test public void aPageKeepsNumbersOverAnEmptyRead() {
+        SsBatteryStats.Data good = SsBatteryStats.parse(DISCHARGING, UTC);
+        SsBatteryStats.Data empty = SsBatteryStats.parse("nothing useful\n", UTC);
+        SsBatteryStats.Data blank = new SsBatteryStats.Data();
+        assertSame(good, SsBatteryStats.keep(blank, good));          // the first good read replaces the blank start
+        assertSame(good, SsBatteryStats.keep(good, empty));          // a failed refresh must not wipe what the page shows
+        assertSame(empty, SsBatteryStats.keep(blank, empty));        // nothing to keep: the finished, empty read lets the status word show
+        assertSame(empty, SsBatteryStats.keep(null, empty));
+        SsBatteryStats.Data newer = SsBatteryStats.parse(DISCHARGING, UTC);
+        assertSame(newer, SsBatteryStats.keep(good, newer));         // a newer good read wins
+    }
+
     @Test public void aTimeThatWentBackwardsIsNotShared() {
         SsBatteryStats.forget();
         SsBatteryStats.remember(SsBatteryStats.parse(DISCHARGING, UTC), 100_000);

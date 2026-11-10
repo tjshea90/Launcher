@@ -85,6 +85,22 @@ public class SsBatteryTextTest {
         assertEquals("Plugged in, can’t charge right now", SsBatteryText.header(1, 4, -1, -1, 0, clock));
     }
 
+    /** BN1p D1: before the first read has finished there is NO sentence (never the status word "Not charging"); afterwards the normal rules apply, status word included. */
+    @Test public void noSentenceUntilAReadHasFinished() {
+        assertEquals("", SsBatteryText.headerOrBlank(false, 0, 3, -1, -1, 0, clock));                       // would be "Not charging"
+        assertEquals("", SsBatteryText.headerOrBlank(false, 1, 2, -1, 95 * MIN, 0, clock));                // even with a charge time in hand: the page asks again after the read
+        assertEquals("Not charging", SsBatteryText.headerOrBlank(true, 0, 3, -1, -1, 0, clock));            // a read that found nothing: the honest fallback
+        assertEquals("Should last until about T900000", SsBatteryText.headerOrBlank(true, 0, 3, 16 * MIN, -1, 0, clock));
+        assertEquals(SsBatteryText.header(1, 2, -1, 95 * MIN, 0, clock), SsBatteryText.headerOrBlank(true, 1, 2, -1, 95 * MIN, 0, clock));
+    }
+
+    @Test public void theHomeLineIsThePercentageAloneUntilTheSentenceIsKnown() {
+        assertEquals("69%", SsBatteryText.homeLine("69%", ""));
+        assertEquals("69%", SsBatteryText.homeLine("69%", null));
+        assertEquals("69% - Should last until about 9:15 PM", SsBatteryText.homeLine("69%", "Should last until about 9:15 PM"));
+        assertEquals("100% - Full", SsBatteryText.homeLine("100%", "Full"));
+    }
+
     @Test public void joinAndStillWorks() {
         assertEquals("A, B and C", SsFormat.joinAnd(Arrays.asList("A", "B", "C")));
     }
