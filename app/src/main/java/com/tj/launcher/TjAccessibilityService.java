@@ -2409,7 +2409,7 @@ public class TjAccessibilityService extends AccessibilityService {
             wm.addView(v, lp);
             penView = v; penAt.set(r); penShown = true;
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
-            penLockLog("cover shown (new window)");
+            penLockLog(true, "cover shown (new window)");
             startPenWatch();
         } else if (!penAt.equals(r)) {
             wm.updateViewLayout(penView, lp);
