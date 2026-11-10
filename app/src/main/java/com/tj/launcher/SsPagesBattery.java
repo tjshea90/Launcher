@@ -99,7 +99,7 @@ final class SsPagesBattery {
         private final SsBatteryIcon icon;
         private final Handler main = new Handler(Looper.getMainLooper());
         private final SsBatteryText.TimeOfDay clock;
-        private SsBatteryStats.Data data = new SsBatteryStats.Data();
+        private SsBatteryStats.Data data = SsBatteryStats.seed();   // BN1p D1: the newest good reading whatever its age: the first frame already has the sentence and both value rows
         private Intent last;
         private boolean started, loading;
         private long lastLoad;
@@ -139,7 +139,7 @@ final class SsPagesBattery {
                     final SsBatteryStats.Data d = SsBatteryStats.read(6000);
                     try { Features.setStringAsync(app, STATUS_KEY, new java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()) + "  " + d.status
                             + "  start=" + (d.startClockMs >= 0) + " screen=" + (d.screenOnMs >= 0) + " drain=" + (d.dischargeMs >= 0) + " charge=" + (d.chargeMs >= 0)); } catch (Throwable ignored) { }
-                    main.post(new Runnable() { @Override public void run() { loading = false; if (d.any()) data = d; if (started) render(); } });
+                    main.post(new Runnable() { @Override public void run() { loading = false; data = SsBatteryStats.keep(data, d); if (started) render(); } });
                 }
             }, "TjSsBatt");
             t.setDaemon(true);
@@ -158,7 +158,7 @@ final class SsPagesBattery {
             icon.set(level, plugged != 0, saver);
             pct.setText(percent(level));
             long now = System.currentTimeMillis();
-            summary.setText(SsBatteryText.header(plugged, status, data.dischargeMs, data.chargeMs, now, clock));
+            summary.setText(SsBatteryText.headerOrBlank(data.finished(), plugged, status, data.dischargeMs, data.chargeMs, now, clock));   // BN1p D1: empty (two lines kept) until a read has finished, never "Not charging" first
             lastFull.setText(data.startClockMs >= 0 ? SsFormat.ago(Math.max(0, now - data.startClockMs)) : "");
             screenUse.setText(data.screenOnMs >= 0 ? SsFormat.elapsed(data.screenOnMs) : "");
         }
