@@ -2228,6 +2228,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (DemoModeProfile.active(this)) { if (penView != null) removePencil(); return; }   // something else already turned the retail flag on (the pencil is gone natively); read only for SystemUI events (AB2)
         long now = android.os.SystemClock.uptimeMillis();
         int type = e == null ? 0 : e.getEventType();
+        if (sysui) penFinger.systemUiEvent(now);   // BQ1b: SystemUI is redrawing: the wait after a finger is not over yet
         if (sysui) penQuicken("SystemUI is redrawing");   // BN8b: a shown cover is watched closely while the panel may be moving (does nothing when no cover is up)
         if (now - lastPenMs >= 40) {
             lastPenMs = now; updatePencil(now - lastPenFullMs >= EventNoise.minPencilSearchGapMs(type));   // AN1: following a known pencil every 40 ms is cheap; a full tree search is spaced out in a burst of redraws
@@ -2253,10 +2254,12 @@ public class TjAccessibilityService extends AccessibilityService {
             }
             penConfirmedMs = android.os.SystemClock.uptimeMillis();
             // BN8b: a pencil that moves UP is a panel sliding away; a cover that follows it trails it over the lock screen as a white box. Keep the cover away until two looks agree (the panel at rest).
-            if (!penSlide.allowCover(r.top, penConfirmedMs)) {
+            boolean restOk = penSlide.allowCover(r.top, penConfirmedMs);       // both guards are fed at EVERY look (no short-circuit): each keeps its own history
+            boolean fingerOk = penFinger.allowCover(penConfirmedMs);           // BQ1b: after a finger went down the cover waits until SystemUI is quiet
+            if (!restOk || !fingerOk) {
                 boolean wasUp = penShown;
-                if (penShown) hidePencil("the panel is sliding up");
-                if (wasUp && penConfirmedMs - penHeldLoggedMs > 1500) { penHeldLoggedMs = penConfirmedMs; LockLog.add(getApplicationContext(), "PENCIL", "cover held away: the panel is sliding up (the pencil is at a new place at every look)"); }
+                if (penShown) hidePencil(!restOk ? "the panel is sliding up" : "a finger went down a moment ago");
+                if (wasUp && !restOk && penConfirmedMs - penHeldLoggedMs > 1500) { penHeldLoggedMs = penConfirmedMs; LockLog.add(getApplicationContext(), "PENCIL", "cover held away: the panel is sliding up (the pencil is at a new place at every look)"); }
                 if (!penPending) { penPending = true; handler.postDelayed(penEval, PencilRules.SlideGuard.RELOOK_MS); }   // the events stop when the panel stops: look again soon, the cover comes back when two looks agree
                 return;
             }
@@ -2265,7 +2268,8 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private final PencilRules.SlideGuard penSlide = new PencilRules.SlideGuard();   // BN8b
-    private long penHeldLoggedMs = 0;
+    private final PencilRules.FingerGuard penFinger = new PencilRules.FingerGuard();   // BQ1b: a finger went down: the cover is away at once and returns when the panel is quiet
+    private long penHeldLoggedMs = 0, penLockLoggedMs = 0;
 
     private int penFollowed = PencilRules.NO_KNOWN;   // BN4: what following the known node gave in the last findPencil
     private long penConfirmedMs = 0;                  // BN4: the last time a visible pencil was seen (for the "hidden N ms after" line)
@@ -2366,7 +2370,7 @@ public class TjAccessibilityService extends AccessibilityService {
         // D4: the cover window stays attached (invisible, untouchable) once it exists, so showing it is one redraw + one layout update, not a window creation.
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (penView != null) {
-            if (!penShown) { penView.setAlpha(1f); penShown = true; wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); Log.i(TAG, "PENCIL cover shown " + r.toShortString()); startPenWatch(); }
+            if (!penShown) { penView.setAlpha(1f); penShown = true; wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); Log.i(TAG, "PENCIL cover shown " + r.toShortString()); penLockLog("cover shown"); startPenWatch(); }
             else if (!penAt.equals(r)) { wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); penQuicken("the pencil moved"); }   // BN8b: it is moving: the next look is due in FAST_WATCH_MS, not at the next event
             return;
         }
@@ -2375,17 +2379,39 @@ public class TjAccessibilityService extends AccessibilityService {
             View v = new View(this);
             v.setBackgroundColor(Color.WHITE);   // the stock panel is pure white (255,255,255) in Tj's photo
             v.setOnTouchListener(new View.OnTouchListener() { @Override public boolean onTouch(View view, android.view.MotionEvent ev) {
-                if (ev.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { penQuicken("a finger went down"); return false; }   // BN8b: the earliest sign that the panel may be about to move
+                if (ev.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { penFingerDown(); return false; }   // BN8b / BQ1b: the earliest sign that the panel may be about to move
                 return true;
             } });
             wm.addView(v, lp);
             penView = v; penAt.set(r); penShown = true;
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
+            penLockLog("cover shown (new window)");
             startPenWatch();
         } else if (!penAt.equals(r)) {
             wm.updateViewLayout(penView, lp);
             penAt.set(r);
         }
+    }
+
+    /**
+     * BQ1b: a finger went down on the screen while the cover is up (the touch listener, main thread). The panel may be about to slide, and every look at it is slow (a binder call into SystemUI): the cover goes AT ONCE, with
+     * no look, and {@link PencilRules.FingerGuard} brings it back when the panel has been quiet. One look is booked for the end of the minimum wait; the looks after it follow the SlideGuard's rhythm.
+     */
+    private void penFingerDown() {
+        long now = android.os.SystemClock.uptimeMillis();
+        penFinger.fingerDown(now);
+        if (penShown) hidePencil("a finger went down: the panel may be about to move");
+        handler.removeCallbacks(penEval); penPending = true; handler.postDelayed(penEval, PencilRules.FingerGuard.HOLD_MS);
+    }
+
+    /** One line in the lock-screen log (the tablet report): when the cover came and went, to the millisecond, with the reason. At most one every 250 ms; only while the tablet is locked. */
+    private void penLockLog(String text) {
+        try {
+            long up = android.os.SystemClock.uptimeMillis();
+            if (up - penLockLoggedMs < 250 || !keyguardLockedFast()) return;
+            penLockLoggedMs = up;
+            LockLog.add(getApplicationContext(), "PENCIL", text);
+        } catch (Throwable ignored) { }
     }
 
     private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.watchGapMs(android.os.SystemClock.uptimeMillis(), penFastUntil)); }
@@ -2402,6 +2428,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // BN4: for the tablet report: on the lock screen a hide that came late (the white box) shows in the lock log with its age (one line a second at most)
             long up = android.os.SystemClock.uptimeMillis();
             if (age >= 150 && up - penLateLoggedMs > 1000 && keyguardLockedFast()) { penLateLoggedMs = up; LockLog.add(getApplicationContext(), "PENCIL", "cover hidden " + age + " ms after the pencil was last seen (" + why + ")"); }
+            else penLockLog("cover hidden (" + why + ")" + (age >= 0 ? ", pencil last seen " + age + " ms ago" : ""));   // BQ1b: a timeline of the cover on the lock screen for the next report
         } catch (Throwable t) { removePencil(); }
     }
 
@@ -2410,7 +2437,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(penWatch);
         if (penView == null) return;
         try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(penView); } catch (Throwable ignored) { }
-        penView = null; penAt.setEmpty(); penShown = false; penSlide.reset();
+        penView = null; penAt.setEmpty(); penShown = false; penSlide.reset(); penFinger.reset();
         Log.i(TAG, "PENCIL cover removed");
     }
 

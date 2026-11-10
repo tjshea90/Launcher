@@ -74,6 +74,40 @@ public final class PencilRules {
     }
 
     /**
+     * BQ1b (Tj, 2026-11-10, about v0.9.1, the FIFTH report: "The pencil white cover shows when I slide the notification panel back up"). Every guard above acts at a LOOK (a node refresh = a binder call into a busy SystemUI,
+     * and a whole-tree search blocks the main thread for up to 1.3 s on the tablet), and a smooth drag of the panel sends few events: the cover was still on screen when the panel had left. The earliest sign that the panel
+     * may move is a FINGER going down on the screen (ACTION_OUTSIDE on the cover window), and acting on it needs no look at all: the cover goes AT ONCE. It comes back only when the panel has had time to settle:
+     * {@link #HOLD_MS} since the finger, SystemUI silent for {@link #QUIET_MS} (no redraw events), and then the SlideGuard's own rule (the pencil at rest). The price is the pencil showing for about half a second after a touch
+     * on the open panel; a white box on the lock screen was judged worse. {@link #MAX_MS} is a safety valve: a finger parked on the panel never keeps the cover away for ever.
+     */
+    public static final class FingerGuard {
+        public static final long HOLD_MS = 350;
+        public static final long QUIET_MS = 200;
+        public static final long MAX_MS = 3000;
+        private boolean active;
+        private long downMs, eventMs;
+
+        /** A finger went down somewhere else at {@code nowMs}: from now on the cover waits (a second finger restarts the wait). */
+        public void fingerDown(long nowMs) { active = true; downMs = nowMs; eventMs = nowMs; }
+
+        /** SystemUI sent an event (it is redrawing, maybe the panel is moving). Counts only while a wait is on. */
+        public void systemUiEvent(long nowMs) { if (active && nowMs > eventMs) eventMs = nowMs; }
+
+        /** True = the cover may be shown now (no finger waits, or the wait is over). The first true after a finger ends the wait. */
+        public boolean allowCover(long nowMs) {
+            if (!active) return true;
+            if (nowMs < downMs) { active = false; return true; }                                  // the clock went backwards: never hold on a nonsense reading
+            if (nowMs - downMs >= MAX_MS) { active = false; return true; }
+            if (nowMs - downMs < HOLD_MS || nowMs - eventMs < QUIET_MS) return false;
+            active = false;
+            return true;
+        }
+
+        public boolean waiting() { return active; }
+        public void reset() { active = false; }
+    }
+
+    /**
      * BN8b, second half: the FAST watch. The guard above only acts at a LOOK, and the looks were too far apart for the START of a slide: SystemUI sends content events at most every 100 ms, the slow watch runs every
      * {@link #WATCH_MS}, so the cover could sit at its old place for about 0.1 s after the panel had begun to leave (and a first look that saw the pencil only 1-3 px higher "followed" it and then waited for the next event).
      * While something may be moving the panel (a finger went down anywhere: ACTION_OUTSIDE on the cover; SystemUI is redrawing; the pencil was just found at a new place) the covered pencil is looked at every
