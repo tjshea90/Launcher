@@ -2133,3 +2133,9 @@
 ## 2026-11-10T04:35:37Z
 > The `rb` re-run (#502) is in flight and I've saved its run id in checkpoint 864. I'll read the result when the timer fires at 04:39:30Z.
 <!-- sha:e8d6ceeca882 -->
+
+## 2026-11-10T04:43:17Z
+> Run #502 (`rb` solo on `main`) passed, so the emulator gate is green. The two failures in #501 were the known native-crash flake.
+>
+> `main`, my branch and the other account's branch are all contained in `5a469fd`, and the gated code is identical to the head. I'm now running `ship.sh` for v0.9.1 in the background (tests, lint, version check, push). When it finishes I'll build and publish on GitHub Actions, record the release, and send Tj the full answer.
+<!-- sha:a636f558d528 -->
