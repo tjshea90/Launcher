@@ -1415,3 +1415,13 @@ This session's worker process was restarted. If your previous turn was already c
 ```
 Why doesnt it just measure/calibrate one time and never screenshot again?  I'm not changing the wallpaper 
 ```
+
+## 2026-11-10T19:27:07Z
+```
+Without doing the lengthy testing, change one feature :
+
+Make the settings gear icon in the custom launcher notification panel open the spoof settings app for the custom launcher instead of the regular android settings
+
+
+Also, research if there is any way using accessibility or adb to remove the pencil icon from the notification panel entirely instead of covering it up 
+```
