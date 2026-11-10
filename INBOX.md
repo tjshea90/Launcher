@@ -1335,3 +1335,8 @@ Also, under "Display" it should say "Brightness, sleep, font size"
 Save all progress because weekly usage is at 99%
 Save all progress now, checkpoint, get everything ready for a different Claude account with no context to resume without progress loss and to resume all of my prompts including the prompts that I just recently sent 
 ```
+
+## 2026-11-10T01:10:50Z
+```
+Resume Launcher: run bash tools/install-hooks.sh, then bash tools/resume.sh, read HANDOFF.md block 0p and continue from CHECKPOINT.md "Do this next". Answer all my open messages when v0.9.1 ships.
+```
