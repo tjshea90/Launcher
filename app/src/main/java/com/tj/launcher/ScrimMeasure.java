@@ -60,6 +60,8 @@ public final class ScrimMeasure {
     /** Everything the decision depends on; the service fills it in. */
     public static final class State {
         public boolean switchOn, coverOn, lockPatchOn, paused, permitted, geometryKnown, validCrop, haveMeasurement, calibrating, stageRunning;
+        /** BQ2: the lock screen is in its DARK look right now (battery saver / dark theme). */
+        public boolean night;
         public boolean interactive, keyguardLocked, pinPadUp, menuOpen, handshakeArmed;
         public long now, screenOnMs, lastStartMs;
         public int startsThisLock, startsToday, failures;
@@ -125,6 +127,9 @@ public final class ScrimMeasure {
         if (!s.coverOn || !s.lockPatchOn) return "the lock-screen patch is switched off";
         if (!s.permitted) return "needs permission: Launcher control > Allow wallpaper access";
         if (s.haveMeasurement) return "";   // nothing to do; callers treat haveMeasurement separately
+        // BQ2 (Tj, 2026-11-10: "Why doesnt it just measure/calibrate one time and never screenshot again? I'm not changing the wallpaper"): the dimming is measured in the LIGHT look only, once per lock screen; the dark look
+        // (the lock screen wakes dark for a few seconds after a Quickstep session, battery saver on) uses that measurement and never gets screenshots of its own.
+        if (s.night) return "waiting: the lock screen is in its dark look for the moment; the dimming is measured in the light look only (the dark look uses that measurement)";
         if (s.failures >= MAX_FAILURES) return "gave up for this lock screen after " + s.failures + " runs that stored nothing (see the last run); a new wallpaper, rotation or theme, or 'Measure again' in Launcher control, tries again";
         if (s.calibrating || s.stageRunning) return "a calibration or a measurement is already running";
         if (!s.validCrop) return "waiting: the patch has no real-pixel picture yet (the automatic calibration comes first)";
@@ -143,6 +148,12 @@ public final class ScrimMeasure {
 
     /** Pure: start now? Only when there is no measurement yet for this lock screen AND {@link #decision} says go. */
     public static boolean shouldStart(State s) { return !s.haveMeasurement && decision(s).isEmpty(); }
+
+    /**
+     * BQ2: which stored measurements answer for the look the lock screen is in, best first. The light look has only its own slot. The dark look has its own slot (an old measurement, kept if one exists) and otherwise
+     * uses the LIGHT one: the app measures in the light look only and never takes a screenshot for the dark look.
+     */
+    public static boolean[] slotOrder(boolean night) { return night ? new boolean[] { true, false } : new boolean[] { false }; }
 
     /** Pure: the preference key of the measurement of one rotation in the LIGHT theme (the v0.8.2 key: an existing measurement stays valid). */
     public static String valueKey(int rotation) { return valueKey(rotation, false); }

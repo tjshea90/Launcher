@@ -4230,12 +4230,22 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** Is there a stored measurement valid for the lock screen as it is now? (binder calls; a rare path) */
     private boolean scrimStored() {
-        try { boolean n = isNightNow(); return ScrimFit.decode(Features.getString(this, ScrimMeasure.valueKey(rotation(), n), ""), shotSig(), n) != null; } catch (Throwable t) { return false; }
+        try { return scrimLoad() != null; } catch (Throwable t) { return false; }
+    }
+
+    /** BQ2: the stored measurement that answers for the look the lock screen is in now (the dark look uses the light measurement when it has none of its own), or null. Binder calls: not per frame. */
+    private ScrimFit.Transform scrimLoad() {
+        int rot = rotation(); String sig = shotSig();
+        for (boolean n : ScrimMeasure.slotOrder(isNightNow())) {
+            ScrimFit.Transform t = ScrimFit.decode(Features.getString(this, ScrimMeasure.valueKey(rot, n), ""), sig, n);
+            if (t != null) return t;
+        }
+        return null;
     }
 
     /** Loads the measurement stored for the lock screen as it is now (binder calls: not per frame). */
     private void reloadScrim() {
-        try { boolean n = isNightNow(); scrimT = ScrimFit.decode(Features.getString(this, ScrimMeasure.valueKey(rotation(), n), ""), shotSig(), n); }   // BB2: one slot per theme
+        try { scrimT = scrimLoad(); }   // BB2: one slot per theme; BQ2: the dark look uses the light measurement when it has none
         catch (Throwable t) { scrimT = null; Log.e(TAG, "scrim reload failed", t); }
     }
 
@@ -4297,6 +4307,7 @@ public class TjAccessibilityService extends AccessibilityService {
         st.haveMeasurement = scrimT != null || scrimStored();                                // the STORED value counts too: right after a restart the memory copy is only loaded when the patch window is built
         st.calibrating = calibrating();
         st.stageRunning = scrimStage != 0;
+        st.night = isNightNow();   // BQ2
         android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
         st.interactive = pm != null && pm.isInteractive();
         st.keyguardLocked = keyguardLocked();
