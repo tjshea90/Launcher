@@ -69,6 +69,7 @@ public class TjAccessibilityService extends AccessibilityService {
             return;
         }
         try { diagEvent(event); } catch (Throwable ignored) { }
+        try { penShadeEvent(event); } catch (Throwable ignored) { }   // BQ3 (debug builds only)
         try { if (event != null && EventNoise.windowsJustChanged(event.getEventType())) { noteWindowEvent(event.getEventTime()); fastMenuOpen(event); } } catch (Throwable t) { Log.e(TAG, "fast menu check failed", t); }   // AZ1: FIRST, before any other work of this event
         try { if (event != null) fastMenuClose(event); } catch (Throwable t) { Log.e(TAG, "fast menu close check failed", t); }   // BC2: a click in the stock dialog starts the fade-out, the removal of its window ends it
         try { if (event != null && patchHomeMode) homeForeignWindow(event); } catch (Throwable t) { Log.e(TAG, "home foreign window check failed", t); }   // BI1: the shade, the volume panel ... must not get the home patch painted over them
