@@ -279,8 +279,8 @@ public class PencilRulesTest {
         assertEquals(true, PencilRules.MAX_STALE_RUN * (PencilRules.SlideGuard.RELOOK_MS + PencilRules.STALE_LOOK_MS) < 1000);   // the worst case still ends well under a second of waiting
     }
 
-    @Test public void theStartTimeOfASlowLookKeepsTheGuardsHonest() {
-        // the service feeds the guards with the START of the look: a look of 450 ms that read the place at its start must not make the slide guard think a gap of 450 ms passed in which nothing moved
+    @Test public void lookTimesAreTheStartOfTheLookAndCloseOnesStillCatchASlideUp() {
+        // the service feeds the guards with the START of each look (the place is as old as that): two starts closer than MIN_LOOK_GAP_MS never confirm a resting panel, and a move UP after them is still seen
         PencilRules.SlideGuard slide = new PencilRules.SlideGuard();
         assertEquals(true, slide.allowCover(700, 5_000));                                // look 1 (start 5 000)
         assertEquals("look 2 starts 20 ms later: too close to count as a second reading of a resting panel", true, slide.allowCover(700, 5_020));
