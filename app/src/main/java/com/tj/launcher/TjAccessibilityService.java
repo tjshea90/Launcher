@@ -4279,7 +4279,6 @@ public class TjAccessibilityService extends AccessibilityService {
     private long scrimBeganAt = 0, scrimStageAt = 0, scrimLastStartMs = 0, scrimAskedAt = 0, scrimMenuAt = 0, scrimPollAt = 0;
     private volatile long scrimLastShotId = -1;   // shared with the worker thread (review nit)
     private int scrimThisLock = 0, scrimCloseTries = 0, scrimGoneTicks = 0;
-    private boolean scrimCounted;   // BQ1a: this run's outcome has been counted / recorded already
     private boolean scrimOpenedMenu = false;
     private volatile boolean scrimIngesting = false;   // shared with the worker thread (review nit)
     private int[] scrimPoints, scrimRef;   // the sample points of the bare frame ((y << 16) | x) and its pixels there
