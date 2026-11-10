@@ -15,4 +15,23 @@ public class RecentsDirtyTest {
     }
     @Test public void appsLaunchedFromTheCustomLauncherAreExcludedSoTheyDoNotMark() { assertFalse(m("com.brave.browser", false)); }
     @Test public void emptyPackageDoesNotMark() { assertFalse(m(null, true)); assertFalse(m("", true)); }
+
+    /** BN8e: at most one DIRTY line per package per minute in the lock log. */
+    @Test public void aDirtyLineIsLoggedOncePerPackagePerGap() {
+        java.util.HashMap<String, Long> last = new java.util.HashMap<String, Long>();
+        long gap = RecentsDirty.LOG_GAP_MS;
+        assertTrue(RecentsDirty.shouldLog(last, "com.a", 1_000, gap));
+        assertFalse(RecentsDirty.shouldLog(last, "com.a", 1_001, gap));           // the same package a moment later
+        assertTrue(RecentsDirty.shouldLog(last, "com.b", 1_002, gap));            // another package is its own
+        assertFalse(RecentsDirty.shouldLog(last, "com.a", 1_000 + gap - 1, gap));
+        assertTrue(RecentsDirty.shouldLog(last, "com.a", 1_000 + gap, gap));      // a full gap later: again
+        assertTrue(RecentsDirty.shouldLog(last, "com.a", 5, gap));                // a clock that went backwards logs again and restarts the gap
+        assertFalse(RecentsDirty.shouldLog(last, "com.a", 6, gap));
+    }
+
+    @Test public void theLogGateStaysSmall() {
+        java.util.HashMap<String, Long> last = new java.util.HashMap<String, Long>();
+        for (int i = 0; i < 200; i++) assertTrue(RecentsDirty.shouldLog(last, "com.p" + i, 1_000 + i, RecentsDirty.LOG_GAP_MS));
+        assertTrue(last.size() <= 32);
+    }
 }
