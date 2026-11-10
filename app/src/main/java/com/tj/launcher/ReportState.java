@@ -21,7 +21,7 @@ public final class ReportState {
     /** Text / number preferences that are safe to report. Everything not listed here is left out. */
     static final Set<String> SAFE_VALUES = new HashSet<>(Arrays.asList(
             "power_mode", "return_app_label", "qs_tiles_applied_mode", "qs_tiles_custom", "qs_tiles_quickstep",
-            "unlock_pick_last", "unlock_speed", "unlock_sum", "home_curtain_state", "home_curtain_capture", "reset_last", "failsafe_last", "profile_last", "power_latency",
+            "unlock_pick_last", "unlock_speed", "unlock_sum", "home_curtain_state", "home_curtain_capture", "reset_last", "recents_diag", "failsafe_last", "profile_last", "power_latency",
             "guard_count", "guard_last", "keyboard_status", "wallpaper_patch_status", "lock_cal_status",
             "compile_done_code", "boot_count_seen", "keytest_summary", "keytest_output", "keytest_menu", "keytest_at", "keep_alive_blocked_why", "battery_saver_last", "migrate_note",
             // v0.7.6 (review of v0.7.5): the wallpaper kind was documented as "in the report" but never listed; the patch nudges are plain numbers (never the lock-screen number TEXT)

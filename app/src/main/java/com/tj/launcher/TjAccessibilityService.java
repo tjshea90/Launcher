@@ -3530,35 +3530,50 @@ public class TjAccessibilityService extends AccessibilityService {
                 }
             } catch (Throwable t) { Log.e(TAG, "empty recents failed", t); }
             finally { if (roots != null) for (AccessibilityNodeInfo r : roots) { try { r.recycle(); } catch (Throwable ignored) { } } }
-            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared | " + recentsDiag(), false, closed[0]); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
+            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared" + noteRecentsDiag(), false, closed[0]); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
             handler.postDelayed(this, 40);
         } });
     }
 
+    public static final String RECENTS_DIAG_KEY = "recents_diag";   // BN8d: report key (allow-listed in ReportState)
+
+    /** BN8d: stores {@link #recentsDiag()} with its time under its own report key (the report cuts every value at 600 characters and {@code reset_last} holds the other steps too) and returns the pointer for the result line. Never throws. */
+    private String noteRecentsDiag() {
+        try {
+            String d = new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + " " + recentsDiag();
+            Log.i(TAG, "RESET recents diag: " + d);
+            Features.setStringAsync(this, RECENTS_DIAG_KEY, d);
+            return " (what the screen held: report line " + RECENTS_DIAG_KEY + ")";
+        } catch (Throwable t) { return ""; }
+    }
+
     /**
      * BN8d (Tj, 2026-11-10: "All of my quickstep apps were in the recent apps list in the custom launcher"; the tablet report said "no Clear all button and no card with a Close action found" after the whole 2.5 s): what the
-     * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels). Whether the Recents action was accepted; every window with its type, layer and
-     * root package; for the stock launcher's windows the node classes with counts and the first short texts (that window shows app names and "Clear all" only). No text of any other window. Never throws.
+     * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels, another package). Whether the Recents action was accepted; then the STOCK
+     * LAUNCHER's windows FIRST (the search looks only there and in SystemUI) with their node classes, counts and first short texts (that window shows app names and "Clear all" only); then every other window with type, layer
+     * and root package only (no text of any other window). At most 590 characters: it must fit the report's 600-character cut. Never throws.
      */
     private String recentsDiag() {
-        StringBuilder b = new StringBuilder("recents action ").append(recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED").append("; ");
+        StringBuilder head = new StringBuilder("recents action ").append(recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED").append("; ");
+        StringBuilder stock = new StringBuilder(), others = new StringBuilder();
         try {
             List<AccessibilityWindowInfo> windows = getWindows();
-            if (windows == null) return b.append("no windows").toString();
-            b.append(windows.size()).append(" window(s):");
+            if (windows == null) return head.append("no windows").toString();
+            head.append(windows.size()).append(" window(s)");
+            String sp = stockPkg();
             int shown = 0;
             for (AccessibilityWindowInfo w : windows) {
                 if (shown++ >= 8) break;
                 AccessibilityNodeInfo root = w.getRoot();
-                String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
-                b.append(" [type ").append(w.getType()).append(" layer ").append(w.getLayer()).append(w.isActive() ? " active " : " ").append(pkg);
-                if (root != null) {
-                    try { if (pkg.startsWith("com.android.launcher3")) b.append(' ').append(nodeSummary(root)); } finally { root.recycle(); }
-                }
-                b.append(']');
+                try {
+                    String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
+                    String tag = " [type " + w.getType() + " layer " + w.getLayer() + (w.isActive() ? " active " : " ") + pkg;
+                    if (root != null && RecentsDirty.isStockLauncherWindow(pkg, sp)) stock.append(tag).append(' ').append(nodeSummary(root)).append(']');
+                    else others.append(tag).append(']');
+                } finally { if (root != null) { try { root.recycle(); } catch (Throwable ignored) { } } }
             }
-        } catch (Throwable t) { b.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
-        return b.length() > 1500 ? b.substring(0, 1500) : b.toString();
+        } catch (Throwable t) { head.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
+        return RecentsDirty.diagLine(head.toString(), stock.toString(), others.toString(), 590);
     }
 
     /** Node classes (simple names with counts) and up to 8 short texts or descriptions of one window tree (a star marks a clickable node), to depth 10 and 250 nodes. */
@@ -3603,7 +3618,7 @@ public class TjAccessibilityService extends AccessibilityService {
         pollPress("clear all", new String[] {"no recent items"}, new String[] {"com.android.launcher3", "com.android.systemui"}, 1800, true, new PollResult() {
             @Override public void done(int result) {
                 if (result == PRESSED || result == EMPTY) { RecentsDirty.clear(TjAccessibilityService.this); AppOrigin.clearQuickstep(TjAccessibilityService.this); AppOrigin.setTracked(TjAccessibilityService.this); }   // Recents is clean again
-                resetReport.append("recents: ").append(result == PRESSED ? "cleared (apps closed)" : result == EMPTY ? "already empty" : "no Clear all button found | " + recentsDiag())
+                resetReport.append("recents: ").append(result == PRESSED ? "cleared (apps closed)" : result == EMPTY ? "already empty" : "no Clear all button found" + noteRecentsDiag())
                         .append(" (+").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms)\n");
                 Log.i(TAG, "RESET recents result=" + result + " +" + (android.os.SystemClock.uptimeMillis() - t0) + "ms");
                 LockLog.add(getApplicationContext(), "RESET", "recents: Clear all " + (result == PRESSED ? "pressed" : result == EMPTY ? "found the list empty" : "button NOT FOUND: nothing was cleared"));   // AI1: the lock log says what really happened
