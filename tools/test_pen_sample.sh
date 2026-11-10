@@ -38,4 +38,15 @@ pen_all_shown "cover=shown a" "cover=none b" "cover=none c" && { echo "FAIL  pen
 pen_control_ok "cover=none showing=false sb=x" && echo "ok    control: unlocked + no cover passes" || { echo "FAIL  control ok"; fails=$((fails+1)); }
 pen_control_ok "cover=shown showing=false sb=x" && { echo "FAIL  control must flag a shown cover"; fails=$((fails+1)); } || echo "ok    control flags a cover on the unlocked Quickstep panel"
 pen_control_ok "cover=none showing=true sb=x" && { echo "FAIL  control must flag a still-locked device"; fails=$((fails+1)); } || echo "ok    control flags a device that is still locked"
+# BN8b: the drag check counts 'cover shown' lines within a window after the FIRST hide (logcat -v time lines)
+L1="$OUT/drag1.txt"; printf '%s\n' '11-10 01:00:00.000 I/TjA11y( 1): BN8b marker drag' '11-10 01:00:00.900 I/TjA11y( 1): PENCIL fast watch (a finger went down)' '11-10 01:00:01.010 I/TjA11y( 1): PENCIL cover hidden (kept warm; the panel is sliding up)' '11-10 01:00:01.800 I/TjA11y( 1): BN8b marker end' > "$L1"
+t "drag: hidden once, never shown again"            "0"      "$(bn8_shown_after_hide "$L1" 480)"
+L2="$OUT/drag2.txt"; printf '%s\n' '11-10 01:00:01.010 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' '11-10 01:00:01.050 I/TjA11y( 1): PENCIL cover shown [4,500][55,551]' '11-10 01:00:01.100 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' '11-10 01:00:01.140 I/TjA11y( 1): PENCIL cover shown [4,440][55,491]' > "$L2"
+t "drag: the old flicker (shown twice in the slide)" "2"      "$(bn8_shown_after_hide "$L2" 480)"
+L3="$OUT/drag3.txt"; printf '%s\n' '11-10 01:00:01.010 I/TjA11y( 1): PENCIL cover hidden (kept warm; the panel is sliding up)' '11-10 01:00:01.900 I/TjA11y( 1): PENCIL cover shown [4,300][55,351]' > "$L3"
+t "drag: a cover that returns after the window is fine" "0"   "$(bn8_shown_after_hide "$L3" 480)"
+L4="$OUT/drag4.txt"; printf '%s\n' '11-10 01:00:00.500 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' '11-10 01:00:01.000 I/TjA11y( 1): BN8b marker end' > "$L4"
+t "drag: a cover that was never hidden is reported"  "nohide" "$(bn8_shown_after_hide "$L4" 480)"
+L5="$OUT/drag5.txt"; printf '%s\n' '11-10 23:59:59.900 I/TjA11y( 1): PENCIL cover hidden (kept warm; the panel is sliding up)' '11-10 23:59:59.990 I/TjA11y( 1): PENCIL cover shown [4,300][55,351]' > "$L5"
+t "drag: shown 90 ms after the hide counts"          "1"      "$(bn8_shown_after_hide "$L5" 480)"
 echo "failures: $fails"; exit $fails
