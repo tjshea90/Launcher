@@ -4340,8 +4340,13 @@ public class TjAccessibilityService extends AccessibilityService {
         final String because = ScrimFit.reasonMissing(Features.getString(app, ScrimMeasure.valueKey(rotation(), scrimNight), ""), shotSig(), scrimNight);   // BB2: "why again?" answered on the tablet
         Features.setString(app, ScrimMeasure.WHY_KEY, new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.US).format(new java.util.Date()) + " started because " + because);
         Features.setString(app, ScrimMeasure.TRIES_KEY, AutoCalibration.addTry(Features.getString(app, ScrimMeasure.TRIES_KEY, ""), st.now));
+        // BQ1a: the run is COUNTED NOW, before the first screenshot is asked for (commit, like the line above): a service that is torn down or a process that dies in the middle never reaches the end of the run, and a
+        // run that was never counted would start again at the next lock. A run that stores a measurement clears this record (scrimIngest).
+        final String failKey = ScrimMeasure.failKey(rotation(), scrimNight);
+        Features.setString(app, failKey, ScrimMeasure.addFailure(Features.getString(app, failKey, ""), shotSig(), scrimNight));
+        Features.setStringAsync(app, ScrimMeasure.RUN_KEY, ScrimMeasure.runLine(new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), scrimNight, "started (" + why + "), no end recorded yet"));   // a run that never finishes still shows in the report
         scrimBeganAt = android.os.SystemClock.uptimeMillis(); scrimStageAt = scrimBeganAt;
-        scrimStage = 1; scrimOpenedMenu = false; scrimPoints = null; scrimRef = null; scrimCloseTries = 0; scrimMenuAt = 0; scrimPollAt = 0; scrimGoneTicks = 0; scrimOutcome = ""; scrimCounted = false;
+        scrimStage = 1; scrimOpenedMenu = false; scrimPoints = null; scrimRef = null; scrimCloseTries = 0; scrimMenuAt = 0; scrimPollAt = 0; scrimGoneTicks = 0; scrimOutcome = "";
         scrimNote("started (" + why + "): a bare frame of the lock screen first");
         Log.i(TAG, "SCRIM measurement started (" + why + "): " + because);
         LockLog.add(app, "SCRIM", "run starts (" + why + "), " + (scrimNight ? "dark" : "light") + " theme, screen on " + (st.screenOnMs > 0 ? String.valueOf(Math.max(0, (st.now - st.screenOnMs) / 1000)) : "?") + " s: " + because);   // BQ1a: the 2026-11-10 report could not tell which visit took the screenshots
