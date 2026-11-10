@@ -149,8 +149,11 @@ public final class ReportState {
             b.append(" | BQ2: only the light look is ever measured, the dark look uses it");
             b.append(" | last started: ").append(Features.getString(c, ScrimMeasure.WHY_KEY, "(never)"));
             b.append(" | last run (BQ1a): ").append(Features.getString(c, ScrimMeasure.RUN_KEY, "(none)"));
-            b.append(" | runs that stored nothing, rotation 0: light ").append(ScrimMeasure.storedFailureCount(Features.getString(c, ScrimMeasure.failKey(0, false), "")))
-                    .append(", dark ").append(ScrimMeasure.storedFailureCount(Features.getString(c, ScrimMeasure.failKey(0, true), ""))).append(" (a lock screen gives up at ").append(ScrimMeasure.MAX_FAILURES).append(")")
+            String curSig = PatchShot.currentSig(c);
+            b.append(" | runs that stored nothing (counted when a run STARTS, cleared by a stored measurement; a lock screen gives up at ").append(ScrimMeasure.MAX_FAILURES).append("), this lock screen ").append(curSig)
+                    .append(": light ").append(ScrimMeasure.failures(Features.getString(c, ScrimMeasure.failKey(0, false), ""), curSig, false))
+                    .append(", dark ").append(ScrimMeasure.failures(Features.getString(c, ScrimMeasure.failKey(0, true), ""), curSig, true))
+                    .append(" (stored records, rotation 0: light '").append(Features.getString(c, ScrimMeasure.failKey(0, false), "")).append("', dark '").append(Features.getString(c, ScrimMeasure.failKey(0, true), "")).append("')")
                     .append(" | starts in the last 24 h: ").append(AutoCalibration.startsWithinDay(Features.getString(c, ScrimMeasure.TRIES_KEY, ""), System.currentTimeMillis())).append(" (cap ").append(ScrimMeasure.MAX_PER_DAY).append(")");
             b.append('\n');
             b.append("battery saver on the lock screen (BA2): switch ").append(BatterySaverGuard.lockOffEnabled(c) ? "on" : "off").append(", restore for Quickstep ").append(BatterySaverGuard.lockRestoreEnabled(c) ? "on" : "off")
