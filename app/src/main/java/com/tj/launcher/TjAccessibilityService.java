@@ -2476,7 +2476,55 @@ public class TjAccessibilityService extends AccessibilityService {
             }
             if (p != null) p.recycle();
             Log.i(TAG, sb.toString());
+            penTree(why);
         } catch (Throwable t) { Log.i(TAG, "PENCIL probe failed: " + t); }
+    }
+
+    /**
+     * BQ3 (debug builds only): run #510 showed the pencil node and ALL its ancestors reading "visible" with the open panel's bounds while the panel was CLOSED on the lock screen. This lists, for the whole shade window, every
+     * node that has a view id: id, visible (V) or not (h), top-bottom. Comparing a closed and an open lock screen shows which node tells them apart (a hidden QS panel, a hidden keyguard clock ...). At most ~100 ids, in lines of 250 characters.
+     */
+    private void penTree(String why) {
+        try {
+            AccessibilityNodeInfo n = penNode;
+            if (n == null) return;
+            AccessibilityWindowInfo w = n.getWindow();
+            if (w == null) return;
+            AccessibilityNodeInfo root = w.getRoot();
+            w.recycle();
+            if (root == null) return;
+            java.util.ArrayDeque<AccessibilityNodeInfo> q = new java.util.ArrayDeque<>();
+            q.add(root);
+            StringBuilder line = new StringBuilder("PENCIL tree " + why + ":");
+            int seen = 0, listed = 0;
+            while (!q.isEmpty() && seen < 500 && listed < 100) {
+                AccessibilityNodeInfo x = q.poll();
+                seen++;
+                String id = x.getViewIdResourceName();
+                if (id != null) {
+                    Rect b = new Rect(); x.getBoundsInScreen(b);
+                    String e = " " + id.substring(id.indexOf('/') + 1) + (x.isVisibleToUser() ? ":V" : ":h") + b.top + "-" + b.bottom;
+                    if (line.length() + e.length() > 250) { Log.i(TAG, line.toString()); line = new StringBuilder("PENCIL tree (cont):"); }
+                    line.append(e); listed++;
+                }
+                for (int i = 0, c = x.getChildCount(); i < c; i++) { AccessibilityNodeInfo ch = x.getChild(i); if (ch != null) q.add(ch); }
+                x.recycle();
+            }
+            for (AccessibilityNodeInfo r : q) r.recycle();
+            Log.i(TAG, line.toString());
+        } catch (Throwable t) { Log.i(TAG, "PENCIL tree failed: " + t); }
+    }
+
+    /**
+     * BQ3: the pencil must lie inside the window that holds it. A CLOSED shade is a 26 px high status-bar window, yet stale view geometry kept reporting a "visible" pencil 540 px below it (run #510, probe at the moment the cover first
+     * appeared at the lock). A window that cannot be read is no objection.
+     */
+    private static boolean insideItsWindow(AccessibilityNodeInfo n, Rect b) {
+        try {
+            AccessibilityWindowInfo w = n.getWindow();
+            if (w == null) return true;
+            try { Rect wb = new Rect(); w.getBoundsInScreen(wb); return wb.isEmpty() || wb.contains(b); } finally { w.recycle(); }
+        } catch (Throwable t) { return true; }
     }
 
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
