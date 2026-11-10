@@ -1,22 +1,22 @@
-# CHECKPOINT 848 — read me first, then TASKS.md
+# CHECKPOINT 849 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T00:39:13Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `00e0a05` (this checkpoint is the commit after it)
+**Written:** 2026-11-10T00:44:50Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `1927d6f` (this checkpoint is the commit after it)
 
 ## Just done
-BN7 written: tablet report 2026-11-10 read (battery no-dump = no PACKAGE_USAGE_STATS, storage ok 664 ms, no crash, helper down, no flash evidence)
+BN1p code done: D1 seed+countdown+keep, D2 BLANK rows, R3-R5; Ss* JVM tests green; ss scenario SS5e/16d/21e added; version 40/0.9.1; review agent running
 
 ## Do this next
-finish BN1p: bump app/build.gradle.kts to code 40 / 0.9.1, bash tools/gate.sh v0.9.0, ship.sh, android.yml full_build, record-release, message Tj. Heartbeat trig_01DhC2W8FUPFeqdGFQCt7yWe
+when the review agent returns fix findings, then bash tools/gate.sh v0.9.0 (3 runs: n,ac,rb | x1,ss | base,e1,o,last on main), ship.sh, android.yml full_build, record-release, message Tj (tablet report answers). Heartbeat trig_01DhC2W8FUPFeqdGFQCt7yWe
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-    M  TASKS.md
 
 ## Last ten checkpoints
 ```
+  8ee895b ckpt 848: BN7 written: tablet report 2026-11-10 read (battery no-dump = no PACKAGE_USAGE
   00e0a05 ckpt 847: tablet intake 2026-11-10 (Tj's new report; 2 red flags: helper not running, PA
   3952807 ckpt 846: Heartbeat 00:27Z woke the session; reading code for BN1p (v0.9.1): SsHomeSumma
   bc31d45 ckpt 845: v0.9.0 SHIPPED+RECORDED (Release 439795609, android.yml run 41 id 42726425581 
@@ -26,5 +26,7 @@ finish BN1p: bump app/build.gradle.kts to code 40 / 0.9.1, bash tools/gate.sh v0
   a6bad9b ckpt 841: 8 base runs read: TAG v0.8.13 4/4 green (478-481, one healed crash); HEAD 3 of
   53b3d53 ckpt 840: 8 base runs dispatched 23:12Z on ckpt 839 (a06970f): tag v0.8.13 x4 (base; bas
   a06970f ckpt 839: scenario: breaker diag + wait for process; reruns 475 (3 crashes; FAIL recents
-  a0359ad ckpt 838: gated v0.9.0 (code 39) and pushed it: the handoff self-test, the full unit sui
 ```
+
+(5 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
