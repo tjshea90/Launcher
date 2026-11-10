@@ -57,4 +57,17 @@ final class SsBatteryText {
         if (chargeMs > 0 && batteryStatus != STATUS_FULL) return SsFormat.elapsed(chargeMs) + " left until fully charged";
         return status(batteryStatus);
     }
+
+    /**
+     * BN1p D1: {@link #header} for a page that may not have read the statistics yet. While no read has finished ({@code readDone} false) the sentence is EMPTY, never the status word: Tj's screenshots show
+     * the estimate from the first frame and no page may flash "Not charging" first. After a read that found nothing the status word is the honest fallback.
+     */
+    static String headerOrBlank(boolean readDone, int plugged, int batteryStatus, long drainMs, long chargeMs, long nowMs, TimeOfDay clock) {
+        return readDone ? header(plugged, batteryStatus, drainMs, chargeMs, nowMs, clock) : "";
+    }
+
+    /** The Settings home's one-line summary: "69%" alone while the sentence is not known yet, else "69% - Should last until about 9:15 PM". */
+    static String homeLine(String percent, String sentence) {
+        return sentence == null || sentence.length() == 0 ? percent : percent + " - " + sentence;
+    }
 }
