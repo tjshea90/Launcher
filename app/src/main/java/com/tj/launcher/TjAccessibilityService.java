@@ -2391,6 +2391,13 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void showPencil(Rect r) {
+        boolean wasShown = penShown;
+        boolean moved = !penAt.equals(r);
+        showPencilCover(r);
+        if (!wasShown || moved || !gearShown) gearFollow(r);   // BR1: the gear overlay rides on the cover; a look that changes nothing costs nothing here
+    }
+
+    private void showPencilCover(Rect r) {
         // D4: the cover window stays attached (invisible, untouchable) once it exists, so showing it is one redraw + one layout update, not a window creation.
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (penView != null) {
