@@ -2188,3 +2188,50 @@
 >
 > Please tap Allow on the prompt that follows, so I can delete this session's timer.
 <!-- sha:98bb6218dc9b -->
+## 2026-11-10T06:41:36Z
+> v0.9.1 is released. It passed all 911 unit tests and the emulator gate. One of the two gate runs had two failures in the restart section, at the moment of a known crash of the test emulator; that section passed when run again alone.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.1
+>
+> Install `Launcher-v0.9.1.apk` over v0.9.0. It is signed with the same key, so it updates in place.
+>
+> **What changed**
+>
+> - **Settings home page:** Sound now says only "Volume", System only "Languages", and Display says "Brightness, sleep, font size".
+> - **Settings polish:** the Battery line no longer shows "Not charging" for a moment when the page opens. The Storage and Battery rows no longer change height while loading. The brightness percentage now uses your tablet's real range.
+> - **White box on the lock screen after sliding the panel back up:** new attempt, not proven on your tablet.
+>   - The white cover over the pencil now disappears as soon as the pencil starts moving up, and stays away until the panel has stopped.
+>   - Once a finger touches the screen, the app checks the pencil every 25 ms instead of every 100 to 150 ms.
+>   - On the test emulator the cover was gone 0.35 s after the finger went down and stayed away for the half second I measured after that. I can't tell how much of that delay is the slow emulator.
+>   - While the panel is sliding you may see the real pencil for a moment.
+> - **Tablet report:** ordinary Quickstep use no longer floods the lock log, so a report now keeps the events of the custom session before it.
+>
+> **Not fixed yet (each needs a report from the tablet)**
+>
+> - **Screenshot button on the first side-key press, then a visible patch a couple of times:** I have no log of it. Your last report only held "app opened in Quickstep" lines, which had pushed everything else out. v0.9.1 fixes that part.
+> - **Quickstep apps in the custom Recents list:** your report showed why. The clean-up found neither a "Clear all" button nor a closable card on your tablet's Recents screen within 2.5 seconds, and the shell helper (the other way to clear them) was not running. v0.9.1 records what that screen contains when this happens: counts only, no app names or titles.
+>
+> **Your tablet report of 10 November**
+>
+> - **Battery page:** it can only show the percentage because the app has no usage access on the tablet. That is expected, not a bug. To get the numbers: start the shell helper, open Launcher control, tap "Do everything that is missing", then open Settings > Battery once in the custom launcher. With the cable instead:
+>
+> ```bash
+> adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS
+> ```
+>
+> - **Storage page:** works on the tablet (scan took 0.66 s, 96 % used).
+> - **No crash** anywhere in the report.
+> - **Shell helper:** it was not running. Installing an update stops it, so it has to be started again after each install.
+>
+> **What I need from you**
+>
+> 1. Install v0.9.1.
+> 2. If the white box, the Screenshot button on the first press, or Quickstep apps in Recents
+> [... 871 characters omitted ...]
+>  saved log, so it may not have reached you; you may also find a second copy in that chat.
+> - **What I did since 04:58 UTC:** checked the Release and the re-run myself, merged that session's work into this branch twice, and corrected its note that its timer was already deleted. This account's timer is deleted.
+> - **One loss:** I read the gate result at 01:59 UTC but had not checkpointed it when the worker restarted, so the other session had to read it again three hours later. The rule is now written down: checkpoint a result before analysing it.
+> - **State:** everything is on GitHub and `main` is the real state (checkpoint 870). A fresh account can continue with: "Resume Launcher: run bash tools/install-hooks.sh, then bash tools/resume.sh, read HANDOFF.md block 0p and continue from CHECKPOINT.md Do this next."
+>
+> Nothing else is in flight. The remaining open items wait for your tablet reports.
+<!-- sha:c1fe008c2b80 -->

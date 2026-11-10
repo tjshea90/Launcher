@@ -15,4 +15,6 @@ Launcher auto-resume heartbeat (Tj's standing order, TASKS BO1 / CLAUDE.md "Auto
 
 History: `trig_01DhC2W8FUPFeqdGFQCt7yWe` (old account, armed 2026-11-09 17:27 UTC, every 2 h at :27); `trig_01NG4acJZ3CVuQZutyT6rsCC` (new account, armed 2026-11-10 01:11 UTC, every 2 h at :11).
 
-Update 2026-11-10: `trig_01DhC2W8FUPFeqdGFQCt7yWe` (old account) was deleted after v0.9.1 shipped. `trig_01NG4acJZ3CVuQZutyT6rsCC` (new account) was created with the OLD wording of rule 2; its owner updates it with `update_trigger` (prompt = the block above) or deletes it with `delete_trigger` once the job is shipped.
+Update 2026-11-10 (corrected 06:40 UTC): `trig_01DhC2W8FUPFeqdGFQCt7yWe` (old account) was NOT deleted: its delete_trigger call waits for Tj's approval in the old account's chat (that session's ckpt 868). `trig_01NG4acJZ3CVuQZutyT6rsCC` (new account) was created with the OLD wording of rule 2; its owner updates it with `update_trigger` (prompt = the block above) or deletes it with `delete_trigger` once the job is shipped.
+
+Update 2026-11-10 06:34 UTC: `trig_01NG4acJZ3CVuQZutyT6rsCC` (new account) DELETED by its owner after v0.9.1 shipped. The old account's one is still armed (see above).
