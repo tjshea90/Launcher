@@ -2235,3 +2235,18 @@
 >
 > Nothing else is in flight. The remaining open items wait for your tablet reports.
 <!-- sha:c1fe008c2b80 -->
+
+## 2026-11-10T08:09:08Z
+> `main`, my branch and the Release now line up at `4fd44c2`, and the other session's branch is contained in it. The working tree is clean.
+>
+> Update on my last message: the timer deletion went through, so this session's auto-resume timer is gone. The other account's session reports it deleted its own at 06:34 UTC, so no timer is armed on either account now.
+>
+> That session also sent you the v0.9.1 answer in its own chat at 06:41 UTC. The two answers cover the same points, so nothing more is owed. I merged the two sessions' work, so `main` has everything.
+>
+> Nothing else is waiting on me. What remains waits on you:
+> - Install v0.9.1.
+> - Send a report right after the white box, the Screenshot button on the first side-key press, or Quickstep apps appearing in Recents.
+> - Run the usage grant for the Battery numbers.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.1
+<!-- sha:99d2258f9319 -->
