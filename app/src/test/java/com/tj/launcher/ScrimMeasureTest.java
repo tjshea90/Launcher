@@ -68,31 +68,31 @@ public class ScrimMeasureTest {
         assertEquals(0, ScrimMeasure.failures("garbage", sig, false)); assertEquals(0, ScrimMeasure.failures(sig + "#d#abc", sig, false));
     }
     // ---- BQ1a (Tj, 2026-11-10, v0.9.1: "It did two or three screenshots of the lock screen again, one time on each of the three last times I went to the lock screen")
-    @Test public void everyRunThatStoredNothingCountsAsAFailureInterruptionsToo() {
-        assertTrue(ScrimMeasure.measurementFailure("not measured: the fit is not tight enough (rms 4.1 levels)"));
-        assertTrue(ScrimMeasure.measurementFailure("stopped: too little plain wallpaper on this lock screen to measure (120 usable points)"));
-        assertTrue("an interruption already cost a real screenshot", ScrimMeasure.measurementFailure("stopped: the screen went off"));
-        assertTrue(ScrimMeasure.measurementFailure("stopped: the PIN pad came up"));
-        assertTrue(ScrimMeasure.measurementFailure("stopped: the theme changed (battery saver / dark theme) during the measurement"));
-        assertTrue(ScrimMeasure.measurementFailure("no screenshot appeared"));
-        assertTrue(ScrimMeasure.measurementFailure("Android refused to take a screenshot"));
-        assertFalse(ScrimMeasure.measurementFailure("MEASURED scale 0.800 / 0.800 / 0.800"));
-        assertFalse(ScrimMeasure.measurementFailure(null)); assertFalse(ScrimMeasure.measurementFailure(""));
-        assertEquals("scrim_fail_r0", ScrimMeasure.failKey(0));
-    }
     @Test public void aSlotThatNeverFinishesFlashesAtMostTwiceNoMatterHowOftenTheTabletIsLocked() {
-        // the 2026-11-10 night: the dark slot was missing, every lock from Quickstep woke in the dark theme, every run was interrupted, nothing was ever counted: up to four flashes a day, for ever
+        // the 2026-11-10 night: the slot never stored a value, every run was interrupted and nothing was counted: up to four flashes a day, for ever. Review of 2026-11-10: a run is counted WHEN IT STARTS
+        // (maybeMeasureScrim), so a service that is torn down or a process that dies in the middle of a run (it never reaches the end of the run) cannot lose the count either.
         String sig = PatchShot.sig(30, 0, 600, 1024), record = ""; int starts = 0;
         for (int lock = 0; lock < 12; lock++) {
-            ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, sig, true); s.startsToday = 0; s.lastStartMs = 0; s.startsThisLock = 0;
+            ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, sig, false); s.startsToday = 0; s.lastStartMs = 0; s.startsThisLock = 0;
             if (!ScrimMeasure.shouldStart(s)) continue;
-            starts++; record = ScrimMeasure.addFailure(record, sig, true);   // scrimFinish("stopped: the PIN pad came up")
-            assertTrue(ScrimMeasure.measurementFailure("stopped: the PIN pad came up"));
+            starts++; record = ScrimMeasure.addFailure(record, sig, false);   // counted before the first screenshot is asked for; the run then never ends at all
         }
         assertEquals(ScrimMeasure.MAX_FAILURES, starts);
-        assertEquals(2, ScrimMeasure.storedFailureCount(record));
-        ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, sig, false); assertTrue("the light theme is another slot", ScrimMeasure.shouldStart(s));
-        s = go(); s.failures = ScrimMeasure.failures(record, PatchShot.sig(31, 0, 600, 1024), true); assertTrue("a new wallpaper starts afresh", ScrimMeasure.shouldStart(s));
+        assertEquals(2, ScrimMeasure.failures(record, sig, false));
+        ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, PatchShot.sig(31, 0, 600, 1024), false); assertTrue("a new wallpaper starts afresh", ScrimMeasure.shouldStart(s));
+        s = go(); s.failures = ScrimMeasure.failures(record, sig, true); assertFalse("the dark look is never measured at all (BQ2), whatever its record says", ScrimMeasure.shouldStart(s.night ? s : nightOf(s)));
+        assertEquals("scrim_fail_r0", ScrimMeasure.failKey(0));
+    }
+    private static ScrimMeasure.State nightOf(ScrimMeasure.State s) { s.night = true; return s; }
+    @Test public void aRunThatStoredAMeasurementIsNoFailureAndAStoredMeasurementAlwaysWins() {
+        String sig = PatchShot.sig(30, 0, 600, 1024);
+        String counted = ScrimMeasure.addFailure("", sig, false);          // counted at the start of the run ...
+        assertEquals(1, ScrimMeasure.failures(counted, sig, false));
+        String afterMeasured = "";                                          // ... and cleared by scrimIngest when it stored the value
+        assertEquals(0, ScrimMeasure.failures(afterMeasured, sig, false));
+        ScrimMeasure.State s = go(); s.failures = 2; s.haveMeasurement = true;
+        assertEquals("a stale count can never switch a stored measurement off", "", ScrimMeasure.decision(s));
+        s.haveMeasurement = false; assertTrue("without a stored value two counted runs end it", ScrimMeasure.decision(s).contains("gave up for this lock screen"));
     }
     @Test public void theThemeHasSettledBeforeARunStarts() {
         // the tablet wakes in the DARK theme after a Quickstep session (battery saver ON) and only flips to light a few seconds later
