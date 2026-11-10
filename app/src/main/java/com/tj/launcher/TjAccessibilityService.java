@@ -2301,7 +2301,10 @@ public class TjAccessibilityService extends AccessibilityService {
             if (penView == null || !penShown) return;
             if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
             updatePencil(false);
-            if (penView != null && penShown) startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
+            if (penView != null && penShown) {
+                startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
+                if (debuggable()) { long up = android.os.SystemClock.uptimeMillis(); if (penProbes < 8 && up - penProbeMs >= 800) { penProbeMs = up; penProbes++; penProbe("still shown"); } }   // BQ3 (debug builds only)
+            }
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
 
