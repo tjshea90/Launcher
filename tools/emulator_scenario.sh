@@ -3895,6 +3895,9 @@ SB=$(ssbounds "$OUT/ss-drawer.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; the
 info "SS3: resumed = $(tr -s ' \n' ' ' < $OUT/ss-resumed.txt | cut -c1-200)"
 check "SS3: the look-alike's own page activity is on screen (not com.android.settings)" grep -qE "com.tj.launcher/(\.|com\.tj\.launcher\.)(SsPageActivity|SettingsAlias)" "$OUT/ss-resumed.txt"
 ssdump "$OUT/ss-home.xml"
+# BN1p D1/D2: the Battery row shows "NN%" alone until the first read of the statistics has finished (never the status word first) and the Storage row gets its line when its worker returns: wait (bounded) for both before judging
+for SSK in 1 2 3 4 5; do if tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% - ' && tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% used - .* free"'; then break; fi; sleep 2; ssdump "$OUT/ss-home.xml"; done
+info "SS5e: home summaries complete after up to $((SSK-1)) extra dump(s) of the page"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
 check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
@@ -3936,6 +3939,10 @@ check "SS16b: choosing 10 minutes wrote Settings.System screen_off_timeout = 600
 ssdump "$OUT/ss-display2.xml"
 check "SS16c: the row now reads 'After 10 minutes of inactivity'" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-display2.xml --contains 'After 10 minutes of inactivity')\" ]"
 adb shell settings put system screen_off_timeout "$SSTO" >/dev/null 2>&1
+# BN1p R4: a stored timeout that is not in the list reads as the NEAREST entry (45 s lies exactly between 30 s and 1 min: the shorter), so the row keeps its summary line (AOSP leaves it empty)
+adb shell settings put system screen_off_timeout 45000 >/dev/null 2>&1; sleep 2; ssdump "$OUT/ss-display3.xml"
+check "SS16d: an off-list screen timeout (45 s) reads as the nearest entry, 'After 30 seconds of inactivity' (never an empty summary)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-display3.xml --contains 'After 30 seconds of inactivity')\" ]"
+adb shell settings put system screen_off_timeout "$SSTO" >/dev/null 2>&1
 sstap "Auto-rotate screen"; sleep 2
 SSROT2=$(adb shell settings get system accelerometer_rotation | tr -d '\r')
 check "SS17: tapping 'Auto-rotate screen' flipped accelerometer_rotation (was $SSROT, now $SSROT2)" test "$SSROT" != "$SSROT2"
@@ -3971,6 +3978,10 @@ sstap "Medium"; sleep 2
 check "SS21c: choosing Medium wrote Settings.Secure long_press_timeout = 1000 (was $SSLP)" bash -c "[ \"\$(adb shell settings get secure long_press_timeout | tr -d '\r')\" = 1000 ]"
 ssdump "$OUT/ss-access2.xml"
 check "SS21d: the Touch & hold delay row now reads Medium and the dialog is gone" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Medium' --exact)\" ] && [ -z \"\$(python3 -I tools/uinode.py $OUT/ss-access2.xml --contains 'Long' --exact)\" ]"
+adb shell settings put secure long_press_timeout "$SSLP" >/dev/null 2>&1
+# BN1p R5: a stored hold delay that is not in the list (1300 ms, the default is 400 = Short) reads as the NEAREST entry, Long, so the row keeps its summary line
+adb shell settings put secure long_press_timeout 1300 >/dev/null 2>&1; sleep 2; ssdump "$OUT/ss-access3.xml"
+check "SS21e: an off-list Touch & hold delay (1300 ms) reads as the nearest entry, Long (never an empty summary)" bash -c "[ -n \"\$(python3 -I tools/uinode.py $OUT/ss-access3.xml --contains 'Long' --exact)\" ]"
 adb shell settings put secure long_press_timeout "$SSLP" >/dev/null 2>&1
 # Mono audio and Audio balance are PRIVATE system settings: an app's own write throws (SettingsProvider), only the shell can store them. So: no helper = nothing stored, and (BN1l, Tj: "it only needs to look
 # identical") the control still shows what Tj set, with no toast; helper running = the fixed SETSYS verb stores it. (Run #455: the first version flipped the control and stored nothing.)
