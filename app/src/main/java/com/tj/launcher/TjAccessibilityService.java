@@ -69,7 +69,6 @@ public class TjAccessibilityService extends AccessibilityService {
             return;
         }
         try { diagEvent(event); } catch (Throwable ignored) { }
-        try { penShadeEvent(event); } catch (Throwable ignored) { }   // BQ3 (debug builds only)
         try { if (event != null && EventNoise.windowsJustChanged(event.getEventType())) { noteWindowEvent(event.getEventTime()); fastMenuOpen(event); } } catch (Throwable t) { Log.e(TAG, "fast menu check failed", t); }   // AZ1: FIRST, before any other work of this event
         try { if (event != null) fastMenuClose(event); } catch (Throwable t) { Log.e(TAG, "fast menu close check failed", t); }   // BC2: a click in the stock dialog starts the fade-out, the removal of its window ends it
         try { if (event != null && patchHomeMode) homeForeignWindow(event); } catch (Throwable t) { Log.e(TAG, "home foreign window check failed", t); }   // BI1: the shade, the volume panel ... must not get the home patch painted over them
@@ -2302,10 +2301,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (penView == null || !penShown) return;
             if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
             updatePencil(false);
-            if (penView != null && penShown) {
-                startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
-                if (debuggable()) { long up = android.os.SystemClock.uptimeMillis(); if (penProbes < 16 && up - penProbeMs >= 600) { penProbeMs = up; penProbes++; penProbe("still shown"); } }   // BQ3 (debug builds only)
-            }
+            if (penView != null && penShown) startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
 
@@ -2335,7 +2331,7 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean refreshed = false, visible = false, boundsOk = false; Rect b = new Rect();
             try {
                 refreshed = known.refresh();
-                if (refreshed) { visible = known.isVisibleToUser(); if (visible) { known.getBoundsInScreen(b); boundsOk = pencilBoundsOk(b) && insideItsWindow(known, b); } }   // BQ3: and inside its own window
+                if (refreshed) { visible = known.isVisibleToUser(); if (visible) { known.getBoundsInScreen(b); boundsOk = pencilBoundsOk(b); } }
             } catch (Throwable ignored) { }
             penFollowed = PencilRules.follow(true, refreshed, visible, boundsOk);   // BN4
             if (penFollowed == PencilRules.FOUND) { penFast++; penSearched = true; return b; }
@@ -2368,7 +2364,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     CharSequence cd = n.getContentDescription();
                     if (!n.isVisibleToUser() || cd == null || !cd.toString().toLowerCase(java.util.Locale.ROOT).contains("edit")) continue;
                     Rect b = new Rect(); n.getBoundsInScreen(b);
-                    if (pencilBoundsOk(b) && insideItsWindow(n, b)) {   // BQ3: a pencil outside its own (closed, 26 px) window is stale geometry
+                    if (pencilBoundsOk(b)) {
                         dropPenNode();
                         try { penNode = AccessibilityNodeInfo.obtain(n); } catch (Throwable ignored) { penNode = null; }
                         if (penNode == null) return null;   // a cover must always have a node it follows (penWatch hides one that has none: found without a node = no cover, not a 150 ms flicker; code review 2026-11-09)
@@ -2398,7 +2394,7 @@ public class TjAccessibilityService extends AccessibilityService {
         // D4: the cover window stays attached (invisible, untouchable) once it exists, so showing it is one redraw + one layout update, not a window creation.
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (penView != null) {
-            if (!penShown) { penView.setAlpha(1f); penShown = true; wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); Log.i(TAG, "PENCIL cover shown " + r.toShortString()); penLockLog(true, "cover shown"); startPenWatch(); penProbes = 0; penProbe("shown"); }
+            if (!penShown) { penView.setAlpha(1f); penShown = true; wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); Log.i(TAG, "PENCIL cover shown " + r.toShortString()); penLockLog(true, "cover shown"); startPenWatch(); }
             else if (!penAt.equals(r)) { wm.updateViewLayout(penView, penParams(r, true)); penAt.set(r); penQuicken("the pencil moved"); }   // BN8b: it is moving: the next look is due in FAST_WATCH_MS, not at the next event
             return;
         }
@@ -2415,7 +2411,6 @@ public class TjAccessibilityService extends AccessibilityService {
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
             penLockLog(true, "cover shown (new window)");
             startPenWatch();
-            penProbes = 0; penProbe("shown (new window)");
         } else if (!penAt.equals(r)) {
             wm.updateViewLayout(penView, lp);
             penAt.set(r);
@@ -2445,96 +2440,6 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.watchGapMs(android.os.SystemClock.uptimeMillis(), penFastUntil)); }
-
-    private long penProbeMs = 0;
-    private int penProbes = 0;
-
-    /** BQ3 (debug builds only): SystemUI announces the shade's state with the text of a TYPE_WINDOW_STATE_CHANGED event ("Quick settings", "Lock screen", "Notification shade": AOSP NotificationPanelView.getKeyguardOrLockScreenString). Does this image send them, and when? */
-    private void penShadeEvent(AccessibilityEvent e) {
-        if (e == null || !debuggable() || e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
-        CharSequence pk = e.getPackageName();
-        if (pk == null || !"com.android.systemui".contentEquals(pk)) return;
-        Log.i(TAG, "PENCIL shade event: class=" + e.getClassName() + " text=" + e.getText() + " screen=" + isScreenOn() + " locked=" + keyguardLockedFast());
-    }
-
-    /**
-     * BQ3 (debug builds only; emulator section b6): emulator runs of 2026-11-10 (#507, and the v0.9.1 TAG in #509) showed a pencil cover that stays up on the lock screen with the panel CLOSED: the followed node keeps reading
-     * "visible" with the open panel's bounds. One log line says what that node and its ancestors report (class / id, visible, bounds), which window holds it, and whether the screen is on, so the next run explains itself.
-     */
-    private void penProbe(String why) {
-        if (!debuggable()) return;
-        try {
-            StringBuilder sb = new StringBuilder("PENCIL probe ").append(why).append(": locked=").append(keyguardLockedFast()).append(" custom=").append(Mode.isCustom(this)).append(" screen=").append(isScreenOn());
-            AccessibilityNodeInfo n = penNode;
-            if (n == null) { Log.i(TAG, sb.append(" node=none").toString()); return; }
-            boolean ref = n.refresh();
-            Rect b = new Rect(); n.getBoundsInScreen(b);
-            sb.append(" refresh=").append(ref).append(" vis=").append(n.isVisibleToUser()).append(' ').append(b.toShortString());
-            try {
-                AccessibilityWindowInfo w = n.getWindow();
-                if (w != null) { Rect wb = new Rect(); w.getBoundsInScreen(wb); sb.append(" win{type=").append(w.getType()).append(" layer=").append(w.getLayer()).append(w.isActive() ? " act" : "").append(w.isFocused() ? " foc" : "").append(' ').append(wb.toShortString()).append('}'); w.recycle(); }
-            } catch (Throwable ignored) { }
-            AccessibilityNodeInfo p = n.getParent();
-            int depth = 0;
-            while (p != null && depth < 9) {
-                Rect pb = new Rect(); p.getBoundsInScreen(pb);
-                String cls = String.valueOf(p.getClassName()); cls = cls.substring(cls.lastIndexOf('.') + 1);
-                String id = p.getViewIdResourceName(); id = id == null ? "-" : id.substring(id.indexOf('/') + 1);
-                sb.append(" > ").append(cls).append('/').append(id).append(p.isVisibleToUser() ? " V " : " h ").append(pb.toShortString());
-                AccessibilityNodeInfo up = p.getParent(); p.recycle(); p = up; depth++;
-            }
-            if (p != null) p.recycle();
-            Log.i(TAG, sb.toString());
-            penTree(why);
-        } catch (Throwable t) { Log.i(TAG, "PENCIL probe failed: " + t); }
-    }
-
-    /**
-     * BQ3 (debug builds only): run #510 showed the pencil node and ALL its ancestors reading "visible" with the open panel's bounds while the panel was CLOSED on the lock screen. This lists, for the whole shade window, every
-     * node that has a view id: id, visible (V) or not (h), top-bottom. Comparing a closed and an open lock screen shows which node tells them apart (a hidden QS panel, a hidden keyguard clock ...). At most ~100 ids, in lines of 250 characters.
-     */
-    private void penTree(String why) {
-        try {
-            AccessibilityNodeInfo n = penNode;
-            if (n == null) return;
-            AccessibilityWindowInfo w = n.getWindow();
-            if (w == null) return;
-            AccessibilityNodeInfo root = w.getRoot();
-            w.recycle();
-            if (root == null) return;
-            java.util.ArrayDeque<AccessibilityNodeInfo> q = new java.util.ArrayDeque<>();
-            q.add(root);
-            StringBuilder line = new StringBuilder("PENCIL tree " + why + ":");
-            int seen = 0, listed = 0;
-            while (!q.isEmpty() && seen < 500 && listed < 100) {
-                AccessibilityNodeInfo x = q.poll();
-                seen++;
-                String id = x.getViewIdResourceName();
-                if (id != null) {
-                    Rect b = new Rect(); x.getBoundsInScreen(b);
-                    String e = " " + id.substring(id.indexOf('/') + 1) + (x.isVisibleToUser() ? ":V" : ":h") + b.top + "-" + b.bottom;
-                    if (line.length() + e.length() > 250) { Log.i(TAG, line.toString()); line = new StringBuilder("PENCIL tree (cont):"); }
-                    line.append(e); listed++;
-                }
-                for (int i = 0, c = x.getChildCount(); i < c; i++) { AccessibilityNodeInfo ch = x.getChild(i); if (ch != null) q.add(ch); }
-                x.recycle();
-            }
-            for (AccessibilityNodeInfo r : q) r.recycle();
-            Log.i(TAG, line.toString());
-        } catch (Throwable t) { Log.i(TAG, "PENCIL tree failed: " + t); }
-    }
-
-    /**
-     * BQ3: the pencil must lie inside the window that holds it. A CLOSED shade is a 26 px high status-bar window, yet stale view geometry kept reporting a "visible" pencil 540 px below it (run #510, probe at the moment the cover first
-     * appeared at the lock). A window that cannot be read is no objection.
-     */
-    private static boolean insideItsWindow(AccessibilityNodeInfo n, Rect b) {
-        try {
-            AccessibilityWindowInfo w = n.getWindow();
-            if (w == null) return true;
-            try { Rect wb = new Rect(); w.getBoundsInScreen(wb); return wb.isEmpty() || wb.contains(b); } finally { w.recycle(); }
-        } catch (Throwable t) { return true; }
-    }
 
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
     private void hidePencil(String why) {
