@@ -2411,6 +2411,7 @@ public class TjAccessibilityService extends AccessibilityService {
             Log.i(TAG, "PENCIL cover shown " + r.toShortString());
             penLockLog(true, "cover shown (new window)");
             startPenWatch();
+            penProbes = 0; penProbe("shown (new window)");
         } else if (!penAt.equals(r)) {
             wm.updateViewLayout(penView, lp);
             penAt.set(r);
