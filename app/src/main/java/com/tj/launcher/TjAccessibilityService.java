@@ -3336,8 +3336,10 @@ public class TjAccessibilityService extends AccessibilityService {
         return false;
     }
 
+    private volatile int recentsActionOk = -1;   // BN8d: what performGlobalAction(GLOBAL_ACTION_RECENTS) returned in the last reset (-1 = not asked yet)
+
     private void resetRecents(final long t0, final Runnable done, final java.util.Set<String> closeLabels) {
-        performGlobalAction(GLOBAL_ACTION_RECENTS);
+        recentsActionOk = performGlobalAction(GLOBAL_ACTION_RECENTS) ? 1 : 0;
         if (closeLabels == null || closeLabels.isEmpty()) {
             if (ReturnReset.cleanStart(this)) recentsEmpty(t0, done); else recentsClearAll(t0, done);   // BE2/BE3: a clean start empties the list whichever way this Recents screen allows
             return;
@@ -3518,9 +3520,65 @@ public class TjAccessibilityService extends AccessibilityService {
                 }
             } catch (Throwable t) { Log.e(TAG, "empty recents failed", t); }
             finally { if (roots != null) for (AccessibilityNodeInfo r : roots) { try { r.recycle(); } catch (Throwable ignored) { } } }
-            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared", false, closed[0]); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
+            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared | " + recentsDiag(), false, closed[0]); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
             handler.postDelayed(this, 40);
         } });
+    }
+
+    /**
+     * BN8d (Tj, 2026-11-10: "All of my quickstep apps were in the recent apps list in the custom launcher"; the tablet report said "no Clear all button and no card with a Close action found" after the whole 2.5 s): what the
+     * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels). Whether the Recents action was accepted; every window with its type, layer and
+     * root package; for the stock launcher's windows the node classes with counts and the first short texts (that window shows app names and "Clear all" only). No text of any other window. Never throws.
+     */
+    private String recentsDiag() {
+        StringBuilder b = new StringBuilder("recents action ").append(recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED").append("; ");
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows();
+            if (windows == null) return b.append("no windows").toString();
+            b.append(windows.size()).append(" window(s):");
+            int shown = 0;
+            for (AccessibilityWindowInfo w : windows) {
+                if (shown++ >= 8) break;
+                AccessibilityNodeInfo root = w.getRoot();
+                String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
+                b.append(" [type ").append(w.getType()).append(" layer ").append(w.getLayer()).append(w.isActive() ? " active " : " ").append(pkg);
+                if (root != null) {
+                    try { if (pkg.startsWith("com.android.launcher3")) b.append(' ').append(nodeSummary(root)); } finally { root.recycle(); }
+                }
+                b.append(']');
+            }
+        } catch (Throwable t) { b.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
+        return b.length() > 1500 ? b.substring(0, 1500) : b.toString();
+    }
+
+    /** Node classes (simple names with counts) and up to 8 short texts or descriptions of one window tree (a star marks a clickable node), to depth 10 and 250 nodes. */
+    private String nodeSummary(AccessibilityNodeInfo root) {
+        java.util.LinkedHashMap<String, Integer> classes = new java.util.LinkedHashMap<String, Integer>();
+        java.util.ArrayList<String> texts = new java.util.ArrayList<String>();
+        walkSummary(root, 0, classes, texts, new int[] {250});
+        StringBuilder b = new StringBuilder("nodes{");
+        boolean first = true;
+        for (java.util.Map.Entry<String, Integer> e : classes.entrySet()) { if (!first) b.append(','); first = false; b.append(e.getKey()).append('x').append(e.getValue()); }
+        b.append("} texts{");
+        for (int i = 0; i < texts.size(); i++) { if (i > 0) b.append(" | "); b.append(texts.get(i)); }
+        return b.append('}').toString();
+    }
+
+    private void walkSummary(AccessibilityNodeInfo n, int depth, java.util.Map<String, Integer> classes, List<String> texts, int[] budget) {
+        if (n == null || depth > 10 || budget[0]-- <= 0) return;
+        CharSequence cn = n.getClassName();
+        String k = cn == null ? "?" : cn.toString();
+        k = k.substring(Math.max(k.lastIndexOf('.'), k.lastIndexOf('$')) + 1);
+        Integer c = classes.get(k);
+        classes.put(k, c == null ? 1 : c + 1);
+        if (texts.size() < 8) {
+            CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+            if (t != null && t.length() > 0) { String s = t.toString(); texts.add((s.length() > 24 ? s.substring(0, 24) : s) + (n.isClickable() ? "*" : "")); }
+        }
+        for (int i = 0; i < n.getChildCount(); i++) {
+            AccessibilityNodeInfo ch = n.getChild(i);
+            if (ch != null) { try { walkSummary(ch, depth + 1, classes, texts, budget); } finally { ch.recycle(); } }
+        }
     }
 
     private void finishRecentsEmpty(long t0, Runnable done, String what, boolean ok, int closed) {
@@ -3535,7 +3593,7 @@ public class TjAccessibilityService extends AccessibilityService {
         pollPress("clear all", new String[] {"no recent items"}, new String[] {"com.android.launcher3", "com.android.systemui"}, 1800, true, new PollResult() {
             @Override public void done(int result) {
                 if (result == PRESSED || result == EMPTY) { RecentsDirty.clear(TjAccessibilityService.this); AppOrigin.clearQuickstep(TjAccessibilityService.this); AppOrigin.setTracked(TjAccessibilityService.this); }   // Recents is clean again
-                resetReport.append("recents: ").append(result == PRESSED ? "cleared (apps closed)" : result == EMPTY ? "already empty" : "no Clear all button found")
+                resetReport.append("recents: ").append(result == PRESSED ? "cleared (apps closed)" : result == EMPTY ? "already empty" : "no Clear all button found | " + recentsDiag())
                         .append(" (+").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms)\n");
                 Log.i(TAG, "RESET recents result=" + result + " +" + (android.os.SystemClock.uptimeMillis() - t0) + "ms");
                 LockLog.add(getApplicationContext(), "RESET", "recents: Clear all " + (result == PRESSED ? "pressed" : result == EMPTY ? "found the list empty" : "button NOT FOUND: nothing was cleared"));   // AI1: the lock log says what really happened
