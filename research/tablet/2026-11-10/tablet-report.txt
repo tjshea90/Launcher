@@ -1,0 +1,828 @@
+===== TABLET REPORT (app side) Mon Nov 09 19:34:36 EST 2026
+model: alps 711 / tb8168p1_bsp
+android: 10 (API 29), patch 2021-07-05
+fingerprint: alps/vnd_tb8168p1_bsp/tb8168p1_bsp:10/QP1A.190711.020/1719850017:user/release-keys
+display id: sys_mssi_t_32_ago-user.2024070111 release-keys
+ro.lineage.version: 
+ro.modversion: 
+ro.crypto.state: unencrypted
+ro.crypto.type: 
+ro.boot.flash.locked: 1
+ro.boot.verifiedbootstate: green
+ro.config.low_ram: true
+fw.max_users: 
+fw.show_multiuserui: 
+persist.adb.tcp.port: 
+service.adb.tcp.port: 
+ro.sf.lcd_density: 170
+UserManager.getMaxSupportedUsers (hidden API): 1
+UserManager.supportsMultipleUsers: false
+low-RAM (Go) device: true
+memory class MB: 128
+screen: 600x973 @170 dpi, font scale 1.2
+
+===== system features that matter
+android.hardware.sensor.proximity
+android.hardware.sensor.accelerometer
+android.hardware.sensor.gyroscope
+android.software.device_admin
+
+===== the system apps this project depends on
+com.android.settings  v10 (29)  apk /product/priv-app/MtkSettings/MtkSettings.apk  system=true  uid=1000
+com.android.systemui  v10 (29)  apk /product/priv-app/MtkSystemUI/MtkSystemUI.apk  system=true  uid=10088
+com.android.launcher3  v10 (29)  apk /product/priv-app/MtkLauncher3GoIconRecents/MtkLauncher3GoIconRecents.apk  system=true  uid=10083
+android  v10 (29)  apk /system/framework/framework-res.apk  system=true  uid=1000
+com.android.browser  v10 (29)  apk /product/app/MtkBrowser/MtkBrowser.apk  system=true  uid=10097
+com.android.inputmethod.latin  v10 (28)  apk /product/app/LatinIME/LatinIME.apk  system=true  uid=10100
+com.touchtype.swiftkey  v9.13.16.5 (1236271184)  apk /data/app/com.touchtype.swiftkey-1fAacVIIEzi1qor6T5Gu6A==/base.apk  system=false  uid=10227
+com.tj.launcher  v0.9.0 (39)  apk /data/app/com.tj.launcher-XgOxD9EiaQEjW58kLnFPjw==/base.apk  system=false  uid=10243
+
+===== which Settings pages answer the public 'android.settings.*' actions (the front-door targets)
+android.settings.SETTINGS -> com.android.settings/com.android.settings.homepage.SettingsHomepageActivity 
+android.settings.WIFI_SETTINGS -> com.android.settings/com.android.settings.Settings$WifiSettingsActivity 
+android.settings.BLUETOOTH_SETTINGS -> com.android.settings/com.android.settings.Settings$ConnectedDeviceDashboardActivity 
+android.settings.DISPLAY_SETTINGS -> com.android.settings/com.android.settings.Settings$DisplaySettingsActivity 
+android.settings.SOUND_SETTINGS -> com.android.settings/com.android.settings.Settings$SoundSettingsActivity 
+android.settings.APPLICATION_SETTINGS -> com.android.settings/com.android.settings.Settings$ManageApplicationsActivity 
+android.settings.MANAGE_ALL_APPLICATIONS_SETTINGS -> com.android.settings/com.android.settings.Settings$ManageApplicationsActivity 
+android.settings.INTERNAL_STORAGE_SETTINGS -> com.android.settings/com.android.settings.Settings$StorageDashboardActivity 
+android.settings.BATTERY_SAVER_SETTINGS -> com.android.settings/com.android.settings.Settings$BatterySaverSettingsActivity 
+android.settings.DATE_SETTINGS -> com.android.settings/com.android.settings.Settings$DateTimeSettingsActivity 
+android.settings.LOCALE_SETTINGS -> com.android.settings/com.android.settings.Settings$LocalePickerActivity 
+android.settings.ACCESSIBILITY_SETTINGS -> com.android.settings/com.android.settings.Settings$AccessibilitySettingsActivity 
+android.settings.SECURITY_SETTINGS -> com.android.settings/com.android.settings.Settings$SecurityDashboardActivity 
+android.settings.PRIVACY_SETTINGS -> com.android.settings/com.android.settings.Settings$PrivacyDashboardActivity 
+android.settings.DEVICE_INFO_SETTINGS -> com.android.settings/com.android.settings.Settings$MyDeviceInfoActivity 
+android.settings.INPUT_METHOD_SETTINGS -> com.android.settings/com.android.settings.Settings$AvailableVirtualKeyboardActivity 
+android.settings.NOTIFICATION_SETTINGS -> com.android.settings/com.android.settings.Settings$ConfigureNotificationSettingsActivity 
+android.settings.ZEN_MODE_SETTINGS -> com.android.settings/com.android.settings.Settings$ZenModeSettingsActivity 
+android.settings.WIRELESS_SETTINGS -> com.android.settings/com.android.settings.Settings$NetworkDashboardActivity 
+android.settings.AIRPLANE_MODE_SETTINGS -> com.android.settings/com.android.settings.Settings$NetworkDashboardActivity 
+android.settings.NFC_SETTINGS -> com.android.settings/com.android.settings.Settings$AdvancedConnectedDeviceActivity 
+android.settings.ADD_ACCOUNT_SETTINGS -> com.android.settings/com.android.settings.accounts.AddAccountSettings 
+android.settings.SYNC_SETTINGS -> com.android.settings/com.android.settings.Settings$AccountDashboardActivity 
+android.settings.USER_SETTINGS -> (nothing)
+android.settings.HOME_SETTINGS -> com.android.permissioncontroller/com.android.packageinstaller.role.ui.HomeSettingsActivity 
+android.settings.VOICE_INPUT_SETTINGS -> com.android.settings/com.android.settings.Settings$ManageAssistActivity 
+android.settings.CAPTIONING_SETTINGS -> com.android.settings/com.android.settings.Settings$CaptioningSettingsActivity 
+android.settings.HARD_KEYBOARD_SETTINGS -> com.android.settings/com.android.settings.Settings$PhysicalKeyboardActivity 
+android.settings.MEMORY_CARD_SETTINGS -> com.android.settings/com.android.settings.Settings$StorageDashboardActivity 
+
+===== every activity of the Settings app (exported flag)
+exported  com.android.settings.homepage.SettingsHomepageActivity
+exported  com.android.settings.Settings
+exported  com.android.Settings.log.activity
+exported  com.android.settings.network.telephony.MobileNetworkActivity
+private   com.android.settings.SubSettings
+exported  com.android.settings.Settings$CreateShortcutActivity
+exported  com.android.settings.Settings$NetworkDashboardActivity
+exported  com.android.settings.Settings$MobileNetworkListActivity
+exported  com.android.settings.Settings$ConnectedDeviceDashboardActivity
+exported  com.android.settings.Settings$BluetoothSettingsActivity
+exported  com.android.settings.AirplaneModeVoiceActivity
+exported  com.android.settings.search.SearchResultTrampoline
+exported  com.android.settings.Settings$WifiSettingsActivity
+exported  com.android.settings.wifi.WifiPickerActivity
+exported  com.android.settings.Settings$ConfigureWifiSettingsActivity
+exported  com.android.settings.Settings$SavedAccessPointsSettingsActivity
+exported  com.android.settings.Settings$WifiInfoActivity
+exported  com.android.settings.wifi.WifiConfigInfo
+exported  com.android.settings.Settings$WifiAPITestActivity
+exported  com.android.settings.wifi.WifiStatusTest
+exported  com.android.settings.wifi.WifiNoInternetDialog
+exported  com.android.settings.Settings$ApnSettingsActivity
+exported  com.android.settings.bluetooth.BluetoothSettings
+exported  com.android.settings.Settings$AssistGestureSettingsActivity
+exported  com.android.settings.Settings$FaceSettingsActivity
+exported  com.android.settings.Settings$FingerprintSettingsActivity
+exported  com.android.settings.bluetooth.DevicePickerActivity
+exported  com.android.settings.network.TetherProvisioningActivity
+exported  com.android.settings.Settings$TetherSettingsActivity
+exported  com.android.settings.TetherSettings
+exported  com.android.settings.Settings$WifiTetherSettingsActivity
+exported  com.android.settings.Settings$WifiP2pSettingsActivity
+exported  com.android.settings.Settings$VpnSettingsActivity
+exported  com.android.settings.Settings$DataSaverSummaryActivity
+exported  com.android.settings.Settings$DateTimeSettingsActivity
+exported  com.android.settings.Settings$LocalePickerActivity
+private   com.android.settings.localepicker.LocalePickerWithRegionActivity
+exported  com.android.settings.Settings$LanguageAndInputSettingsActivity
+exported  com.android.settings.LanguageSettings
+exported  com.android.settings.Settings$AvailableVirtualKeyboardActivity
+exported  com.android.settings.Settings$ManageAssistActivity
+exported  com.android.settings.Settings$KeyboardLayoutPickerActivity
+exported  com.android.settings.Settings$PhysicalKeyboardActivity
+exported  com.android.settings.Settings$SpellCheckersSettingsActivity
+exported  com.android.settings.inputmethod.InputMethodAndSubtypeEnablerActivity
+exported  com.android.settings.Settings$UserDictionarySettingsActivity
+exported  com.android.settings.inputmethod.UserDictionaryAddWordActivity
+exported  com.android.settings.Settings$ZenModeSettingsActivity
+exported  com.android.settings.notification.ZenSuggestionActivity
+exported  com.android.settings.notification.ZenOnboardingActivity
+exported  com.android.settings.Settings$ZenModeAutomationSettingsActivity
+exported  com.android.settings.Settings$WallpaperSettingsActivity
+exported  com.android.settings.wallpaper.WallpaperSuggestionActivity
+exported  com.android.settings.wallpaper.StyleSuggestionActivity
+exported  com.android.settings.Settings$ZenModeScheduleRuleSettingsActivity
+exported  com.android.settings.Settings$ZenModeEventRuleSettingsActivity
+exported  com.android.settings.Settings$DisplaySettingsActivity
+exported  com.android.settings.Settings$NightDisplaySettingsActivity
+exported  com.android.settings.Settings$NightDisplaySuggestionActivity
+exported  com.android.settings.Settings$MyDeviceInfoActivity
+exported  com.android.settings.SettingsLicenseActivity
+exported  com.android.settings.Settings$ModuleLicensesActivity
+exported  com.android.settings.Settings$ManageApplicationsActivity
+exported  com.android.settings.applications.StorageUse
+exported  com.android.settings.RunningServices
+exported  com.android.settings.applications.ManageApplications
+exported  com.android.settings.Settings$ManageDomainUrlsActivity
+exported  com.android.settings.Settings$AppMemoryUsageActivity
+exported  com.android.settings.Settings$HighPowerApplicationsActivity
+exported  com.android.settings.datausage.AppDataUsageActivity
+exported  com.android.settings.fuelgauge.RequestIgnoreBatteryOptimizations
+exported  com.android.settings.slices.SliceDeepLinkSpringBoard
+exported  com.android.settings.applications.InstalledAppDetailsTop
+exported  com.android.settings.applications.InstalledAppDetails
+exported  com.android.settings.applications.InstalledAppOpenByDefaultActivity
+exported  com.android.settings.Settings$RunningServicesActivity
+exported  com.android.settings.Settings$StorageUseActivity
+exported  com.android.settings.Settings$NotificationStationActivity
+exported  com.android.settings.notification.ZenModeVoiceActivity
+exported  com.android.settings.Settings$LocationSettingsActivity
+exported  com.android.settings.Settings$ScanningSettingsActivity
+exported  com.android.settings.Settings$SecurityDashboardActivity
+exported  com.android.settings.MonitoringCertInfoActivity
+exported  com.android.settings.Settings$TrustedCredentialsSettingsActivity
+exported  com.android.settings.Settings$PrivacySettingsActivity
+exported  com.android.settings.Settings$PrivacyDashboardActivity
+private   com.android.settings.SetFullBackupPassword
+exported  com.android.settings.security.CredentialStorage
+exported  com.android.settings.Settings$DeviceAdminSettingsActivity
+exported  com.android.settings.DeviceAdminSettings
+exported  com.android.settings.applications.specialaccess.deviceadmin.DeviceAdminAdd
+exported  com.android.settings.applications.specialaccess.deviceadmin.ProfileOwnerAdd
+exported  com.android.settings.Settings$UsageAccessSettingsActivity
+exported  com.android.settings.Settings$AppUsageAccessSettingsActivity
+exported  com.android.settings.Settings$IccLockSettingsActivity
+exported  com.android.settings.Settings$AccessibilitySettingsActivity
+exported  com.android.settings.Settings$AccessibilityDetailsSettingsActivity
+exported  com.android.settings.accessibility.AccessibilitySettingsForSetupWizardActivity
+exported  com.android.settings.FontSizeSettingsForSetupWizardActivity
+exported  com.android.settings.Settings$AccessibilityDaltonizerSettingsActivity
+exported  com.android.settings.Settings$CaptioningSettingsActivity
+private   com.android.settings.SettingsTutorialDialogWrapperActivity
+exported  com.android.settings.Settings$TextToSpeechSettingsActivity
+exported  com.android.settings.Settings$EnterprisePrivacySettingsActivity
+exported  com.android.settings.password.ConfirmDeviceCredentialActivity
+exported  com.android.settings.ConfirmDeviceCredentialActivity
+private   com.android.settings.password.ConfirmDeviceCredentialActivity$InternalActivity
+private   com.android.settings.notification.RedactionInterstitial
+exported  com.android.settings.notification.RedactionSettingsStandalone
+private   com.android.settings.password.ConfirmLockPattern
+private   com.android.settings.password.ConfirmLockPassword
+private   com.android.settings.biometrics.face.FaceEnrollIntroduction
+private   com.android.settings.biometrics.face.FaceEnrollEducation
+private   com.android.settings.biometrics.face.FaceEnrollEnrolling
+private   com.android.settings.biometrics.face.FaceEnrollFinish
+private   com.android.settings.biometrics.BiometricEnrollActivity$InternalActivity
+exported  com.android.settings.biometrics.BiometricEnrollActivity
+private   com.android.settings.biometrics.fingerprint.FingerprintSettings
+private   com.android.settings.biometrics.fingerprint.FingerprintEnrollFindSensor
+private   com.android.settings.biometrics.fingerprint.FingerprintEnrollEnrolling
+private   com.android.settings.biometrics.fingerprint.FingerprintEnrollFinish
+exported  com.android.settings.biometrics.fingerprint.FingerprintEnrollIntroduction
+private   com.android.settings.biometrics.fingerprint.SetupFingerprintEnrollFindSensor
+private   com.android.settings.biometrics.fingerprint.SetupFingerprintEnrollEnrolling
+private   com.android.settings.biometrics.fingerprint.SetupFingerprintEnrollFinish
+exported  com.android.settings.biometrics.fingerprint.SetupFingerprintEnrollIntroduction
+exported  com.android.settings.biometrics.fingerprint.FingerprintSuggestionActivity
+private   com.android.settings.password.ConfirmLockPattern$InternalActivity
+private   com.android.settings.password.ConfirmLockPassword$InternalActivity
+exported  com.android.settings.password.SetupChooseLockGeneric
+private   com.android.settings.password.SetupChooseLockGeneric$InternalActivity
+private   com.android.settings.password.ChooseLockGeneric
+exported  com.android.settings.password.SetNewPasswordActivity
+exported  com.android.settings.password.ScreenLockSuggestionActivity
+exported  com.android.settings.biometrics.fingerprint.FingerprintEnrollSuggestionActivity
+private   com.android.settings.password.ChooseLockGeneric$InternalActivity
+private   com.android.settings.password.SetupChooseLockPattern
+private   com.android.settings.password.ChooseLockPattern
+private   com.android.settings.password.SetupChooseLockPassword
+private   com.android.settings.password.ChooseLockPassword
+private   com.android.settings.SetupEncryptionInterstitial
+private   com.android.settings.EncryptionInterstitial
+exported  com.android.settings.Settings$StorageDashboardActivity
+private   com.android.settings.Settings$PrivateVolumeSettingsActivity
+exported  com.android.settings.Settings$PublicVolumeSettingsActivity
+exported  com.android.settings.Settings$PrivateVolumeForgetActivity
+exported  com.android.settings.deviceinfo.StorageWizardInit
+private   com.android.settings.deviceinfo.StorageWizardFormatProgress
+private   com.android.settings.deviceinfo.StorageWizardFormatSlow
+private   com.android.settings.deviceinfo.StorageWizardMigrateConfirm
+exported  com.android.settings.deviceinfo.StorageWizardMigrateProgress
+exported  com.android.settings.deviceinfo.StorageWizardReady
+private   com.android.settings.deviceinfo.StorageWizardMoveConfirm
+exported  com.android.settings.deviceinfo.StorageWizardMoveProgress
+exported  com.android.settings.Settings$ApnEditorActivity
+exported  com.android.settings.development.DevelopmentSettingsDisabledActivity
+exported  com.android.settings.Settings$PrintSettingsActivity
+exported  com.android.settings.Settings$PrintJobSettingsActivity
+private   com.android.settings.development.AppPicker
+private   com.android.settings.Settings$WebViewAppPickerActivity
+exported  com.android.settings.WebViewImplementation
+exported  com.android.settings.bluetooth.BluetoothPairingDialog
+exported  com.android.settings.bluetooth.RequestPermissionActivity
+exported  com.android.settings.wifi.WifiScanModeActivity
+exported  com.android.settings.Settings$UsbDetailsActivity
+exported  com.android.settings.RemoteBugreportActivity
+private   com.android.settings.bluetooth.RequestPermissionHelperActivity
+exported  com.android.settings.bluetooth.BluetoothPermissionActivity
+exported  com.android.settings.ActivityPicker
+exported  com.android.settings.Settings$AndroidBeamSettingsActivity
+exported  com.android.settings.Settings$WifiDisplaySettingsActivity
+exported  com.android.settings.RadioInfo
+exported  com.android.settings.BandMode
+private   com.android.settings.Settings$TestingSettingsActivity
+exported  com.android.settings.AppWidgetPickActivity
+exported  com.android.settings.AllowBindAppWidgetActivity
+exported  com.android.settings.UsageStatsActivity
+exported  com.android.settings.Settings$PowerUsageSummaryActivity
+exported  com.android.settings.Settings$BatterySaverSettingsActivity
+exported  com.android.settings.fuelgauge.BatterySaverModeVoiceActivity
+exported  com.android.settings.Settings$AccountSyncSettingsActivity
+exported  com.android.settings.Settings$ManagedProfileSettingsActivity
+exported  com.android.settings.accounts.AddAccountSettings
+private   com.android.settings.Settings$ChooseAccountActivity
+exported  com.android.settings.FallbackHome
+private   com.android.settings.CryptKeeper$FadeToBlack
+private   com.android.settings.CryptKeeperConfirm$Blank
+exported  com.android.settings.Settings$CryptKeeperSettingsActivity
+exported  com.android.settings.Settings$DataUsageSummaryActivity
+exported  com.android.settings.Settings$MobileDataUsageListActivity
+exported  com.android.settings.Settings$DreamSettingsActivity
+exported  com.android.settings.Settings$PaymentSettingsActivity
+exported  com.android.settings.nfc.PaymentDefaultDialog
+private   com.android.settings.nfc.HowItWorks
+exported  com.android.settings.Settings$NotificationAccessSettingsActivity
+exported  com.android.settings.Settings$NotificationAssistantSettingsActivity
+exported  com.android.settings.Settings$VrListenersSettingsActivity
+exported  com.android.settings.Settings$PictureInPictureSettingsActivity
+exported  com.android.settings.Settings$AppPictureInPictureSettingsActivity
+exported  com.android.settings.Settings$ZenAccessDetailSettingsActivity
+exported  com.android.settings.Settings$ZenAccessSettingsActivity
+exported  com.android.settings.Settings$ConfigureNotificationSettingsActivity
+exported  com.android.settings.Settings$AppBubbleNotificationSettingsActivity
+exported  com.android.settings.Settings$SoundSettingsActivity
+exported  com.android.settings.Settings$NotificationAppListActivity
+exported  com.android.settings.Settings$AppNotificationSettingsActivity
+exported  com.android.settings.Settings$ChannelGroupNotificationSettingsActivity
+exported  com.android.settings.Settings$ChannelNotificationSettingsActivity
+private   com.android.settings.notification.NotificationAccessConfirmationActivity
+private   com.android.settings.sim.SimPreferenceDialog
+exported  com.android.settings.wifi.RequestToggleWiFiActivity
+exported  com.android.settings.wifi.WifiDialogActivity
+exported  com.android.settings.wifi.NetworkRequestDialogActivity
+exported  com.android.settings.sim.SimDialogActivity
+exported  com.android.settings.flashlight.FlashlightHandleActivity
+exported  com.android.settings.Settings$WifiCallingSettingsActivity
+exported  com.android.settings.wifi.calling.WifiCallingSuggestionActivity
+exported  com.android.settings.Settings$OverlaySettingsActivity
+exported  com.android.settings.Settings$AppDrawOverlaySettingsActivity
+exported  com.android.settings.Settings$WriteSettingsActivity
+exported  com.android.settings.Settings$AppWriteSettingsActivity
+exported  com.android.settings.Settings$ManageExternalSourcesActivity
+exported  com.android.settings.Settings$ManageAppExternalSourcesActivity
+exported  com.android.settings.enterprise.ActionDisabledByAdminDialog
+exported  com.android.settings.backup.UserBackupSettingsActivity
+private   com.android.settings.Settings$AutomaticStorageManagerSettingsActivity
+exported  com.android.settings.fuelgauge.AdvancedPowerUsageDetailActivity
+exported  com.android.settings.Settings$AppAndNotificationDashboardActivity
+exported  com.android.settings.Settings$AccountDashboardActivity
+exported  com.android.settings.Settings$SystemDashboardActivity
+private   com.android.settings.applications.autofill.AutofillPickerActivity
+exported  com.android.settings.applications.autofill.AutofillPickerTrampolineActivity
+exported  com.android.settings.Settings$AdvancedConnectedDeviceActivity
+exported  com.android.settings.Settings$BluetoothDeviceDetailActivity
+exported  com.android.settings.panel.SettingsPanelActivity
+exported  com.android.settings.MediaOutputSlice
+private   com.android.settings.Settings$WifiDisplaySinkActivity
+exported  com.android.settings.Settings$HdmiSettingsActivity
+exported  com.android.settings.HdmiSettings
+exported  com.android.settings.wifi.dpp.WifiDppConfiguratorActivity
+exported  com.android.settings.wifi.dpp.WifiDppEnrolleeActivity
+private   com.android.settings.homepage.contextualcards.ContextualCardFeedbackDialog
+private   com.android.settings.Settings$DrmResetActivity
+exported  com.android.settings.Settings$WifiCallingDisclaimerActivity
+exported  com.android.settings.Settings$BatterySaverScheduleSettingsActivity
+exported  com.android.settings.Settings$GlobalActionsPanelSettingsActivity
+exported  com.mediatek.settings.inputmethod.VowKeyguardConfirm
+exported  com.android.settings.Settings$PlmnSettingsActivity
+exported  com.android.settings.Settings$PlmnEditorActivity
+exported  com.android.settings.Settings$SmartCallFwdActivity
+exported  com.mediatek.settings.network.RoamingSettings
+private   com.mediatek.settings.network.GuardSettings
+private   com.mediatek.settings.network.RoamingAlertDialog
+private   com.android.settings.Settings$NfcSettingsActivity
+exported  com.mediatek.nfc.SwitchErrorActivity
+exported  com.android.settings.Settings$NfcServiceStatusActivity
+exported  com.android.settings.Settings$AdvancedCallingOptionsActivity
+exported  com.android.settings.Settings$AdvancedWifiCallingActivity
+private   androidx.slice.compat.SlicePermissionActivity
+
+===== setting NAMES: secure
+lock_screen_show_notifications
+aware_lock_enabled
+unknown_sources_default_reversed
+low_power_warning_acknowledged
+sysui_volume_up_silent
+media_button_receiver
+camera_double_tap_power_gesture_disabled
+accessibility_shortcut_enabled
+display_density_forced
+immersive_mode_confirmations
+dark_mode_dialog_seen
+location_mode
+default_input_method
+show_zen_settings_suggestion
+sleep_timeout
+zen_settings_updated
+location_providers_allowed
+lock_screen_allow_private_notifications
+double_tap_to_wake
+speak_password
+wake_gesture_enabled
+screensaver_activate_on_sleep
+volume_hush_gesture
+disabled_print_services
+sysui_qs_fancy_anim
+backup_enabled
+location_changer
+sysui_keyguard_right
+sysui_qs_move_whole_rows
+user_setup_complete
+sysui_volume_down_silent
+manual_ringer_toggle_count
+sysui_do_not_disturb
+enabled_accessibility_services
+aware_enabled
+trust_agents_initialized
+notification_dismiss_rtl
+lockscreen.disabled
+show_first_crash_dialog_dev_option
+always_on_vpn_app
+lock_screen_owner_info_enabled
+charging_vibration_enabled
+accessibility_display_inversion_enabled
+selected_spell_checker_subtype
+long_press_timeout
+sysui_tuner_version
+unsafe_volume_music_active_ms
+zen_duration
+bluetooth_addr_valid
+voice_recognition_service
+high_priority
+notification_badging
+screensaver_components
+voice_interaction_service
+accessibility_display_magnification_scale
+charging_sounds_enabled
+qs_auto_tiles
+hush_gesture_used
+screensaver_activate_on_dock
+backup_transport
+face_unlock_dismisses_keyguard
+input_methods_subtype_history
+mock_location
+bluetooth_name
+autofill_service
+sysui_keyguard_left
+sync_parent_sounds
+anr_show_background
+screensaver_enabled
+snoozed_schedule_condition_provider
+mount_play_not_snd
+doze_tap_gesture
+notification_bubbles
+mount_ums_notify_enabled
+silence_gesture
+icon_blacklist
+android_id
+touch_exploration_enabled
+night_display_activated
+sysui_qs_tiles
+zen_settings_suggestion_viewed
+sysui_qqs_count
+qs_show_brightness
+navigation_mode
+doze_pulse_on_double_tap
+low_power_manual_activation_count
+ui_night_mode
+selected_input_method_subtype
+skip_gesture
+mount_ums_prompt
+always_on_vpn_lockdown_whitelist
+selected_spell_checker
+assistant
+screensaver_default_component
+mount_ums_autostart
+always_on_vpn_lockdown
+install_non_market_apps
+suppress_auto_battery_saver_suggestion
+keyguard_slice_uri
+show_ime_with_hard_keyboard
+accessibility_enabled
+touch_exploration_granted_accessibility_services
+multi_press_timeout
+accessibility_display_magnification_enabled
+usb_audio_automatic_routing_disabled
+clock_seconds
+night_display_last_activated_time
+enabled_input_methods
+(108 names)
+
+===== setting NAMES: global
+low_battery_sound_timeout
+car_undock_sound
+enable_cellular_on_boot
+enable_freeform_support
+show_notification_channel_warnings
+development_settings_enabled
+window_animation_scale
+wifi_display_portrait_resolution
+force_allow_on_external
+tether_offload_disabled
+low_power_sticky_auto_disable_enabled
+mode_ringer
+default_install_location
+wifi_display_on
+device_name
+wifi_networks_available_notification_on
+dock_sounds_enabled_when_accessbility
+webview_fallback_logic_enabled
+wifi_display_power_saving_delay
+bluetooth_on
+bugreport_in_power_menu
+mobile_data
+network_watchlist_last_report_time
+autofill_logging_level
+database_creation_buildid
+art_verifier_verify_debuggable
+emergency_tone
+max_sound_trigger_detection_service_ops_per_day
+add_users_when_locked
+dock_audio_media_enabled
+wifi_display_power_saving_option
+enable_gpu_debug_layers
+adb_enabled
+trusted_sound
+unlock_sound
+force_resizable_activities
+airplane_mode_radios
+wifi_scan_throttle_enabled
+wifi_max_dhcp_retry_count
+auto_time_gps
+always_finish_activities
+airplane_mode_toggleable_radios
+heads_up_notifications_enabled
+low_power
+tj_banners_original
+zen_mode_ringer_level
+preferred_network_mode
+bluetooth_disabled_profiles
+desk_undock_sound
+zen_duration
+mobile_data_always_on
+debug_app
+wifi_sleep_policy
+dock_sounds_enabled
+wifi_scan_always_enabled
+msim_mode_setting
+overlay_display_devices
+network_recommendations_enabled
+car_dock_sound
+sound_trigger_detection_service_op_timeout
+power_sounds_enabled
+stay_on_while_plugged_in
+lid_behavior
+isolated_storage_remote
+zen_mode_config_etag
+set_install_location
+debug_view_attributes
+zen_mode
+transition_animation_scale
+cell_on
+data_roaming
+package_verifier_enable
+setting.duraspeed.enabled
+telephony_misc_feature_config
+debug.force_rtl
+theater_mode_on
+wifi_display_max_resolution
+data_service_enabled
+cdma_cell_broadcast_sms
+airplane_mode_on
+force_desktop_mode_on_external_displays
+default_restrict_background_data
+low_battery_sound
+apply_ramping_ringer
+wait_for_debugger
+netstats_enabled
+wifi_wakeup_enabled
+ota_disable_automatic_update
+wifi_verbose_logging_enabled
+private_dns_default_mode
+subscription_mode
+low_power_sticky
+assisted_gps_enabled
+lock_sound
+auto_time_zone
+enable_gnss_raw_meas_full_tracking
+location_global_kill_switch
+wifi_on
+wireless_charging_started_sound
+device_provisioned
+emergency_affordance_needed
+wifi_display_certification_on
+sysui_demo_allowed
+auto_time
+install_non_market_apps
+usb_mass_storage_enabled
+call_auto_retry
+audio_safe_volume_state
+boot_count
+desk_dock_sound
+animator_duration_scale
+(111 names)
+
+===== setting NAMES: system
+volume_music_speaker
+notification_light_pulse
+notification_sound
+volume_alarm
+volume_music
+volume_voice
+background_power_saving_enable
+hearing_aid
+volume_ring
+voice_wakeup_mode
+radio.data.stall.recovery.action
+screen_brightness_mode
+alarm_alert_set
+mute_streams_affected
+tty_mode
+screen_brightness_for_vr
+font_scale
+dim_screen
+end_button_behavior
+notification_sound_set
+volume_bluetooth_sco
+lockscreen_sounds_enabled
+user_rotation
+import_remove_running
+accelerometer_rotation
+screen_off_timeout
+show_touches
+vibrate_when_ringing
+hide_rotation_lock_toggle_for_accessibility
+alarm_alert
+pointer_speed
+mode_ringer_streams_affected
+volume_notification
+setting.duraspeed.enabled
+dtmf_tone_type
+dtmf_tone
+volume_ring_speaker
+pointer_location
+system_locales
+volume_system
+sound_effects_enabled
+volume_music_usb_headset
+volume_music_headphone
+screen_brightness
+volume_voice_speaker
+notification_vibration_intensity
+haptic_feedback_enabled
+(47 names)
+
+===== this launcher's permissions
+WRITE_SECURE_SETTINGS: granted
+DUMP: granted
+CHANGE_CONFIGURATION: granted
+READ_EXTERNAL_STORAGE: granted
+PACKAGE_USAGE_STATS: NOT granted
+INTERNET: granted
+VIBRATE: granted
+
+===== THE LAUNCHER ON THIS TABLET (its state when this report was written)
+report written: Mon Nov 09 19:34:37 EST 2026
+launcher version: 0.9.0 (code 39)
+mode: quickstep
+shell helper reachable: no
+accessibility helper bound: yes   (state: ON)
+keep-alive service running: no (switch off)
+keep-alive crash fuse blown (Android refused its notification, so it stays off until you switch it on again): no
+secret entrances to Quickstep (AD4): flick on; rotate_tile off; charger off; 
+entrance watchers registered in this process (rotation tile, charger): yes
+gesture unlock returns to the app that was open (AD5): on
+process memory (AD8): total PSS 71 MB, java heap 8 of 128 MB
+start-up (AD8): Application.onCreate 63 ms, process fork to the end of it 146 ms; Control screen last build 314 ms
+accessibility helper load (AD8): connected 11 min, 5593 events (3949 dropped as noise, 40 shade redraws without a scan), 369 power-menu scans, avg 37 ms, max 963 ms; pencil cover: 355 tree searches (avg 27 ms, max 202 ms), 26 one-node refreshes; patch fade (AZ1): on, the last menu opening was noticed 129 ms after the stock fade began (the patch followed it); last fade seen from the patch (BJ1): home: the first frame was drawn 135 ms after the stock scrim began, 12 frames, 0 later than 34 ms after the one before, worst gap 25 ms, animator scale 1.0; FIRST fade since this process started (BK1a): lock: the first frame was drawn 24 ms after the stock scrim began, 18 frames, 0 later than 34 ms after the one before, worst gap 28 ms, animator scale 1.0
+process life (BG1, can the launcher be kept in memory?): this process is 11 min old; process starts recorded: 9, in the last 24 h: 4, in the last hour: 1 (ages: 11 min, 19 h 33 min, 19 h 40 min, 22 h 27 min, 1 d 3 h, 1 d 6 h); keep-alive service switch off; priority while locked (oom_score_adj / importance, newest last): 2 h 53 min ago 0 / 125 | 2 h 51 min ago 0 / 125 | 2 h 37 min ago 0 / 125 | 2 h 27 min ago 0 / 125 | 2 h 24 min ago 100 / 125 | 1 h 21 min ago 100 / 125 | 10 min ago 0 / 125 | 7 min ago 0 / 125 -> last: foreground / visible: killed last
+shell helper flight recorder (HLP1, why does the helper die?): (no flight recorder file: the helper has not been started since v0.8.7, or it could not write where the app can read)
+animations (BF1, off only inside the Quickstep session): Quickstep switch on, adb permission granted | now: animations OFF, held for the Quickstep session | scales (window / transition / animator): 0 / 0 / 0 | put back to: 1 / 1 / 1 | last change: 19:27:21  OFF in the Quickstep session (unlock decided)
+home-screen patch (BI1, real pixels over the Screenshot spot on the unlocked home): switch on, power menu mode hide_screenshot, crops stored 1, window none, fresh false, calibrating false, foreign windows seen 10 (com.android.systemui android.widget.FrameLayout; the last 589 s ago) | 19:27:20  away: Quickstep
+pop-up banners (BH1, off outside an unlocked Quickstep session): switch on, adb permission granted | now: pop-up banners as Android has them | heads_up_notifications_enabled = 1 | last change: 19:27:21  banners ON again: Quickstep session (unlock decided)
+notifications seen (BH1: which app, when, in which state; never the text): 5 posted since this feature came in (the last 40 kept), clean-up flag clear | by app: com.tj.portfolio x2 (quickstep hidden), video.downloader.videodownloader x2 (quickstep hidden), com.android.documentsui x1 (quickstep hidden) | newest: 11-09 13:11:12 video.downloader.videodownloader quickstep hidden || 11-09 14:31:11 com.tj.portfolio quickstep hidden || 
+status-bar hiding: switch off, hidden now no, policy_control = (not set)
+quick-settings tiles setting now: wifi,battery,custom(com.tj.launcher/.ReturnTile)
+retail-demo flag (must be 0 or not set): (not set)
+crash breaker tripped: no
+automation paused (Restore everything, or the breaker cleared by an update; the lock-screen rules do nothing while paused): no
+lock screen quiet: switch on, restore after a gesture unlock on, lock_screen_show_notifications = 0, lock_screen_allow_private_notifications = 0, last: 19:24:31  lock screen: Wi-Fi switched off
+battery saver guard: switch on, low_power = 0, low_power_sticky = 0, low_power_manual_activation_count = 91, self-heals so far 3, one-time unstick done, strict off, plugged in now: no (Android 10 greys the battery tile while the tablet is charging), WRITE_SECURE_SETTINGS granted
+menu dimming measurement (BA1): switch on | last: 19:24:31  measured for this lock screen: scale 0.800 / 0.800 / 0.800, offset 6.0 / 7.0 / 7.0 (R/G/B; 30780 samples, rms 0.3) | rotation 0 (light theme): scale 0.7999 / 0.8001 / 0.8002, offset 6.0096 / 6.9858 / 6.9799 (R/G/B) for 30|r0|600x1024, 30780 samples, rms 0.2847, measured 2026-11-07 00:08 | last started: 11-08 02:10 started because nothing is stored yet for this lock screen in the dark theme
+battery saver on the lock screen (BA2): switch on, restore for Quickstep on | Quickstep's saver the last time: off; the launcher is holding it off: no; last: 14:34:47  gesture unlock into Quickstep: battery saver switched back on (it was on the last time in Quickstep); restores so far 29
+wallpaper picker (AO1): com.android.wallpaper.livepicker/.LiveWallpaperActivity  <- the system wallpaper app   [answering SET_WALLPAPER: com.android.wallpaper.livepicker/com.android.wallpaper.livepicker.LiveWallpaperActivity [system] prio 0; com.android.wallpaperpicker/com.android.wallpaperpicker.WallpaperPickerActivity [system] prio 0; photo.android.hd.camera/com.ijoysoft.gallery.activity.SetWallpaperActivity [user] prio 0]
+
+----- the launcher's switches and last results (an allow-list: nothing secret is read)
+battery_saver_last: 14:41:37  switched battery saver off in the custom launcher (the custom launcher became active)
+boot_count_seen: 19
+bs_heals: 3
+bs_held: false
+bs_unstick_done: true
+ctl_open_advanced: true
+ctl_open_battery: true
+ctl_open_handshakes: true
+ctl_open_lock: true
+ctl_open_power: true
+ctl_open_qs: true
+ctl_open_recents: true
+ctl_open_return: true
+ctl_open_safety: true
+demo_flag_cleanup_done: true
+entrance_rotate_tile: false
+failsafe_hotspot: false
+failsafe_konami: false
+failsafe_last: back to custom via icon at 16:20:24
+guard_count: 11
+guard_last: 15:25:03
+home_curtain_capture: 21:15:21  picture saved (600x1024, layer 600x1024 at 0,0, wallpaper position 0)
+home_curtain_state: 19:24:40  the curtain was shown (touches pass through until the unlock is confirmed)
+home_type_launcher: true
+keep_alive: false
+keep_alive_blocked: false
+keep_alive_blocked_why: 
+keyboard_status: quickstep: keyboard -> com.touchtype.swiftkey/com.touchtype.KeyboardService (verified)
+keyboard_switch: true
+lock_cal_status: no photo of the lock screen: start the adb helper (Launcher control > Tablet setup); the wallpaper model is used meanwhile
+lock_number: true
+lock_patch: true
+lock_patch_always: true
+lock_text_alpha_pct: 10
+lock_text_size_pct: -2
+lock_text_weight_nudge: -1
+lq_last: 19:24:31  lock screen: Wi-Fi switched off
+migrated_wipe_073: true
+patch_auto_note: 19:24:31  not needed: the patch is calibrated for this lock screen
+patch_rest_info: 19:27:17  restRecheck rest=false menuOpen=false [always=true switch=true wanted=true calibrating=false shot=true bouncer=true]
+patch_scale_pct: 9
+patch_shot_status: 14:51:34  PATCH CALIBRATED (150x163): the patch now shows your real lock screen at the Screenshot spot
+power_latency: card shown (no broadcast seen), 41126 ms after the real menu appeared (negative = card first)
+power_mode: hide_screenshot
+profile_battery_saver_off: true
+profile_battery_saver_on_quickstep: false
+profile_battery_saver_strict: false
+profile_end_on_lock: false
+profile_hide_pencil_native: false
+profile_hide_status_bar: false
+profile_last: 19:27:19  handshake 'Double erase' accepted: Quickstep in front behind the lock screen
+profile_prearm: true
+profile_preclean: false
+profile_radios_off: true
+qs_tiles_applied_mode: quickstep
+qs_tiles_quickstep: wifi,battery,custom(com.tj.launcher/.ReturnTile)
+reset_last: notifications: switch is OFF recents: no Clear all button and no card with a Close action found: nothing was cleared (+2556 ms) took 2572 ms clean start: the custom home is on screen (+476 ms) 
+return_m_volcode: false
+ss_alias_status: 19:27:22  Settings entry OFF (mode quickstep)
+ss_battery_status: 19:25:25  no-dump  start=false screen=false drain=false charge=false
+ss_storage_status: 19:25:37  total=32000000000 free=1206460416 scan=ok packages=175 rows=7/7 ms=664
+startup_open: false
+unlock_buzz: false
+unlock_pick_last: 19:27:21  Quickstep (handshake 'Double erase')
+unlock_speed: 19:27:20  com.android.launcher3 appeared +23 ms after the unlock
+unlock_sum: 19:27:28  no custom-Launcher frame within 8 s after the keyguard went away (the unlock went to Quickstep or to an app); stored mode then: quickstep
+wallpaper_geometry: bitmap 1200x1024, desired 1200x1024, display 600x1024, cover scale 1.0 -> shown 1200x1024, x offset 0.5, profile shift -90 px
+wallpaper_kind: still picture
+wallpaper_patch_status: lock screen: patch window wanted at [485,339][596,642]
+
+----- the lock screen log (last 40 events; key KINDS only, never a digit)
+19:27:42.167 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:42.945 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:44.173 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:45.844 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:45.848 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:45.856 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:48.434 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:48.435 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:48.437 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:48.439 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:49.618 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:27:49.764 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:28:06.363 DIRTY com.anthropic.claude was marked as opened in Quickstep (window yqp)
+19:28:06.464 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:28:12.416 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:30:35.062 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:30:35.518 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:30:49.517 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:30:51.079 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:30:53.690 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:31:54.107 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:31:57.215 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:31:58.598 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:32:00.569 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:32:04.151 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.ViewGroup)
+19:32:39.743 DIRTY com.anthropic.claude was marked as opened in Quickstep (window yqp)
+19:32:39.901 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:32:41.558 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:32:49.842 ROUTER home press, mode quickstep
+19:33:45.954 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:33:46.234 DIRTY com.anthropic.claude was marked as opened in Quickstep (window yqp)
+19:33:46.465 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:34:04.831 DIRTY com.anthropic.claude was marked as opened in Quickstep (window com.anthropic.claude.mainactivity.MainActivity)
+19:34:05.055 DIRTY com.anthropic.claude was marked as opened in Quickstep (window yqp)
+19:34:05.116 DIRTY com.anthropic.claude was marked as opened in Quickstep (window android.view.View)
+19:34:06.326 DIRTY com.android.documentsui was marked as opened in Quickstep (window android.widget.FrameLayout)
+19:34:07.066 DIRTY com.android.documentsui was marked as opened in Quickstep (window com.android.documentsui.picker.PickActivity)
+19:34:10.335 DIRTY com.android.documentsui was marked as opened in Quickstep (window androidx.drawerlayout.widget.DrawerLayout)
+19:34:11.770 DIRTY com.android.documentsui was marked as opened in Quickstep (window com.android.documentsui.picker.PickActivity)
+19:34:20.486 ROUTER home press, mode quickstep
+
+----- the stock power menu as the accessibility helper saw it (open the power menu once in the custom launcher with the cover on; empty = not seen yet)
+=== LOCK SCREEN
+written 19:24:32 in the Quickstep launcher, on the LOCK SCREEN
+display 600x1024 px, rotation 0, density 1.0625 (170 dpi), font scale 1.2
+stock panel [485,339][596,642] (111x303), first entry top 357 height 77, entry pitch 95, Screenshot entry top 547
+our card would be [485,339][596,547] (111x208)
+patch: lock screen: patch window wanted at [485,339][596,642] | calibration: no photo of the lock screen: start the adb helper (Launcher control > Tablet setup); the wallpaper model is used meanwhile | brightness nudge 0 % | patch nudges dx 0 dy 0 size 9 %
+tree of the menu window (class #id 'label' [left,top][right,bottom] click):
+FrameLayout [0,0][600,1024]
+  LinearLayout [0,0][600,1024]
+    FrameLayout #content [0,0][600,973] click
+      LinearLayout #global_actions_view [0,0][600,973] click
+        LinearLayout [485,339][600,642]
+          LinearLayout #list [485,339][596,642]
+            LinearLayout [502,357][579,434] click
+              LinearLayout [502,357][579,434]
+                ImageView #icon [527,376][553,402]
+                TextView #message 'Power off' [502,406][579,424]
+            LinearLayout [502,452][579,529] click
+              LinearLayout [502,452][579,529]
+                ImageView #icon [527,471][553,497]
+                TextView #message 'Restart' [502,501][579,519]
+            LinearLayout [502,547][579,624] click
+              LinearLayout [502,547][579,624]
+                ImageView #icon [527,566][553,592]
+                TextView #message 'Screenshot' [502,596][579,614]
+
+
+
+=== UNLOCKED
+written 19:25:12 in the CUSTOM launcher, unlocked
+display 600x1024 px, rotation 0, density 1.0625 (170 dpi), font scale 1.2
+stock panel [485,339][596,642] (111x303), first entry top 357 height 77, entry pitch 95, Screenshot entry top 547
+our card would be [485,339][596,547] (111x208)
+patch: active over [474,538][600,674] | calibration: no photo of the lock screen: start the adb helper (Launcher control > Tablet setup); the wallpaper model is used meanwhile | brightness nudge 0 % | patch nudges dx 0 dy 0 size 9 %
+tree of the menu window (class #id 'label' [left,top][right,bottom] click):
+FrameLayout [0,0][600,1024]
+  LinearLayout [0,0][600,1024]
+    FrameLayout #content [0,0][600,973] click
+      LinearLayout #global_actions_view [0,0][600,973] click
+        LinearLayout [485,339][600,642]
+          LinearLayout #list [485,339][596,642]
+            LinearLayout [502,357][579,434] click
+              LinearLayout [502,357][579,434]
+                ImageView #icon [527,376][553,402]
+                TextView #message 'Power off' [502,406][579,424]
+            LinearLayout [502,452][579,529] click
+              LinearLayout [502,452][579,529]
+                ImageView #icon [527,471][553,497]
+                TextView #message 'Restart' [502,501][579,519]
+            LinearLayout [502,547][579,624] click
+              LinearLayout [502,547][579,624]
+                ImageView #icon [527,566][553,592]
+                TextView #message 'Screenshot' [502,596][579,614]
+
+===== PARSER SELF-CHECK (the launcher's own readers, run on THIS ROM's real output)
+(the shell helper is not running: start it, then collect again)
+
+
+===== SHELL PROBE (read-only commands run by the helper)
+(the shell helper is not running: start it with the adb line, then collect again for the full probe)
+
+
+===== THE LAUNCHER'S OWN LOG (what the app itself may read)
+--------- beginning of main
+11-09 19:34:22.770 I/TjReset ( 7303): shell helper not reachable: unix: IOException Connection refused; tcp 47631: ConnectException failed to connect to /127.0.0.1 (port 47631) from /127.0.0.1 (port 36340) after 300ms: isConnected failed: ECONNREFUSED (Connection refused); 
+11-09 19:34:33.465 I/TjReset ( 7303): shell helper not reachable: unix: IOException Connection refused; tcp 47631: ConnectException failed to connect to /127.0.0.1 (port 47631) from /127.0.0.1 (port 36344) after 300ms: isConnected failed: ECONNREFUSED (Connection refused); 
+11-09 19:34:33.487 I/TjReset ( 7303): shell helper not reachable: unix: IOException Connection refused; tcp 47631: ConnectException failed to connect to /127.0.0.1 (port 47631) from /127.0.0.1 (port 36346) after 300ms: isConnected failed: ECONNREFUSED (Connection refused); 
+11-09 19:34:36.954 I/TjReset ( 7303): shell helper not reachable: unix: IOException Connection refused; tcp 47631: ConnectException failed to connect to /127.0.0.1 (port 47631) from /127.0.0.1 (port 36348) after 300ms: isConnected failed: ECONNREFUSED (Connection refused); 
