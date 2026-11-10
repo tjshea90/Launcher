@@ -2312,3 +2312,7 @@
 ## 2026-11-10T10:54:44Z
 > The `b6,n` run is in progress (run #513, id 42802572154). I read the old heartbeat fire and it needs no action. The timer wakes me at 11:03:30 UTC to read the result.
 <!-- sha:ca07d8c734f2 -->
+
+## 2026-11-10T11:12:42Z
+> Run #514, the solo `b6` rerun with the stdin fix, is in progress. The timer wakes me at 11:17:30 UTC to read it. The earlier "completed" notice was only a wrapper, as the lessons warned.
+<!-- sha:949d5e7e1bd8 -->
