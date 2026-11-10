@@ -18,9 +18,18 @@ public final class ScrimMeasure {
     public static final String VALUE_PREFIX = "patch_scrim_r";
 
     public static final long MIN_GAP_MS = 45_000;
-    public static final int MAX_PER_LOCK = 2, MAX_PER_DAY = 4;
-    /** The screen has to have been on this long: the lock screen settles (clock, wallpaper fade-in) before the first frame. */
-    public static final long SETTLE_AFTER_WAKE_MS = 3_500;
+    /**
+     * BQ1a (Tj, 2026-11-10, v0.9.1: "It did two or three screenshots of the lock screen again, one time on each of the three last times I went to the lock screen"): ONE run per lock, because every run starts with a REAL
+     * system screenshot (shutter flash, thumbnail) the moment it begins, however it ends.
+     */
+    public static final int MAX_PER_LOCK = 1, MAX_PER_DAY = 4;
+    /**
+     * The screen has to have been on this long before a run starts: the lock screen settles (clock, wallpaper fade-in) AND the THEME settles. After a Quickstep session the battery saver is ON, so the lock screen wakes in
+     * the DARK theme; the lock rule switches the saver off, but Android applies that several seconds after the wake on Tj's slow tablet (2026-11-10: the setting changed 1.0 s after the rule's write, the theme later still).
+     * At the old 3.5 s the decision fell into that dark moment, started a run for the DARK slot, took its first real screenshot, and the theme flip or the person's swipe then stopped it: the slot was never stored, so
+     * the next lock from Quickstep started it again (BQ1a).
+     */
+    public static final long SETTLE_AFTER_WAKE_MS = 10_000;
     /** How long to wait for a screenshot to appear in the media store, for the menu to open, and the steps of closing it again. */
     public static final long SHOT_WAIT_MS = 8_000, MENU_WAIT_MS = 4_000, CLOSE_STEP_MS = 900;
     public static final int CLOSE_TRIES = 5;
@@ -51,15 +60,29 @@ public final class ScrimMeasure {
 
     /** Per rotation: how many measurements of THIS lock screen (wallpaper | rotation | size | theme) were taken but could not be fitted: {@code sig#d|n#count}. */
     public static final String FAIL_PREFIX = "scrim_fail_r";
-    /** After this many fitted-but-refused measurements of the same lock screen the helper stops until the wallpaper, rotation, size or theme changes (or "Measure again" is tapped): a flat wallpaper or a scrim that is not a flat layer would otherwise open the menu by itself every day. */
+    /** After this many runs of the same lock screen that stored nothing (frames that could not be fitted, OR runs that were interrupted: BQ1a) the helper stops until the wallpaper, rotation, size or theme changes (or "Measure again" is tapped): a flat wallpaper, a scrim that is not a flat layer or a lock screen the person always unlocks within seconds would otherwise flash a screenshot and open the menu by itself again and again. */
     public static final int MAX_FAILURES = 2;
     public static String failKey(int rotation) { return failKey(rotation, false); }
     /** The failure record of one rotation in one theme (light = the v0.8.2 key, dark = the same with an "n"): see {@link #valueKey(int, boolean)}. */
     public static String failKey(int rotation, boolean night) { return FAIL_PREFIX + rotation + (night ? "n" : ""); }
 
-    /** Pure: did the frames get taken but could not be fitted (as opposed to an interruption such as the screen going off, which is worth another try)? */
+    /**
+     * Pure: did a run end WITHOUT storing a measurement? BQ1a: every run costs the person a real screenshot (the bare frame is asked for the moment the run starts), so EVERY run that does not end in a stored value counts,
+     * whether the frames could not be fitted ("not measured: ...") or it was interrupted ("stopped: the PIN pad came up / the theme changed / the screen went off ..."). Before v0.9.2 an interruption counted for nothing
+     * and was tried again at the next lock, up to four flashes a day for a slot that could never finish. After {@link #MAX_FAILURES} such runs the slot waits for a new wallpaper, rotation or theme, or for "Measure again".
+     */
     public static boolean measurementFailure(String outcome) {
-        return outcome != null && (outcome.startsWith("not measured:") || outcome.contains("too little plain wallpaper"));
+        return outcome != null && !outcome.isEmpty() && !outcome.startsWith("MEASURED");
+    }
+
+    /** The last run, in plain words, with the time and the theme it ran in (Launcher control, the tablet report): the 2026-11-10 report could not say WHICH run took the screenshots because only the last START was kept. */
+    public static final String RUN_KEY = "scrim_last_run";
+
+    /** Pure: one line for {@link #RUN_KEY}: {@code stamp + " " + theme + ": " + outcome}, the outcome cut to 140 characters. */
+    public static String runLine(String stamp, boolean night, String outcome) {
+        String o = outcome == null ? "" : outcome.trim();
+        if (o.length() > 140) o = o.substring(0, 140);
+        return stamp + (night ? " dark theme: " : " light theme: ") + o;
     }
 
     /** Pure: the number of recorded failures for this lock screen (0 for another lock screen or an unreadable record). */
@@ -84,7 +107,7 @@ public final class ScrimMeasure {
         if (!s.coverOn || !s.lockPatchOn) return "the lock-screen patch is switched off";
         if (!s.permitted) return "needs permission: Launcher control > Allow wallpaper access";
         if (s.haveMeasurement) return "";   // nothing to do; callers treat haveMeasurement separately
-        if (s.failures >= MAX_FAILURES) return "gave up for this lock screen after " + s.failures + " measurements that could not be fitted (see the last note); a new wallpaper, rotation or theme, or 'Measure again' in Launcher control, tries again";
+        if (s.failures >= MAX_FAILURES) return "gave up for this lock screen after " + s.failures + " runs that stored nothing (see the last run); a new wallpaper, rotation or theme, or 'Measure again' in Launcher control, tries again";
         if (s.calibrating || s.stageRunning) return "a calibration or a measurement is already running";
         if (!s.validCrop) return "waiting: the patch has no real-pixel picture yet (the automatic calibration comes first)";
         if (!s.geometryKnown) return "waiting: hold the side key once on the lock screen so the menu's place is known";
@@ -95,7 +118,7 @@ public final class ScrimMeasure {
         if (s.handshakeArmed) return "waiting: an unlock gesture is in progress";
         if (s.screenOnMs > 0 && s.now >= s.screenOnMs && s.now - s.screenOnMs < SETTLE_AFTER_WAKE_MS) return "waiting: the screen has only just come on";
         if (s.lastStartMs > 0 && s.now >= s.lastStartMs && s.now - s.lastStartMs < MIN_GAP_MS) return "waiting: the last measurement was just now";
-        if (s.startsThisLock >= MAX_PER_LOCK) return "gave up for this lock after " + MAX_PER_LOCK + " tries";
+        if (s.startsThisLock >= MAX_PER_LOCK) return "gave up for this lock after " + MAX_PER_LOCK + (MAX_PER_LOCK == 1 ? " try" : " tries");
         if (s.startsToday >= MAX_PER_DAY) return "gave up for today after " + MAX_PER_DAY + " tries";
         return "";
     }
