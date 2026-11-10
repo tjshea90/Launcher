@@ -2064,3 +2064,7 @@
 >
 > The second code review is still running. When it finishes, I'll fix any real findings, rerun the focused tests, then dispatch the three gate runs.
 <!-- sha:302ab59e053d -->
+
+## 2026-11-10T01:05:27Z
+> Understood. Saving everything now, in this order: your new message into TASKS.md, a re-runnable brief for the review that's still in flight, a HANDOFF block for a session with no context, then a checkpoint and push.
+<!-- sha:159d06fff144 -->
