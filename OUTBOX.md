@@ -2316,3 +2316,7 @@
 ## 2026-11-10T11:12:42Z
 > Run #514, the solo `b6` rerun with the stdin fix, is in progress. The timer wakes me at 11:17:30 UTC to read it. The earlier "completed" notice was only a wrapper, as the lessons warned.
 <!-- sha:949d5e7e1bd8 -->
+
+## 2026-11-10T11:17:55Z
+> Run #514 is done and still red. The pictures are the same as in #513: after a real close there is no white box at the pencil place, and the control shows the pencil uncovered. I'm waiting for the extraction of the FAIL lines to see what's left.
+<!-- sha:1d8a73322b87 -->
