@@ -2324,6 +2324,13 @@ if [ -n "$FL" ] && [ -n "$CB" ]; then
   info "PT/BA1: scale $SR / $SG / $SB, offset $OR / $OG / $OB, samples ${SCNN:-?}, rms ${SCRMS:-?} (the AOSP scrim is expected near 0.80 / 0; INFO: a different offset would show that the scrim colour depends on the wallpaper)"
   check "BA1: the measured scale is a plausible scrim in all three channels (0.74 - 0.86)" awk -v a="${SR:-0}" -v b="${SG:-0}" -v c="${SB:-0}" 'BEGIN{exit !(a>=0.74&&a<=0.86&&b>=0.74&&b<=0.86&&c>=0.74&&c<=0.86)}'
   check "BA1: it rests on plenty of samples and a tight fit (3000+ points, rms 3 or less)" awk -v n="${SCNN:-0}" -v r="${SCRMS:-99}" 'BEGIN{exit !(n+0>=3000&&r+0<=3.0)}'
+  # BQ1a (v0.9.2, review of 2026-11-10): a run is COUNTED WHEN IT STARTS (scrim_fail_r0 = sig#d#1, so a service or process that dies in the middle cannot lose it) and CLEARED when it stores a measurement; the run is recorded in one
+  # plain line (scrim_last_run). A finished, measured run therefore leaves an empty failure record and a "light theme: MEASURED" line (the dark look is never measured: BQ2).
+  scrimpref(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o "name=\"$1\">[^<]*" | sed 's/.*>//'; }
+  SLR="$(scrimpref scrim_last_run)"; SFR="$(scrimpref scrim_fail_r0)"
+  info "PT/BQ1a: last run: $SLR | failure record: '$SFR'"
+  check "BQ1a: the run is recorded in plain words and says it measured in the light theme" bash -c "echo \"$SLR\" | grep -q 'light theme: MEASURED'"
+  check "BQ1a: a run that stored a measurement leaves no failure behind (counted at its start, cleared when it stored)" bash -c "[ -z \"$SFR\" ]"
   sleep 4
   adb shell dumpsys window windows 2>/dev/null | grep -c ActionsDialog > "$OUT/pt-dialog-count.txt"
   check "BA1: the stock power menu is closed again after the measurement" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/pt-dialog-count.txt)\" = 0 ]"
