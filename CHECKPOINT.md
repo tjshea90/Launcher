@@ -7,7 +7,7 @@
 Takeover by new account (branch claude/bold-gates-5jgbbh = main): hooks ok, no v0.9.1 run exists (newest emulator #498, android #41 = v0.9.0), own heartbeat armed trig_01NG4acJZ3CVuQZutyT6rsCC (cron 11 */2)
 
 ## Do this next
-Review BN8 non-Ss diff inline (git diff v0.9.0..HEAD -- LockLog PencilRules RecentsDirty ReportState TjAccessibilityService), fix findings; bash tools/gate.sh v0.9.0, dispatch the 3 runs on main, read RESULTS + every FAIL; bash ship.sh; android.yml full_build=true; record-release after green; ONE message to Tj (tablet report, BN8 a-e, BP1). Heartbeat trig_01NG4acJZ3CVuQZutyT6rsCC
+SKIP the inline BN8 review: the OLD session (branch ccr-5ef85f7a-ngtgj1) FINISHED it and FIXED BN8f1-3 at 01:40Z (TASKS BN8f ticked, 893 JVM tests green, result in research/BN8_REVIEW2_BRIEF_2026-11-10.md); git fetch + git merge origin/main first if your branch lacks the commit "BN8f1-3"; bash tools/gate.sh v0.9.0, dispatch the 3 runs on main, read RESULTS + every FAIL; bash ship.sh; android.yml full_build=true; record-release after green; ONE message to Tj (tablet report, BN8 a-e, BP1). Heartbeat trig_01NG4acJZ3CVuQZutyT6rsCC
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
