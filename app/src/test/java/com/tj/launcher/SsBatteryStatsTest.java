@@ -129,17 +129,47 @@ public class SsBatteryStatsTest {
     }
 
     // ---- BN1p D1: where a page starts from, and what it keeps after a read
-    @Test public void aPageStartsFromTheNewestGoodReadingWhateverItsAge() {
+    @Test public void aPageStartsFromTheNewestGoodReadingUntilItsEstimateRunsOut() {
         SsBatteryStats.forget();
-        SsBatteryStats.Data blank = SsBatteryStats.seed();
+        SsBatteryStats.Data blank = SsBatteryStats.seed(0);
         assertFalse(blank.any());
         assertFalse(blank.finished());                               // no read yet: the page must not show a status word
-        SsBatteryStats.Data good = SsBatteryStats.parse(DISCHARGING, UTC);
+        SsBatteryStats.Data good = SsBatteryStats.parse(DISCHARGING, UTC);   // Battery time remaining: 5 h 3 min
+        assertTrue(good.dischargeMs > 0);
+        good.readAtElapsed = 10_000;
         SsBatteryStats.remember(good, 10_000);
         assertNull(SsBatteryStats.recent(30_000, 10_000_000));       // far too old to skip a new read ...
-        assertSame(good, SsBatteryStats.seed());                     // ... but still the right first frame
+        assertSame(good, SsBatteryStats.seed(10_000_000));           // ... but still the right first frame (2.8 h on, the 5 h estimate has not run out)
+        assertFalse(SsBatteryStats.seed(10_000 + good.dischargeMs + 1).any());   // run out: a blank start, the refresh a second later has the real one
+        assertFalse(SsBatteryStats.seed(10_000 + good.dischargeMs + 1).finished());
         SsBatteryStats.forget();
-        assertFalse(SsBatteryStats.seed().any());
+        assertFalse(SsBatteryStats.seed(0).any());
+    }
+
+    /** BN1p D1: a seeded reading may be hours old; "now + its figure" would put the end time that much too late. The figure counts down from the read, the END time stays where Android put it. */
+    @Test public void anEstimateCountsDownFromTheTimeOfTheRead() {
+        SsBatteryStats.Data d = new SsBatteryStats.Data();
+        d.dischargeMs = 3_600_000;
+        assertEquals(3_600_000, d.drainAt(5_000));                   // read time unknown (a parse in a test): as read
+        assertEquals(-1, d.chargeAt(5_000));                         // unknown stays unknown
+        d.readAtElapsed = 1_000;
+        assertEquals(3_600_000, d.drainAt(1_000));
+        assertEquals(3_000_000, d.drainAt(601_000));                 // ten minutes later
+        assertEquals(3_600_000, d.drainAt(500));                     // a clock that went backwards: no negative age
+        assertEquals(1, d.drainAt(3_600_999));
+        assertEquals(-1, d.drainAt(3_601_000));                      // used up
+        assertFalse(d.expired(601_000));
+        assertTrue(d.expired(3_601_000));
+        d.chargeMs = 7_200_000;
+        assertEquals(6_600_000, d.chargeAt(601_000));
+        d.dischargeMs = -1;
+        assertFalse(d.expired(3_601_000));                           // a charge estimate left that has not run out
+        assertTrue(d.expired(7_201_000));
+        d.chargeMs = -1;
+        assertFalse(d.expired(99_999_999));                          // no estimate was ever there: nothing can run out
+        d.dischargeMs = 0;
+        assertFalse(d.expired(99_999_999));                          // 0 = no estimate either (the header treats it so)
+        assertEquals(-1, d.drainAt(1_000));
     }
 
     @Test public void aFinishedReadIsKnownEvenWhenItFoundNothing() {
