@@ -104,7 +104,26 @@ public final class PencilRules {
         }
 
         public boolean waiting() { return active; }
+
+        /** True while a wait is on AND it is younger than {@link #MAX_MS}: the looks that carry it are re-booked only that long (review of 2026-11-10: the hold loop must end by itself). */
+        public boolean waitingAt(long nowMs) { return active && nowMs >= downMs && nowMs - downMs < MAX_MS; }
+
         public void reset() { active = false; }
+    }
+
+    /**
+     * Review of BQ1b (2026-11-10, research/BQ1_REVIEW_2026-11-10.md): both guards read the pencil's place at a LOOK, and a look can be slow (a binder call into a busy SystemUI, a whole-tree search of up to 1.3 s on the
+     * tablet). A place read that long ago says nothing about where the panel is now: a look slower than {@link #STALE_LOOK_MS} neither shows nor moves the cover (a quick re-look does), but never more than
+     * {@link #MAX_STALE_RUN} in a row, so a SystemUI that is always this slow still gets its cover (a pencil that is never covered is the other failure). Pure.
+     *
+     * @param startMs   uptime at the start of the look
+     * @param endMs     uptime at its end
+     * @param staleRun  how many looks in a row, directly before this one, were stale
+     */
+    public static final long STALE_LOOK_MS = 150;
+    public static final int MAX_STALE_RUN = 3;
+    public static boolean staleLook(long startMs, long endMs, int staleRun) {
+        return endMs >= startMs && endMs - startMs > STALE_LOOK_MS && staleRun < MAX_STALE_RUN;   // a clock that went backwards is no reason to hold anything
     }
 
     /**
