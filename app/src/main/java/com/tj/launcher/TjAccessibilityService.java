@@ -2245,21 +2245,35 @@ public class TjAccessibilityService extends AccessibilityService {
     private void updatePencil(boolean allowFull) {
         try {
             penSearched = false; penFollowed = PencilRules.NO_KNOWN;
+            final long lookStart = android.os.SystemClock.uptimeMillis();   // review of BQ1b: the pencil's place is as old as the START of the look that read it
             Rect r = findPencil(allowFull);
+            final long lookEnd = android.os.SystemClock.uptimeMillis();
             if (r == null) {
                 // BN4 (Tj, 2026-11-09 03:02 UTC: "as soon as I slide the notification panel back up I see a white box on the lock screen"): a pencil that was being followed and is gone (hidden, collapsed, INVISIBLE views
                 // cannot be refreshed) takes the cover away AT ONCE; before, only a whole-tree search that found nothing did, and that one waits for its spacing gap: the opaque white cover stayed on the lock screen.
                 if (PencilRules.hideCover(penFollowed, penSearched)) hidePencil(penFollowed == PencilRules.LOST ? "the followed pencil is gone" : "no pencil found");
+                if (penSearched) penFinger.reset();   // review of BQ1b: a whole-tree search found NO pencil = the panel is closed. A closing swipe never gets a look that finds the pencil, so the finger wait outlived the panel and held the cover away from the NEXT pull
                 if (PencilRules.searchGapWaived(penFollowed, penSearched)) {   // it may only have been a failed refresh (no search ran in this call): search promptly (the gap is waived once) and cover the pencil again if it is still there
                     lastPenFullMs = 0;
                     if (!penPending) { penPending = true; handler.postDelayed(penEval, 30); }
+                } else if (penFinger.waitingAt(lookEnd) && !penPending) {   // review of BQ1b: while a finger wait is on (3 s at most) the hold loop must not depend on the next SystemUI event
+                    penPending = true; handler.postDelayed(penEval, PencilRules.SlideGuard.RELOOK_MS);
                 }
                 return;
             }
-            penConfirmedMs = android.os.SystemClock.uptimeMillis();
+            if (PencilRules.staleLook(lookStart, lookEnd, penStaleRun)) {   // review of BQ1b: a SLOW look read the place up to that long ago: it neither shows nor moves the cover, a quick re-look (one node refresh now) decides
+                penStaleRun++;
+                if (!penPending) { penPending = true; handler.postDelayed(penEval, PencilRules.SlideGuard.RELOOK_MS); }
+                if (debuggable()) Log.i(TAG, "PENCIL look took " + (lookEnd - lookStart) + " ms: its place is stale, a quick re-look decides");
+                return;
+            }
+            penStaleRun = 0;
+            penConfirmedMs = lookStart;
             // BN8b: a pencil that moves UP is a panel sliding away; a cover that follows it trails it over the lock screen as a white box. Keep the cover away until two looks agree (the panel at rest).
+            final boolean fingerWasWaiting = penFinger.waiting();
             boolean restOk = penSlide.allowCover(r.top, penConfirmedMs);       // both guards are fed at EVERY look (no short-circuit): each keeps its own history
             boolean fingerOk = penFinger.allowCover(penConfirmedMs);           // BQ1b: after a finger went down the cover waits until SystemUI is quiet
+            if (fingerWasWaiting && fingerOk) penAfterFinger = true;           // review of BQ1b: the cover that comes back after a finger is watched FAST (a finger that rests and then slides is not announced again: ACTION_OUTSIDE fires at DOWN only)
             if (!restOk || !fingerOk) {
                 boolean wasUp = penShown;
                 if (penShown) hidePencil(!restOk ? "the panel is sliding up" : "a finger went down a moment ago");
