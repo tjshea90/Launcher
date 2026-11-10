@@ -4242,6 +4242,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private long scrimBeganAt = 0, scrimStageAt = 0, scrimLastStartMs = 0, scrimAskedAt = 0, scrimMenuAt = 0, scrimPollAt = 0;
     private volatile long scrimLastShotId = -1;   // shared with the worker thread (review nit)
     private int scrimThisLock = 0, scrimCloseTries = 0, scrimGoneTicks = 0;
+    private boolean scrimCounted;   // BQ1a: this run's outcome has been counted / recorded already
     private boolean scrimOpenedMenu = false;
     private volatile boolean scrimIngesting = false;   // shared with the worker thread (review nit)
     private int[] scrimPoints, scrimRef;   // the sample points of the bare frame ((y << 16) | x) and its pixels there
@@ -4303,9 +4304,10 @@ public class TjAccessibilityService extends AccessibilityService {
         Features.setString(app, ScrimMeasure.WHY_KEY, new java.text.SimpleDateFormat("MM-dd HH:mm", java.util.Locale.US).format(new java.util.Date()) + " started because " + because);
         Features.setString(app, ScrimMeasure.TRIES_KEY, AutoCalibration.addTry(Features.getString(app, ScrimMeasure.TRIES_KEY, ""), st.now));
         scrimBeganAt = android.os.SystemClock.uptimeMillis(); scrimStageAt = scrimBeganAt;
-        scrimStage = 1; scrimOpenedMenu = false; scrimPoints = null; scrimRef = null; scrimCloseTries = 0; scrimMenuAt = 0; scrimPollAt = 0; scrimGoneTicks = 0; scrimOutcome = "";
+        scrimStage = 1; scrimOpenedMenu = false; scrimPoints = null; scrimRef = null; scrimCloseTries = 0; scrimMenuAt = 0; scrimPollAt = 0; scrimGoneTicks = 0; scrimOutcome = ""; scrimCounted = false;
         scrimNote("started (" + why + "): a bare frame of the lock screen first");
         Log.i(TAG, "SCRIM measurement started (" + why + "): " + because);
+        LockLog.add(app, "SCRIM", "run starts (" + why + "), " + (scrimNight ? "dark" : "light") + " theme, screen on " + (st.screenOnMs > 0 ? String.valueOf(Math.max(0, (st.now - st.screenOnMs) / 1000)) : "?") + " s: " + because);   // BQ1a: the 2026-11-10 report could not tell which visit took the screenshots
         scrimAskShot();
         handler.removeCallbacks(scrimTick); handler.postDelayed(scrimTick, 400);
     }
@@ -4381,8 +4383,14 @@ public class TjAccessibilityService extends AccessibilityService {
     private void scrimFinish(String outcome) {
         scrimOutcome = outcome == null ? "" : outcome;
         scrimNote(scrimOutcome);
-        try {   // review of BA1 (finding 5): frames that were taken but could not be fitted are counted per lock screen; an interruption is not
-            if (ScrimMeasure.measurementFailure(scrimOutcome)) { android.content.Context app = getApplicationContext(); String k = ScrimMeasure.failKey(rotation(), scrimNight); Features.setString(app, k, ScrimMeasure.addFailure(Features.getString(app, k, ""), shotSig(), scrimNight)); }
+        try {   // BQ1a: EVERY run that stored nothing is counted per lock screen and theme (each one already cost a real screenshot), once per run even if the finish is reached twice
+            if (!scrimCounted) {
+                scrimCounted = true;
+                android.content.Context app = getApplicationContext();
+                if (ScrimMeasure.measurementFailure(scrimOutcome)) { String k = ScrimMeasure.failKey(rotation(), scrimNight); Features.setString(app, k, ScrimMeasure.addFailure(Features.getString(app, k, ""), shotSig(), scrimNight)); }
+                Features.setString(app, ScrimMeasure.RUN_KEY, ScrimMeasure.runLine(new java.text.SimpleDateFormat("MM-dd HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), scrimNight, scrimOutcome));
+                LockLog.add(app, "SCRIM", "run ends: " + scrimOutcome);
+            }
         } catch (Throwable ignored) { }
         Log.i(TAG, "SCRIM finished: " + scrimOutcome);
         scrimPoints = null; scrimRef = null;

@@ -147,6 +147,10 @@ public final class ReportState {
                     .append(" | last: ").append(Features.getString(c, ScrimMeasure.NOTE_KEY, "(nothing yet)"));
             for (int rot = 0; rot < 4; rot++) for (boolean n : new boolean[] { false, true }) { String v = Features.getString(c, ScrimMeasure.valueKey(rot, n), ""); if (!v.isEmpty()) b.append(" | rotation ").append(rot).append(n ? " (dark theme)" : " (light theme)").append(": ").append(ScrimFit.describeStored(v)); }
             b.append(" | last started: ").append(Features.getString(c, ScrimMeasure.WHY_KEY, "(never)"));
+            b.append(" | last run (BQ1a): ").append(Features.getString(c, ScrimMeasure.RUN_KEY, "(none)"));
+            b.append(" | runs that stored nothing, rotation 0: light ").append(ScrimMeasure.storedFailureCount(Features.getString(c, ScrimMeasure.failKey(0, false), "")))
+                    .append(", dark ").append(ScrimMeasure.storedFailureCount(Features.getString(c, ScrimMeasure.failKey(0, true), ""))).append(" (a lock screen gives up at ").append(ScrimMeasure.MAX_FAILURES).append(")")
+                    .append(" | starts in the last 24 h: ").append(AutoCalibration.startsWithinDay(Features.getString(c, ScrimMeasure.TRIES_KEY, ""), System.currentTimeMillis())).append(" (cap ").append(ScrimMeasure.MAX_PER_DAY).append(")");
             b.append('\n');
             b.append("battery saver on the lock screen (BA2): switch ").append(BatterySaverGuard.lockOffEnabled(c) ? "on" : "off").append(", restore for Quickstep ").append(BatterySaverGuard.lockRestoreEnabled(c) ? "on" : "off")
                     .append(" | ").append(BatterySaverGuard.lockStatus(c)).append('\n');
