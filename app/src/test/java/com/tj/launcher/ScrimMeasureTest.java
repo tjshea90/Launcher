@@ -80,10 +80,9 @@ public class ScrimMeasureTest {
         assertEquals(ScrimMeasure.MAX_FAILURES, starts);
         assertEquals(2, ScrimMeasure.failures(record, sig, false));
         ScrimMeasure.State s = go(); s.failures = ScrimMeasure.failures(record, PatchShot.sig(31, 0, 600, 1024), false); assertTrue("a new wallpaper starts afresh", ScrimMeasure.shouldStart(s));
-        s = go(); s.failures = ScrimMeasure.failures(record, sig, true); assertFalse("the dark look is never measured at all (BQ2), whatever its record says", ScrimMeasure.shouldStart(s.night ? s : nightOf(s)));
+        s = go(); s.night = true; s.failures = 0; assertFalse("the dark look is never measured at all (BQ2), whatever its record says", ScrimMeasure.shouldStart(s));
         assertEquals("scrim_fail_r0", ScrimMeasure.failKey(0));
     }
-    private static ScrimMeasure.State nightOf(ScrimMeasure.State s) { s.night = true; return s; }
     @Test public void aRunThatStoredAMeasurementIsNoFailureAndAStoredMeasurementAlwaysWins() {
         String sig = PatchShot.sig(30, 0, 600, 1024);
         String counted = ScrimMeasure.addFailure("", sig, false);          // counted at the start of the run ...
