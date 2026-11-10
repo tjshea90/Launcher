@@ -2281,3 +2281,18 @@
 >
 > Still open from your earlier message: the white box when you slide the notification panel back up. That fix is in the same release.
 <!-- sha:5526a56261c3 -->
+
+## 2026-11-10T09:14:42Z
+> Gate is running (3 emulator runs on `6878395`, results expected about 09:26Z). Everything is saved: ckpt 894, HANDOFF block 0q, TASKS and the release-message draft are updated and pushed.
+>
+> **Where v0.9.2 stands**
+> - **Lock-screen screenshots (BQ1a, BQ2):** coded and reviewed.
+>   - The dimming is measured in the light look only, once per wallpaper. The dark look reuses that measurement, so an unchanged wallpaper means no more screenshots.
+>   - A run is counted when it starts, so an interrupted run can no longer repeat.
+> - **White pencil cover (BQ1b):** coded and reviewed. The cover goes away at finger-down and when the pencil disappears, before the slow search. It returns after the panel has been still for about half a second.
+> - **Checks so far:** 922 unit tests and lint are green. The emulator gate is the open check.
+>
+> **Next:** I read the three runs, checkpoint the raw verdict, and rerun any failure alone. Then I bump to 0.9.2, ship, record the release, and send Tj one message with the Release link.
+>
+> **Still open from Tj:** the lock-screen screenshots question (answered in chat, fix in this release) and the pencil white box (fix in this release).
+<!-- sha:0279dea48764 -->
