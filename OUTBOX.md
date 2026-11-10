@@ -2143,3 +2143,48 @@
 ## 2026-11-10T04:47:44Z
 > The heartbeat's stand-down rule has a flaw I'll document after the release: a restart-notice commit from a stalled session counts as "work under 60 minutes old", and the rule tells the woken session to disable its own timer. The release comes first, and the timer for the build fires at 04:49:00Z.
 <!-- sha:4ebc878b6906 -->
+
+## 2026-11-10T07:23:50Z
+> The report numbers check out: the Storage scan took 664 ms with 1.2 GB free of 32 GB (96 % used), the shell helper was not reachable, and the Battery status shows no usage-stats dump.
+>
+> **v0.9.1 is released.** GitHub built and signed it, and the signing certificate was verified, so it installs over your current version as an update.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.1
+>
+> **Checks before release**
+> - The unit tests (911) and lint passed.
+> - Of the 17 emulator sections, 16 passed on the first run. The reboot checks failed two checks once, at the moment the emulator's copy of the app crashed inside Android's own memory code. That is a known emulator problem that also hits v0.9.0. They passed when I re-ran them alone.
+> - I skipped two optional sections on purpose, because the gate tool flagged them for one changed word each.
+> - The code that shipped is identical to the code that was checked.
+>
+> **What changed**
+> - **Settings home page:** Sound now says only "Volume", System only "Languages", and Display "Brightness, sleep, font size".
+> - **Settings polish:**
+>   - The Battery line no longer shows "Not charging" for a moment when the page opens.
+>   - The Storage and Battery rows no longer change height while loading.
+>   - The brightness percentage uses your tablet's real range.
+>   - A Screen timeout or Touch & hold delay that isn't in the list now shows as the nearest entry.
+> - **White box on the lock screen after sliding the panel back up:** this is a new attempt. The white cover over the pencil now disappears as soon as the pencil starts moving up, and stays away until the panel stops. While a finger is on the screen, the app checks the pencil every 25 ms instead of every 100 to 150 ms. **This is not proven on your tablet.** While the panel slides you may see the real pencil for a moment.
+> - **Reports:** ordinary Quickstep use no longer floods the lock log, so a report now keeps the custom session's events before it.
+>
+> **Not fixed yet (I need a tablet report for each)**
+> - **Screenshot button on the first side-key press, then a visible patch a couple of times:** I have no log of it. Your last report held only "app opened in Quickstep" lines, which had pushed everything else out, and v0.9.1 fixes that part.
+> - **Quickstep apps in the custom Recents list:** your report shows why. The clean-up found no "Clear all" button and no closable card on your tablet's Recents screen within 2.5 seconds, and the shell helper (the other way to clear them) was not running. v0.9.1 now records what that screen contains when this happens. It stores counts only, with no app names or titles.
+>
+> **Your tablet report of 10 November**
+> - **Battery page:** it shows only the percentage because the app has no usage access on the tablet. That is expected, not a bug.
+> - **Storage page:** works (scan took 0.66 s).
+> - **Crashes:** none anywhere in the report.
+> - **Shell helper:** it was not running, and the report says it hasn't been started since v0.8.7. It doesn't survive a reboot, s
+> [... 1327 characters omitted ...]
+> e an auto-resume timer armed (every 2 hours), and neither has anything left to do. I tried to delete this session's timer at about 04:55 and the approval request expired unanswered, so I'm asking again below. The other account's timer can only be removed from that account.
+> - **Timer rule fix:** I fixed a flaw in the timers' stand-down rule. A restart notice from a stalled session counted as "another session is working", and the timer then disabled itself. Only real work counts now.
+> - **Usage:** this account is flagged close to its weekly limit, and the limit resets at 08:00 UTC today.
+>
+> **Still waiting on you**
+> - Install and check v0.9.1 on the tablet, using the v0.9.0 checklist for the Settings pages.
+> - A tablet report right after any of the three problems above.
+> - The usage grant for the Battery numbers.
+>
+> Please tap Allow on the prompt that follows, so I can delete this session's timer.
+<!-- sha:98bb6218dc9b -->
