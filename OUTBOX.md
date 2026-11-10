@@ -2254,3 +2254,16 @@
 ## 2026-11-10T08:17:04Z
 > Got your v0.9.1 report. I'll save it first, as the working agreement requires, then read the lock log for both problems. That means running the intake script and writing your message into the task list before any code.
 <!-- sha:7f8add628fa1 -->
+
+## 2026-11-10T08:43:54Z
+> Both fixes are coded and tested but not shipped yet, and the emulator gate hasn't started.
+>
+> - **Lock-screen screenshots:** these were real screenshots from the menu-dimming measurement. After you use Quickstep the lock screen wakes in the dark look for a few seconds. The measurement started in that moment, got interrupted and was never counted, so it started again on the next lock. It now waits 10 seconds after the wake, runs once per lock, and stops for good after two tries that stored nothing for the same lock screen and look.
+> - **White box on the pencil:** the cover can now disappear the moment a finger touches the screen, with no look at the panel. It comes back about half a second after the panel is still. The cost is that the pencil shows for roughly half a second after you touch the open panel.
+> - **Tests:** the unit tests for both pass (`ScrimMeasureTest` 29, `PencilRulesTest` 31), and lint is green.
+> - **Review:** two independent reviewers are reading the diffs now. I'll fix anything real, run the three emulator gate runs, then build and release as v0.9.2.
+>
+> I can't yet say that either fix works on your tablet. The `SCRIM run starts / run ends` and `PENCIL cover shown / hidden` lines in the lock log will show it if either recurs.
+>
+> Everything is checkpointed (ckpt 878). Auto-resume heartbeat `trig_013YUvG3qqKTpfyqZn9k2nmE` is armed.
+<!-- sha:e7ee4f30920c -->
