@@ -1323,3 +1323,9 @@ Continue
 ```
 @"/root/.claude/uploads/f57c5b9c-bf62-5be7-8f0c-bd772cf12bbe/acc8c7e2-tablet-report.txt" 
 ```
+
+## 2026-11-10T00:45:32Z
+```
+I went from quickstep to the custom launcher to try the new settings. The lock screen still flashed a white box after I pulled down the returned the notification panel for the pencil hider. The custom launcher showed the screenshot button when I first held the side key, and showed a visible patch a couple times after that, then it finally fixed itself. All of my quickstep apps were in the recent apps  list in the custom launcher. For the settings spoof app, it looks good, but make it say only Volume under "sound" on the main settings page and only Languages under "system" on the main settings page 
+Also, under "Display" it should say "Brightness, sleep, font size" 
+```

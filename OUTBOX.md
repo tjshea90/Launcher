@@ -2026,3 +2026,29 @@
 >
 > In your first v0.9.0 report I'll read the `ss_storage_status` and `ss_battery_status` lines.
 <!-- sha:af920f3ad7c0 -->
+
+## 2026-11-10T00:45:31Z
+> Tj, I filed your tablet report and I'm finishing v0.9.1. I'm waiting on a read-only code review of the diff before the emulator gate and the release.
+>
+> **What your report shows (v0.9.0, taken before the usage-stats grant and before the shell helper was started):**
+> - **Battery page:** the `dumpsys` read was refused (`no-dump`) because the tablet doesn't have the `PACKAGE_USAGE_STATS` permission yet, so it can't show the estimate, "Last full charge" or "Screen usage". That's expected, not a bug.
+> - **Storage page:** works. The tablet reads 96% used with 1.21 GB free in 0.66 s.
+> - **Crashes:** none in the app log or lock log.
+> - **Shell helper:** not running. The install kills it, as always.
+> - **Lock-screen flash:** the report has no flash evidence, so I still need a report taken right after you see one.
+>
+> **v0.9.1 so far:**
+> - **Battery first frame:** it no longer flashes "Not charging".
+> - **Storage row:** it keeps its final height from the first frame.
+> - **Brightness percentage:** it uses the tablet's real min/max brightness range.
+> - **Screen timeout and Touch & hold delay:** a value outside the list now reads as the nearest entry instead of an empty line.
+>
+> The new unit tests pass and the version is bumped to 0.9.1 (code 40).
+>
+> **For you, once v0.9.1 is out:**
+> 1. Start the shell helper (PART 2 of the phone guide).
+> 2. Tap "Do everything that is missing", or run `adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS`.
+> 3. Open Settings > Battery once in the custom launcher, then send a fresh tablet report.
+>
+> I'll give you the Release link as soon as the build is green.
+<!-- sha:6d541afb54a6 -->
