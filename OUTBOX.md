@@ -2068,3 +2068,23 @@
 ## 2026-11-10T01:05:27Z
 > Understood. Saving everything now, in this order: your new message into TASKS.md, a re-runnable brief for the review that's still in flight, a HANDOFF block for a session with no context, then a checkpoint and push.
 <!-- sha:159d06fff144 -->
+
+## 2026-11-10T01:08:14Z
+> Everything is saved and pushed. The last checkpoint is 854, and `main` and the branch both sit at `2ba2208`.
+>
+> v0.9.1 is not released. The code is finished and all 887 unit tests pass, but the emulator gate hasn't run and no build was started. Nothing of v0.9.1 is on your tablet.
+>
+> **What I saved for the other account**
+> - **Your messages:** your tablet report, your 00:45Z message (BN8) and this save order are all in `INBOX.md` verbatim. Each has a checklist item in `TASKS.md` (BP1 is this order).
+> - **Hand-over page:** `HANDOFF.md` block 0p says what v0.9.1 contains, what isn't done, the exact first steps, and which of your messages still need a full answer.
+> - **Review brief:** `research/BN8_REVIEW2_BRIEF_2026-11-10.md` lets the next account rerun the unfinished review. I told that review to stop and report whatever it has; if the report arrives before the cap hits, I'll save it too. Otherwise the file above covers it.
+> - **Unfixed items:** the "Screenshot button on the first side-key press" problem (BN8c) isn't fixed, and neither is Quickstep apps showing in the custom Recents (BN8d). For BN8d I only added diagnostics. The white-box fix (BN8b) is an educated guess that hasn't been tested on the tablet.
+>
+> **To start the other account:** connect GitHub, attach the repo `tjshea90/Launcher` to a Claude Code web session, and send this as the first message:
+>
+> > Resume Launcher: run `bash tools/install-hooks.sh`, then `bash tools/resume.sh`, read HANDOFF.md block 0p and continue from CHECKPOINT.md "Do this next". Answer all my open messages when v0.9.1 ships.
+>
+> Releases need nothing from that account. The signing key lives in the repo's Actions secrets.
+>
+> **Old auto-resume timer:** the one tied to this account (every 2 hours) can only wake this old session after your weekly reset. It stands down while the new account is committing. The new session should set up its own.
+<!-- sha:2c5285a07ab0 -->
