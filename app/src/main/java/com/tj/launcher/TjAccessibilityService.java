@@ -2204,8 +2204,12 @@ public class TjAccessibilityService extends AccessibilityService {
     /** AN1: the pencil found last time (kept un-recycled): following it is ONE node refresh, a whole-tree search in SystemUI's shade window is the expensive part and is spaced out. */
     private AccessibilityNodeInfo penNode;
     private boolean penSearched = false;
+    /** Review of BQ1b: the world and the switches the cover depends on, re-read by every DELAYED look (a 350 ms look after a finger could otherwise re-create a cover that was removed in between: the tablet locked, the switch turned off). */
+    private boolean pencilWanted() { return coverWorld() && Features.get(this, PEN_KEY, true) && !DemoModeProfile.active(this); }
+
     private final Runnable penEval = new Runnable() { @Override public void run() {
         penPending = false;
+        if (!pencilWanted()) { if (penView != null) removePencil(); return; }
         long wait = EventNoise.minPencilSearchGapMs(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) - (android.os.SystemClock.uptimeMillis() - lastPenFullMs);
         if (penNode == null && wait > 0) { penPending = true; handler.postDelayed(this, wait); return; }   // no known pencil to follow and a full search is not due yet: look again when it is
         updatePencil(true);
