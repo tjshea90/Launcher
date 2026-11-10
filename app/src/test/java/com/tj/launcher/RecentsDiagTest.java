@@ -23,4 +23,13 @@ public class RecentsDiagTest {
         for (int i = 0; i < 1000; i++) big.append("clear all ");
         assertEquals("a long text is a message, not a button", RecentsDiag.NONE, RecentsDiag.word(big));
     }
+
+    @Test public void onlyTheCloseActionOfACardCounts() {
+        assertEquals(true, RecentsDiag.isCloseLabel("Close"));
+        assertEquals(true, RecentsDiag.isCloseLabel(" close "));
+        assertEquals(false, RecentsDiag.isCloseLabel("Close all"));       // another action
+        assertEquals(false, RecentsDiag.isCloseLabel("Split screen"));
+        assertEquals(false, RecentsDiag.isCloseLabel(""));
+        assertEquals(false, RecentsDiag.isCloseLabel(null));
+    }
 }

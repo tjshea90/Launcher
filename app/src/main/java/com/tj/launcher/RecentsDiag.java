@@ -18,4 +18,9 @@ final class RecentsDiag {
         if (s.contains("no recent items")) return NO_ITEMS;
         return NONE;
     }
+
+    /** Is this the label of the accessibility action the clean-up presses on a Recents card ("Close", the same test as recentsEmpty)? The diagnostic reports only HOW MANY nodes carry it, never a label. */
+    static boolean isCloseLabel(CharSequence label) {
+        return label != null && "close".equalsIgnoreCase(label.toString().trim());
+    }
 }

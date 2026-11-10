@@ -3571,12 +3571,12 @@ public class TjAccessibilityService extends AccessibilityService {
      */
     private String nodeSummary(AccessibilityNodeInfo root) {
         java.util.LinkedHashMap<String, Integer> classes = new java.util.LinkedHashMap<String, Integer>();
-        int[] tally = new int[4];   // 0 nodes with text or description, 1 clickable nodes, 2 "clear all" seen, 3 "no recent items" seen
+        int[] tally = new int[7];   // 0 nodes with text or description, 1 clickable nodes, 2 "clear all" seen, 3 "no recent items" seen, 4 nodes with a labelled action, 5 nodes with a "Close" action, 6 scrollable nodes
         walkSummary(root, 0, classes, tally, new int[] {250});
         StringBuilder b = new StringBuilder("nodes{");
         boolean first = true;
         for (java.util.Map.Entry<String, Integer> e : classes.entrySet()) { if (!first) b.append(','); first = false; b.append(e.getKey()).append('x').append(e.getValue()); }
-        b.append("} text=").append(tally[0]).append(" click=").append(tally[1]);
+        b.append("} text=").append(tally[0]).append(" click=").append(tally[1]).append(" acts=").append(tally[4]).append(" close=").append(tally[5]).append(" scroll=").append(tally[6]);   // the clean-up presses "Clear all" or a card's "Close" action: these counts say which of the two this screen offers
         if (tally[2] > 0) b.append(" CLEARALL");
         if (tally[3] > 0) b.append(" NOITEMS");
         return b.toString();
@@ -3592,6 +3592,16 @@ public class TjAccessibilityService extends AccessibilityService {
         CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
         if (t != null && t.length() > 0) { tally[0]++; int w = RecentsDiag.word(t); if (w == RecentsDiag.CLEAR_ALL) tally[2]++; else if (w == RecentsDiag.NO_ITEMS) tally[3]++; }   // only counts and two fixed words, never the text
         if (n.isClickable()) tally[1]++;
+        if (n.isScrollable()) tally[6]++;
+        try {   // action LABELS are only matched against the fixed word "Close" (the one recentsEmpty presses): counts leave, never a label
+            boolean labelled = false, close = false;
+            for (AccessibilityNodeInfo.AccessibilityAction a : n.getActionList()) {
+                CharSequence l = a.getLabel();
+                if (l != null && l.length() > 0) { labelled = true; if (RecentsDiag.isCloseLabel(l)) close = true; }
+            }
+            if (labelled) tally[4]++;
+            if (close) tally[5]++;
+        } catch (Throwable ignored) { }
         for (int i = 0; i < n.getChildCount(); i++) {
             AccessibilityNodeInfo ch = n.getChild(i);
             if (ch != null) { try { walkSummary(ch, depth + 1, classes, tally, budget); } finally { ch.recycle(); } }
