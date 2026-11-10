@@ -1,23 +1,22 @@
-# CHECKPOINT 969 — read me first, then TASKS.md
+# CHECKPOINT 970 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T14:27:25Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `38f29cc` (this checkpoint is the commit after it)
+**Written:** 2026-11-10T16:24:39Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `afe5fc4` (this checkpoint is the commit after it)
 
 ## Just done
-Heartbeat firing 14:24Z: rule 2 no other session working; v0.9.2 shipped/answered/proven. delete_trigger needs Tj's approval (closed unanswered at 12:09 and 12:24Z): HANDOFF 0q + CLAUDE.md corrected, heartbeat is STILL ARMED trig_013YUvG3qqKTpfyqZn9k2nmE
+Heartbeat firing 16:22Z: rule 2 no other session working, rule 3 no unanswered Tj message, rule 5 only Tj-blocked items + LOW BQ4/BN6 remain (v0.9.2 shipped, answered, proven). delete_trigger closed unanswered 3x (needs Tj's approval in the app); trying update_trigger enabled=false instead. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
 
 ## Do this next
-Idle: only Tj-blocked items + LOW BQ4/BN6. Each heartbeat firing = rule 5 (one line) and ask delete_trigger trig_013YUvG3qqKTpfyqZn9k2nmE again; when it is deleted write the time in HANDOFF 0q + CLAUDE.md Auto-resume.
+If update_trigger enabled=false worked: write 'disabled 16:2xZ' in HANDOFF 0q + CLAUDE.md Auto-resume, then idle until Tj writes (nothing Claude-owned is open). If it did not: each heartbeat firing = one short line (rule 5) and try again. Re-enable or arm ONE new heartbeat only at the start of the next long job.
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M CLAUDE.md
-     M HANDOFF.md
 
 ## Last ten checkpoints
 ```
+  afe5fc4 ckpt 969: Heartbeat firing 14:24Z: rule 2 no other session working; v0.9.2 shipped/answe
   fbac8ea ckpt 967: b6 rerun #517 (id 42811195897, head 52093c7) GREEN: 21 PASS 0 FAIL; custom clo
   02daec4 ckpt 965: Run in flight: b6 rerun #517 id 42811195897 head 52093c7 since 11:53:51Z (done
   52093c7 ckpt 963: b6 custom flow: the BN8b drag ends at the PIN pad on the CI emulator: first BA
@@ -27,8 +26,4 @@ Idle: only Tj-blocked items + LOW BQ4/BN6. Each heartbeat firing = rule 5 (one l
   4a046bc ckpt 957: v0.9.2 RELEASED (android.yml run 43 id 42807528403 on 25a184a, published 11:29
   0a66bfd ckpt 954: v0.9.2 gated+pushed (ckpt 953, head 25a184a = main); android.yml full_build DI
   25a184a ckpt 953: gated v0.9.2 (code 41) and pushed it: the handoff self-test, the full unit sui
-  c2c75d4 ckpt 952: pre-ship: BQ1a/BQ2: the lock-screen dimming is measured once per wallpaper (li
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
