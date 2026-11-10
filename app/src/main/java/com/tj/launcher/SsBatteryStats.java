@@ -25,7 +25,7 @@ final class SsBatteryStats {
         long chargeMs = -1;          // Android's estimate of the time to full while charging
         String status = "none";      // ok | partial | no-dump | exec-failed | timeout | empty (goes into the tablet report)
         boolean any() { return startClockMs >= 0 || screenOnMs >= 0 || dischargeMs >= 0 || chargeMs >= 0; }
-        /** BN1p D1: true once a read has FINISHED, even one that found nothing. Until then a page shows no status word ("Not charging"), because Tj's screenshots never show one. */
+        /** BN1p D1: true once a read has FINISHED, even one that found nothing (a seeded old reading is finished too: the pages keep their OWN readDone flag and ask {@link #usableFor}). */
         boolean finished() { return !"none".equals(status); }
 
         long readAtElapsed = -1;     // SystemClock.elapsedRealtime() when the read finished; -1 = not from a read (parse() in tests)
