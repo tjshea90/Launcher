@@ -146,7 +146,7 @@ public final class ReportState {
             b.append("menu dimming measurement (BA1): switch ").append(Features.get(c, ScrimMeasure.KEY, ScrimMeasure.defaultOn((c.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)) ? "on" : "off")
                     .append(" | last: ").append(Features.getString(c, ScrimMeasure.NOTE_KEY, "(nothing yet)"));
             for (int rot = 0; rot < 4; rot++) for (boolean n : new boolean[] { false, true }) { String v = Features.getString(c, ScrimMeasure.valueKey(rot, n), ""); if (!v.isEmpty()) b.append(" | rotation ").append(rot).append(n ? " (dark theme)" : " (light theme)").append(": ").append(ScrimFit.describeStored(v)); }
-            b.append(" | BQ2: only the light look is ever measured, the dark look uses it
+            b.append(" | BQ2: only the light look is ever measured, the dark look uses it");
             b.append(" | last started: ").append(Features.getString(c, ScrimMeasure.WHY_KEY, "(never)"));
             b.append(" | last run (BQ1a): ").append(Features.getString(c, ScrimMeasure.RUN_KEY, "(none)"));
             b.append(" | runs that stored nothing, rotation 0: light ").append(ScrimMeasure.storedFailureCount(Features.getString(c, ScrimMeasure.failKey(0, false), "")))
