@@ -112,6 +112,7 @@ echo mine > conf.txt; git add conf.txt; git commit -q -m "conf mine"
 git merge conf_other >/dev/null 2>&1
 CONF_HEAD="$(git rev-parse HEAD)"
 check "autosave does NOT commit a merge with unresolved conflicts" 'bash tools/autosave.sh --text | grep -q "AUTOSAVE PAUSED" && [ "$(git rev-parse HEAD)" = "$CONF_HEAD" ] && [ -n "$(git diff --name-only --diff-filter=U)" ]'
+check "ckpt does NOT commit a merge with unresolved conflicts either" 'bash tools/ckpt.sh "x" "y" 2>&1 | grep -q "ckpt NOT committed" && [ "$(git rev-parse HEAD)" = "$CONF_HEAD" ] && [ -n "$(git diff --name-only --diff-filter=U)" ]'
 echo resolved > conf.txt; git add -A >/dev/null 2>&1; git commit -q --no-edit >/dev/null 2>&1
 echo more > a2.txt
 check "autosave saves again once the conflict is resolved and committed" 'bash tools/autosave.sh --text >/dev/null; git log -1 --format=%s | grep -q "^auto-checkpoint:" && [ "$(bash tools/unpushed.sh)" = 0 ]'
