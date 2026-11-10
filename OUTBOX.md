@@ -2324,3 +2324,7 @@
 ## 2026-11-10T11:21:20Z
 > Run #514: the BN8b drag check now passes (cover shown before, hidden after, 0 re-shows within 480 ms). Only the two window-sample "closed again" checks fail. In those, the service log says the cover was hidden about 100 ms after each close, and the pictures show no white box, so the sampler is reading something else. I'm switching that check to the service's own log, and recording the window blocks as INFO to learn what the sampler sees.
 <!-- sha:d8ce045b61c6 -->
+
+## 2026-11-10T11:23:31Z
+> v0.9.2 is bumped. `ship.sh` is running the local gates (handoff test, unit tests, lint) in the background, and the fixed `b6` rerun (#515) is running on CI. I'll read both when they finish.
+<!-- sha:f481cb195319 -->
