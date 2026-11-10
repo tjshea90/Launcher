@@ -4507,6 +4507,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     final ScrimFit.Transform t = ScrimFit.combine(r, g, b, why);
                     if (t == null) { postFinish("not measured: " + why[0]); return; }
                     Features.setString(app, ScrimMeasure.valueKey(rot, night), ScrimFit.encode(t, sig, night, System.currentTimeMillis()));
+                    Features.setString(app, ScrimMeasure.failKey(rot, night), "");   // BQ1a: the run was counted when it started; it stored a measurement, so it is no failure
                     final String line = "MEASURED " + ScrimFit.describe(t);
                     handler.post(new Runnable() { @Override public void run() {
                         try { reloadScrim(); if (patchView != null) patchView.invalidate(); } catch (Throwable ignored) { }
