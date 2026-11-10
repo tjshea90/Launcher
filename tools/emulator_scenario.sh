@@ -2458,6 +2458,8 @@ if [ -n "$FL" ] && [ -n "$CB" ]; then
     # ---- E (BB2, Tj, 2026-11-07, while testing the battery saver: "the lock screen screenshot itself again, not sure why"): the stored measurement was valid for ONE theme only and there was ONE slot, so every flip of the
     #      theme (battery saver switches the dark theme on and off) made the helper measure again (two camera flashes, the stock menu opening by itself) and overwrite the other theme's value. One slot per theme: the
     #      first time in the dark theme it is measured ONCE (slot patch_scrim_r0n, the light slot untouched); flipping back to the light theme must not start another measurement.
+    #      BQ2 (Tj, 2026-11-10, v0.9.1: "Why doesnt it just measure/calibrate one time and never screenshot again? I'm not changing the wallpaper"): since v0.9.2 the DARK look is NEVER measured, it uses the light
+    #      measurement; so in the dark theme (if the emulator reaches it) NO run may start and NO dark slot may be written. These checks hold whether or not the emulator really went dark.
     #      How to get the emulator into the dark theme: `cmd uimode night yes` did nothing on this image (run #288: 'Night mode: no'), so the REAL trigger is used too: battery saver (a direct low_power write forces the dark
     #      theme), with the guard's lock / custom-launcher switch-off rules out of the way for the duration. Whether it worked is read from the helper's own note ('the dark theme'); if the emulator cannot flip, the dark checks are
     #      skipped with an INFO line (never a false failure), the light-theme checks still run.
@@ -2467,15 +2469,13 @@ if [ -n "$FL" ] && [ -n "$CB" ]; then
     info "PT/BB2: after 'night yes' + saver on: uimode: $(adb shell cmd uimode night 2>&1 | tr -d '\r' | head -1); the command said: $(head -c 80 "$OUT/bb2-uimode.txt" | tr '\n' ' '); config: $(adb shell dumpsys uimode 2>&1 | grep -iE 'night' | head -3 | cut -c1-90 | tr '\n' '|')"
     adb logcat -c
     pbrestart                                                                   # the helper starts in the dark theme (if the emulator is in it): nothing is stored for it yet, so ONE measurement
-    for i in $(seq 1 45); do scrimslot patch_scrim_r0n | grep -q '#n#' && break; scrimslot scrim_why | grep -q 'dark theme' || { [ "$i" -ge 14 ] && break; }; sleep 2; done
+    sleep 20                                                                    # BQ2: the wake settles for 10 s and the helper looks again every 6 s: a (wrong) dark run would have started by now
     NIGHT_SLOT="$(scrimslot patch_scrim_r0n)"; DAY_SLOT="$(scrimslot patch_scrim_r0)"; WHYN="$(scrimslot scrim_why)"
     STARTS_N="$(adb logcat -d -s TjA11y:I 2>/dev/null | grep -c 'SCRIM measurement started')"
     info "PT/BB2: dark attempt: dark slot = ${NIGHT_SLOT:-none}; light slot = ${DAY_SLOT:-none}; measurements started $STARTS_N; why: ${WHYN:-?}"
     check "BB2: the light theme's measurement is still there (slot patch_scrim_r0 is the light one)" bash -c "echo \"$DAY_SLOT\" | grep -q '#d#'"
     check "BB2: the reason of the last measurement is written in plain words" bash -c "echo \"$WHYN\" | grep -q 'started because'"
-    if echo "$WHYN" | grep -q 'dark theme'; then
-      check "BB2: the dark theme got its OWN measurement, stored in its own slot (patch_scrim_r0n)" bash -c "echo \"$NIGHT_SLOT\" | grep -q '#n#'"
-    else info "PT/BB2: the emulator could not be put into the dark theme (the helper still saw the light theme): the dark-theme checks are skipped here; the unit tests cover the slots"; fi
+    check "BQ2: in the dark look nothing is measured: no run started, no dark slot written, the reason of the last run is not a dark one (the dark look uses the light measurement)" bash -c "[ \"${STARTS_N:-9}\" -eq 0 ] && [ -z \"$NIGHT_SLOT\" ] && ! echo \"$WHYN\" | grep -q 'dark theme'"
     adb shell settings put global low_power 0; adb shell cmd uimode night no >/dev/null 2>&1; sleep 4
     ptkey profile_battery_saver_lock_off true; ptkey profile_battery_saver_off true
     adb logcat -c
