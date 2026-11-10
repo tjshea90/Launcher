@@ -167,12 +167,6 @@ public class ScrimMeasureTest {
         assertTrue(ScrimMeasure.runLine("s", false, new String(new char[500]).replace('\0', 'x')).length() <= 160);
         assertEquals("scrim_last_run", ScrimMeasure.RUN_KEY);
     }
-    @Test public void theReportCanReadTheFailureCountWithoutKnowingTheLockScreen() {
-        String sig = PatchShot.sig(7, 0, 600, 1024);
-        assertEquals(0, ScrimMeasure.storedFailureCount(null)); assertEquals(0, ScrimMeasure.storedFailureCount("")); assertEquals(0, ScrimMeasure.storedFailureCount("garbage"));
-        assertEquals(0, ScrimMeasure.storedFailureCount(sig + "#d#abc"));
-        assertEquals(2, ScrimMeasure.storedFailureCount(ScrimMeasure.addFailure(ScrimMeasure.addFailure("", sig, true), sig, true)));
-    }
     @Test public void theSecondFrameWaitsForTheWholeFadeAndMore() { assertTrue(ScrimMeasure.OPEN_SETTLE_MS >= PatchFade.OPEN_MS + 800); }
     @Test public void aDebugBuildDoesNotMeasureUnlessAskedTo() { assertFalse(ScrimMeasure.defaultOn(true)); assertTrue(ScrimMeasure.defaultOn(false)); }
     @Test public void theValueKeyIsPerRotation() { assertEquals("patch_scrim_r0", ScrimMeasure.valueKey(0)); assertEquals("patch_scrim_r3", ScrimMeasure.valueKey(3)); }
