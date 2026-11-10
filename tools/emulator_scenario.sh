@@ -678,6 +678,8 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     info "BN8b drag: before $BN8_S0; after $BN8_S1; 'cover shown' lines within 480 ms after the first hide: $BN8_N; PENCIL lines: $(sed 's/^[0-9-]* //; s/ *I.TjA11y *([ 0-9]*): / /' "$OUT/pencil-drag-log.txt" | cut -c1-78 | head -n 9 | tr '\n' '|')"
     check "BN8b: the cover was up before the drag (else the drag proves nothing)" bash -c "case '$BN8_S0' in cover=shown*) exit 0;; esac; exit 1"
     check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
+    # run #516 (pictures 57 / 58): on the CI emulator this drag ends at the PIN pad and the panel stays OPEN behind it. The first BACK dismisses the PIN pad and shows the open panel again (the service covers the pencil again about 0.2 s later: correct, it was read as "STUCK" before); the closing that is judged below is the SECOND BACK.
+    adb shell input keyevent KEYCODE_BACK; sleep 2
   fi
   adb shell log -t TjA11y "BQ3 marker close 3"; adb shell input keyevent KEYCODE_BACK; sleep 2
   BK_Z3="$(pen_sample)"
