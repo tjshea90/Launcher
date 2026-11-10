@@ -25,7 +25,8 @@ final class SsHomeSummary implements SsPages.Live {
     private final View batteryRow, storageRow;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final SsBatteryText.TimeOfDay clock;
-    private SsBatteryStats.Data data = new SsBatteryStats.Data();
+    private SsBatteryStats.Data data = SsBatteryStats.seed();   // BN1p D1: the newest good reading whatever its age, so the first frame already has the estimate
+    private static String lastStorage = "";                      // BN1p D2: the newest storage line (main thread only), so a later visit has it in its first frame
     private Intent last;
     private boolean started, loading;
     private long lastLoad;
@@ -60,12 +61,13 @@ final class SsHomeSummary implements SsPages.Live {
         int plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
         int status = i.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
         String pct = NumberFormat.getPercentInstance().format(level / 100.0);
-        return pct + " - " + SsBatteryText.header(plugged, status, d.dischargeMs, d.chargeMs, nowMs, clock);
+        // BN1p D1: no status word ("Not charging") before a read has finished: the percentage alone until the estimate is known
+        return SsBatteryText.homeLine(pct, SsBatteryText.headerOrBlank(d.finished(), plugged, status, d.dischargeMs, d.chargeMs, nowMs, clock));
     }
 
     private void renderBattery() {
         if (!started || batteryRow == null) return;
-        SsRows.setSummary(batteryRow, batteryLine(last, data, System.currentTimeMillis(), clock));
+        SsRows.setSummary(batteryRow, SsRows.orBlank(batteryLine(last, data, System.currentTimeMillis(), clock)));   // BN1p D2: never an empty line (the row would shrink)
     }
 
     private void maybeReload(boolean force) {
@@ -79,21 +81,25 @@ final class SsHomeSummary implements SsPages.Live {
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
                 final SsBatteryStats.Data d = SsBatteryStats.read(6000);
-                main.post(new Runnable() { @Override public void run() { loading = false; if (d.any()) data = d; if (started) renderBattery(); } });
+                main.post(new Runnable() { @Override public void run() { loading = false; data = SsBatteryStats.keep(data, d); if (started) renderBattery(); } });
             }
         }, "TjSsHomeBatt");
         t.setDaemon(true);
         t.start();
     }
 
-    /** "95% used - 1.57 GB free": two StorageStatsManager calls, so on a worker thread; blank (the row keeps no summary line) when the volume could not be read. */
+    /** "95% used - 1.57 GB free": two StorageStatsManager calls, so on a worker thread; when the volume could not be read the row keeps the line it has (a blank one the first time), never a shorter row. */
     private void loadStorage() {
         if (storageRow == null) return;
+        SsRows.setSummary(storageRow, SsRows.orBlank(lastStorage));
         final Context app = a.getApplicationContext();
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
                 final String text = SsPagesStorage.homeSummary(app);
-                main.post(new Runnable() { @Override public void run() { if (started) SsRows.setSummary(storageRow, text); } });
+                main.post(new Runnable() { @Override public void run() {
+                    if (text.length() > 0) lastStorage = text;   // a failed read keeps the line that was there (BN1p D2)
+                    if (started) SsRows.setSummary(storageRow, SsRows.orBlank(text.length() > 0 ? text : lastStorage));
+                } });
             }
         }, "TjSsHomeStor");
         t.setDaemon(true);
