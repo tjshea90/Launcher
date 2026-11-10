@@ -2088,3 +2088,7 @@
 >
 > **Old auto-resume timer:** the one tied to this account (every 2 hours) can only wake this old session after your weekly reset. It stands down while the new account is committing. The new session should set up its own.
 <!-- sha:2c5285a07ab0 -->
+
+## 2026-11-10T01:11:57Z
+> The review is back with three real findings. The worst is a privacy leak: the new Recents diagnostic would copy card titles into the public tablet report. I'm recording the findings in the repo first so they survive a cutoff, then fixing them.
+<!-- sha:a739df0bb93e -->
