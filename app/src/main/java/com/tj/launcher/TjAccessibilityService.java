@@ -2428,12 +2428,13 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(penEval); penPending = true; handler.postDelayed(penEval, PencilRules.FingerGuard.HOLD_MS);
     }
 
-    /** One line in the lock-screen log (the tablet report): when the cover came and went, to the millisecond, with the reason. At most one every 250 ms; only while the tablet is locked. */
-    private void penLockLog(String text) {
+    /** One line in the lock-screen log (the tablet report): when the cover came and went, to the millisecond, with the reason. At most one 'shown' and one 'hidden' line every 250 ms (one gate per kind: a hide right after a show must not be dropped, review of BQ1b); only while the tablet is locked. */
+    private void penLockLog(boolean shown, String text) {
         try {
             long up = android.os.SystemClock.uptimeMillis();
-            if (up - penLockLoggedMs < 250 || !keyguardLockedFast()) return;
-            penLockLoggedMs = up;
+            if (!keyguardLockedFast()) return;
+            if (shown) { if (up - penLockShownMs < 250) return; penLockShownMs = up; }
+            else { if (up - penLockHiddenMs < 250) return; penLockHiddenMs = up; }
             LockLog.add(getApplicationContext(), "PENCIL", text);
         } catch (Throwable ignored) { }
     }
