@@ -2334,7 +2334,7 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean refreshed = false, visible = false, boundsOk = false; Rect b = new Rect();
             try {
                 refreshed = known.refresh();
-                if (refreshed) { visible = known.isVisibleToUser(); if (visible) { known.getBoundsInScreen(b); boundsOk = pencilBoundsOk(b); } }
+                if (refreshed) { visible = known.isVisibleToUser(); if (visible) { known.getBoundsInScreen(b); boundsOk = pencilBoundsOk(b) && insideItsWindow(known, b); } }   // BQ3: and inside its own window
             } catch (Throwable ignored) { }
             penFollowed = PencilRules.follow(true, refreshed, visible, boundsOk);   // BN4
             if (penFollowed == PencilRules.FOUND) { penFast++; penSearched = true; return b; }
