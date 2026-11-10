@@ -623,6 +623,9 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
   fi
   adb shell cmd statusbar collapse; sleep 2
+  BK_Z3="$(pen_sample)"
+  info "BQ3 ($1 mode): the panel closed again on the lock screen after the 1st / 2nd / 3rd opening: $BK_Z1 / $BK_Z2 / $BK_Z3"
+  check "BQ3: (stored mode $1) when the panel is closed again on the lock screen NO pencil cover is left up (the white box Tj saw when he slid the panel back up)" pen_none "$BK_Z1" "$BK_Z2" "$BK_Z3"
   b6unlock; BK_U="$(kg_state)"; sleep 2
   info "BK1b ($1 mode): after the phase the keyguard reports: $BK_U (showing=false = really unlocked)"
   check "BK1b: (stored mode $1) the phase ends with the device really unlocked (the next phase and the control start from that state)" test "$BK_U" = "showing=false"
