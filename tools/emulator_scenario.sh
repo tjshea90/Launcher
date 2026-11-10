@@ -3896,8 +3896,8 @@ info "SS3: resumed = $(tr -s ' \n' ' ' < $OUT/ss-resumed.txt | cut -c1-200)"
 check "SS3: the look-alike's own page activity is on screen (not com.android.settings)" grep -qE "com.tj.launcher/(\.|com\.tj\.launcher\.)(SsPageActivity|SettingsAlias)" "$OUT/ss-resumed.txt"
 ssdump "$OUT/ss-home.xml"
 # BN1p D1/D2: the Battery row shows "NN%" alone until the first read of the statistics has finished (never the status word first) and the Storage row gets its line when its worker returns: wait (bounded) for both before judging
-for SSK in 1 2 3 4 5; do if tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% - ' && tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% used - .* free"'; then break; fi; sleep 2; ssdump "$OUT/ss-home.xml"; done
-info "SS5e: home summaries complete after up to $((SSK-1)) extra dump(s) of the page"
+for SSW in 1 2 3 4 5; do if tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% - ' && tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% used - .* free"'; then break; fi; sleep 2; ssdump "$OUT/ss-home.xml"; done
+info "SS5e: home summaries complete after up to $((SSW-1)) extra dump(s) of the page"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
 check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
