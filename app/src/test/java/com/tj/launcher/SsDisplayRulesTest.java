@@ -51,6 +51,7 @@ public class SsDisplayRulesTest {
         assertEquals("After 1 minute of inactivity", SsDisplayRules.timeoutSummary(46_000));
         assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(0));
         assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(-1));          // "never" written by a vendor tool
+        assertEquals("After 15 seconds of inactivity", SsDisplayRules.timeoutSummary(Long.MIN_VALUE));   // review: no overflow in the distance
         assertEquals("After 30 minutes of inactivity", SsDisplayRules.timeoutSummary(Integer.MAX_VALUE));
         assertEquals("After 5 minutes of inactivity", SsDisplayRules.timeoutSummary(420_000));      // 7 min: closer to 5 than to 10
         for (int i = 0; i < SsDisplayRules.TIMEOUT_VALUES.length; i++) assertEquals(i, SsDisplayRules.nearestTimeoutIndex(SsDisplayRules.TIMEOUT_VALUES[i]));

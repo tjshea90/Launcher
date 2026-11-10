@@ -100,6 +100,7 @@ final class SsPagesBattery {
         private final Handler main = new Handler(Looper.getMainLooper());
         private final SsBatteryText.TimeOfDay clock;
         private SsBatteryStats.Data data = SsBatteryStats.seed(android.os.SystemClock.elapsedRealtime());   // BN1p D1: the newest good reading whatever its age (until its estimate runs out): the first frame already has the sentence and both value rows
+        private boolean readDone;   // BN1p D1: a read (or a fresh shared one) has been adopted by THIS page: from then on the status word is the honest fallback
         private Intent last;
         private boolean started, loading;
         private long lastLoad;
@@ -129,7 +130,7 @@ final class SsPagesBattery {
             long now = android.os.SystemClock.elapsedRealtime();
             if (loading) return;
             SsBatteryStats.Data shared = SsBatteryStats.recent(MIN_RELOAD_MS, now);   // review A #3: the Settings home (or an earlier visit) read the dump a moment ago, do not spawn another dumpsys
-            if (shared != null) { if (data != shared) { data = shared; if (started) render(); } return; }
+            if (shared != null) { readDone = true; if (data != shared) data = shared; if (started) render(); return; }
             if (!force && now - lastLoad < MIN_RELOAD_MS) return;
             loading = true;
             lastLoad = now;
@@ -139,7 +140,7 @@ final class SsPagesBattery {
                     final SsBatteryStats.Data d = SsBatteryStats.read(6000);
                     try { Features.setStringAsync(app, STATUS_KEY, new java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()) + "  " + d.status
                             + "  start=" + (d.startClockMs >= 0) + " screen=" + (d.screenOnMs >= 0) + " drain=" + (d.dischargeMs >= 0) + " charge=" + (d.chargeMs >= 0)); } catch (Throwable ignored) { }
-                    main.post(new Runnable() { @Override public void run() { loading = false; data = SsBatteryStats.keep(data, d); if (started) render(); } });
+                    main.post(new Runnable() { @Override public void run() { loading = false; readDone = true; data = SsBatteryStats.keep(data, d); if (started) render(); } });
                 }
             }, "TjSsBatt");
             t.setDaemon(true);
@@ -159,7 +160,7 @@ final class SsPagesBattery {
             pct.setText(percent(level));
             long now = System.currentTimeMillis();
             long el = android.os.SystemClock.elapsedRealtime();   // the estimate counts down from the moment of its read (a seeded reading may be old)
-            summary.setText(SsBatteryText.headerOrBlank(data.finished(), plugged, status, data.drainAt(el), data.chargeAt(el), now, clock));   // BN1p D1: empty (two lines kept) until a read has finished, never "Not charging" first
+            summary.setText(SsBatteryText.headerOrBlank(readDone || data.usableFor(plugged != 0, el), plugged, status, data.drainAt(el), data.chargeAt(el), now, clock));   // BN1p D1: empty (two lines kept) until a read has finished, never "Not charging" first
             lastFull.setText(data.startClockMs >= 0 ? SsFormat.ago(Math.max(0, now - data.startClockMs)) : "");
             screenUse.setText(data.screenOnMs >= 0 ? SsFormat.elapsed(data.screenOnMs) : "");
         }

@@ -37,6 +37,12 @@ final class SsBatteryStats {
         long drainAt(long nowElapsed) { return remaining(dischargeMs, nowElapsed); }
         long chargeAt(long nowElapsed) { return remaining(chargeMs, nowElapsed); }
 
+        /**
+         * BN1p D1 (review finding 1): may a page show the sentence from THIS reading before its own read has finished? Only when the reading has an estimate that still applies to the plug state NOW: a seed from a
+         * charging session has no discharge figure, and the header would fall back to the status word ("Not charging") in the first frame, which is the flash D1 removes.
+         */
+        boolean usableFor(boolean pluggedIn, long nowElapsed) { return pluggedIn ? chargeAt(nowElapsed) > 0 : drainAt(nowElapsed) > 0; }
+
         /** True when the reading HAD an estimate that has run out by now: a page must not start from it (the refresh a second later has the real one). */
         boolean expired(long nowElapsed) { return (dischargeMs > 0 && drainAt(nowElapsed) < 0) || (chargeMs > 0 && chargeAt(nowElapsed) < 0); }
 
@@ -170,6 +176,7 @@ final class SsBatteryStats {
             return d;
         } catch (Throwable t) {
             parser.data.status = "exec-failed";
+            parser.data.readAtElapsed = android.os.SystemClock.elapsedRealtime();   // review: a partial reading still counts its estimate down
             return parser.data;
         } finally {
             finished.set(true);

@@ -26,6 +26,7 @@ final class SsHomeSummary implements SsPages.Live {
     private final Handler main = new Handler(Looper.getMainLooper());
     private final SsBatteryText.TimeOfDay clock;
     private SsBatteryStats.Data data = SsBatteryStats.seed(android.os.SystemClock.elapsedRealtime());   // BN1p D1: the newest good reading whatever its age (until its estimate runs out), so the first frame already has the estimate
+    private boolean readDone;   // BN1p D1: a read (or a fresh shared one) has been adopted by THIS page: from then on the status word is the honest fallback
     private static String lastStorage = "";                      // BN1p D2: the newest storage line (main thread only), so a later visit has it in its first frame
     private Intent last;
     private boolean started, loading;
@@ -53,36 +54,37 @@ final class SsHomeSummary implements SsPages.Live {
         try { a.unregisterReceiver(rx); } catch (Throwable ignored) { }
     }
 
-    /** The percentage and the header sentence, as one line ("69% - Not charging"). Pure function of the battery intent, the estimate and the clock. */
-    static String batteryLine(Intent i, SsBatteryStats.Data d, long nowMs, SsBatteryText.TimeOfDay clock) {
+    /** The percentage and the header sentence, as one line ("69% - Not charging"). A function of the battery intent, the estimate, the read state and the clock (the estimate counts down on the elapsed-time clock). */
+    static String batteryLine(Intent i, SsBatteryStats.Data d, boolean readDone, long nowMs, SsBatteryText.TimeOfDay clock) {
         if (i == null) return "";
         int scale = Math.max(1, i.getIntExtra(BatteryManager.EXTRA_SCALE, 100));
         int level = Math.round(100f * i.getIntExtra(BatteryManager.EXTRA_LEVEL, 0) / scale);
         int plugged = i.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0);
         int status = i.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
         String pct = NumberFormat.getPercentInstance().format(level / 100.0);
-        // BN1p D1: no status word ("Not charging") before a read has finished: the percentage alone until the estimate is known
+        // BN1p D1: no status word ("Not charging") before a read has finished: the percentage alone until the estimate is known. A seeded reading counts only if its estimate fits the plug state NOW (review finding 1).
         long el = android.os.SystemClock.elapsedRealtime();   // the estimate counts down from the moment of its read (a seeded reading may be old)
-        return SsBatteryText.homeLine(pct, SsBatteryText.headerOrBlank(d.finished(), plugged, status, d.drainAt(el), d.chargeAt(el), nowMs, clock));
+        boolean known = readDone || d.usableFor(plugged != 0, el);
+        return SsBatteryText.homeLine(pct, SsBatteryText.headerOrBlank(known, plugged, status, d.drainAt(el), d.chargeAt(el), nowMs, clock));
     }
 
     private void renderBattery() {
         if (!started || batteryRow == null) return;
-        SsRows.setSummary(batteryRow, SsRows.orBlank(batteryLine(last, data, System.currentTimeMillis(), clock)));   // BN1p D2: never an empty line (the row would shrink)
+        SsRows.setSummary(batteryRow, SsRows.orBlank(batteryLine(last, data, readDone, System.currentTimeMillis(), clock)));   // BN1p D2: never an empty line (the row would shrink)
     }
 
     private void maybeReload(boolean force) {
         long now = android.os.SystemClock.elapsedRealtime();
         if (loading) return;
         SsBatteryStats.Data shared = SsBatteryStats.recent(MIN_RELOAD_MS, now);   // review B #4 / A #3: the Battery page (or an earlier visit) read the dump a moment ago, do not spawn another dumpsys on every return to the home page
-        if (shared != null) { if (data != shared) { data = shared; renderBattery(); } return; }
+        if (shared != null) { readDone = true; if (data != shared) { data = shared; } renderBattery(); return; }
         if (!force && now - lastLoad < MIN_RELOAD_MS) return;
         loading = true;
         lastLoad = now;
         Thread t = new Thread(new Runnable() {
             @Override public void run() {
                 final SsBatteryStats.Data d = SsBatteryStats.read(6000);
-                main.post(new Runnable() { @Override public void run() { loading = false; data = SsBatteryStats.keep(data, d); if (started) renderBattery(); } });
+                main.post(new Runnable() { @Override public void run() { loading = false; readDone = true; data = SsBatteryStats.keep(data, d); if (started) renderBattery(); } });
             }
         }, "TjSsHomeBatt");
         t.setDaemon(true);

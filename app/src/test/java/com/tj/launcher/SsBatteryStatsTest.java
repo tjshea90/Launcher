@@ -172,6 +172,20 @@ public class SsBatteryStatsTest {
         assertEquals(-1, d.drainAt(1_000));
     }
 
+    /** Review finding 1: a seed from a charging session has no discharge figure; shown unplugged, the header would fall back to the status word in the first frame. */
+    @Test public void aSeedIsUsableOnlyForThePlugStateItHasAnEstimateFor() {
+        SsBatteryStats.Data d = new SsBatteryStats.Data();
+        d.dischargeMs = 3_600_000; d.readAtElapsed = 1_000;
+        assertTrue(d.usableFor(false, 1_000));
+        assertFalse(d.usableFor(true, 1_000));            // charging now: this reading has no charge time
+        d.chargeMs = 600_000;
+        assertTrue(d.usableFor(true, 1_000));
+        assertFalse(d.usableFor(true, 601_000));          // the charge estimate has run out
+        assertTrue(d.usableFor(false, 601_000));          // the discharge one has not
+        assertFalse(new SsBatteryStats.Data().usableFor(false, 0));   // a blank seed is never usable
+        assertFalse(new SsBatteryStats.Data().usableFor(true, 0));
+    }
+
     @Test public void aFinishedReadIsKnownEvenWhenItFoundNothing() {
         assertFalse(new SsBatteryStats.Data().finished());
         assertTrue(SsBatteryStats.parse(DISCHARGING, UTC).finished());

@@ -57,8 +57,9 @@ final class SsDisplayRules {
     static int nearestTimeoutIndex(long ms) {
         int best = 0;
         long bestDiff = Long.MAX_VALUE;
+        long m = ms < 0 ? 0 : ms;   // "never" written as -1 (or anything negative) reads as the shortest entry; also keeps the subtraction far from overflow
         for (int i = 0; i < TIMEOUT_VALUES.length; i++) {
-            long diff = Math.abs(TIMEOUT_VALUES[i] - ms);
+            long diff = Math.abs(TIMEOUT_VALUES[i] - m);
             if (diff < bestDiff) { bestDiff = diff; best = i; }
         }
         return best;
