@@ -27,6 +27,25 @@ final class SsBatteryStats {
         boolean any() { return startClockMs >= 0 || screenOnMs >= 0 || dischargeMs >= 0 || chargeMs >= 0; }
         /** BN1p D1: true once a read has FINISHED, even one that found nothing. Until then a page shows no status word ("Not charging"), because Tj's screenshots never show one. */
         boolean finished() { return !"none".equals(status); }
+
+        long readAtElapsed = -1;     // SystemClock.elapsedRealtime() when the read finished; -1 = not from a read (parse() in tests)
+
+        /**
+         * BN1p D1: Android's discharge estimate as of {@code nowElapsed}: the figure of the read minus the time that has passed since it ({@code -1}: none, or used up). A page may start from a reading of any age, and
+         * "now + the figure of an hour-old read" would put the end time an hour too late; counting down keeps the END time where Android put it.
+         */
+        long drainAt(long nowElapsed) { return remaining(dischargeMs, nowElapsed); }
+        long chargeAt(long nowElapsed) { return remaining(chargeMs, nowElapsed); }
+
+        /** True when the reading HAD an estimate that has run out by now: a page must not start from it (the refresh a second later has the real one). */
+        boolean expired(long nowElapsed) { return (dischargeMs > 0 && drainAt(nowElapsed) < 0) || (chargeMs > 0 && chargeAt(nowElapsed) < 0); }
+
+        private long remaining(long ms, long nowElapsed) {
+            if (ms < 0) return -1;
+            if (readAtElapsed < 0 || nowElapsed < readAtElapsed) return ms;   // unknown read time, or a clock that went backwards: as read
+            long left = ms - (nowElapsed - readAtElapsed);
+            return left > 0 ? left : -1;
+        }
     }
 
     private static final Pattern CLOCK = Pattern.compile("^\\s*Start clock time:\\s*(\\d{4})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})-(\\d{2})\\s*$");
@@ -108,10 +127,11 @@ final class SsBatteryStats {
     static synchronized void forget() { lastGood = null; lastGoodAt = 0; }
 
     /**
-     * BN1p D1: where a page starts from. The newest good reading WHATEVER ITS AGE (the throttle in {@link #recent} only decides whether to read again), so the first frame already carries an estimate and the
-     * two value rows instead of a status word and empty cells; a read refreshes it a moment later. Before the very first good read: a blank reading that is not {@link Data#finished()}.
+     * BN1p D1: where a page starts from. The newest good reading WHATEVER ITS AGE (the throttle in {@link #recent} only decides whether to read again) as long as its estimate has not run out
+     * ({@link Data#expired}; the pages count the estimate down with {@link Data#drainAt}), so the first frame already carries the sentence and the two value rows instead of a status word and empty cells; a read
+     * refreshes it a moment later. Before the very first good read, or after an expired one: a blank reading that is not {@link Data#finished()}.
      */
-    static synchronized Data seed() { return lastGood != null ? lastGood : new Data(); }
+    static synchronized Data seed(long nowElapsed) { Data g = lastGood; return g != null && !g.expired(nowElapsed) ? g : new Data(); }
 
     /** What a page keeps after a read: the new reading when it has numbers, else the old one if THAT has numbers, else the (finished, empty) new one so the status word may show. */
     static Data keep(Data old, Data fresh) { return fresh.any() || old == null || !old.any() ? fresh : old; }
@@ -145,7 +165,8 @@ final class SsBatteryStats {
             finished.set(true);
             Data d = parser.data;
             d.status = d.any() ? (d.startClockMs >= 0 && d.screenOnMs >= 0 ? "ok" : "partial") : denied ? "no-dump" : timedOut.get() ? "timeout" : "empty";
-            remember(d, android.os.SystemClock.elapsedRealtime());
+            d.readAtElapsed = android.os.SystemClock.elapsedRealtime();
+            remember(d, d.readAtElapsed);
             return d;
         } catch (Throwable t) {
             parser.data.status = "exec-failed";

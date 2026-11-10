@@ -99,7 +99,7 @@ final class SsPagesBattery {
         private final SsBatteryIcon icon;
         private final Handler main = new Handler(Looper.getMainLooper());
         private final SsBatteryText.TimeOfDay clock;
-        private SsBatteryStats.Data data = SsBatteryStats.seed();   // BN1p D1: the newest good reading whatever its age: the first frame already has the sentence and both value rows
+        private SsBatteryStats.Data data = SsBatteryStats.seed(android.os.SystemClock.elapsedRealtime());   // BN1p D1: the newest good reading whatever its age (until its estimate runs out): the first frame already has the sentence and both value rows
         private Intent last;
         private boolean started, loading;
         private long lastLoad;
@@ -158,7 +158,8 @@ final class SsPagesBattery {
             icon.set(level, plugged != 0, saver);
             pct.setText(percent(level));
             long now = System.currentTimeMillis();
-            summary.setText(SsBatteryText.headerOrBlank(data.finished(), plugged, status, data.dischargeMs, data.chargeMs, now, clock));   // BN1p D1: empty (two lines kept) until a read has finished, never "Not charging" first
+            long el = android.os.SystemClock.elapsedRealtime();   // the estimate counts down from the moment of its read (a seeded reading may be old)
+            summary.setText(SsBatteryText.headerOrBlank(data.finished(), plugged, status, data.drainAt(el), data.chargeAt(el), now, clock));   // BN1p D1: empty (two lines kept) until a read has finished, never "Not charging" first
             lastFull.setText(data.startClockMs >= 0 ? SsFormat.ago(Math.max(0, now - data.startClockMs)) : "");
             screenUse.setText(data.screenOnMs >= 0 ? SsFormat.elapsed(data.screenOnMs) : "");
         }

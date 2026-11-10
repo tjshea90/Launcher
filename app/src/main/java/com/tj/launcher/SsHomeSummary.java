@@ -25,7 +25,7 @@ final class SsHomeSummary implements SsPages.Live {
     private final View batteryRow, storageRow;
     private final Handler main = new Handler(Looper.getMainLooper());
     private final SsBatteryText.TimeOfDay clock;
-    private SsBatteryStats.Data data = SsBatteryStats.seed();   // BN1p D1: the newest good reading whatever its age, so the first frame already has the estimate
+    private SsBatteryStats.Data data = SsBatteryStats.seed(android.os.SystemClock.elapsedRealtime());   // BN1p D1: the newest good reading whatever its age (until its estimate runs out), so the first frame already has the estimate
     private static String lastStorage = "";                      // BN1p D2: the newest storage line (main thread only), so a later visit has it in its first frame
     private Intent last;
     private boolean started, loading;
@@ -62,7 +62,8 @@ final class SsHomeSummary implements SsPages.Live {
         int status = i.getIntExtra(BatteryManager.EXTRA_STATUS, BatteryManager.BATTERY_STATUS_UNKNOWN);
         String pct = NumberFormat.getPercentInstance().format(level / 100.0);
         // BN1p D1: no status word ("Not charging") before a read has finished: the percentage alone until the estimate is known
-        return SsBatteryText.homeLine(pct, SsBatteryText.headerOrBlank(d.finished(), plugged, status, d.dischargeMs, d.chargeMs, nowMs, clock));
+        long el = android.os.SystemClock.elapsedRealtime();   // the estimate counts down from the moment of its read (a seeded reading may be old)
+        return SsBatteryText.homeLine(pct, SsBatteryText.headerOrBlank(d.finished(), plugged, status, d.drainAt(el), d.chargeAt(el), nowMs, clock));
     }
 
     private void renderBattery() {
