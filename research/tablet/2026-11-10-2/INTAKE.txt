@@ -1,0 +1,8 @@
+source: cf88de3a-tablet-report.txt
+label: 
+date: 2026-11-10
+kept: tablet-report.txt
+read: FACTS.md was written from tablet-report.txt
+redactions: none
+skipped:
+  (nothing)
