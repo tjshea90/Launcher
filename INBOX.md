@@ -1425,3 +1425,8 @@ Make the settings gear icon in the custom launcher notification panel open the s
 
 Also, research if there is any way using accessibility or adb to remove the pencil icon from the notification panel entirely instead of covering it up 
 ```
+
+## 2026-11-10T23:27:24Z
+```
+Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher 
+```
