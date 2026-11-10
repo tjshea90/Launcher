@@ -162,6 +162,14 @@ N=$((N+1))
 } > CHECKPOINT.md
 
 # ---- commit -----------------------------------------------------------------
+# A merge with unresolved conflicts is never committed (2026-11-10, TASKS BP1e / BP2e): `git add -A` would mark the
+# files resolved and publish the conflict markers. CHECKPOINT.md above is already rewritten, so nothing is lost.
+UNMERGED="$(git diff --name-only --diff-filter=U 2>/dev/null | head -5 | tr '\n' ' ')"
+if [ -n "$UNMERGED" ]; then
+  echo "  !! ckpt NOT committed: a merge is in progress with unresolved conflicts in: $UNMERGED"
+  echo "     Resolve them, then: git add -A && git commit --no-edit   and run ckpt again."
+  exit 1
+fi
 git add -A >/dev/null 2>&1
 
 # THE ONE EXCEPTION TO "NO GATE".
