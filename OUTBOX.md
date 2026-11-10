@@ -2296,3 +2296,7 @@
 >
 > **Still open from Tj:** the lock-screen screenshots question (answered in chat, fix in this release) and the pencil white box (fix in this release).
 <!-- sha:0279dea48764 -->
+
+## 2026-11-10T09:28:34Z
+> Waiting on two runs: `b6,n,o,x,ac,ad` (#504) and the solo `base` rerun (#506, id 42790941782). I'll read them at about 09:34Z.
+<!-- sha:abce27d04a36 -->
