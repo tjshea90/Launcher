@@ -1,21 +1,23 @@
-# CHECKPOINT 998 — read me first, then TASKS.md
+# CHECKPOINT 1000 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T20:04:20Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `a542594` (this checkpoint is the commit after it)
+**Written:** 2026-11-10T20:08:58Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `8d63c8d` (this checkpoint is the commit after it)
 
 ## Just done
-v0.9.3 (code 42) shipped a542594 = main; android.yml full_build DISPATCHED on main ~20:03Z
+v0.9.3 RELEASED + recorded (android.yml run 44 id 42891423582, a542594, published 20:06:10Z); BR1/BR2 ticked; answer to Tj next (research/V093_RELEASE_MESSAGE_DRAFT_2026-11-10.md)
 
 ## Do this next
-wait to ~20:07Z, then get_release_by_tag v0.9.3 (target_commitish a542594?); green -> bash tools/record-release.sh v0.9.3 'BR1: gear opens the look-alike (fast tier, emulator gear green)'; then send research/V093_RELEASE_MESSAGE_DRAFT_2026-11-10.md (Release link alone on its own line), check OUTBOX.md shows it; heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE stays DISABLED
+SEND the v0.9.3 answer to Tj (Release link alone on its own line), then verify OUTBOX.md has an entry starting 'Tj, v0.9.3 is out'. Open and waiting on Tj: BR1c (gear on the tablet), BN7a helper+usage, BN8c/BN8d reports, BH1c/BK1e answers, BQ1b report. LOW: BQ4, BN6, BN5, BN1p R6-R8. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE DISABLED (no long job)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  97e99eb ckpt 998: v0.9.3 (code 42) shipped a542594 = main; android.yml full_build DISPATCHED on 
   a542594 ckpt 997: gated v0.9.3 (code 42) and pushed it: the handoff self-test, the full unit sui
   634ed77 ckpt 994: BR1 emu run #518 (id 42889694843, job 130087240598, main@5360869, sections=gea
   44a6455 ckpt 992: BR1 emu run #518 id 42889694843 (sections=gear, shots, main@5360869) DISPATCHE
@@ -25,5 +27,4 @@ wait to ~20:07Z, then get_release_by_tag v0.9.3 (target_commitish a542594?); gre
   4f00f29 ckpt 971: Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE DISABLED 16:34Z (update_trigger enable
   57d90ce ckpt 970: Heartbeat firing 16:22Z: rule 2 no other session working, rule 3 no unanswered
   afe5fc4 ckpt 969: Heartbeat firing 14:24Z: rule 2 no other session working; v0.9.2 shipped/answe
-  fbac8ea ckpt 967: b6 rerun #517 (id 42811195897, head 52093c7) GREEN: 21 PASS 0 FAIL; custom clo
 ```
