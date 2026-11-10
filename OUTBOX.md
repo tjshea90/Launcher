@@ -1984,3 +1984,45 @@
 >
 > Two last `base,legacy` runs (#498 on `main`, #499 on the branch) started at 23:56 UTC. I read them at about 00:10 UTC. If they are clean or every failure follows a native crash, I start the v0.9.0 release build.
 <!-- sha:8e53485d727c -->
+
+## 2026-11-10T00:20:39Z
+> v0.9.0 is out: the Settings look-alike.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.0
+>
+> None of it has run on your tablet yet. The emulator test runs are described under "Test status" below.
+>
+> **What it is.** The Settings icon in the custom launcher's drawer now opens my look-alike, built from your screenshots. It has Battery, Display, Sound, Storage, Accessibility, System (Languages & input), About tablet and the Text-to-speech page, with no search icon anywhere. Looks come first. Where the app can't really change something, the control moves and nothing happens, with no error and no snap-back.
+>
+> **What you do**
+> 1. Install `Launcher-v0.9.0.apk` over the old one. It has the same key, so your Home choice, permissions and accessibility stay.
+> 2. Start the adb helper again. An install ends it, and it learns one new command for Mono audio and Audio balance.
+> 3. Grant one new permission, needed for "Last full charge" and "Screen usage" on the Battery page:
+> ```
+> adb shell pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS
+> ```
+> 4. Open Settings from the drawer and go through the pages next to your screenshots. Then send the tablet report (Launcher control → report) and photos of anything that looks different. The steps are in `research/TABLET_CHECKLIST_v0.9.0.md`.
+>
+> **Your "custom" message.** You most likely saw my test picture from the test emulator. Its screen density isn't one of the stock steps, so it read "Custom". Display size can no longer say that. The five steps (Small, Default, Large, Larger, Largest) are rebuilt around the current density. I also redrew the chat preview to your five screenshots. Function is secondary everywhere. Display size is look-only because an app can't change the density itself.
+>
+> **Text-to-speech page.** The sliders move and change nothing. It shows Pico TTS with an inert gear and "Use system language". PLAY and RESET are enabled but do nothing. The gear follows the stock Android 10 design, so if yours looks different, send a screenshot of the real page.
+>
+> **Three small choices I made (tell me if any is wrong).**
+> - No percentage on the Solitaire row.
+> - Storage → System opens the same dialog as the stock one.
+> - Storage sizes show GB with two decimals.
+>
+> **Test status.** The emulator runs had random crashes in the emulator's own graphics layer, which the previous release v0.8.13 shows too. They also had a timing mistake in my crash test, now fixed.
+> - The final clean run of the base and legacy checks: 45 pass, 0 fail.
+> - A second identical run had one failing check, an app launched from the launcher showing up in Recents, 44 s after one of those crashes. I can't explain it yet, so I'll test it on v0.8.13 before calling it a bug.
+>
+> **Next, without waiting for you.** An audit found two first-frame differences. Battery briefly says "Not charging", and the Storage row is a little short for a moment. It also found a few edge cases, and I'll fix them in v0.9.1. The 2-hourly auto-resume heartbeat stays on until then.
+>
+> **Still waiting on you**
+> - Tablet checks of v0.8.9, v0.8.11, v0.8.12, v0.8.13 (`research/TABLET_CHECKLIST_v0.8.13.md`) and v0.9.0.
+> - Answers for BH1c and BK1e.
+> - A tablet report right after you see a lock-screen flash.
+> - Turn off the account plugin `session-handoff`, because it blocks compaction in your other projects too.
+>
+> In your first v0.9.0 report I'll read the `ss_storage_status` and `ss_battery_status` lines.
+<!-- sha:af920f3ad7c0 -->
