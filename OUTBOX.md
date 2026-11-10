@@ -2129,3 +2129,7 @@
 >
 > I've recorded the takeover in checkpoint 863, so the other account's session will see it when it wakes.
 <!-- sha:2e19d6bc2267 -->
+
+## 2026-11-10T04:35:37Z
+> The `rb` re-run (#502) is in flight and I've saved its run id in checkpoint 864. I'll read the result when the timer fires at 04:39:30Z.
+<!-- sha:e8d6ceeca882 -->
