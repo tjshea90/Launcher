@@ -107,6 +107,15 @@ final class SsBatteryStats {
 
     static synchronized void forget() { lastGood = null; lastGoodAt = 0; }
 
+    /**
+     * BN1p D1: where a page starts from. The newest good reading WHATEVER ITS AGE (the throttle in {@link #recent} only decides whether to read again), so the first frame already carries an estimate and the
+     * two value rows instead of a status word and empty cells; a read refreshes it a moment later. Before the very first good read: a blank reading that is not {@link Data#finished()}.
+     */
+    static synchronized Data seed() { return lastGood != null ? lastGood : new Data(); }
+
+    /** What a page keeps after a read: the new reading when it has numbers, else the old one if THAT has numbers, else the (finished, empty) new one so the status word may show. */
+    static Data keep(Data old, Data fresh) { return fresh.any() || old == null || !old.any() ? fresh : old; }
+
     /** Runs {@code dumpsys batterystats --charged}; blocks up to {@code limitMs}. Never throws. */
     static Data read(long limitMs) {
         final AtomicBoolean finished = new AtomicBoolean(false);
