@@ -1405,3 +1405,8 @@ Try again
 ```
 This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
 ```
+
+## 2026-11-10T08:15:46Z
+```
+@"/root/.claude/uploads/f57c5b9c-bf62-5be7-8f0c-bd772cf12bbe/cf88de3a-tablet-report.txt" It did two or three screenshots of the lock screen again, one time on each of the three last times I went to the lock screen. The pencil white cover shows when I slide the notification panel back up. 
+```
