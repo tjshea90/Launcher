@@ -2304,3 +2304,7 @@
 ## 2026-11-10T09:42:58Z
 > Both reruns are still in flight (`b6` solo, `b6,n` on the v0.9.1 tag); I'll read them when the timer fires at 09:45:30Z. Base and `n` already pass alone, so the open question is whether the two pencil-cover failures reproduce on the head and not on the tag.
 <!-- sha:cbe4051adf38 -->
+
+## 2026-11-10T10:53:22Z
+> The fixed `b6,n` run is on the emulator. I've reverted the service to the already-gated code, so it's identical to what passed the gate earlier. I've also written the v0.9.2 lessons into `CLAUDE.md` and checkpointed. A timer will wake me at 11:03:30 UTC to read the result.
+<!-- sha:1fc753a5921b -->
