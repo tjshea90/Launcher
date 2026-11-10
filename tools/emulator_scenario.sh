@@ -592,6 +592,22 @@ bq3_closes_ok(){ # bq3_closes_ok <verdict of close 1> <close 2> <close 3>: closi
   done
   return 0
 }
+pen_tl(){ # pen_tl <logcat -v time file> <ERE of the line to start at> <lines to skip> <lines to print>: the cover's timeline as "ss.mmm text|" tokens (cover shown / hidden with its reason and age, looks, markers; the fast-watch lines are left out). Run #515: the 3rd closing of the custom phase read STUCK-shown and nothing said why
+  awk -v from="$2" -v skip="$3" -v cnt="$4" 'BEGIN { n = 0; f = 0 }
+    f == 0 && $0 ~ from { f = 1 }
+    f == 1 && ($0 ~ /PENCIL (cover|look)/ || $0 ~ /BN8b marker|BQ3 marker/) {
+      t = $2; sub(/^[0-9][0-9]:[0-9][0-9]:/, "", t)
+      s = $0; sub(/^.*TjA11y *\([ 0-9]*\): /, "", s)
+      if (s ~ /^PENCIL cover hidden/) {
+        r = s; sub(/^PENCIL cover hidden \(kept warm; /, "", r); a = ""
+        if (match(r, /last seen [0-9]+ ms ago/)) a = substr(r, RSTART + 10, RLENGTH - 17)
+        sub(/, the pencil was last seen.*$/, "", r); sub(/\)$/, "", r)
+        s = "hid: " substr(r, 1, 26) (a != "" ? " +" a "ms" : "")
+      } else if (s ~ /^PENCIL cover shown/) { sub(/^PENCIL cover shown /, "SHOWN ", s) }
+      else { sub(/^PENCIL /, "", s) }
+      n++; if (n > skip && n <= skip + cnt) printf "%s %s|", t, substr(s, 1, 42)
+    }' "$1"
+}
 pen_blocks(){ # one compact summary per TjPencilCover block of the window dump (session pid, touchable or hidden, frame): the INFO line that explains a window sample (run #514: samples read 'shown' while the service had hidden its cover)
   adb shell dumpsys window windows </dev/null 2>/dev/null | awk 'function blk() { printf "[pid=%s %s %s] ", pid, (nt ? "hidden" : "touchable"), fr; inb=0 }
     /TjPencilCover}/ { if (inb) blk(); inb=1; n=0; nt=0; pid="?"; fr="?"; next }
@@ -656,6 +672,7 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     adb logcat -c; adb shell log -t TjA11y "BN8b marker drag"
     adb shell input swipe 300 300 300 60 800; adb shell log -t TjA11y "BN8b marker end"; sleep 1
     BN8_S1="$(pen_sample)"
+    shot 57-after-drag-$1       # run #515: what the lock screen REALLY shows about a second after the finger left the panel
     adb logcat -d -v time -s TjA11y:I | grep -E 'PENCIL|BN8b marker' > "$OUT/pencil-drag-log.txt" 2>&1
     BN8_N="$(bn8_shown_after_hide "$OUT/pencil-drag-log.txt" 480)"
     info "BN8b drag: before $BN8_S0; after $BN8_S1; 'cover shown' lines within 480 ms after the first hide: $BN8_N; PENCIL lines: $(sed 's/^[0-9-]* //; s/ *I.TjA11y *([ 0-9]*): / /' "$OUT/pencil-drag-log.txt" | cut -c1-78 | head -n 9 | tr '\n' '|')"
@@ -664,11 +681,17 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   fi
   adb shell log -t TjA11y "BQ3 marker close 3"; adb shell input keyevent KEYCODE_BACK; sleep 2
   BK_Z3="$(pen_sample)"
+  shot 58-after-close3-$1; BK_BC3="$(pen_blocks)"   # run #515: the 3rd closing of the custom phase read STUCK-shown; the picture shows whether a white box is really there
   adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log2.txt" 2>&1
   BQ3_V3="$(bq3_close_verdict "$OUT/pencil-lock-$1-log2.txt" 3)"
   info "BQ3 ($1 mode): what the SERVICE did after the BACK key that closed the panel the 1st / 2nd / 3rd time: $BQ3_V1 / $BQ3_V2 / $BQ3_V3 (hidden-in-<ms> = it took the cover away that many ms after the key)"
   info "BQ3 ($1 mode): window samples after those closings (INFO only, the sampler can read a second, stale block): $BK_Z1 / $BK_Z2 / $BK_Z3"
   info "BQ3 ($1 mode): cover window blocks while the panel was open: $BK_BO; 2 s after the 1st close: $BK_BC"
+  info "BQ3 ($1 mode): window blocks 2 s after the 3rd close: $BK_BC3"
+  info "BQ3 ($1 mode): the service's cover timeline from the 3rd opening / the BN8b drag on (second.ms), 1/4: $(pen_tl "$OUT/pencil-lock-$1-log2.txt" 'BQ3 marker open 3|BN8b marker drag' 0 5)"
+  info "BQ3 ($1 mode): cover timeline 2/4: $(pen_tl "$OUT/pencil-lock-$1-log2.txt" 'BQ3 marker open 3|BN8b marker drag' 5 5)"
+  info "BQ3 ($1 mode): cover timeline 3/4: $(pen_tl "$OUT/pencil-lock-$1-log2.txt" 'BQ3 marker open 3|BN8b marker drag' 10 5)"
+  info "BQ3 ($1 mode): cover timeline 4/4: $(pen_tl "$OUT/pencil-lock-$1-log2.txt" 'BQ3 marker open 3|BN8b marker drag' 15 5)"
   check "BQ3: (stored mode $1) after every closing of the panel on the lock screen the service takes the cover away at once and none is left up (the white box Tj saw when he slid the panel back up; its own log: hidden within 1.5 s of the BACK key, nothing shown afterwards)" bq3_closes_ok "$BQ3_V1" "$BQ3_V2" "$BQ3_V3"
   b6unlock; BK_U="$(kg_state)"; sleep 2
   info "BK1b ($1 mode): after the phase the keyguard reports: $BK_U (showing=false = really unlocked)"

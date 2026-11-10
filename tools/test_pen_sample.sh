@@ -8,7 +8,7 @@ ex(){ # print the function text starting at "<name>(){" up to its closing brace 
   if sed -n "${s}p" "$SCEN" | grep -q '}[[:space:]]*\(#.*\)\?$' && ! sed -n "${s}p" "$SCEN" | grep -q '{[[:space:]]*#'; then sed -n "${s}p" "$SCEN"; return; fi
   local e; e=$(awk -v s="$s" 'NR>s && /^}/ {print NR; exit}' "$SCEN"); sed -n "${s},${e}p" "$SCEN"
 }
-for f in kg_state pen_cover_of pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide bq3_close_verdict bq3_closes_ok pen_blocks; do ex "$f"; done > "$OUT/fns.sh"
+for f in kg_state pen_cover_of pen_sample pen_none pen_all_shown pen_control_ok bn8_shown_after_hide bq3_close_verdict bq3_closes_ok pen_tl pen_blocks; do ex "$f"; done > "$OUT/fns.sh"
 FAKE_WIN=""; FAKE_POL=""; FAKE_PID=""; PKG=com.tj.launcher
 adb(){ # adb shell dumpsys window windows|policy, pidof
   case "$*" in *"dumpsys window windows"*) printf '%s' "$FAKE_WIN";; *"dumpsys window policy"*) printf '%s' "$FAKE_POL";; *pidof*) [ -p /dev/stdin ] && cat > /dev/null; printf '%s' "$FAKE_PID";; esac   # a real `adb shell` SWALLOWS a piped stdin (run #513): the stub does too, so a pidof inside a pipeline is caught here
@@ -84,6 +84,14 @@ bq3_closes_ok no-cover-line hidden-in-47 hidden-in-100 && { echo "FAIL  closes o
 bq3_closes_ok hidden-in-92 STUCK-shown hidden-in-100 && { echo "FAIL  closes ok must flag STUCK"; fails=$((fails+1)); } || echo "ok    closes ok flags a stuck cover"
 bq3_closes_ok hidden-in-92 hidden-in-47 hidden-in-1600 && { echo "FAIL  closes ok must flag a late hide"; fails=$((fails+1)); } || echo "ok    closes ok flags a hide later than 1500 ms"
 bq3_closes_ok hidden-in-92 no-marker hidden-in-100 && { echo "FAIL  closes ok must flag a missing marker"; fails=$((fails+1)); } || echo "ok    closes ok flags a missing marker"
+# pen_tl (run #515): the cover's timeline, compact, from a start line
+LT="$OUT/tl.txt"; printf '%s\n' '11-10 11:26:20.000 I/TjA11y( 1): BQ3 marker open 3' '11-10 11:26:20.050 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' '11-10 11:26:20.100 I/TjA11y( 1): PENCIL fast watch (SystemUI is redrawing)' \
+  '11-10 11:26:27.079 I/TjA11y( 1): BN8b marker drag' '11-10 11:26:27.400 I/TjA11y( 1): PENCIL cover hidden (kept warm; a finger went down: the panel may be about to move, the pencil was last seen 12 ms ago)' \
+  '11-10 11:26:29.300 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' '11-10 11:26:30.100 I/TjA11y( 1): BQ3 marker close 3' '11-10 11:26:30.230 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' > "$LT"
+t "pen_tl: from the 3rd opening, 3 lines"          "20.000 BQ3 marker open 3|20.050 SHOWN [4,564][55,615]|27.079 BN8b marker drag|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 0 3)"
+t "pen_tl: skip 3, next 2 (hide with reason+age)"  "27.400 hid: a finger went down: the pan +12ms|29.300 SHOWN [4,564][55,615]|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 3 2)"
+t "pen_tl: a hide without an age"                  "30.230 hid: the followed pencil is gone|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 6 3)"
+t "pen_tl: the start line is not there"            "" "$(pen_tl "$LT" 'no such line' 0 5)"
 FAKE_PID=""; FAKE_POL=""
 FAKE_WIN="$COV_LIVE$COV_DEAD$SB_OPEN";               t "pen_blocks lists every block" "[pid=4321 touchable [4,564][55,615]] [pid=1111 touchable [4,564][55,615]] " "$(pen_blocks)"
 FAKE_WIN="$COV_LIVE_HIDDEN$SB_OPEN";                 t "pen_blocks: a hidden block"   "[pid=4321 hidden [4,564][55,615]] " "$(pen_blocks)"
