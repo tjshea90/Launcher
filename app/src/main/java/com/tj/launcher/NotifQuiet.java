@@ -74,19 +74,7 @@ public final class NotifQuiet {
             NotifQuietPolicy.Facts f = new NotifQuietPolicy.Facts();
             f.switchOn = switchOn(app);
             if (!f.switchOn && !before) return;   // nothing held and nothing wanted
-            f.grant = permitted(app);
-            f.automationOff = CrashGuard.automationOff(app);
-            f.quickstepMode = Mode.QUICKSTEP.equals(Mode.get(app));
-            // the helper, the screen and the lock only matter inside a Quickstep mode: in the custom launcher the answer is "quiet" whatever they say, so no binder call there
-            f.helperUp = true; f.screenOn = true; f.lockUp = false; f.unlockUndecided = false;
-            if (f.quickstepMode && f.switchOn && f.grant && !f.automationOff) {
-                f.helperUp = assumeHelper || TjAccessibilityService.get() != null;
-                if (f.helperUp) {
-                    f.screenOn = look.screenOn();
-                    f.lockUp = look.lockUp();
-                    f.unlockUndecided = AnimationSpeedup.unlockUndecided(f.screenOn, f.lockUp);
-                }
-            }
+            fillFacts(app, f, look, assumeHelper);
             final String why = NotifQuietPolicy.why(f);
             final boolean want = why.isEmpty();
             final boolean after = NotifQuietHold.set(new MarkerState(app.getContentResolver()), new GlobalSetting(app.getContentResolver()), f.grant, want, SINK);
