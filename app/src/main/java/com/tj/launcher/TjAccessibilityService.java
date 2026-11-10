@@ -3528,27 +3528,31 @@ public class TjAccessibilityService extends AccessibilityService {
     /**
      * BN8d (Tj, 2026-11-10: "All of my quickstep apps were in the recent apps list in the custom launcher"; the tablet report said "no Clear all button and no card with a Close action found" after the whole 2.5 s): what the
      * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels). Whether the Recents action was accepted; every window with its type, layer and
-     * root package; for the stock launcher's windows the node classes with counts and the first short texts (that window shows app names and "Clear all" only). No text of any other window. Never throws.
+     * root package (BN8f3: the stock launcher's window FIRST and the others short, because the report cuts a value at 600 characters); for the stock launcher's windows the node classes with counts and whether the fixed words
+     * "Clear all" / "No recent items" are on screen (BN8f1: NO node text is copied, see nodeSummary). Never throws.
      */
     private String recentsDiag() {
-        StringBuilder b = new StringBuilder("recents action ").append(recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED").append("; ");
+        String act = recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED";
+        StringBuilder lead = new StringBuilder(), rest = new StringBuilder();   // lead = the stock launcher's windows, rest = every other window in about 25 characters
         try {
             List<AccessibilityWindowInfo> windows = getWindows();
-            if (windows == null) return b.append("no windows").toString();
-            b.append(windows.size()).append(" window(s):");
+            if (windows == null) return "recents action " + act + "; no windows";
             int shown = 0;
             for (AccessibilityWindowInfo w : windows) {
                 if (shown++ >= 8) break;
                 AccessibilityNodeInfo root = w.getRoot();
                 String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
-                b.append(" [type ").append(w.getType()).append(" layer ").append(w.getLayer()).append(w.isActive() ? " active " : " ").append(pkg);
+                boolean stock = pkg.startsWith("com.android.launcher3");
+                StringBuilder one = stock ? lead : rest;
+                one.append(" [t").append(w.getType()).append(" l").append(w.getLayer()).append(w.isActive() ? "a " : " ").append(pkg.startsWith("com.") ? pkg.substring(4) : pkg);
                 if (root != null) {
-                    try { if (pkg.startsWith("com.android.launcher3")) b.append(' ').append(nodeSummary(root)); } finally { root.recycle(); }
+                    try { if (stock) one.append(' ').append(nodeSummary(root)); } finally { root.recycle(); }
                 }
-                b.append(']');
+                one.append(']');
             }
-        } catch (Throwable t) { b.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
-        return b.length() > 1500 ? b.substring(0, 1500) : b.toString();
+        } catch (Throwable t) { rest.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
+        String s = "recents action " + act + ";" + lead + rest;
+        return s.length() > 450 ? s.substring(0, 450) : s;
     }
 
     /**
