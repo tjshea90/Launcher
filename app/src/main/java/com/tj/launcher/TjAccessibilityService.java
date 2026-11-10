@@ -3551,33 +3551,36 @@ public class TjAccessibilityService extends AccessibilityService {
         return b.length() > 1500 ? b.substring(0, 1500) : b.toString();
     }
 
-    /** Node classes (simple names with counts) and up to 8 short texts or descriptions of one window tree (a star marks a clickable node), to depth 10 and 250 nodes. */
+    /**
+     * Node classes (simple names with counts), how many nodes have text and how many are clickable, and whether the FIXED words "Clear all" / "No recent items" are on screen, for one window tree, to depth 10 and 250 nodes.
+     * BN8f1: NO node text is copied (Recents card text is app labels and conversation titles, and the tablet report is published): only counts and two fixed words leave this method (RecentsDiag).
+     */
     private String nodeSummary(AccessibilityNodeInfo root) {
         java.util.LinkedHashMap<String, Integer> classes = new java.util.LinkedHashMap<String, Integer>();
-        java.util.ArrayList<String> texts = new java.util.ArrayList<String>();
-        walkSummary(root, 0, classes, texts, new int[] {250});
+        int[] tally = new int[4];   // 0 nodes with text or description, 1 clickable nodes, 2 "clear all" seen, 3 "no recent items" seen
+        walkSummary(root, 0, classes, tally, new int[] {250});
         StringBuilder b = new StringBuilder("nodes{");
         boolean first = true;
         for (java.util.Map.Entry<String, Integer> e : classes.entrySet()) { if (!first) b.append(','); first = false; b.append(e.getKey()).append('x').append(e.getValue()); }
-        b.append("} texts{");
-        for (int i = 0; i < texts.size(); i++) { if (i > 0) b.append(" | "); b.append(texts.get(i)); }
-        return b.append('}').toString();
+        b.append("} text=").append(tally[0]).append(" click=").append(tally[1]);
+        if (tally[2] > 0) b.append(" CLEARALL");
+        if (tally[3] > 0) b.append(" NOITEMS");
+        return b.toString();
     }
 
-    private void walkSummary(AccessibilityNodeInfo n, int depth, java.util.Map<String, Integer> classes, List<String> texts, int[] budget) {
+    private void walkSummary(AccessibilityNodeInfo n, int depth, java.util.Map<String, Integer> classes, int[] tally, int[] budget) {
         if (n == null || depth > 10 || budget[0]-- <= 0) return;
         CharSequence cn = n.getClassName();
         String k = cn == null ? "?" : cn.toString();
         k = k.substring(Math.max(k.lastIndexOf('.'), k.lastIndexOf('$')) + 1);
         Integer c = classes.get(k);
         classes.put(k, c == null ? 1 : c + 1);
-        if (texts.size() < 8) {
-            CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
-            if (t != null && t.length() > 0) { String s = t.toString(); texts.add((s.length() > 24 ? s.substring(0, 24) : s) + (n.isClickable() ? "*" : "")); }
-        }
+        CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+        if (t != null && t.length() > 0) { tally[0]++; int w = RecentsDiag.word(t); if (w == RecentsDiag.CLEAR_ALL) tally[2]++; else if (w == RecentsDiag.NO_ITEMS) tally[3]++; }   // only counts and two fixed words, never the text
+        if (n.isClickable()) tally[1]++;
         for (int i = 0; i < n.getChildCount(); i++) {
             AccessibilityNodeInfo ch = n.getChild(i);
-            if (ch != null) { try { walkSummary(ch, depth + 1, classes, texts, budget); } finally { ch.recycle(); } }
+            if (ch != null) { try { walkSummary(ch, depth + 1, classes, tally, budget); } finally { ch.recycle(); } }
         }
     }
 
