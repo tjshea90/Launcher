@@ -60,8 +60,9 @@ public final class PencilRules {
         public boolean allowCover(int top, long nowMs) {
             if (lastTop != NONE && nowMs - lastMs > STALE_MS) reset();
             boolean up = lastTop != NONE && top < lastTop - SLIDE_UP_PX;
-            boolean still = lastTop == top;
-            lastTop = top; lastMs = nowMs;
+            boolean close = lastTop != NONE && nowMs - lastMs < MIN_LOOK_GAP_MS;   // BN8f2: a look right after another one can read the SAME frame ...
+            boolean still = lastTop == top && !close;                              // ... so it does not confirm that the panel is at rest ...
+            if (up || !close) { lastTop = top; lastMs = nowMs; }                  // ... and it does not move the anchor (a move UP it still shows)
             if (holding && nowMs - holdSince >= HOLD_MAX_MS) { holding = false; return true; }
             if (up) { if (!holding) { holding = true; holdSince = nowMs; } return false; }
             if (holding) { if (still) { holding = false; return true; } return false; }
