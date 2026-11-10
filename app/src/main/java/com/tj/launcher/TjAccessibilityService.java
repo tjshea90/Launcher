@@ -2449,6 +2449,14 @@ public class TjAccessibilityService extends AccessibilityService {
     private long penProbeMs = 0;
     private int penProbes = 0;
 
+    /** BQ3 (debug builds only): SystemUI announces the shade's state with the text of a TYPE_WINDOW_STATE_CHANGED event ("Quick settings", "Lock screen", "Notification shade": AOSP NotificationPanelView.getKeyguardOrLockScreenString). Does this image send them, and when? */
+    private void penShadeEvent(AccessibilityEvent e) {
+        if (e == null || !debuggable() || e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
+        CharSequence pk = e.getPackageName();
+        if (pk == null || !"com.android.systemui".contentEquals(pk)) return;
+        Log.i(TAG, "PENCIL shade event: class=" + e.getClassName() + " text=" + e.getText() + " screen=" + isScreenOn() + " locked=" + keyguardLockedFast());
+    }
+
     /**
      * BQ3 (debug builds only; emulator section b6): emulator runs of 2026-11-10 (#507, and the v0.9.1 TAG in #509) showed a pencil cover that stays up on the lock screen with the panel CLOSED: the followed node keeps reading
      * "visible" with the open panel's bounds. One log line says what that node and its ancestors report (class / id, visible, bounds), which window holds it, and whether the screen is on, so the next run explains itself.
