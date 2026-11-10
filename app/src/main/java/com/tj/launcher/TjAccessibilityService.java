@@ -2450,6 +2450,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
     private void hidePencil(String why) {
+        gearHide("the cover is away: " + why);   // BR1: the gear overlay never outlives the cover (cheap when it is not up)
         if (penView == null || !penShown) return;
         handler.removeCallbacks(penWatch);
         try {
