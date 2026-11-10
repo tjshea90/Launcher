@@ -544,19 +544,23 @@ check "BN4: the cover is hidden within 600 ms of the last time the pencil was se
 # ---- BK1b (Tj, 2026-11-08 18:16 UTC, about v0.8.10: "Can the pencil in the notification panel be hidden on the lock screen? If so, do it."): the same quick-settings panel on the LOCK screen, in BOTH stored modes. Run #389 (head 4c2e2e2):
 #      mode custom = the cover appeared 75 ms after the panel was asked to open. Mode QUICKSTEP while locked is the usual case on the tablet without the shell helper (the lock-time pre-arm only switches the mode WITH the helper),
 #      and schedulePencil asked `Mode.isCustom` alone. A marker line is written to the log right before the panel is opened, so the delay until the cover appears can be read.
+pen_cover_of(){ # pen_cover_of "<pids of the app>" < dumpsys-window-windows text: shown | hidden | none. Only windows of a LIVE app process count: the entry of a killed process (the service restarted, am force-stop) LINGERS in the dump (run #512: the drag check and the control read 'shown' from such an entry while the pictures showed no cover). No pid list = no filter.
+  awk -v live=" $1 " '
+    function flush() { if (inb) { if (pid != "" && live != "  " && index(live, " " pid " ") == 0) dead++; else if (nt) hid++; else shn++ } inb = 0 }
+    /TjPencilCover}/ { flush(); inb = 1; n = 0; nt = 0; pid = ""; next }
+    inb { n++; if ($0 ~ /NOT_TOUCHABLE/) nt = 1; if (match($0, /mSession=Session\{[0-9a-f]+ [0-9]+:/)) { s = substr($0, RSTART, RLENGTH); sub(/^mSession=Session\{[0-9a-f]+ /, "", s); sub(/:$/, "", s); pid = s } if (n >= 10) flush() }
+    END { flush(); if (shn > 0) print "shown"; else if (hid > 0) print "hidden"; else print "none" }'
+}
 pen_cover_state(){ # shown | hidden | none: the pencil cover window's own flags (showPencil = touchable, hidePencil = NOT_TOUCHABLE + alpha 0): needs no glyph and no pixels
-  local blk; blk="$(adb shell dumpsys window windows 2>/dev/null | grep -A10 'TjPencilCover}' | head -14)"
-  [ -n "$blk" ] || { echo none; return; }
-  if echo "$blk" | grep -q 'NOT_TOUCHABLE'; then echo hidden; else echo shown; fi
+  adb shell dumpsys window windows 2>/dev/null | pen_cover_of "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')"
 }
 # (kg_state and b6unlock are defined at the top of this file: the sections fp and last need them without b6)
 # NO uiautomator dump inside the sampling: a UiAutomation session SUPPRESSES (unbinds) the accessibility services while it runs, so every dump would restart the very service that is measured (gate triage 2026-11-08, runs #408 / #409:
 # the 2nd and 3rd opening read 'none' in one phase of each run). Only the window state and the keyguard state are read here; ONE dump is taken at the very end of the phase.
 pen_sample(){ # "cover=<shown|hidden|none> showing=<keyguard> sb=<the StatusBar window's frame>": unlocked, a closed shade is [0,0][600,24] and an open panel is full height, so a cover with a small frame would sit over NOTHING
-  local D blk st sb
+  local D st sb
   D="$(adb shell dumpsys window windows 2>/dev/null)"
-  blk="$(echo "$D" | grep -A10 'TjPencilCover}' | head -14)"
-  if [ -z "$blk" ]; then st=none; elif echo "$blk" | grep -q 'NOT_TOUCHABLE'; then st=hidden; else st=shown; fi
+  st="$(echo "$D" | pen_cover_of "$(adb shell pidof "$PKG" 2>/dev/null | tr -d '\r')")"
   sb="$(echo "$D" | awk '/u0 StatusBar}/{f=1} f { l=tolower($0); if (match(l, /m?frame=\[[0-9,]*\]\[[0-9,]*\]/)) { s=substr(l, RSTART, RLENGTH); sub(/^m?frame=/, "", s); print s; exit } }')"
   echo "cover=$st $(kg_state) sb=${sb:-?}"
 }
@@ -567,16 +571,8 @@ bn8_shown_after_hide(){ # bn8_shown_after_hide <logcat -v time file> <window ms>
     END { if (th=="") print "nohide"; else print n+0 }' "$1"
 }
 pen_none(){ local s; for s in "$@"; do case "$s" in cover=shown*) return 1;; esac; done; return 0; }
-bq3_pick(){ # bq3_pick <logfile> <marker regex> <probes to skip> <label> <phase>: INFO lines for the next 'PENCIL probe' after the marker (the first one of the file when the marker never appears) and the 'PENCIL tree' lines that follow it
-  local L f="$1"
-  [ -s "$f" ] || return 0
-  if ! grep -q "$2" "$f"; then L="$(awk -v skip="$3" '/PENCIL probe/ { if (st==1) exit; if (k++ >= skip) { print; st=1; next } } st==1 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
-  else L="$(awk -v m="$2" -v skip="$3" 'st==0 { if ($0 ~ m) st=1; next } st==1 { if ($0 ~ /PENCIL probe/) { if (k++ >= skip) { print; st=2 } } next } st==2 { if ($0 ~ /PENCIL tree/) print; else if ($0 ~ /PENCIL probe|marker/) exit }' "$f")"
-  fi
-  echo "$L" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | while IFS= read -r l; do [ -n "$l" ] && info "BQ3 ($5) $4: ${l:0:300}"; done
-}
 pen_all_shown(){ local s; for s in "$@"; do case "$s" in cover=shown*) ;; *) return 1;; esac; done; return 0; }
-pen_control_ok(){ case "$1" in *"showing=false"*) ;; *) return 1;; esac; case "$1" in cover=shown*) return 1;; esac; return 0; }
+pen_control_ok(){ case "$1" in *"showing=false"*) ;; *) return 1;; esac; case "$1" in cover=shown*) return 1;; esac; [ "${2:-0}" = 0 ] || return 1; return 0; }   # $2 = how many "PENCIL cover shown" log lines followed the opening (the decision of the service itself)
 b6lock(){ # b6lock <stored mode custom|quickstep>
   b6unlock >/dev/null 2>&1
   setmode "$1"; rebind; home
@@ -587,13 +583,16 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   adb shell locksettings set-pin 1234 >/dev/null 2>&1
   BK_P1="$(pen_sample)"       # PIN set, still unlocked, no panel open
   palock
-  BK_P2="$(pen_sample)"       # the lock screen is up, the panel has NOT been opened yet
-  shot 53-lock-p2-$1          # BQ3: what the lock screen REALLY shows at P2 (is a quick-settings panel on it?)
+  BK_P2R="$(pen_sample)"      # the lock screen is up, the test has NOT opened the panel (raw: the CI emulator's QUICKSTEP lock cycle comes up with the quick settings ALREADY open, run #512 picture 53)
+  shot 53-lock-p2-$1          # what the lock screen REALLY shows here
+  # A panel the lock cycle left open is closed the way a user closes it with the BACK key (StatusBar.onBackPressed -> animateCloseQs). `cmd statusbar collapse` is a NO-OP on the lock screen (run #511) and a finger swipe up ends at the PIN pad (run #512).
+  adb shell input keyevent KEYCODE_BACK; sleep 2
+  BK_P2="$(pen_sample)"       # the lock screen, the panel closed
   adb shell log -t TjA11y "BK1b marker expand"
   adb shell cmd statusbar expand-settings; sleep 3; shot 54-qs-panel-lock-$1
   BK_O1="$(pen_sample)"       # 1st opening, +3 s
   # BQ3 (Tj, 2026-11-10: "the pencil white cover shows when I slide the notification panel back up"): after every CLOSING of the panel on the lock screen no cover may be up (BK_Z1 / BK_Z2 = after the 1st / 2nd opening, BK_Z3 = after the 3rd)
-  for BK_I in 2 3; do adb shell log -t TjA11y "BQ3 marker collapse $((BK_I-1))"; adb shell input swipe 300 300 300 60 800; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; adb shell log -t TjA11y "BQ3 marker expand $BK_I"; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
+  for BK_I in 2 3; do adb shell input keyevent KEYCODE_BACK; sleep 2; eval "BK_Z$((BK_I-1))=\"\$(pen_sample)\""; if [ "$BK_I" = 2 ]; then shot 55-lock-closed-$1; fi; adb shell cmd statusbar expand-settings; sleep 3; eval "BK_O$BK_I=\"\$(pen_sample)\""; done
   adb shell dumpsys window windows | grep -c TjPencilCover > "$OUT/pencil-lock-$1-windows.txt" 2>&1
   adb logcat -d -v time -s TjA11y:I > "$OUT/pencil-lock-$1-log.txt" 2>&1
   # the ONE dump, at the very end (it unbinds the service while it runs): is the panel really open after the 3rd opening?
@@ -602,29 +601,24 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   MS="$(awk -v a="$T0" -v b="$T1" 'BEGIN{ if (a=="" || b=="") { print "none"; exit } split(a,x,"[:.]"); split(b,y,"[:.]"); print int((((y[1]*60+y[2])*60+y[3])*1000+y[4]) - (((x[1]*60+x[2])*60+x[3])*1000+x[4])) }')"
   local LOCKED; LOCKED="$(adb shell dumpsys window policy 2>/dev/null | grep -m3 -i -E 'showing=|keyguardShowing|isKeyguardLocked|mKeyguardDelegate' | tr -s ' \r\n' ' ' | cut -c1-160) | focus: $(adb shell dumpsys window | grep -m1 mCurrentFocus | cut -c1-100)"
   info "BK1b ($1 mode, locked): stored mode $(getmode); keyguard: $LOCKED; pencil nodes on screen $(cat $OUT/pencil-lock-$1-edit.txt), cover windows $(tr -d ' \r\n' < $OUT/pencil-lock-$1-windows.txt), the cover was SHOWN $MS ms after the panel was asked to open"
-  local PL; PL="$(grep -E 'PENCIL|BK1b marker' "$OUT/pencil-lock-$1-log.txt" | grep -v 'PENCIL probe' | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | cut -c1-96)"   # (BQ3: three lines to an INFO line, the results block cuts a line at about 330 characters)
+  local PL; PL="$(grep -E 'PENCIL|BK1b marker' "$OUT/pencil-lock-$1-log.txt" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | cut -c1-96)"   # (three lines to an INFO line: the results block cuts a line at about 330 characters)
   info "BK1b ($1 mode) every PENCIL line of the whole phase, with its time (the log was cleared before the lock cycle; the marker is the moment the panel was asked to open), 1/3: $(echo "$PL" | sed -n 1,3p | tr '\n' '|')"
   info "BK1b ($1 mode) PENCIL lines 2/3: $(echo "$PL" | sed -n 4,6p | tr '\n' '|')"
   info "BK1b ($1 mode) PENCIL lines 3/3 ($(echo "$PL" | wc -l | tr -d ' ') in all): $(echo "$PL" | sed -n 7,9p | tr '\n' '|')"
-  # BQ3 (debug builds): what the followed pencil node, its ancestors and the shade window's id'd nodes report (A: the first probe of the phase = the lock transition, B: panel OPEN at rest on the lock screen, C: panel CLOSED again)
-  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BQ3 marker none' 0 "A first probe" "$1"
-  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BK1b marker expand' 1 "B open" "$1"
-  bq3_pick "$OUT/pencil-lock-$1-log.txt" 'BQ3 marker collapse 1' 0 "C closed" "$1"
-  local SE; SE="$(grep 'PENCIL shade event' "$OUT/pencil-lock-$1-log.txt" | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //; s/PENCIL shade event: //; s/class=android.widget.//; s/com.android.systemui.//' | cut -c1-78)"
-  info "BQ3 ($1 mode) SystemUI window-state events (time class text screen locked), $(echo "$SE" | grep -c .) in all, 1/2: $(echo "$SE" | sed -n 1,4p | tr '\n' '|')"
-  info "BQ3 ($1 mode) SystemUI window-state events 2/2: $(echo "$SE" | sed -n 5,8p | tr '\n' '|')"
-  info "BK1b ($1 mode): NO panel open, unlocked / PIN set / lock screen: $BK_P0 / $BK_P1 / $BK_P2"
+  info "BK1b ($1 mode): NO panel open, unlocked / PIN set / lock screen (raw, before any BACK) / lock screen (panel closed with BACK): $BK_P0 / $BK_P1 / $BK_P2R / $BK_P2"
   info "BK1b ($1 mode): panel opened on the lock screen, 1st / 2nd / 3rd time: $BK_O1 / $BK_O2 / $BK_O3; pencil nodes on screen after the 3rd: $(cat $OUT/pencil-lock-$1-edit.txt)"
   BK_LL="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -E ' (SERVICE|RESET|ROUTER|PROFILE|LOCKPREP|HOME|SWEEP) ' | tail -10 | cut -c1-62 | tr -d '\r')"
   info "BK1b ($1 mode): what the app logged in the lock log (older half): $(echo "$BK_LL" | head -5 | tr '\n' '|')"
   info "BK1b ($1 mode): what the app logged in the lock log (newer half): $(echo "$BK_LL" | tail -5 | tr '\n' '|')"
-  check "BK1b: (stored mode $1) with no panel open NO cover sits anywhere: unlocked, PIN set, lock screen" pen_none "$BK_P0" "$BK_P1" "$BK_P2"
+  check "BK1b: (stored mode $1) with no panel open NO cover sits anywhere: unlocked, PIN set, lock screen (after the panel is closed)" pen_none "$BK_P0" "$BK_P1" "$BK_P2"
+  if [ "$1" = custom ]; then check "BK1b: (stored mode custom) the lock cycle itself leaves NO cover on the lock screen (before any BACK)" pen_none "$BK_P2R"; fi
   check "BK1b: (stored mode $1) on the LOCK screen the pencil cover is shown at each of three openings of the panel" pen_all_shown "$BK_O1" "$BK_O2" "$BK_O3"
   if [ "$1" = custom ]; then
     # BN8b (Tj, 2026-11-10, v0.9.0: "The lock screen still flashed a white box after I pulled down [and] returned the notification panel for the pencil hider"): a FINGER drags the open panel up on the lock screen (the panel
     # follows the finger, no animation is involved: 240 px in 0.8 s). The cover must go when the pencil starts to rise and must not come back while the drag goes on (v0.9.0 followed the pencil with the lag of a look =
-    # a white box trailing the panel). The uiautomator dump above restarted the service, so the panel is opened afresh first.
-    adb shell cmd statusbar collapse; sleep 2; adb shell cmd statusbar expand-settings; sleep 3
+    # a white box trailing the panel). The uiautomator dump above RESTARTED the service (run #512: SERVICE unbound / connected 1.1 s apart): the new instance sees nothing of a panel that stays open, so the panel is
+    # closed (BACK) and opened afresh first, and the new instance gets real events and shows its cover before the finger goes down.
+    adb shell input keyevent KEYCODE_BACK; sleep 2; adb shell cmd statusbar expand-settings; sleep 3
     BN8_S0="$(pen_sample)"
     adb logcat -c; adb shell log -t TjA11y "BN8b marker drag"
     adb shell input swipe 300 300 300 60 800; adb shell log -t TjA11y "BN8b marker end"; sleep 1
@@ -635,7 +629,7 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     check "BN8b: the cover was up before the drag (else the drag proves nothing)" bash -c "case '$BN8_S0' in cover=shown*) exit 0;; esac; exit 1"
     check "BN8b: when a finger drags the open panel UP on the lock screen the cover is taken away and does not come back while the drag goes on (no white box trailing the panel)" test "$BN8_N" = 0
   fi
-  adb shell log -t TjA11y "BQ3 marker collapse 3"; adb shell cmd statusbar collapse; sleep 2
+  adb shell input keyevent KEYCODE_BACK; sleep 2
   BK_Z3="$(pen_sample)"
   info "BQ3 ($1 mode): the panel closed again on the lock screen after the 1st / 2nd / 3rd opening: $BK_Z1 / $BK_Z2 / $BK_Z3"
   check "BQ3: (stored mode $1) when the panel is closed again on the lock screen NO pencil cover is left up (the white box Tj saw when he slid the panel back up)" pen_none "$BK_Z1" "$BK_Z2" "$BK_Z3"
@@ -646,14 +640,14 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
   check "BK1b: the quick-settings panel opened on the lock screen and shows the pencil (stored mode $1; uiautomator found the edit node)" bash -c "[ \"\$(cat $OUT/pencil-lock-$1-edit.txt 2>/dev/null)\" -ge 1 ]"
   if [ "$1" = quickstep ]; then   # control: the UNLOCKED Quickstep panel (N3: no cover wanted there) must NOT show the cover. The plain unlock above flipped the stored mode to custom (UF2), so Quickstep is put back first
     setmode quickstep; rebind; home; sleep 4
+    adb logcat -c; adb shell log -t TjA11y "BK1b control marker"
     adb shell cmd statusbar expand-settings; sleep 3
     BK_C="$(pen_sample)"
-    shot 56-control-quickstep   # BQ3: what the unlocked Quickstep panel shows at the control
+    shot 56-control-quickstep   # what the unlocked Quickstep panel shows at the control (run #512: the pencil visible, no cover, while the window sample read 'shown' from a lingering entry)
+    BK_CN="$(adb logcat -d -v time -s TjA11y:I 2>/dev/null | sed -n '/BK1b control marker/,$p' | grep -c 'PENCIL cover shown')"
     adb shell cmd statusbar collapse; sleep 2
-    info "BK1b control (stored mode quickstep, after the unlock, panel open): $BK_C (showing=false = really unlocked)"
-    adb logcat -d -v time -s TjA11y:I 2>/dev/null | grep -E 'PENCIL|SERVICE|ROUTER' | grep -v 'PENCIL probe' | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | tail -n 6 | cut -c1-90 > "$OUT/pencil-control-log.txt" 2>&1   # BQ3: why did a cover exist in unlocked Quickstep?
-    info "BK1b control: stored mode now $(getmode); the last PENCIL / SERVICE / ROUTER lines: $(tr '\n' '|' < "$OUT/pencil-control-log.txt")"
-    check "BK1b control: the device is really unlocked (showing=false) and the open panel shows NO cover (N3)" pen_control_ok "$BK_C"
+    info "BK1b control (stored mode quickstep, after the unlock, panel open): $BK_C (showing=false = really unlocked); 'PENCIL cover shown' log lines since the panel was opened: $BK_CN; stored mode now $(getmode)"
+    check "BK1b control: the device is really unlocked (showing=false) and the open panel shows NO cover (N3)" pen_control_ok "$BK_C" "$BK_CN"
   fi
 }
 b6lock custom
