@@ -3898,6 +3898,7 @@ ssdump "$OUT/ss-home.xml"
 # BN1p D1/D2: the Battery row shows "NN%" alone until the first read of the statistics has finished (never the status word first) and the Storage row gets its line when its worker returns: wait (bounded) for both before judging
 for SSW in 1 2 3 4 5; do if tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% - ' && tr '>' '\n' < "$OUT/ss-home.xml" | grep -qE 'text="[0-9]+ ?% used - .* free"'; then break; fi; sleep 2; ssdump "$OUT/ss-home.xml"; done
 info "SS5e: home summaries complete after up to $((SSW-1)) extra dump(s) of the page"
+check "SS5f: the home summaries Tj asked for (BN8a): Display 'Brightness, sleep, font size', Sound 'Volume', System 'Languages'" bash -c "d=\$(tr '>' '\n' < $OUT/ss-home.xml); echo \"\$d\" | grep -qF 'text=\"Brightness, sleep, font size\"' && echo \"\$d\" | grep -qF 'text=\"Volume\"' && echo \"\$d\" | grep -qF 'text=\"Languages\"'"
 SSPREV=-1; SSOK=1; for T in "Battery" "Display" "Sound" "Storage" "Accessibility" "System" "About tablet"; do SSY=$(ssbounds "$OUT/ss-home.xml" "$T" | awk '{print $2}'); if [ -n "$SSY" ] && [ "$SSY" -gt "$SSPREV" ]; then SSPREV=$SSY; else SSOK=0; info "SS4: '$T' is missing or out of order (y '$SSY' after '$SSPREV')"; fi; done
 check "SS4: the home page lists Battery, Display, Sound, Storage, Accessibility, System, About tablet in Tj's order" test "$SSOK" = 1
 check "SS5: nothing to search on the home page (no text or description with 'search')" bash -c "! tr '>' '\n' < $OUT/ss-home.xml | grep -iE '(text|content-desc)=\"[^\"]*search'"
