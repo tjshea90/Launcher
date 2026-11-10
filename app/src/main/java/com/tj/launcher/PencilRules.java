@@ -50,6 +50,7 @@ public final class PencilRules {
         public static final int SLIDE_UP_PX = 3;          // less than this is jitter, not a slide
         public static final long HOLD_MAX_MS = 3000;      // a safety valve: the cover is never kept away for longer than this in one go
         public static final long STALE_MS = 800;          // no look for this long = a new pull of the panel, nothing is known about it yet
+        public static final long MIN_LOOK_GAP_MS = 40;    // BN8f2: two looks closer than this can read the SAME SystemUI frame: they do not count as "the looks agree"
         public static final long RELOOK_MS = 60;          // while the cover is held away the next look is due this soon (the events stop when the panel stops)
         private int lastTop = NONE;
         private long lastMs, holdSince;
@@ -59,8 +60,9 @@ public final class PencilRules {
         public boolean allowCover(int top, long nowMs) {
             if (lastTop != NONE && nowMs - lastMs > STALE_MS) reset();
             boolean up = lastTop != NONE && top < lastTop - SLIDE_UP_PX;
-            boolean still = lastTop == top;
-            lastTop = top; lastMs = nowMs;
+            boolean close = lastTop != NONE && nowMs - lastMs < MIN_LOOK_GAP_MS;   // BN8f2: a look right after another one can read the SAME frame ...
+            boolean still = lastTop == top && !close;                              // ... so it does not confirm that the panel is at rest ...
+            if (up || !close) { lastTop = top; lastMs = nowMs; }                  // ... and it does not move the anchor (a move UP it still shows)
             if (holding && nowMs - holdSince >= HOLD_MAX_MS) { holding = false; return true; }
             if (up) { if (!holding) { holding = true; holdSince = nowMs; } return false; }
             if (holding) { if (still) { holding = false; return true; } return false; }

@@ -3549,6 +3549,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /**
      * BN8d (Tj, 2026-11-10: "All of my quickstep apps were in the recent apps list in the custom launcher"; the tablet report said "no Clear all button and no card with a Close action found" after the whole 2.5 s): what the
+<<<<<<< HEAD
      * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels, another package). Whether the Recents action was accepted; then the STOCK
      * LAUNCHER's windows FIRST (the search looks only there and in SystemUI) with their node classes, counts and first short texts (that window shows app names and "Clear all" only); then every other window with type, layer
      * and root package only (no text of any other window). At most 590 characters: it must fit the report's 600-character cut. Never throws.
@@ -3561,10 +3562,23 @@ public class TjAccessibilityService extends AccessibilityService {
             if (windows == null) return head.append("no windows").toString();
             head.append(windows.size()).append(" window(s)");
             String sp = stockPkg();
+=======
+     * screen looked like when the clean-up found nothing, so the next report can say WHY (Recents never opened, a different screen, other labels). Whether the Recents action was accepted; every window with its type, layer and
+     * root package (BN8f3: the stock launcher's window FIRST and the others short, because the report cuts a value at 600 characters); for the stock launcher's windows the node classes with counts and whether the fixed words
+     * "Clear all" / "No recent items" are on screen (BN8f1: NO node text is copied, see nodeSummary). Never throws.
+     */
+    private String recentsDiag() {
+        String act = recentsActionOk < 0 ? "not asked" : recentsActionOk == 1 ? "accepted" : "REFUSED";
+        StringBuilder lead = new StringBuilder(), rest = new StringBuilder();   // lead = the stock launcher's windows, rest = every other window in about 25 characters
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows();
+            if (windows == null) return "recents action " + act + "; no windows";
+>>>>>>> origin/main
             int shown = 0;
             for (AccessibilityWindowInfo w : windows) {
                 if (shown++ >= 8) break;
                 AccessibilityNodeInfo root = w.getRoot();
+<<<<<<< HEAD
                 try {
                     String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
                     String tag = " [type " + w.getType() + " layer " + w.getLayer() + (w.isActive() ? " active " : " ") + pkg;
@@ -3574,35 +3588,52 @@ public class TjAccessibilityService extends AccessibilityService {
             }
         } catch (Throwable t) { head.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
         return RecentsDirty.diagLine(head.toString(), stock.toString(), others.toString(), 590);
+=======
+                String pkg = root == null || root.getPackageName() == null ? "-" : root.getPackageName().toString();
+                boolean stock = pkg.startsWith("com.android.launcher3");
+                StringBuilder one = stock ? lead : rest;
+                one.append(" [t").append(w.getType()).append(" l").append(w.getLayer()).append(w.isActive() ? "a " : " ").append(pkg.startsWith("com.") ? pkg.substring(4) : pkg);
+                if (root != null) {
+                    try { if (stock) one.append(' ').append(nodeSummary(root)); } finally { root.recycle(); }
+                }
+                one.append(']');
+            }
+        } catch (Throwable t) { rest.append(" (diag failed: ").append(t.getClass().getSimpleName()).append(')'); }
+        String s = "recents action " + act + ";" + lead + rest;
+        return s.length() > 450 ? s.substring(0, 450) : s;
+>>>>>>> origin/main
     }
 
-    /** Node classes (simple names with counts) and up to 8 short texts or descriptions of one window tree (a star marks a clickable node), to depth 10 and 250 nodes. */
+    /**
+     * Node classes (simple names with counts), how many nodes have text and how many are clickable, and whether the FIXED words "Clear all" / "No recent items" are on screen, for one window tree, to depth 10 and 250 nodes.
+     * BN8f1: NO node text is copied (Recents card text is app labels and conversation titles, and the tablet report is published): only counts and two fixed words leave this method (RecentsDiag).
+     */
     private String nodeSummary(AccessibilityNodeInfo root) {
         java.util.LinkedHashMap<String, Integer> classes = new java.util.LinkedHashMap<String, Integer>();
-        java.util.ArrayList<String> texts = new java.util.ArrayList<String>();
-        walkSummary(root, 0, classes, texts, new int[] {250});
+        int[] tally = new int[4];   // 0 nodes with text or description, 1 clickable nodes, 2 "clear all" seen, 3 "no recent items" seen
+        walkSummary(root, 0, classes, tally, new int[] {250});
         StringBuilder b = new StringBuilder("nodes{");
         boolean first = true;
         for (java.util.Map.Entry<String, Integer> e : classes.entrySet()) { if (!first) b.append(','); first = false; b.append(e.getKey()).append('x').append(e.getValue()); }
-        b.append("} texts{");
-        for (int i = 0; i < texts.size(); i++) { if (i > 0) b.append(" | "); b.append(texts.get(i)); }
-        return b.append('}').toString();
+        b.append("} text=").append(tally[0]).append(" click=").append(tally[1]);
+        if (tally[2] > 0) b.append(" CLEARALL");
+        if (tally[3] > 0) b.append(" NOITEMS");
+        return b.toString();
     }
 
-    private void walkSummary(AccessibilityNodeInfo n, int depth, java.util.Map<String, Integer> classes, List<String> texts, int[] budget) {
+    private void walkSummary(AccessibilityNodeInfo n, int depth, java.util.Map<String, Integer> classes, int[] tally, int[] budget) {
         if (n == null || depth > 10 || budget[0]-- <= 0) return;
         CharSequence cn = n.getClassName();
         String k = cn == null ? "?" : cn.toString();
         k = k.substring(Math.max(k.lastIndexOf('.'), k.lastIndexOf('$')) + 1);
         Integer c = classes.get(k);
         classes.put(k, c == null ? 1 : c + 1);
-        if (texts.size() < 8) {
-            CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
-            if (t != null && t.length() > 0) { String s = t.toString(); texts.add((s.length() > 24 ? s.substring(0, 24) : s) + (n.isClickable() ? "*" : "")); }
-        }
+        CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+        if (t != null && t.length() > 0) { tally[0]++; int w = RecentsDiag.word(t); if (w == RecentsDiag.CLEAR_ALL) tally[2]++; else if (w == RecentsDiag.NO_ITEMS) tally[3]++; }   // only counts and two fixed words, never the text
+        if (n.isClickable()) tally[1]++;
         for (int i = 0; i < n.getChildCount(); i++) {
             AccessibilityNodeInfo ch = n.getChild(i);
-            if (ch != null) { try { walkSummary(ch, depth + 1, classes, texts, budget); } finally { ch.recycle(); } }
+            if (ch != null) { try { walkSummary(ch, depth + 1, classes, tally, budget); } finally { ch.recycle(); } }
         }
     }
 

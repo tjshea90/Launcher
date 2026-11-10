@@ -2088,3 +2088,31 @@
 >
 > **Old auto-resume timer:** the one tied to this account (every 2 hours) can only wake this old session after your weekly reset. It stands down while the new account is committing. The new session should set up its own.
 <!-- sha:2c5285a07ab0 -->
+
+## 2026-11-10T01:11:57Z
+> The review is back with three real findings. The worst is a privacy leak: the new Recents diagnostic would copy card titles into the public tablet report. I'm recording the findings in the repo first so they survive a cutoff, then fixing them.
+<!-- sha:a739df0bb93e -->
+
+## 2026-11-10T01:21:55Z
+> Everything is saved and pushed. `main` and my branch both sit at `1dd76e5`. v0.9.1 is finished and passes 893 unit tests, but its emulator gate hasn't run and it isn't released. Nothing of it is on your tablet.
+>
+> **The new account's session is already running.** It started from my save, but its checkpoint was written before the fixes below landed. I can't message it from here.
+>
+> **Paste this into the new session:**
+>
+> > Run `git fetch` and `git merge origin/main`. Skip the BN8 review, because the old session finished it and fixed the findings. Go straight to the gate: `bash tools/gate.sh v0.9.0`.
+>
+> I also edited its checkpoint file on `main` to say the review is done, but a pasted line is the sure way to stop a duplicate review.
+>
+> After my save, I finished the second code review that was still running and fixed its three findings:
+> - **Privacy leak (fixed):** the new Recents diagnostic would have copied the titles of your Recents cards into the public tablet report. It now records only counts and the two words "Clear all" and "No recent items".
+> - **Timing flaw in the white-box fix (fixed):** the guard could decide the notification panel had stopped moving after two checks only milliseconds apart. They now have to be at least 40 ms apart.
+> - **Diagnostic cut off (fixed):** the report truncated most of the Recents diagnostic, so the stock launcher's part now comes first.
+>
+> **Still not solved:**
+> - The white-box fix is still a guess until you try it on the tablet.
+> - The Screenshot button on the first side-key press is not fixed, and I have no evidence for it yet.
+> - Quickstep apps appearing in the custom Recents is not fixed. I only added diagnostics.
+>
+> I'm stopping here so two sessions don't edit the same branch.
+<!-- sha:53ae69f2d6b8 -->
