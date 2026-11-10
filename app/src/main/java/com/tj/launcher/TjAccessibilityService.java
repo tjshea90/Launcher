@@ -2441,6 +2441,40 @@ public class TjAccessibilityService extends AccessibilityService {
 
     private void startPenWatch() { handler.removeCallbacks(penWatch); handler.postDelayed(penWatch, PencilRules.watchGapMs(android.os.SystemClock.uptimeMillis(), penFastUntil)); }
 
+    private long penProbeMs = 0;
+    private int penProbes = 0;
+
+    /**
+     * BQ3 (debug builds only; emulator section b6): emulator runs of 2026-11-10 (#507, and the v0.9.1 TAG in #509) showed a pencil cover that stays up on the lock screen with the panel CLOSED: the followed node keeps reading
+     * "visible" with the open panel's bounds. One log line says what that node and its ancestors report (class / id, visible, bounds), which window holds it, and whether the screen is on, so the next run explains itself.
+     */
+    private void penProbe(String why) {
+        if (!debuggable()) return;
+        try {
+            StringBuilder sb = new StringBuilder("PENCIL probe ").append(why).append(": locked=").append(keyguardLockedFast()).append(" custom=").append(Mode.isCustom(this)).append(" screen=").append(isScreenOn());
+            AccessibilityNodeInfo n = penNode;
+            if (n == null) { Log.i(TAG, sb.append(" node=none").toString()); return; }
+            boolean ref = n.refresh();
+            Rect b = new Rect(); n.getBoundsInScreen(b);
+            sb.append(" refresh=").append(ref).append(" vis=").append(n.isVisibleToUser()).append(' ').append(b.toShortString());
+            try {
+                AccessibilityWindowInfo w = n.getWindow();
+                if (w != null) { Rect wb = new Rect(); w.getBoundsInScreen(wb); sb.append(" win{type=").append(w.getType()).append(" layer=").append(w.getLayer()).append(w.isActive() ? " act" : "").append(w.isFocused() ? " foc" : "").append(' ').append(wb.toShortString()).append('}'); w.recycle(); }
+            } catch (Throwable ignored) { }
+            AccessibilityNodeInfo p = n.getParent();
+            int depth = 0;
+            while (p != null && depth < 9) {
+                Rect pb = new Rect(); p.getBoundsInScreen(pb);
+                String cls = String.valueOf(p.getClassName()); cls = cls.substring(cls.lastIndexOf('.') + 1);
+                String id = p.getViewIdResourceName(); id = id == null ? "-" : id.substring(id.indexOf('/') + 1);
+                sb.append(" > ").append(cls).append('/').append(id).append(p.isVisibleToUser() ? " V " : " h ").append(pb.toShortString());
+                AccessibilityNodeInfo up = p.getParent(); p.recycle(); p = up; depth++;
+            }
+            if (p != null) p.recycle();
+            Log.i(TAG, sb.toString());
+        } catch (Throwable t) { Log.i(TAG, "PENCIL probe failed: " + t); }
+    }
+
     /** Panel closed: hide the cover but keep the window (warm) so the next open is instant; a real removal happens on removePencil(). */
     private void hidePencil(String why) {
         if (penView == null || !penShown) return;
