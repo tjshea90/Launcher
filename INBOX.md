@@ -1430,3 +1430,8 @@ Also, research if there is any way using accessibility or adb to remove the penc
 ```
 Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher 
 ```
+
+## 2026-11-10T23:53:43Z
+```
+Make it also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any time, show up on the lock screen or in the custom launcher 
+```
