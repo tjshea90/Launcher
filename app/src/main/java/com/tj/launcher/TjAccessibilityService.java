@@ -2475,6 +2475,212 @@ public class TjAccessibilityService extends AccessibilityService {
         Log.i(TAG, "PENCIL cover removed");
     }
 
+    // ---------------------------------------------------------------- BR1: the gear ("Open settings.") in the quick-settings footer opens the Settings look-alike
+    // Tj, 2026-11-10 19:27 UTC: "Make the settings gear icon in the custom launcher notification panel open the spoof settings app ... instead of the regular android settings". Design, AOSP facts and known gaps:
+    // research/GEAR_TO_LOOKALIKE_2026-11-10.md. A transparent, touchable window over the gear; it is shown exactly while the pencil cover is shown (same find / follow / guards, so it is never over a moving panel), at the pencil's
+    // place plus an offset learned once (GearRules). A tap collapses the shade and starts the look-alike; the real gear is untouched everywhere else (Quickstep, the lock screen, a panel that is moving).
+    private View gearView;
+    private final Rect gearAt = new Rect();
+    private boolean gearShown = false, gearLearning = false, gearDown = false;
+    private int gearTries = 0;
+    private int[] gearOff;                 // the gear's edges minus the pencil's (GearRules.offset); null = not learned yet
+    private String gearOffKey = "";        // the screen facts the offset was learned under (GearRules.key)
+    private float gearDownX, gearDownY;
+    private long gearTapMs = 0;
+
+    /** Cheap exits first: this is asked at every look of the lock-screen cover too. */
+    private boolean gearWanted() {
+        if (keyguardLockedFast() || !Mode.isCustom(this)) return false;
+        return GearRules.wanted(Features.get(this, GearRules.KEY, GearRules.defaultOn(debuggable())), true, false, SettingsSpoof.switchOn(this));
+    }
+
+    private String gearKeyNow() {
+        try {
+            android.view.Display d = ((WindowManager) getSystemService(WINDOW_SERVICE)).getDefaultDisplay();
+            android.util.DisplayMetrics m = new android.util.DisplayMetrics();
+            d.getRealMetrics(m);
+            return GearRules.key(m.widthPixels, m.heightPixels, m.densityDpi, d.getRotation());
+        } catch (Throwable t) { return "?"; }
+    }
+
+    private void gearStatus(String what) {
+        try { Features.setStringAsync(this, GearRules.STATUS_KEY, GearRules.statusLine(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), what)); } catch (Throwable ignored) { }
+    }
+
+    /** The cover was hidden or removed: a new panel visit starts (the learn tries count again) and the overlay goes with it. */
+    private void gearCoverAway(String why) { gearTries = 0; gearHide("the cover is away: " + why); }
+
+    /** Called with the cover up at {@code pencil}: shows, moves, hides or removes the overlay, or starts learning where the gear is. */
+    private void gearFollow(Rect pencil) {
+        try {
+            boolean keyOk = gearOff != null && gearKeyNow().equals(gearOffKey);
+            switch (GearRules.decide(gearWanted(), penShown, gearOff != null, keyOk)) {
+                case GearRules.REMOVE: removeGear(); break;
+                case GearRules.HIDE: gearHide("the cover is away"); break;
+                case GearRules.LEARN:
+                    gearHide("the gear's place has to be learned first");
+                    if (!gearLearning && gearTries < GearRules.MAX_LEARN_TRIES) { gearLearning = true; handler.postDelayed(gearLearn, GearRules.LEARN_DELAY_MS); }
+                    break;
+                default: gearShow(pencil);
+            }
+        } catch (Throwable t) { Log.e(TAG, "gear follow failed", t); removeGear(); }
+    }
+
+    /** Bounds of the visible gear in SystemUI's shade window, or null. One whole-tree view-id search (like the pencil's); it runs only to learn the offset. */
+    private int[] findGearFull() {
+        List<AccessibilityWindowInfo> windows = getWindows();
+        if (windows == null) return null;
+        for (AccessibilityWindowInfo w : windows) {
+            if (!EventNoise.isSystemWindow(w.getType())) continue;
+            AccessibilityNodeInfo root = w.getRoot();
+            if (root == null) continue;
+            try {
+                CharSequence pkg = root.getPackageName();
+                if (pkg == null || !"com.android.systemui".contentEquals(pkg)) continue;
+                List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByViewId(GearRules.VIEW_ID);
+                if (hit == null) continue;
+                int[] found = null;
+                for (AccessibilityNodeInfo n : hit) {
+                    CharSequence cd = n.getContentDescription();
+                    if (found == null && n.isVisibleToUser() && (cd == null || cd.toString().toLowerCase(java.util.Locale.ROOT).contains(GearRules.DESCRIPTION_PART))) {
+                        Rect b = new Rect(); n.getBoundsInScreen(b);
+                        int[] r = {b.left, b.top, b.right, b.bottom};
+                        if (GearRules.boundsOk(r)) found = r;
+                    }
+                    try { n.recycle(); } catch (Throwable ignored) { }
+                }
+                if (found != null) return found;
+            } finally { root.recycle(); }
+        }
+        return null;
+    }
+
+    /** Learns where the gear sits relative to the pencil (once per screen layout): one gear search while the panel is at rest, checked by reading the pencil again. */
+    private final Runnable gearLearn = new Runnable() { @Override public void run() {
+        gearLearning = false;
+        try {
+            if (!penShown || penNode == null || !gearWanted()) return;
+            Rect p = new Rect(penAt);
+            int[] pencil = {p.left, p.top, p.right, p.bottom};
+            int[] gear = findGearFull();
+            boolean atRest = false;
+            if (gear != null) {   // the panel must not have moved while the search ran: the pencil is read again and must be where it was
+                try {
+                    AccessibilityNodeInfo pn = penNode;
+                    if (pn != null && pn.refresh() && pn.isVisibleToUser()) { Rect now = new Rect(); pn.getBoundsInScreen(now); atRest = GearRules.same(pencil, new int[] {now.left, now.top, now.right, now.bottom}); }
+                } catch (Throwable ignored) { }
+            }
+            if (gear == null || !atRest) {
+                gearTries++;
+                String why = gear == null ? "the gear was not found in the footer" : "the panel moved while the gear was searched";
+                Log.i(TAG, "GEAR learn try " + gearTries + ": " + why);
+                if (gearTries < GearRules.MAX_LEARN_TRIES) { gearLearning = true; handler.postDelayed(this, GearRules.LEARN_RETRY_MS); }
+                else gearStatus(why + " (gave up for this panel visit)");
+                return;
+            }
+            gearOff = GearRules.offset(pencil, gear);
+            gearOffKey = gearKeyNow();
+            gearTries = 0;
+            Log.i(TAG, "GEAR learned: pencil " + p.toShortString() + ", gear " + new Rect(gear[0], gear[1], gear[2], gear[3]).toShortString());
+            gearStatus("learned the gear's place (" + gearOffKey + ")");
+            gearFollow(new Rect(penAt));
+        } catch (Throwable t) { Log.e(TAG, "gear learn failed", t); }
+    } };
+
+    private WindowManager.LayoutParams gearParams(Rect r, boolean touchable) {
+        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(r.width(), r.height(), WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                        | (touchable ? 0 : WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE),   // untouchable while away: taps then reach whatever is under it
+                PixelFormat.TRANSLUCENT);
+        lp.gravity = Gravity.TOP | Gravity.START;
+        lp.x = r.left; lp.y = r.top;
+        lp.setTitle("TjGearOverlay");
+        return lp;
+    }
+
+    private void gearShow(Rect pencil) {
+        int[] g = GearRules.place(new int[] {pencil.left, pencil.top, pencil.right, pencil.bottom}, gearOff);
+        if (!GearRules.boundsOk(g)) { gearHide("the learned place is not a button any more"); gearOff = null; return; }
+        Rect r = new Rect(g[0], g[1], g[2], g[3]);
+        WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
+        if (gearView == null) {
+            View v = new View(this);   // draws nothing: only its touches matter
+            v.setOnTouchListener(gearTouch);
+            wm.addView(v, gearParams(r, true));
+            gearView = v;
+        } else if (!gearShown || !gearAt.equals(r)) {
+            wm.updateViewLayout(gearView, gearParams(r, true));
+        } else return;
+        gearAt.set(r);
+        if (!gearShown) { gearShown = true; Log.i(TAG, "GEAR overlay shown " + r.toShortString()); }
+    }
+
+    /** Untouchable and kept warm, like the pencil cover: the next show is one layout update. */
+    private void gearHide(String why) {
+        if (gearView == null || !gearShown) return;
+        gearShown = false;
+        try {
+            ((WindowManager) getSystemService(WINDOW_SERVICE)).updateViewLayout(gearView, gearParams(gearAt, false));
+            Log.i(TAG, "GEAR overlay hidden (" + why + ")");
+        } catch (Throwable t) { removeGear(); }
+    }
+
+    private void removeGear() {
+        handler.removeCallbacks(gearLearn); gearLearning = false; gearTries = 0; gearDown = false;
+        View v = gearView;
+        gearView = null; gearShown = false; gearAt.setEmpty();
+        if (v == null) return;
+        try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(v); } catch (Throwable ignored) { }
+        Log.i(TAG, "GEAR overlay removed");
+    }
+
+    /** A tap = DOWN and UP close together on the overlay. A DOWN here means the overlay was touchable at that moment, so the UP counts even if the cover has hidden it since (a finger-down elsewhere hides both). */
+    private final View.OnTouchListener gearTouch = new View.OnTouchListener() { @Override public boolean onTouch(View view, android.view.MotionEvent ev) {
+        switch (ev.getActionMasked()) {
+            case android.view.MotionEvent.ACTION_DOWN: gearDown = true; gearDownX = ev.getRawX(); gearDownY = ev.getRawY(); return true;
+            case android.view.MotionEvent.ACTION_UP: {
+                boolean tap = gearDown && GearRules.isTap(gearDownX, gearDownY, ev.getRawX(), ev.getRawY(), android.view.ViewConfiguration.get(TjAccessibilityService.this).getScaledTouchSlop());
+                gearDown = false;
+                if (tap) gearTapped();
+                return true;
+            }
+            case android.view.MotionEvent.ACTION_CANCEL: gearDown = false; return true;
+            default: return true;
+        }
+    } };
+
+    /** What the stock gear does is collapse the shade and start Settings; this collapses the shade and starts the look-alike (the intent the custom drawer uses). If that cannot be done the REAL Settings opens, as before. */
+    private void gearTapped() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (now - gearTapMs < 800) return;   // a double tap opens it once
+        gearTapMs = now;
+        String how;
+        boolean collapsed = collapseShade();
+        try {
+            if (!gearWanted()) throw new IllegalStateException("no longer wanted");
+            startActivity(new android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER)
+                    .setComponent(new ComponentName(getPackageName(), SettingsSpoof.ALIAS))
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
+            how = "tap: opened the look-alike (shade collapsed: " + collapsed + ")";
+        } catch (Throwable t) {
+            how = "tap: the look-alike could not be opened (" + t.getClass().getSimpleName() + "), opened the real Settings";
+            try { startActivity(new android.content.Intent(android.provider.Settings.ACTION_SETTINGS).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)); }
+            catch (Throwable t2) { how += "; that failed too (" + t2.getClass().getSimpleName() + ")"; }
+        }
+        Log.i(TAG, "GEAR " + how);
+        gearStatus(how);
+        gearHide("tapped");
+    }
+
+    /** StatusBarManager.collapsePanels() (hidden API on the greylist, permission EXPAND_STATUS_BAR is in the manifest): the stock gear dismisses the shade itself, an activity started from outside does not. */
+    private boolean collapseShade() {
+        try {
+            Object sbm = getSystemService("statusbar");
+            sbm.getClass().getMethod("collapsePanels").invoke(sbm);
+            return true;
+        } catch (Throwable t) { Log.w(TAG, "GEAR collapsePanels failed: " + t); return false; }
+    }
+
     // ---------------------------------------------------------------- X1: the number on the lock screen (Tj relaxed the lock-screen rule for this)
     private View lockView;
     private boolean lockReceiverOn = false;
