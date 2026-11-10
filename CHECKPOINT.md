@@ -1,22 +1,22 @@
-# CHECKPOINT 1025 — read me first, then TASKS.md
+# CHECKPOINT 1026 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T23:56:20Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `58adf6f` (this checkpoint is the commit after it)
+**Written:** 2026-11-10T23:57:47Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `d1c4de3` (this checkpoint is the commit after it)
 
 ## Just done
-BS2 (Tj: also Bluetooth, only if already on, never turn on, never show) written into TASKS; wf emulator run (Wi-Fi only code, main@8babd57) + review agent still in flight
+BS1d wf run #519 (id 42926361302, job 130213726774, main@8babd57): 24 PASS 0 FAIL 15 INFO. Proven on the emulator: list rotate,headset,wifi + marker n in custom/lock, null+null in unlocked Quickstep, Wi-Fi stays ON in custom (guard on) and on the lock screen (0 lock-rule switch-offs), restored after switch off / Clear data, no grant = Wi-Fi off + list untouched. Node check inconclusive (0 SystemUI nodes in unlocked dumps); pictures next
 
 ## Do this next
-read the wf run + review findings; then BS2a: rename WifiIcon* -> RadioIcon* (git mv + sed), slots wifi+bluetooth in RadioIconHold (restore removes only added slots), keepsRadiosOn in ReturnReset.radiosOff/LockQuiet/receiver (both radios), LockQuiet.onUnlock never turns a radio on while active (BS2b), Control text, scenario wf + gate-map names. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
+fetch ci-shots (git fetch origin ci-shots; git archive FETCH_HEAD | tar -x -C fresh scratchpad dir), crop the status bar of wf-1..wf-5 and compare the Wi-Fi icon; read the review agent findings; then BS2a rename + Bluetooth. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  d1c4de3 ckpt 1025: BS2 (Tj: also Bluetooth, only if already on, never turn on, never show) writt
   8e2f709 ckpt 1021: BS1: TASKS BS1c ticked, HANDOFF row added; wf emulator run dispatched on main
   8babd57 ckpt 1018: BS1d: emulator section 'wf' written (scenario + gate-map + emulator.yml names
   dece682 ckpt 1015: BS1c code: WifiIconHold (24 tests green) + WifiIconHide + hooks (syncNow/tick
@@ -26,8 +26,4 @@ read the wf run + review findings; then BS2a: rename WifiIcon* -> RadioIcon* (gi
   97e99eb ckpt 998: v0.9.3 (code 42) shipped a542594 = main; android.yml full_build DISPATCHED on 
   a542594 ckpt 997: gated v0.9.3 (code 42) and pushed it: the handoff self-test, the full unit sui
   634ed77 ckpt 994: BR1 emu run #518 (id 42889694843, job 130087240598, main@5360869, sections=gea
-  44a6455 ckpt 992: BR1 emu run #518 id 42889694843 (sections=gear, shots, main@5360869) DISPATCHE
 ```
-
-(3 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
