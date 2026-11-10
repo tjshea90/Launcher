@@ -637,6 +637,8 @@ b6lock(){ # b6lock <stored mode custom|quickstep>
     BK_C="$(pen_sample)"
     adb shell cmd statusbar collapse; sleep 2
     info "BK1b control (stored mode quickstep, after the unlock, panel open): $BK_C (showing=false = really unlocked)"
+    adb logcat -d -v time -s TjA11y:I 2>/dev/null | grep -E 'PENCIL|SERVICE|ROUTER' | grep -v 'PENCIL probe' | sed 's/^[0-9-]* //; s/I.TjA11y *([ 0-9]*): //' | tail -n 6 | cut -c1-90 > "$OUT/pencil-control-log.txt" 2>&1   # BQ3: why did a cover exist in unlocked Quickstep?
+    info "BK1b control: stored mode now $(getmode); the last PENCIL / SERVICE / ROUTER lines: $(tr '\n' '|' < "$OUT/pencil-control-log.txt")"
     check "BK1b control: the device is really unlocked (showing=false) and the open panel shows NO cover (N3)" pen_control_ok "$BK_C"
   fi
 }
