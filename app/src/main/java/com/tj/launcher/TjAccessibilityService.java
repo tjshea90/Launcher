@@ -2466,6 +2466,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void removePencil() {
+        removeGear();   // BR1
         dropPenNode();
         handler.removeCallbacks(penWatch);
         if (penView == null) return;
