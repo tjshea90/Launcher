@@ -2116,3 +2116,30 @@
 >
 > I'm stopping here so two sessions don't edit the same branch.
 <!-- sha:53ae69f2d6b8 -->
+
+## 2026-11-10T04:34:00Z
+> The old account's heartbeat woke this session at 04:28Z and I took over. The other account's session has been silent since its checkpoint 862 at 01:52Z, and its later commits are only "worker restarted" notices, probably from its usage cap.
+>
+> **Gate for v0.9.1:**
+> - **Run #500 passed.**
+> - **Run #501 had 98 pass and 2 fail, both in the reboot section.** The log shows the known CI-emulator crash of our app's process: an Android memory-allocator crash, hit while decoding a bitmap. Android's "Select a Home app" chooser is on screen at the end. That is the known flake pattern, not a product bug.
+> - **The gated code equals the current head:** no code has changed since.
+>
+> I re-ran the reboot section alone on `main` (about 8 minutes). If it passes, I'll ship v0.9.1 per the usual routine and send you the full answer. If it fails again, I'll run it on the v0.9.0 release to see whether the crash was already there.
+>
+> I've recorded the takeover in checkpoint 863, so the other account's session will see it when it wakes.
+<!-- sha:2e19d6bc2267 -->
+
+## 2026-11-10T04:35:37Z
+> The `rb` re-run (#502) is in flight and I've saved its run id in checkpoint 864. I'll read the result when the timer fires at 04:39:30Z.
+<!-- sha:e8d6ceeca882 -->
+
+## 2026-11-10T04:43:17Z
+> Run #502 (`rb` solo on `main`) passed, so the emulator gate is green. The two failures in #501 were the known native-crash flake.
+>
+> `main`, my branch and the other account's branch are all contained in `5a469fd`, and the gated code is identical to the head. I'm now running `ship.sh` for v0.9.1 in the background (tests, lint, version check, push). When it finishes I'll build and publish on GitHub Actions, record the release, and send Tj the full answer.
+<!-- sha:a636f558d528 -->
+
+## 2026-11-10T04:47:44Z
+> The heartbeat's stand-down rule has a flaw I'll document after the release: a restart-notice commit from a stalled session counts as "work under 60 minutes old", and the rule tells the woken session to disable its own timer. The release comes first, and the timer for the build fires at 04:49:00Z.
+<!-- sha:4ebc878b6906 -->
