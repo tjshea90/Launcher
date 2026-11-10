@@ -77,14 +77,11 @@ public final class ScrimMeasure {
     /** The failure record of one rotation in one theme (light = the v0.8.2 key, dark = the same with an "n"): see {@link #valueKey(int, boolean)}. */
     public static String failKey(int rotation, boolean night) { return FAIL_PREFIX + rotation + (night ? "n" : ""); }
 
-    /**
-     * Pure: did a run end WITHOUT storing a measurement? BQ1a: every run costs the person a real screenshot (the bare frame is asked for the moment the run starts), so EVERY run that does not end in a stored value counts,
-     * whether the frames could not be fitted ("not measured: ...") or it was interrupted ("stopped: the PIN pad came up / the theme changed / the screen went off ..."). Before v0.9.2 an interruption counted for nothing
-     * and was tried again at the next lock, up to four flashes a day for a slot that could never finish. After {@link #MAX_FAILURES} such runs the slot waits for a new wallpaper, rotation or theme, or for "Measure again".
-     */
-    public static boolean measurementFailure(String outcome) {
-        return outcome != null && !outcome.isEmpty() && !outcome.startsWith("MEASURED");
-    }
+    // BQ1a: a run is COUNTED WHEN IT STARTS ({@link #addFailure} in the service's maybeMeasureScrim) and the record is cleared when it stores a measurement. Every run costs the person a real screenshot (the bare frame
+    // is asked for the moment the run starts), whether the frames could not be fitted ("not measured: ..."), the run was interrupted ("stopped: the PIN pad came up / the theme changed / the screen went off ...") or the
+    // service was torn down / the process died in the middle (those never reach the end of the run, so counting at the end could not see them: review of 2026-11-10, research/BQ1_REVIEW_2026-11-10.md). Before v0.9.2
+    // an interruption counted for nothing and was tried again at the next lock, up to four flashes a day for a slot that could never finish. After {@link #MAX_FAILURES} such runs the slot waits for a new wallpaper,
+    // rotation or theme, or for "Measure again".
 
     /** The last run, in plain words, with the time and the theme it ran in (Launcher control, the tablet report): the 2026-11-10 report could not say WHICH run took the screenshots because only the last START was kept. */
     public static final String RUN_KEY = "scrim_last_run";
