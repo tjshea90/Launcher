@@ -602,7 +602,7 @@ pen_tl(){ # pen_tl <logcat -v time file> <ERE of the line to start at> <lines to
         r = s; sub(/^PENCIL cover hidden \(kept warm; /, "", r); a = ""
         if (match(r, /last seen [0-9]+ ms ago/)) a = substr(r, RSTART + 10, RLENGTH - 17)
         sub(/, the pencil was last seen.*$/, "", r); sub(/\)$/, "", r)
-        s = "hid: " substr(r, 1, 26) (a != "" ? " +" a "ms" : "")
+        s = "hid: " substr(r, 1, 28) (a != "" ? " +" a "ms" : "")
       } else if (s ~ /^PENCIL cover shown/) { sub(/^PENCIL cover shown /, "SHOWN ", s) }
       else { sub(/^PENCIL /, "", s) }
       n++; if (n > skip && n <= skip + cnt) printf "%s %s|", t, substr(s, 1, 42)

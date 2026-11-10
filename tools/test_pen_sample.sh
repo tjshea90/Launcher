@@ -89,7 +89,7 @@ LT="$OUT/tl.txt"; printf '%s\n' '11-10 11:26:20.000 I/TjA11y( 1): BQ3 marker ope
   '11-10 11:26:27.079 I/TjA11y( 1): BN8b marker drag' '11-10 11:26:27.400 I/TjA11y( 1): PENCIL cover hidden (kept warm; a finger went down: the panel may be about to move, the pencil was last seen 12 ms ago)' \
   '11-10 11:26:29.300 I/TjA11y( 1): PENCIL cover shown [4,564][55,615]' '11-10 11:26:30.100 I/TjA11y( 1): BQ3 marker close 3' '11-10 11:26:30.230 I/TjA11y( 1): PENCIL cover hidden (kept warm; the followed pencil is gone)' > "$LT"
 t "pen_tl: from the 3rd opening, 3 lines"          "20.000 BQ3 marker open 3|20.050 SHOWN [4,564][55,615]|27.079 BN8b marker drag|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 0 3)"
-t "pen_tl: skip 3, next 2 (hide with reason+age)"  "27.400 hid: a finger went down: the pan +12ms|29.300 SHOWN [4,564][55,615]|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 3 2)"
+t "pen_tl: skip 3, next 2 (hide with reason+age)"  "27.400 hid: a finger went down: the pane +12ms|29.300 SHOWN [4,564][55,615]|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 3 2)"
 t "pen_tl: a hide without an age"                  "30.230 hid: the followed pencil is gone|" "$(pen_tl "$LT" 'BQ3 marker open 3|BN8b marker drag' 6 3)"
 t "pen_tl: the start line is not there"            "" "$(pen_tl "$LT" 'no such line' 0 5)"
 FAKE_PID=""; FAKE_POL=""
