@@ -2052,3 +2052,9 @@
 >
 > I'll give you the Release link as soon as the build is green.
 <!-- sha:6d541afb54a6 -->
+
+## 2026-11-10T01:03:07Z
+> Status: v0.9.1 code is complete and checkpointed (ckpt 853). The full unit suite passes (887 tests, 0 failures). The gate plan is three parallel emulator runs. The second read-only review (pencil rule, report log, Recents diagnostics) is still running. When it lands I'll fix any real findings, rerun the focused tests, then dispatch the gate.
+>
+> Nothing is released yet, and nothing of v0.9.1 has run on your tablet.
+<!-- sha:00c2026d9119 -->
