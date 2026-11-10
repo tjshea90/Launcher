@@ -2320,3 +2320,7 @@
 ## 2026-11-10T11:17:55Z
 > Run #514 is done and still red. The pictures are the same as in #513: after a real close there is no white box at the pencil place, and the control shows the pencil uncovered. I'm waiting for the extraction of the FAIL lines to see what's left.
 <!-- sha:1d8a73322b87 -->
+
+## 2026-11-10T11:21:20Z
+> Run #514: the BN8b drag check now passes (cover shown before, hidden after, 0 re-shows within 480 ms). Only the two window-sample "closed again" checks fail. In those, the service log says the cover was hidden about 100 ms after each close, and the pictures show no white box, so the sampler is reading something else. I'm switching that check to the service's own log, and recording the window blocks as INFO to learn what the sampler sees.
+<!-- sha:d8ce045b61c6 -->
