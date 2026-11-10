@@ -2300,3 +2300,7 @@
 ## 2026-11-10T09:28:34Z
 > Waiting on two runs: `b6,n,o,x,ac,ad` (#504) and the solo `base` rerun (#506, id 42790941782). I'll read them at about 09:34Z.
 <!-- sha:abce27d04a36 -->
+
+## 2026-11-10T09:42:58Z
+> Both reruns are still in flight (`b6` solo, `b6,n` on the v0.9.1 tag); I'll read them when the timer fires at 09:45:30Z. Base and `n` already pass alone, so the open question is whether the two pencil-cover failures reproduce on the head and not on the tag.
+<!-- sha:cbe4051adf38 -->
