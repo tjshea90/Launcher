@@ -41,8 +41,10 @@ public class NoAlbumArtGuardTest {
     };
 
     // ---- what must not appear inside a string literal ----
+    // "content://media/external/audio/albumart", "albumart/12", "album_art": yes. A class name such as "...AlbumArtPagerAdapter.AlbumArtFragment.ID" (a fragment argument key): no.
+    private static final String ALBUM_ART_LITERAL = "(?i)\\balbum_?arts?\\b";
     private static final String[][] FORBIDDEN_LITERALS = {
-            {"album-art content URI", "(?i)albumart"},
+            {"album-art content URI or column", ALBUM_ART_LITERAL},
             {"image mime type (picture picker)", "(?i)^image/"},
             {"web address", "(?i)^https?://"},
     };
@@ -127,6 +129,16 @@ public class NoAlbumArtGuardTest {
         Lexed l = lex("int a; // getEmbeddedPicture\n/* BitmapFactory */ String u = \"content://x/albumart\"; char q = '\"';");
         assertTrue(l.code, !l.code.contains("getEmbeddedPicture") && !l.code.contains("BitmapFactory"));
         assertEquals(Arrays.asList("content://x/albumart"), l.literals);   // the self-test of the guard: a token inside a URL string is not hidden by a "//"
+    }
+
+    @Test public void theLiteralRuleCatchesTheRealUriAndColumnButNotAClassName() {
+        Pattern p = Pattern.compile(ALBUM_ART_LITERAL);
+        assertTrue(p.matcher("content://media/external/audio/albumart").find());
+        assertTrue(p.matcher("content://media/external/audio/albumart/12").find());
+        assertTrue(p.matcher("album_art").find());
+        assertTrue(p.matcher("Albumart").find());
+        assertTrue(!p.matcher(".adapters.AlbumArtPagerAdapter.AlbumArtFragment.ID").find());
+        assertTrue(!p.matcher("content://media/external/audio/media").find());
     }
 
     @Test public void noWayToReadDecodeCacheFetchOrChooseAPictureExistsInTheCode() throws IOException {
