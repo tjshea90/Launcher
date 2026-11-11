@@ -10,6 +10,10 @@ Tj, the music app is in v0.9.6, as its own app next to the launcher.
 
 **What it is.** LineageOS's own music app, Eleven (package `org.lineageos.eleven`, from the `lineage-17.1` branch, pinned to one commit, Apache-2.0 notice and a list of my changes are in the repo under `eleven/`). It looks and works as upstream wrote it, with the album art removed.
 
+**The name and the icon (your latest message).** The app is called "Music" in every language (upstream had translated its name, "Musique", "Música" and so on: all 70 translations are removed) and its icon is the blue speaker of your ATG music player. I searched the web for the icon file (three searches: no listing, APK or icon of an "ATG music player" turned up), so I redrew the speaker from your two screenshots. At your drawer's own size my drawing differs from your screenshot by about 5 of 255 levels on average, and at the size in the Files screenshot, which I did not tune to, by about 6 (method and numbers: `research/MUSIC_ICON_2026-11-11.md`). <<ICON>> If you send me the ATG APK file itself I can take its original icon out of it, byte for byte; say so if you want that.
+
+**Heads-up: two "Music" entries.** Your tablet already has the ATG "Music". After you install this one, the custom drawer shows two entries called Music with the same icon until you hide or uninstall the old one (Hidden apps screen). I did not touch the old one. One side effect (reasoned from the code, not run): with the shell helper off, the Recents label closer cannot tell a hidden "Music" from a shown "Music" (the helper's sweeps work by package and are fine). Easiest: uninstall the old one; or tell me and I handle it in the code.
+
 **In the custom drawer.** The launcher puts the music app into the custom drawer by itself, once per install, the first time it sees it. If you switch it off on the Hidden apps screen it stays off, also after an update. Uninstall and reinstall counts as new and puts it back. It does not appear on the home screen by itself (the stock "add icon to home on install" is switched off for it; reasoned, the emulator cannot test an installer install).
 
 **No album art, ever.** I did not hide it, I removed every place that reads or shows it: the app no longer asks Android for a cover, never decodes one, keeps no picture cache, and has no internet permission, so nothing can be fetched. Artists show the coloured letter cards, albums and songs the music-note tile, as the app draws them when it finds no art. Removed with it: "Change image" on artists and albums, the photo picker, "Delete cache" in Settings. A unit test (12 checks, runs for every release) fails the build if any way to read, cache or show a cover comes back.
@@ -17,6 +21,7 @@ Tj, the music app is in v0.9.6, as its own app next to the launcher.
 **What is proven** <<MU>>
 - Emulator, same song with a flat bright magenta cover, same screens: upstream's app WITH its art code shows that cover on the songs tab, the albums tab, the playing screen and the notification card; our app shows none of it in 19 pictures (tabs, artist and album pages, menus, playing screen, shade, lock screen) and shows the placeholders instead. The app stayed in front through the whole tour and did not crash.
 - Drawer rule on the emulator: appears by itself, a system app outside your list stays hidden, opens from the drawer, a hide on the real Hidden apps screen sticks (also across an update in place), uninstall + reinstall brings it back, also when the launcher did not see the uninstall.
+- Icon on the emulator (MU-21): <<ICONPROOF>>
 - <<GATE>>
 
 **What only your tablet can show**
