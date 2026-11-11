@@ -2178,3 +2178,14 @@
 >
 > Nothing is in flight now. Two auto-resume timers (one per account) still exist and wake a session every two hours, and it finds nothing to do. Deleting them in the app saves that usage.
 <!-- sha:1ea6f8962b9f -->
+
+## 2026-11-11T20:18:04Z
+> Nothing is left for me on v0.9.6, and everything is saved with `main` equal to my latest commit. The answer to you went out at 19:28 UTC.
+>
+> What waits on you:
+> - **Blur background:** should I remove the "Blur background" switch from Eleven's Settings?
+> - **Media card:** do you want the notification and lock-screen media card with no picture at all?
+> - **Tablet checks:** the first-start permission prompt, real music files, memory, and the two "Music" entries, plus the older v0.9.4/v0.9.5 tablet checks.
+>
+> The auto-resume timer on this account still wakes me every two hours, and the other account's timer does the same. I didn't delete either, because a delete needs your approval in the app. Deleting both in the app saves that usage.
+<!-- sha:e16b15c2b832 -->
