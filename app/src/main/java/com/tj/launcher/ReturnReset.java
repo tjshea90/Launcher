@@ -290,13 +290,17 @@ public final class ReturnReset {
     }
 
     static void radiosOff(Context c) {
+        final boolean keep = RadioIconHide.keepsRadiosOn(c);   // BS1 + BS2 (Tj): Wi-Fi and Bluetooth stay on (only if they already are: nothing here turns one on), only their symbols go
         WifiManager wm = (WifiManager) c.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wm != null && wm.isWifiEnabled()) {
-            if (WifiIconHide.keepsWifiOn(c)) Log.i(TAG, "wifi left on (BS1: its symbol is hidden instead)");   // BS1 (Tj): Wi-Fi stays on, only the symbol goes; Bluetooth below is unchanged
+            if (keep) Log.i(TAG, "wifi left on (BS1: its symbol is hidden instead)");
             else { boolean ok = wm.setWifiEnabled(false); Log.i(TAG, "wifi off -> " + ok); }
         }
         BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
-        if (bt != null && bt.isEnabled()) { boolean ok = bt.disable(); Log.i(TAG, "bluetooth off -> " + ok); }
+        if (bt != null && bt.isEnabled()) {
+            if (keep) Log.i(TAG, "bluetooth left on (BS2: its symbol is hidden instead)");
+            else { boolean ok = bt.disable(); Log.i(TAG, "bluetooth off -> " + ok); }
+        }
     }
 
     private static volatile String cachedLabel, cachedPkg;
