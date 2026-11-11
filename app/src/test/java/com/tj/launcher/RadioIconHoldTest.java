@@ -6,17 +6,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 
 /**
- * BS1: the Wi-Fi symbol hold ({@link WifiIconHold}) over in-memory stores. Wrong, these cases hide the wrong icons on Tj's tablet for good, leave his symbol hidden in Quickstep, or overwrite a list he edited:
- * each rule of the class comment is one test. {@code events} records the ORDER of disk and settings writes (the original must be on disk before the first change).
+ * BS1 + BS2: the Wi-Fi / Bluetooth symbol hold ({@link RadioIconHold}) over in-memory stores. Wrong, these cases hide the wrong icons on Tj's tablet for good, leave his symbols hidden in Quickstep, or overwrite a
+ * list he edited: each rule of the class comment is one test. {@code events} records the ORDER of disk and settings writes (the original must be on disk before the first change).
  */
-public class WifiIconHoldTest {
+public class RadioIconHoldTest {
     private final List<String> events = new ArrayList<>();
 
-    private final class FakeState implements WifiIconHold.State {
+    private final class FakeState implements RadioIconHold.State {
         boolean held; String original; boolean failNextSave;
         @Override public boolean held() { return held; }
         @Override public String original() { return original; }
@@ -26,7 +27,7 @@ public class WifiIconHoldTest {
         }
     }
 
-    private final class FakeSetting implements WifiIconHold.Setting {
+    private final class FakeSetting implements RadioIconHold.Setting {
         String value; boolean failNextPut;
         FakeSetting(String v) { value = v; }
         @Override public String get() { return value; }
@@ -36,68 +37,85 @@ public class WifiIconHoldTest {
         }
     }
 
-    private static final WifiIconHold.Sink QUIET = new WifiIconHold.Sink() { @Override public void log(String m) { } };
+    private static final RadioIconHold.Sink QUIET = new RadioIconHold.Sink() { @Override public void log(String m) { } };
 
-    private boolean set(FakeState st, FakeSetting s, boolean permitted, boolean want) { return WifiIconHold.set(st, s, permitted, want, QUIET); }
+    private boolean set(FakeState st, FakeSetting s, boolean permitted, boolean want) { return RadioIconHold.set(st, s, permitted, want, QUIET); }
 
     // ---------------------------------------------------------------- the list helpers
 
     @Test public void aMissingSettingStartsFromTheSystemDefaultNotFromNothing() {
-        assertEquals("rotate,headset,wifi", WifiIconHold.with(null, "wifi"));
-        assertTrue(WifiIconHold.hides(null, "rotate"));
-        assertTrue(WifiIconHold.hides(null, "headset"));
-        assertFalse(WifiIconHold.hides(null, "wifi"));
+        assertEquals("rotate,headset,wifi,bluetooth", RadioIconHold.with(null));
+        assertTrue(RadioIconHold.hides(null, "rotate"));
+        assertTrue(RadioIconHold.hides(null, "headset"));
+        assertFalse(RadioIconHold.hides(null, "wifi"));
+        assertFalse(RadioIconHold.hides(null, "bluetooth"));
     }
 
-    @Test public void anExistingListKeepsEveryEntryAndGetsOurs() {
-        assertEquals("a,b,wifi", WifiIconHold.with("a,b", "wifi"));
-        assertEquals("wifi", WifiIconHold.with("", "wifi"));
-        assertEquals("a,wifi", WifiIconHold.with("a,,", "wifi"));      // empty entries are no-ops for SystemUI and are dropped
-        assertEquals("a,wifi", WifiIconHold.with("a,wifi", "wifi"));   // already there: not twice
+    @Test public void anExistingListKeepsEveryEntryAndGetsBothOfOurs() {
+        assertEquals("a,b,wifi,bluetooth", RadioIconHold.with("a,b"));
+        assertEquals("wifi,bluetooth", RadioIconHold.with(""));
+        assertEquals("a,wifi,bluetooth", RadioIconHold.with("a,,"));            // empty entries are no-ops for SystemUI and are dropped
+        assertEquals("a,wifi,bluetooth", RadioIconHold.with("a,wifi,bluetooth")); // already there: not twice
+    }
+
+    @Test public void onlyTheMissingSlotIsAddedWhenTheOtherIsHiddenAlready() {
+        assertEquals("bluetooth,x,wifi", RadioIconHold.with("bluetooth,x"));
+        assertEquals("wifi,x,bluetooth", RadioIconHold.with("wifi,x"));
+        assertEquals(Arrays.asList("wifi"), RadioIconHold.missing("bluetooth"));
+        assertEquals(Arrays.asList("wifi", "bluetooth"), RadioIconHold.missing(null));
+        assertTrue(RadioIconHold.missing("wifi,bluetooth").isEmpty());
+    }
+
+    @Test public void hidesAllNeedsBothSlots() {
+        assertTrue(RadioIconHold.hidesAll("rotate,wifi,bluetooth"));
+        assertFalse(RadioIconHold.hidesAll("wifi"));
+        assertFalse(RadioIconHold.hidesAll("bluetooth"));
+        assertFalse(RadioIconHold.hidesAll(null));
     }
 
     @Test public void slotNamesAreComparedExactlyLikeSystemUIDoes() {
-        assertFalse(WifiIconHold.hides("wifi2,mywifi", "wifi"));
-        assertFalse(WifiIconHold.hides("WIFI", "wifi"));
-        assertFalse(WifiIconHold.hides(" wifi", "wifi"));   // no trimming in SystemUI's split
-        assertTrue(WifiIconHold.hides("a,wifi,b", "wifi"));
+        assertFalse(RadioIconHold.hides("wifi2,mywifi", "wifi"));
+        assertFalse(RadioIconHold.hides("WIFI", "wifi"));
+        assertFalse(RadioIconHold.hides(" wifi", "wifi"));   // no trimming in SystemUI's split
+        assertFalse(RadioIconHold.hides("bluetooth_battery", "bluetooth"));
+        assertTrue(RadioIconHold.hides("a,wifi,b", "wifi"));
     }
 
-    @Test public void takingOurTokenOutLeavesTheRestAndANullStaysNull() {
-        assertEquals("a,b", WifiIconHold.without("a,wifi,b", "wifi"));
-        assertEquals("a", WifiIconHold.without("a,wifi,wifi", "wifi"));
-        assertEquals("", WifiIconHold.without("wifi", "wifi"));
-        assertNull(WifiIconHold.without(null, "wifi"));
+    @Test public void takingSlotsOutLeavesTheRestAndANullStaysNull() {
+        assertEquals("a,b", RadioIconHold.without("a,wifi,b,bluetooth", Arrays.asList("wifi", "bluetooth")));
+        assertEquals("a,bluetooth", RadioIconHold.without("a,wifi,wifi,bluetooth", Arrays.asList("wifi")));
+        assertEquals("", RadioIconHold.without("wifi,bluetooth", Arrays.asList("wifi", "bluetooth")));
+        assertNull(RadioIconHold.without(null, Arrays.asList("wifi", "bluetooth")));
     }
 
     // ---------------------------------------------------------------- the marker kept in Settings.Global
 
     @Test public void theMarkerRoundTripsEveryKindOfOriginal() {
-        assertNull(WifiIconHold.decodeMarker(WifiIconHold.encodeMarker(null)));
-        assertEquals("", WifiIconHold.decodeMarker(WifiIconHold.encodeMarker("")));
-        assertEquals("rotate,headset", WifiIconHold.decodeMarker(WifiIconHold.encodeMarker("rotate,headset")));
-        assertEquals("nfc,vpn", WifiIconHold.decodeMarker(WifiIconHold.encodeMarker("nfc,vpn")));
-        assertTrue(WifiIconHold.encodeMarker(null).length() > 0);   // a marker is never empty: "present" is what means "held"
+        assertNull(RadioIconHold.decodeMarker(RadioIconHold.encodeMarker(null)));
+        assertEquals("", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("")));
+        assertEquals("rotate,headset", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("rotate,headset")));
+        assertEquals("nfc,vpn", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("nfc,vpn")));
+        assertTrue(RadioIconHold.encodeMarker(null).length() > 0);   // a marker is never empty: "present" is what means "held"
     }
 
     @Test public void anUnreadableMarkerCountsAsTheSystemDefault() {
-        assertNull(WifiIconHold.decodeMarker(null));
-        assertNull(WifiIconHold.decodeMarker(""));
-        assertNull(WifiIconHold.decodeMarker("garbage"));
+        assertNull(RadioIconHold.decodeMarker(null));
+        assertNull(RadioIconHold.decodeMarker(""));
+        assertNull(RadioIconHold.decodeMarker("garbage"));
     }
 
     // ---------------------------------------------------------------- the radio rule
 
-    @Test public void wifiStaysOnOnlyWhileTheSymbolCanReallyBeHidden() {
-        assertTrue(WifiIconHold.keepsWifiOn(true, true, false));
-        assertFalse(WifiIconHold.keepsWifiOn(false, true, false));   // switch off: today's behaviour
-        assertFalse(WifiIconHold.keepsWifiOn(true, false, false));   // no adb permission: the symbol would show on the lock screen, so Wi-Fi goes off like before
-        assertFalse(WifiIconHold.keepsWifiOn(true, true, true));     // paused / breaker tripped
+    @Test public void radiosStayOnOnlyWhileTheSymbolsCanReallyBeHidden() {
+        assertTrue(RadioIconHold.keepsRadiosOn(true, true, false));
+        assertFalse(RadioIconHold.keepsRadiosOn(false, true, false));   // switch off: today's behaviour
+        assertFalse(RadioIconHold.keepsRadiosOn(true, false, false));   // no adb permission: the symbols would show on the lock screen, so the radios go off like before
+        assertFalse(RadioIconHold.keepsRadiosOn(true, true, true));     // paused / breaker tripped
     }
 
     @Test public void theSwitchIsOnInTheShippedAppAndOffInDebug() {
-        assertTrue(WifiIconHold.defaultOn(false));
-        assertFalse(WifiIconHold.defaultOn(true));
+        assertTrue(RadioIconHold.defaultOn(false));
+        assertFalse(RadioIconHold.defaultOn(true));
     }
 
     // ---------------------------------------------------------------- taking the hold
@@ -105,27 +123,37 @@ public class WifiIconHoldTest {
     @Test public void theOriginalIsOnDiskBeforeTheFirstWrite() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc,vpn");
         assertTrue(set(st, s, true, true));
-        assertEquals("nfc,vpn,wifi", s.value);
+        assertEquals("nfc,vpn,wifi,bluetooth", s.value);
         assertTrue(st.held);
         assertEquals("nfc,vpn", st.original);
-        assertEquals("[save(true,nfc,vpn), put(nfc,vpn,wifi)]", events.toString());
+        assertEquals("[save(true,nfc,vpn), put(nfc,vpn,wifi,bluetooth)]", events.toString());
     }
 
     @Test public void aMissingSettingIsARealOriginalAndTheDefaultListIsKept() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting(null);
         assertTrue(set(st, s, true, true));
-        assertEquals("rotate,headset,wifi", s.value);
+        assertEquals("rotate,headset,wifi,bluetooth", s.value);
         assertTrue(st.held);
         assertNull(st.original);
-        assertEquals("[save(true,null), put(rotate,headset,wifi)]", events.toString());
+        assertEquals("[save(true,null), put(rotate,headset,wifi,bluetooth)]", events.toString());
     }
 
-    @Test public void aListThatAlreadyHidesTheSymbolIsLeftAloneAndNothingIsHeld() {
-        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,wifi");
+    @Test public void aListThatAlreadyHidesBothSymbolsIsLeftAloneAndNothingIsHeld() {
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,bluetooth,wifi");
         assertFalse(set(st, s, true, true));
         assertFalse(st.held);
-        assertEquals("rotate,wifi", s.value);
+        assertEquals("rotate,bluetooth,wifi", s.value);
         assertTrue(events.isEmpty());
+    }
+
+    @Test public void aListThatHidesOnlyOneSymbolGetsTheOtherAndItsOriginalKeepsTheFirst() {
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,wifi");
+        assertTrue(set(st, s, true, true));
+        assertEquals("rotate,wifi,bluetooth", s.value);
+        assertEquals("rotate,wifi", st.original);
+        assertFalse(set(st, s, true, false));
+        assertEquals("rotate,wifi", s.value);   // the wifi entry was Tj's own: it stays
+        assertFalse(st.held);
     }
 
     @Test public void aHoldThatIsAlreadyOnRewritesNothing() {
@@ -134,18 +162,31 @@ public class WifiIconHoldTest {
         events.clear();
         assertTrue(set(st, s, true, true));
         assertTrue(events.isEmpty());
-        assertEquals("nfc,wifi", s.value);
+        assertEquals("nfc,wifi,bluetooth", s.value);
     }
 
-    @Test public void aHoldWhoseValueWasResetIsTakenAgainWithTheNewestOriginal() {
+    @Test public void aHoldThatLostOneSlotAddsItBackAndKeepsItsOriginal() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         assertTrue(set(st, s, true, true));
-        s.value = "nfc,vpn";   // something rewrote the list without our token
+        s.value = "nfc,wifi";   // something removed the bluetooth entry
         events.clear();
         assertTrue(set(st, s, true, true));
-        assertEquals("nfc,vpn,wifi", s.value);
-        assertEquals("nfc,vpn", st.original);   // the newest value without our token is the original now
-        assertEquals("[save(true,nfc,vpn), put(nfc,vpn,wifi)]", events.toString());
+        assertEquals("nfc,wifi,bluetooth", s.value);
+        assertEquals("nfc", st.original);   // NOT the list with our wifi entry in it: that would leave wifi hidden for good
+        assertEquals("[put(nfc,wifi,bluetooth)]", events.toString());
+        assertFalse(set(st, s, true, false));
+        assertEquals("nfc", s.value);
+    }
+
+    @Test public void aHoldWhoseValueWasResetIsTakenAgainAndStillEndsCleanly() {
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
+        assertTrue(set(st, s, true, true));
+        s.value = "nfc,vpn";   // something rewrote the list without our entries
+        assertTrue(set(st, s, true, true));
+        assertEquals("nfc,vpn,wifi,bluetooth", s.value);
+        assertFalse(set(st, s, true, false));
+        assertEquals("nfc,vpn", s.value);   // his newer list, minus only what we added
+        assertFalse(st.held);
     }
 
     @Test public void withoutThePermissionNothingIsTakenAndAHeldHoldStays() {
@@ -197,16 +238,16 @@ public class WifiIconHoldTest {
         assertFalse(st.held);
     }
 
-    @Test public void aListEditedMeanwhileLosesOnlyOurToken() {
+    @Test public void aListEditedMeanwhileLosesOnlyOurEntries() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         set(st, s, true, true);
-        s.value = "nfc,wifi,vpn";   // Tj (or a tool) added vpn while we held
+        s.value = "nfc,wifi,vpn,bluetooth";   // Tj (or a tool) added vpn while we held
         assertFalse(set(st, s, true, false));
         assertEquals("nfc,vpn", s.value);
         assertFalse(st.held);
     }
 
-    @Test public void aListThatNoLongerHidesTheSymbolIsNotTouchedWhenTheHoldEnds() {
+    @Test public void aListThatNoLongerHidesAnySymbolIsNotTouchedWhenTheHoldEnds() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         set(st, s, true, true);
         s.value = "vpn";   // somebody replaced the list: nothing of ours is left in it
@@ -224,7 +265,7 @@ public class WifiIconHoldTest {
         assertTrue(set(st, s, false, false));
         assertTrue(st.held);
         assertEquals("nfc", st.original);
-        assertEquals("nfc,wifi", s.value);
+        assertEquals("nfc,wifi,bluetooth", s.value);
         assertTrue(events.isEmpty());
     }
 
@@ -234,7 +275,7 @@ public class WifiIconHoldTest {
         s.failNextPut = true;
         assertTrue(set(st, s, true, false));
         assertTrue(st.held);
-        assertEquals("nfc,wifi", s.value);
+        assertEquals("nfc,wifi,bluetooth", s.value);
         assertFalse(set(st, s, true, false));   // the next trigger succeeds
         assertEquals("nfc", s.value);
         assertFalse(st.held);
@@ -252,7 +293,7 @@ public class WifiIconHoldTest {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting(null);
         for (int i = 0; i < 3; i++) {
             assertTrue(set(st, s, true, true));
-            assertEquals("rotate,headset,wifi", s.value);
+            assertEquals("rotate,headset,wifi,bluetooth", s.value);
             assertFalse(set(st, s, true, false));
             assertNull(s.value);
         }
