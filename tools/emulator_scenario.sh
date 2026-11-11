@@ -4587,6 +4587,8 @@ muprefs(){ # muprefs <package for auto_done, or empty>: tj_apps.xml = the baseli
   adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"baseline_done\\\" value=\\\"true\\\" /><set name=\\\"allowed\\\">$SETA</set>$DONE</map>\" > shared_prefs/tj_apps.xml'"; }
 mudrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; }   # from the custom home
+mumenu(){ # mumenu <dump file>: 0 when the popup menu on screen has at least two entries and none of them is "Change image" or a fetch entry (all removed with the album art)
+  [ "$(grep -c 'id/title"' "$1")" -ge 2 ] && ! grep -qiE 'text="[^"]*(change image|fetch)' "$1"; }
 
 # ---- the fixture and the CONTROL: a song with a flat magenta cover, scanned into MediaStore; Android serves that cover to whoever asks
 python3 -I tools/mu_make_mp3.py "$MUTMP/song.mp3" "Glass Harbor" "Marisol Vega" "Northern Lights" "$MUCOL"
@@ -4626,15 +4628,28 @@ for i in 1 2 3 4 5 6; do adb shell input swipe 520 600 80 600 250; sleep 1.5; sh
 for i in 1 2 3 4 5 6; do adb shell input swipe 80 600 520 600 250; sleep 1.5; shot "mua-b$i"; mudump >> "$OUT/mu-names.txt"; done
 check "MU-8: the tabs listed real data: the artist, the album and the song of the test file were on screen" bash -c "grep -q 'Marisol Vega' $OUT/mu-names.txt && grep -q 'Northern Lights' $OUT/mu-names.txt && grep -q 'Glass Harbor' $OUT/mu-names.txt"
 mutap "Artists" 300 110; sleep 2; shot mua-a1-artists
+mutapid popup_menu_button 560 200; sleep 2; shot mua-m1-artist-menu; mudump > "$OUT/mu-menu-artist.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 1
+check "MU-16: the artist row's menu opens with its usual entries and without 'Change image' or any fetch entry" mumenu "$OUT/mu-menu-artist.txt"
 mutap "Marisol Vega" 300 300; sleep 3; shot mua-a2-artist-page; mudump >> "$OUT/mu-names.txt"
 adb shell input keyevent KEYCODE_BACK; sleep 2
 mutap "Albums" 400 110; sleep 2; shot mua-c1-albums
+mutapid popup_menu_button 560 300; sleep 2; shot mua-m2-album-menu; mudump > "$OUT/mu-menu-album.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 1
+check "MU-17: the album's menu opens with its usual entries and without 'Change image' or any fetch entry" mumenu "$OUT/mu-menu-album.txt"
 mutap "Northern Lights" 300 300; sleep 3; shot mua-c2-album-page; mudump >> "$OUT/mu-names.txt"
 adb shell input keyevent KEYCODE_BACK; sleep 2
 mutap "Songs" 500 110; sleep 2; shot mua-s1-songs
 mutapid bottom_action_bar 300 940; sleep 5; shot mua-s2-bar-playing      # nothing plays yet: the bar starts "shuffle all" (SlidingPanelActivity.mOpenNowPlaying)
 mutapid bottom_action_bar 300 940; sleep 4; shot mua-p1-player           # something plays now: the bar opens the playing screen
 mudump >> "$OUT/mu-names.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.SettingsActivity" >/dev/null 2>&1; sleep 3; shot mua-z1-settings
+mudump > "$OUT/mu-settings-dump.txt"
+check "MU-18: Eleven's own Settings opens (Blur background is there, Delete cache is gone)" bash -c "grep -q 'Blur background' $OUT/mu-settings-dump.txt && ! grep -qi 'delete cache' $OUT/mu-settings-dump.txt"
+mutap "Blur background" 300 300; sleep 2; shot mua-z2-blur-on
+adb shell input keyevent KEYCODE_BACK; sleep 2
+mutapid bottom_action_bar 300 940; sleep 4; shot mua-p3-player-blur      # the blur path of the playing screen (it blurred the cover; now it has nothing to blur)
 adb shell dumpsys notification --noredact 2>/dev/null | grep -c "pkg=$MU" | tr -d ' \r\n' > "$OUT/mu-notif-count.txt"
 adb shell dumpsys notification --noredact 2>/dev/null | grep -A14 "pkg=$MU" | grep -iE 'largeIcon|smallIcon|android.picture' | head -4 | cut -c1-200 > "$OUT/mu-notif-icons.txt"
 info "MU notification: $(cat "$OUT/mu-notif-count.txt") record(s) of the music app; icons: $(tr -s ' \n' ' ' < "$OUT/mu-notif-icons.txt")"
