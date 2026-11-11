@@ -13,6 +13,8 @@ public final class HiddenApps {
     private static final String PREFS = "tj_apps";
     private static final String ALLOWED = "allowed";
     private static final String BASELINE = "baseline_done";
+    /** Packages of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} that were already allowed automatically once (BV1), so a later hide by Tj is never undone. */
+    private static final String AUTO_DONE = "auto_done";
     private static final Object LOCK = new Object();
 
     private HiddenApps() {}
