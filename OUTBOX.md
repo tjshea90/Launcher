@@ -2196,3 +2196,14 @@
 > - **Its work:** it is still on your music-app requests, with checkpoint 1182 six minutes old. It is running emulator checks of the drawer and the music icon (`mu`, `rb`, `ss` runs #551–#553). Its newest commit is 2 minutes old.
 > - **Mine:** I took no action and wrote no checkpoint. I fast-forwarded this branch to its tip (`e5325a09`, the same as `main`) without a new commit, and I left this heartbeat armed.
 <!-- sha:3ce5e554895f -->
+
+## 2026-11-11T22:15:10Z
+> Nothing Claude-owned is left, so I did no work this firing. v0.9.6 is released, recorded and answered. I checked that no other session is working: `main`'s newest commit is only the other account's late "standing down" note in OUTBOX, and there is no new message from you.
+>
+> Still waiting on you:
+> - **Blur background:** should I remove the switch from Eleven's Settings?
+> - **Media card:** do you want the notification and lock-screen card with no picture at all?
+> - **Tablet checks:** the v0.9.6 checks (first-start permission prompt, real music files, memory, the two "Music" entries), plus the older v0.9.4 and v0.9.5 tablet checks.
+>
+> Both auto-resume timers still wake a session every two hours. Deleting them in the app saves that usage, since I can't delete them from here.
+<!-- sha:71addb4b857e -->
