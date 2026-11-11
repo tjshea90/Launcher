@@ -4458,7 +4458,10 @@ adb shell svc wifi enable; adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section wf
 if want bt; then # section bt
-ensurehome
+btdefault(){ # the default HOME must be our router before every phase (run #530: the section began on a "Select a Home app" chooser = every later picture and check was void)
+  local i r; for i in 1 2 3 4 5; do ensurehome; r="$(adb shell cmd package resolve-activity --brief -c android.intent.category.HOME -a android.intent.action.MAIN 2>/dev/null | tail -1 | tr -d '\r')"; case "$r" in *"$PKG"*) return 0;; esac; sleep 2; done
+  info "BT: the default home is NOT ours after 5 tries: $r"; return 1; }
+btdefault
 # ---- BT1 (Tj, 2026-11-11, v0.9.4 on the tablet; research/BT1_ANALYSIS_2026-11-11.md).
 #      BT1f: the look-alike's Recents card is called "Settings", not "Launcher Settings" (Android 10 joins the application label and the activity label unless they are equal).
 #      BT1c: custom home, the home patch rests; the shade is pulled down and closed, then the side key is held after a gap: the Screenshot spot must be covered on that FIRST press, at every gap. A control round
@@ -4481,7 +4484,7 @@ check "BT1f: no Recents card is called 'Launcher Settings'" bash -c "! grep -qi 
 check "BT1f: the look-alike's card is called exactly 'Settings' (text or content description)" grep -qE '^(text|content-desc)="Settings"$' "$OUT/bt-recents-names.txt"
 adb shell input keyevent KEYCODE_HOME; sleep 2
 # ---------------- BT1c: phase A: the switch OFF; the first menu on the home screen teaches the app where the stock panel sits
-hpinit false; hpwall
+btdefault; hpinit false; hpwall; btdefault
 adb logcat -c; hpopen; hpclose; sleep 2
 BT_CL="$(hplog | grep 'CARD area' | tail -1)"
 set -- $(hpnums "$BT_CL" full); BT_FL=${1:-}; BT_FT=${2:-}; BT_FR=${3:-}; BT_FB=${4:-}
@@ -4490,8 +4493,9 @@ BT_PANEL=""; if [ -n "$BT_FL" ] && [ -n "$BT_CB" ]; then BT_PANEL="$BT_FL,$BT_FT
 check "BT0: premise: the stock menu's place was learned on the home screen" bash -c "[ -n '$BT_PANEL' ]"
 # phase B: the switch ON: the patch calibrates by itself and rests
 hpkey home_patch true
-setmode custom; rebind; adb logcat -c; home
+setmode custom; btdefault; adb logcat -c; rebind; home
 BT_T1="$(hpwait 'HOMEPATCH calibration end' 70)"; BT_T2="$(hpwait 'PATCH rest on' 40)"; sleep 5
+info "BT0b log: $(hplog | grep -E 'HOMEPATCH|PATCH rest|PATCH window' | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): (HOMEPATCH|PATCH) /\1 /' | head -8 | cut -c1-40 | tr '\n' '|' | cut -c1-300)"
 info "BT0b: calibration ended after $BT_T1 s, resting after $BT_T2 s"
 check "BT0b: premise: the home patch rests (calibrated by itself)" bash -c "[ '$BT_T2' != never ]"
 shot bt-02-rest
@@ -4506,7 +4510,7 @@ btround(){ # btround <label> <gap seconds between the shade being closed and the
   echo "$cm"; }
 btnote(){ # btnote <label> <gap> <core_mean>: INFO lines (the press verdict with its reasons; the timeline, newest first); the full log stays in bt-<label>-log.txt
   info "BT1c $1 (gap $2 s): core_mean=${3:-none}; press: $(grep HOMEPRESS "$OUT/bt-$1-log.txt" | tail -1 | sed -E 's/.*HOMEPRESS menu opened \(home\): //' | cut -c1-200)"
-  info "BT1c $1 timeline (newest first): $(grep -vE 'CARD area|HOMEPRESS' "$OUT/bt-$1-log.txt" | tac | head -9 | sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) (HOMEPATCH|PATCH) /\1 /' | cut -c1-44 | tr '\n' '|' | cut -c1-300)"; }
+  info "BT1c $1 timeline (newest first): $(grep -vE 'CARD area|HOMEPRESS' "$OUT/bt-$1-log.txt" | tac | head -9 | sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) (HOMEPATCH|PATCH) /\1 /' | cut -c1-48 | tr '\n' '|' | cut -c1-300)"; }
 btcard(){ # btcard <label>: "full" when the press covered the whole panel with the card (the CARD line's area equals its full), "short" for a short card, "" for no CARD line
   local l; l="$(grep 'CARD area' "$OUT/bt-$1-log.txt" | tail -1)"; [ -n "$l" ] || return 0
   [ "$(hpnums "$l" area)" = "$(hpnums "$l" full)" ] && echo full || echo short; }
