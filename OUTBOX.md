@@ -2008,3 +2008,17 @@
 >
 > One thing you can do from the app: each account still has an auto-resume heartbeat armed (mine is `trig_01DZ15y7gsi1bXpJ7P2KBghc`). Turning them off needs your approval, and those approval requests keep dying when the worker restarts. Until they're deleted, each wakes its session every 2 hours for nothing. You can delete "Launcher auto-resume heartbeat" in both accounts' scheduled tasks.
 <!-- sha:e653e9c5d0fe -->
+
+## 2026-11-11T14:19:33Z
+> Tj, you already have the full answer to your six reports. The session on your other account sent it at 11:19 UTC after mine was cut off, and nothing in it has changed. I haven't sent a second copy. v0.9.5 is the current release:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.5
+>
+> **Since that answer**
+> - **Test fix:** I fixed a test check that misfires only on the emulator. The app itself is untouched. The proof run passed with 47 checks and 0 failures.
+> - **Cover test failure:** One run before it failed, with the home-screen cover never coming up in the whole home-cover test section. The next run of the same code was clean. I added a diagnostic line that names the cause if it happens again. Your item 4 ("sometimes the home cover doesn't work") may therefore not be fully gone. If it happens on the tablet, send a report right then.
+> - **Nothing else is queued on my side.** Everything left waits on you, starting with the tablet checks from the answer you got.
+>
+> **Auto-resume timers**
+> One timer per account may still be armed (every 2 hours). I tried twice to switch mine off, but the app's approval prompt ended with my session being restarted both times, so I stopped trying. A wake-up only reads the state and stops, so it costs very little. If you don't want them, delete the scheduled task "Launcher auto-resume heartbeat" on each account in the app.
+<!-- sha:8c66020efd53 -->
