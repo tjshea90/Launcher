@@ -138,6 +138,22 @@ public class RadioIconHoldTest {
         assertFalse(RadioIconHold.radiosGoOffWhenHoldEnds(null, true));
     }
 
+    /**
+     * Third review of BS2, finding 1: the symbols must not come back BEFORE the radios are off. The release of the list is deferred exactly when the radios have to go off, and never twice in a row (the worker's own
+     * final sync, and any sync inside the window, release at once: a deferral can not loop).
+     */
+    @Test public void theReleaseIsDeferredOnlyWhenTheRadiosMustGoOffAndNoDeferralIsRunning() {
+        final String gone = NotifQuietPolicy.WHY_NO_HELPER;
+        assertTrue("the helper left on a dark or locked screen, no deferral yet", RadioIconHold.deferRelease(gone, true, 1_000, 0));
+        assertTrue("the window of the last deferral is over", RadioIconHold.deferRelease(gone, true, 10_000, 10_000));
+        assertFalse("inside the window of a running deferral: release at once", RadioIconHold.deferRelease(gone, true, 4_000, 10_000));
+        assertFalse("a lit, unlocked screen: the symbols are meant to show", RadioIconHold.deferRelease(gone, false, 1_000, 0));
+        assertFalse("every other reason ends the hold at once", RadioIconHold.deferRelease("Quickstep session", true, 1_000, 0));
+        assertFalse(RadioIconHold.deferRelease("switch off", true, 1_000, 0));
+        assertFalse(RadioIconHold.deferRelease("", true, 1_000, 0));
+        assertFalse(RadioIconHold.deferRelease(null, true, 1_000, 0));
+    }
+
     /** The words come from the policy itself: a changed text cannot silently disable the rule above. */
     @Test public void theHelperReasonIsThePolicysOwnText() {
         NotifQuietPolicy.Facts f = new NotifQuietPolicy.Facts();
