@@ -1799,3 +1799,7 @@
 ## 2026-11-11T02:08:58Z
 > Gate run #526 (`rg`) is green (7 PASS), and the local unit suite and lint are done. Waiting for the two long gate runs, #524 and #525, due about 02:34 UTC. Then I ship v0.9.4 if both are green.
 <!-- sha:be8a4287176d -->
+
+## 2026-11-11T02:23:00Z
+> The auto-resume heartbeat fired at 02:22, but this session is the one working: gate runs #524 and #525 are still in flight, and no other session is active. Nothing to take over. I'll read both runs at about 02:34 UTC.
+<!-- sha:dd426ac578c4 -->
