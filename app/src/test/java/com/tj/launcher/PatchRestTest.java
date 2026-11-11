@@ -194,7 +194,7 @@ public class PatchRestTest {
         assertEquals("finger hold longer than the rest", 1500, PatchRest.returnInMs(5000, 1000, 5200, 6500));
         assertEquals("a hold in the past is nothing", 0, PatchRest.returnInMs(9000, 1000, 8000, 7000));
     }
-    @Test public void aPadSeenForUnderNinetyMillisecondsStillGetsItsReturnAfterTheHold() {
+    @Test public void aPadSeenForUnderNineHundredMillisecondsStillGetsItsReturnAfterTheHold() {
         // the tablet's short pull-up: last sign S = 10000 holds the patch away until 12500; the pad leaves at L = 10700 and the old padBack ran at L + 1600 = 12300, 200 ms BEFORE the hold ended, and nothing looked again
         long sign = 10_000, holdUntil = sign + 2500, left = 10_700, padBackRan = left + 1600;
         assertTrue("the old timer ran inside the hold", padBackRan < holdUntil);
