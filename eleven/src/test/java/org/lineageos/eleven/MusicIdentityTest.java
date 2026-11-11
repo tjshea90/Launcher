@@ -5,16 +5,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.DataFormatException;
+import java.util.zip.Inflater;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.imageio.ImageIO;
 
 import org.junit.Test;
 
@@ -101,43 +102,118 @@ public class MusicIdentityTest {
     }
 
     @Test
-    public void everyDensityHasTheSpeakerAtTheRightSize() throws IOException {
+    public void everyDensityHasTheSpeakerAtTheRightSize() throws Exception {
         String[][] sizes = {{"mdpi", "48"}, {"hdpi", "72"}, {"xhdpi", "96"}, {"xxhdpi", "144"}, {"xxxhdpi", "192"}};
         for (String[] s : sizes) {
             File f = new File(module(), "src/main/res/mipmap-" + s[0] + "/ic_launcher.png");
             assertTrue("missing " + f, f.isFile());
-            BufferedImage img = ImageIO.read(f);
-            assertNotNull(f + " is not a readable PNG", img);
+            Png img = Png.read(f);
             int n = Integer.parseInt(s[1]);
-            assertEquals(f + " width", n, img.getWidth());
-            assertEquals(f + " height", n, img.getHeight());
-            assertTrue(f + " has no alpha channel", img.getColorModel().hasAlpha());
-            double c = (n - 1) / 2.0;
+            assertEquals(f + " width", n, img.w);
+            assertEquals(f + " height", n, img.h);
+            int c = (n - 1) / 2;
             // the four corners are transparent (a round artwork, no plate of its own: Launcher3 adds the white plate)
-            assertEquals("corner of " + f, 0, alpha(img, 0, 0));
-            assertEquals("corner of " + f, 0, alpha(img, n - 1, n - 1));
+            assertEquals("corner of " + f, 0, img.alpha(0, 0));
+            assertEquals("corner of " + f, 0, img.alpha(n - 1, n - 1));
             // the dust cap in the middle: dark grey, opaque
-            int mid = img.getRGB((int) c, (int) c);
-            assertEquals(255, (mid >>> 24) & 0xff);
-            assertTrue("the dust cap of " + f + " is dark", lum(mid) < 110);
+            assertEquals(255, img.alpha(c, c));
+            assertTrue("the dust cap of " + f + " is dark", lum(img.argb(c, c)) < 110);
             // the blue cone: at 55 % of the artwork radius to the left and to the right, blue clearly beats red, and it is opaque
             double rad = n * 0.46;
             for (int sign : new int[] {-1, 1}) {
-                int px = img.getRGB((int) Math.round(c + sign * rad * 0.55), (int) Math.round(c));
+                int px = img.argb((int) Math.round(n / 2.0 - 0.5 + sign * rad * 0.55), c);
                 assertEquals(255, (px >>> 24) & 0xff);
                 int r = (px >> 16) & 0xff, b = px & 0xff;
                 assertTrue("the cone of " + f + " is blue (r=" + r + ", b=" + b + ")", b - r >= 60 && b >= 110);
             }
             // the bezel: a neutral grey ring (no colour cast) near the edge, opaque
-            int ring = img.getRGB((int) Math.round(c), (int) Math.round(c - rad * 0.93));
+            int ring = img.argb(c, (int) Math.round(n / 2.0 - 0.5 - rad * 0.93));
             assertEquals(255, (ring >>> 24) & 0xff);
             int rr = (ring >> 16) & 0xff, gg = (ring >> 8) & 0xff, bb = ring & 0xff;
             assertTrue("the bezel of " + f + " is grey", Math.abs(rr - gg) <= 8 && Math.abs(gg - bb) <= 8 && rr > 40);
         }
     }
 
-    private static int alpha(BufferedImage img, int x, int y) {
-        return (img.getRGB(x, y) >>> 24) & 0xff;
+    /** A minimal PNG reader (8-bit RGBA, not interlaced: what tools/make_music_icon.py writes): the unit tests compile against android.jar, which has no javax.imageio. */
+    private static final class Png {
+        int w, h;
+        int[] px;
+
+        int argb(int x, int y) { return px[y * w + x]; }
+
+        int alpha(int x, int y) { return (px[y * w + x] >>> 24) & 0xff; }
+
+        static int be32(byte[] d, int p) {
+            return ((d[p] & 0xff) << 24) | ((d[p + 1] & 0xff) << 16) | ((d[p + 2] & 0xff) << 8) | (d[p + 3] & 0xff);
+        }
+
+        static Png read(File f) throws IOException, DataFormatException {
+            byte[] d = Files.readAllBytes(f.toPath());
+            byte[] sig = {(byte) 0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a};
+            for (int i = 0; i < 8; i++) assertEquals(f + " is not a PNG", sig[i], d[i]);
+            Png o = new Png();
+            int depth = 0, ctype = -1, interlace = -1;
+            ByteArrayOutputStream idat = new ByteArrayOutputStream();
+            for (int p = 8; p + 8 <= d.length; ) {
+                int len = be32(d, p);
+                String type = new String(d, p + 4, 4, StandardCharsets.US_ASCII);
+                int body = p + 8;
+                if (type.equals("IHDR")) {
+                    o.w = be32(d, body); o.h = be32(d, body + 4);
+                    depth = d[body + 8] & 0xff; ctype = d[body + 9] & 0xff; interlace = d[body + 12] & 0xff;
+                } else if (type.equals("IDAT")) {
+                    idat.write(d, body, len);
+                } else if (type.equals("IEND")) {
+                    break;
+                }
+                p = body + len + 4;
+            }
+            assertEquals(f + ": 8 bits per channel", 8, depth);
+            assertEquals(f + ": colour type 6 (RGBA)", 6, ctype);
+            assertEquals(f + ": not interlaced", 0, interlace);
+            int stride = o.w * 4;
+            byte[] raw = new byte[(stride + 1) * o.h];
+            Inflater inf = new Inflater();
+            inf.setInput(idat.toByteArray());
+            int off = 0;
+            while (off < raw.length) {
+                int n = inf.inflate(raw, off, raw.length - off);
+                if (n == 0 && (inf.finished() || inf.needsInput())) break;
+                off += n;
+            }
+            inf.end();
+            assertEquals(f + ": the picture data is complete", raw.length, off);
+            byte[] img = new byte[stride * o.h];
+            for (int y = 0; y < o.h; y++) {
+                int ft = raw[y * (stride + 1)] & 0xff;
+                for (int x = 0; x < stride; x++) {
+                    int cur = raw[y * (stride + 1) + 1 + x] & 0xff;
+                    int a = x >= 4 ? img[y * stride + x - 4] & 0xff : 0;
+                    int b = y > 0 ? img[(y - 1) * stride + x] & 0xff : 0;
+                    int c = (x >= 4 && y > 0) ? img[(y - 1) * stride + x - 4] & 0xff : 0;
+                    int v;
+                    switch (ft) {
+                        case 0: v = cur; break;
+                        case 1: v = cur + a; break;
+                        case 2: v = cur + b; break;
+                        case 3: v = cur + ((a + b) >> 1); break;
+                        case 4: {
+                            int pp = a + b - c, pa = Math.abs(pp - a), pb = Math.abs(pp - b), pc = Math.abs(pp - c);
+                            v = cur + ((pa <= pb && pa <= pc) ? a : (pb <= pc ? b : c));
+                            break;
+                        }
+                        default: throw new AssertionError(f + ": unknown PNG filter " + ft);
+                    }
+                    img[y * stride + x] = (byte) v;
+                }
+            }
+            o.px = new int[o.w * o.h];
+            for (int i = 0; i < o.px.length; i++) {
+                int r = img[i * 4] & 0xff, g = img[i * 4 + 1] & 0xff, bl = img[i * 4 + 2] & 0xff, al = img[i * 4 + 3] & 0xff;
+                o.px[i] = (al << 24) | (r << 16) | (g << 8) | bl;
+            }
+            return o;
+        }
     }
 
     private static int lum(int argb) {
