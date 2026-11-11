@@ -1465,3 +1465,8 @@ Continue and finish this app where the other Claude account was interrupted by u
 ```
 See if you can find the stock lineage music app source for this os
 ```
+
+## 2026-11-11T16:11:21Z
+```
+For the custom launcher, include a music app which is org.lineageos.eleven from the branch you found. It looks like the attached photos. It should look and function exactly as coded, but never at any time show album art on any tab or anywhere in the app. It should never load or display album art, ever. Instead, look at the attached photo. The artists have colored cards next to their names with letters instead of album art. The music app already does this if there is no album art I think. For songs, the album art placeholder is just a music note in a colored box, which is also already in the app. I think these load automatically without album art. Make the app do so. The music app should be in the custom launcher app drawer. You can send me the apk for the music app separately if that is more logical
+```
