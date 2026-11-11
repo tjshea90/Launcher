@@ -11,7 +11,8 @@ Claude's reading (NOT confirmed with Tj): the music app LineageOS ships by defau
 | What | Value |
 | :- | :- |
 | Branches of the repo | cm-12.0 .. cm-14.1, lineage-15.0 .. lineage-22.0 (so 17.0 and 17.1 are there), plus stable/* and staging/* |
-| Tip of lineage-17.1 | `ca22308`, 2024-02-08, "Automatic translation import" |
+| Default app of LineageOS 17.1 | Verified in the vendor repo (shallow blob-less clone, scratchpad): https://github.com/LineageOS/android_vendor_lineage , branch `lineage-17.1` (tip `e856948`, 2023-12-31), `config/common_mobile.mk`, section `# Lineage packages` of `PRODUCT_PACKAGES`: `AudioFX`, `Backgrounds`, **`Eleven`**, `Etar`, `Jelly`, `LockClock`, `Profiles`, `Seedvault`, `TrebuchetQuickStep`, `WeatherProvider` |
+| Tip of lineage-17.1 (Eleven repo) | `ca22308`, 2024-02-08, "Automatic translation import" |
 | Size | 4.3 MB without `.git`; 152 Java files, 33,859 Java lines, 270 resource files |
 | Manifest | package `org.lineageos.eleven`, versionName 4.0.1, minSdk 28, targetSdk 30; activities `HomeActivity`, `SettingsActivity`, `AudioPreviewActivity`; `MusicPlaybackService`, widgets |
 | Build systems | BOTH `Android.bp` (AOSP tree: `privileged: true`, `jni_libs: librsjni`, a privapp whitelist) AND a Gradle build (AGP 7.0.4, compileSdk 30, wrapper included) |
