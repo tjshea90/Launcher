@@ -108,7 +108,8 @@ public final class LockQuiet {
     public static void onLock(Context c) {
         try {
             if (!enabled(c) || CrashGuard.automationOff(c)) return;
-            boolean w = wifiOn(c) && !WifiIconHide.keepsWifiOn(c), b = btOn();   // BS1: while the Wi-Fi symbol is hidden instead, Wi-Fi is not ours to switch off (and not ours to put back)
+            final boolean keep = RadioIconHide.keepsRadiosOn(c);   // BS1 + BS2: while the symbols are hidden instead, the radios are not ours to switch off (and not ours to put back); nothing here ever switches one ON
+            boolean w = !keep && wifiOn(c), b = !keep && btOn();
             if (shouldRecordPrev(Features.getString(c, PREV_KEY, ""), w, b)) Features.setString(c, PREV_KEY, encodePrev(w, b));
             if (w || b) {
                 ReturnReset.radiosOff(c);
