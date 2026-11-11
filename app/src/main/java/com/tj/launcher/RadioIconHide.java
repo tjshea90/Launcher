@@ -105,6 +105,12 @@ public final class RadioIconHide {
                 Log.i(TAG, msg);
                 LockLog.addAsync(app, "SYMBOLS", msg);
                 p(app).edit().putString("last", new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + msg).apply();
+                // review of BS2, finding 2: the hold ended because the helper went away while the screen is dark or the lock screen is up. The symbols would show with the radios still on and nothing else would switch
+                // them off (the radio receiver and the lock re-check live in the helper): run the lock rule now (keepsRadiosOn is false without the helper, so it switches both radios off and remembers them for a gesture unlock)
+                if (before && !after && look != null && RadioIconHold.radiosGoOffWhenHoldEnds(why, !look.screenOn() || look.lockUp())) {
+                    LockLog.addAsync(app, "SYMBOLS", "the helper is gone on a dark or locked screen: the lock rule switches the radios off");
+                    LockQuiet.onLockAsync(app);
+                }
             }
         } catch (Throwable t) { Log.e(TAG, "sync failed", t); }
     }
