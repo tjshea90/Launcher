@@ -19,7 +19,7 @@ Claude's reading (NOT confirmed with Tj): the music app LineageOS ships by defau
 | Libraries (Gradle) | appcompat 1.4.0, cardview 1.0.0, palette 1.0.0, preference 1.1.1, recyclerview 1.2.1, constraintlayout 2.1.2, material 1.4.0 |
 | RenderScript | support mode, target API 19; used for the blur (`BlurBitmapWorkerTask`) |
 | Licence | Apache 2.0: `NOTICE` says "Copyright (c) 2014, The CyanogenMod Project"; `MODULE_LICENSE_APACHE2` |
-| Successor | **Twelve**, https://github.com/LineageOS/android_packages_apps_Twelve , branches `lineage-22.0` and newer only (no Android 10 version). Press reports say LineageOS 22.1 (Android 15) made it the default (not checked in the code) |
+| Successor | **Twelve**, https://github.com/LineageOS/android_packages_apps_Twelve , branches `lineage-22.0` and newer only (no Android 10 version). Verified: `android_vendor_lineage` branch `lineage-22.1` (tip `fac22bf`, 2025-02-25) lists `Twelve` in `config/common_mobile_full.mk` and has no `Eleven` anywhere in `config/`, so Twelve replaced Eleven as the default from LineageOS 22.1 (Android 15) |
 
 ## What this is NOT
 - **Not the music app of Tj's tablet.** The tablet is not LineageOS: `ro.lineage.version` is empty in every tablet report (`research/tablet/LATEST.md`; Alps MT8168, Android 10 Go), and no tablet report names an installed music app. Eleven is the stock player of LineageOS only.
