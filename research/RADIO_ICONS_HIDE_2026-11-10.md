@@ -57,3 +57,11 @@ The hold is on whenever `NotifQuietPolicy.why` says quiet; the radios are kept o
 | Quick-settings tiles on the lock screen / custom launcher | the tile profile already leaves only the rotation tile there | n/a | yes (existing rule) |
 
 NOT covered or unproven, said plainly: (1) a flash of the symbols on the boot lock screen before the app process has started (needs a real reboot to measure; an ACTION_SHUTDOWN hook is not built); (2) the tablet's own MediaTek SystemUI honouring `icon_blacklist` on the lock screen (only a tablet report proves it); (3) Bluetooth on real hardware (the emulator has none; JVM tests + AOSP source only; the slot name `bluetooth` is the framework's `status_bar_bluetooth`); (4) uninstalling the app while the hold is on (the symbols stay hidden everywhere; `adb shell settings delete secure icon_blacklist`, or install the app again: the first sync puts the list back); (5) the Wi-Fi sleep policy (does Android keep the connection with the screen off) was not verified.
+
+## Second review (BS2 delta) and what was done about it
+
+- FIXED (major): a leftover `lq_prev` (the lock memory) after an unlock the helper never saw is forgotten when the helper connects on a lit, unlocked tablet (`LockQuiet.forgetStalePrevAsync`); otherwise a much later gesture unlock could have switched on a radio that was off. Emulator WF12c.
+- FIXED (major): the helper going away on a dark or locked screen in a Quickstep mode (a crash, a `uiautomator dump`, the service toggled) ended the hold with both radios still on and their symbols showing: the hold's end now runs the lock rule (`RadioIconHold.radiosGoOffWhenHoldEnds`, `RadioIconHide.sync` -> `LockQuiet.onLockAsync`): radios off, remembered for a gesture unlock. A deliberate pause (Restore everything, the crash breaker) does not switch anything off. Emulator WF13 / WF13b-d.
+- ACCEPTED (minor): `keepsRadiosOn` assumes the hold WILL be taken; if a `Settings` write ever failed the symbol would show until the next trigger (screen off, mode change, unlock). Requiring the list to be hidden at the lock moment would race the screen-off sync and switch the radios off in the main flow.
+- ACCEPTED (minor): if the original list contains Tj's own `wifi` entry and he removes it by hand during a hold, it is not undone at the end.
+
