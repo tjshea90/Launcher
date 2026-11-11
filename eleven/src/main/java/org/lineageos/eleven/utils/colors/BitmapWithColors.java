@@ -77,16 +77,8 @@ public class BitmapWithColors {
     private final int mBitmapKey;
     private BitmapColors mColors;
 
-    public BitmapWithColors(Bitmap bitmap, int bitmapKey) {
-        mBitmap = bitmap;
-        mBitmapKey = bitmapKey;
-
-        if (Thread.currentThread() != Looper.getMainLooper().getThread()) {
-            // we're already running in background, so do the
-            // (costly) palette initialization immediately
-            loadColorsIfNeeded();
-        }
-    }
+    // MODIFIED for the Launcher (TASKS BV1, Tj 2026-11-11): upstream had a second constructor here that took any decoded picture and ran Palette over it.
+    // It is gone: the colours are always handed in with the placeholder (the constructor below), nothing is ever extracted from a picture.
 
     public BitmapWithColors(Bitmap bitmap, int bitmapKey, int vibrantColor, int vibrantDarkColor) {
         mBitmap = bitmap;
@@ -180,12 +172,9 @@ public class BitmapWithColors {
             return;
         }
 
-        final Palette p = Palette.from(mBitmap).generate();
-
-        mColors = new BitmapColors(p);
-        synchronized (sCachedColors) {
-            sCachedColors.put(mBitmapKey, mColors);
-        }
+        // MODIFIED for the Launcher (TASKS BV1): upstream ran Palette.from(mBitmap) here for a decoded cover. The only constructor that is left hands the colours in, so this
+        // point is never reached; if it ever is, the colours stay the default ones (no picture is decoded or analysed).
+        mColors = new BitmapColors(Color.TRANSPARENT, Color.TRANSPARENT);
     }
 
     @NonNull
