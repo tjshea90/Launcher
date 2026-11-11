@@ -307,4 +307,19 @@ public class HomePatchRulesTest {
         assertFalse("no guard is running", HomePatchRules.guardEndsWithFocus(10040, 12500, 2500, 12500));
         assertFalse("the focus was never lost", HomePatchRules.guardEndsWithFocus(0, 13000, 2500, 11000));
     }
+
+    // ---- review A #1 (BT1): the dialog's own loss of the focus is told from a shade's by a window of 450 ms around the dialog's event
+    @Test public void aLossOfTheFocusJustBeforeTheDialogIsTheDialogsOwn() {
+        assertTrue("it still has the focus", HomePatchRules.launcherFocus(true, 0, 20_000));
+        assertTrue("lost 190 ms before the dialog's event (the emulator's SystemUI event)", HomePatchRules.launcherFocus(false, 19_810, 20_000));
+        assertTrue("lost 400 ms before (a slower tablet)", HomePatchRules.launcherFocus(false, 19_600, 20_000));
+        assertTrue("exactly at the tolerance", HomePatchRules.launcherFocus(false, 20_000 - HomePatchRules.FOCUS_TOLERANCE_MS, 20_000));
+        assertTrue("lost after the dialog's event", HomePatchRules.launcherFocus(false, 20_050, 20_000));
+    }
+    @Test public void aShadeThatTookTheFocusLongBeforeTheKeyIsNotTheDialogs() {
+        assertFalse("one millisecond past the tolerance", HomePatchRules.launcherFocus(false, 20_000 - HomePatchRules.FOCUS_TOLERANCE_MS - 1, 20_000));
+        assertFalse("the shade opened 3 s ago and is still open", HomePatchRules.launcherFocus(false, 17_000, 20_000));
+        assertFalse("never lost, yet no focus (another window came up without a loss event)", HomePatchRules.launcherFocus(false, 0, 20_000));
+        assertTrue("the tolerance stays under the 500 ms long press that opens the dialog", HomePatchRules.FOCUS_TOLERANCE_MS < 500);
+    }
 }
