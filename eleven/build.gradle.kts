@@ -65,7 +65,17 @@ android {
         disable += setOf("MissingTranslation", "ExtraTranslation")   // as upstream
     }
 
-    testOptions { unitTests { isReturnDefaultValues = true } }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            all {
+                // NoAlbumArtGuardTest and MusicIdentityTest read this module's sources, resources and manifest from disk: they are INPUTS of the test task
+                // (without this, Gradle calls the task up to date after a change that only touches a resource, and the guard never looks at it).
+                it.inputs.dir("src/main").withPropertyName("moduleSources")
+                it.inputs.file("build.gradle.kts").withPropertyName("moduleBuildFile")
+            }
+        }
+    }
 }
 
 dependencies {
