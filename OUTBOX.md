@@ -2125,3 +2125,7 @@
 >
 > Next I read #561's result and look at the drawer picture. Then I bump to v0.9.6 (versionCode 45), ship, build the release, and send you the answer with the Release link.
 <!-- sha:482ec28dd603 -->
+
+## 2026-11-11T19:03:30Z
+> Heartbeat acknowledged: I'm mid-job (rule 4), so I'm continuing from "Do this next". Only the music-app run #561 is in flight. It finishes about 19:06 UTC and I read it first, then fetch its pictures. The newest commits on `main` are my own checkpoints, so nothing else is working on it.
+<!-- sha:355a91cb5c1f -->
