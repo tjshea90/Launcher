@@ -164,4 +164,16 @@ public final class PatchRest {
         if (restableSinceMs <= 0) return 0;
         return Math.max(0, SETTLE_MS - (nowMs - restableSinceMs));
     }
+
+    /**
+     * Review B #1 (BT1, 2026-11-11): ONE return time for a lock patch that is restable but not visible: the longest of the settle time, the PIN-pad hold and the finger hold (0 = it may be visible now). The three
+     * return runnables (settle, padBack, touchBack) each knew only their own deadline; a pad that was up for less than 0.9 s let padBack run BEFORE the hold ended and nothing looked again (the patch stayed away until
+     * the next finger). patchShow() posts this one time every time it leaves a restable patch invisible, so the answer is re-derived from the books, never trusted from an earlier timer.
+     */
+    public static long returnInMs(long nowMs, long restableSinceMs, long holdUntilMs, long touchUntilMs) {
+        long left = settleLeftMs(nowMs, restableSinceMs);
+        left = Math.max(left, holdUntilMs - nowMs);
+        left = Math.max(left, touchUntilMs - nowMs);
+        return Math.max(0, left);
+    }
 }
