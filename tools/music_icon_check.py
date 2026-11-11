@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""MU-21 (TASKS BW1d): is the music app's drawer icon the speaker of Tj's "Music"?
+"""MU-21 (TASKS BW1d): is the music app's drawer icon the speaker of Tj's "Music", at the size he has it?
 
 Reads the emulator picture of the custom drawer (600x1024) and the uiautomator dump taken at the same moment, finds the drawer entry with the given label, finds the white plate
-Launcher3 draws under a legacy icon (the plate is pure white, 55 px wide on Tj's tablet) and measures the speaker on it. The REFERENCE numbers below were measured on Tj's own drawer
-screenshot (his existing "Music", the ATG music player), not on anything this repo draws; the screenshot itself is not stored anywhere in the repo.
+Launcher3 draws under the icon (the plate is pure white, 55 px wide on Tj's tablet, 52 px on the CI emulator), finds the speaker on it and measures (1) its SIZE relative to the plate
+(on Tj's tablet 39.34 of 55 px = 71.5 %) and (2) its look: blue cone pixels, dust cap, thin black ring, bezel top / bottom, cone top / bottom. The REFERENCE numbers below were measured on
+Tj's own drawer screenshot (his existing "Music", the ATG music player), not on anything this repo draws; the screenshot itself is not stored anywhere in the repo.
+The size check is what failed in CI run #554: the first (legacy) icon was shrunk by Launcher3 to 62 % of the plate, an adaptive icon is not shrunk (tools/make_music_icon.py).
 
 Standard library only (ImageMagick `convert` / `identify` give the pixels), so it runs on the plain CI runner.
   python3 -I tools/music_icon_check.py <drawer.png> <drawer dump.txt> [label]   -> prints one line of numbers, exit 0 = it is the speaker, 1 = it is not, 2 = could not measure
-  python3 -I tools/music_icon_check.py --at <png> <centre x> <centre y> <plate width> -> the numbers for a known place (used once to measure Tj's screenshot)
+  python3 -I tools/music_icon_check.py --at <png> <centre x> <centre y> <plate width> -> the look numbers for a known place (used once to measure Tj's screenshot; speaker scale = plate / 55)
 """
 import math
 import re
@@ -16,6 +18,9 @@ import sys
 
 PLATE_REF = 55.0          # plate width on Tj's tablet (px)
 R_REF = 19.67             # outer radius of the speaker in plate pixels on Tj's tablet (tools/make_music_icon.py)
+RATIO_REF = 2 * R_REF / PLATE_REF     # 0.715: speaker diameter / plate width on Tj's tablet
+RATIO_TOL = 0.035         # the emulator's pixel grid and the soft outer edge move the measured ratio by about 0.01
+INK = 225                 # a pixel darker than this (mean of R, G, B) inside the plate belongs to the speaker
 
 def load(png):
     out = subprocess.run(["identify", "-format", "%w %h", png], capture_output=True, text=True, check=True).stdout.split()
@@ -71,15 +76,29 @@ def lum(img, x, y):
     return sum(at(img, x, y)) / 3.0
 
 
+def speaker_box(img, plate):
+    """Bounding box (x0, y0, x1, y1, inclusive) of everything on the plate that is not white: the speaker. The search window leaves out 8 % at every edge of the plate (rounded corners, edge shadow)."""
+    x0, y0, x1, y1 = plate
+    m = max(2, int(round(0.08 * (x1 - x0 + 1))))
+    xs, ys = [], []
+    for y in range(y0 + m, y1 - m + 1):
+        for x in range(x0 + m, x1 - m + 1):
+            if lum(img, x, y) < INK:
+                xs.append(x)
+                ys.append(y)
+    if len(xs) < 50:
+        return None
+    return min(xs), min(ys), max(xs), max(ys)
+
+
 def ring_level(img, cx, cy, s):
     """Mean luminance on the thin black ring (16.1 px from the centre on Tj's tablet), 24 directions."""
     return sum(lum(img, cx + 16.1 * s * math.cos(math.radians(a)), cy + 16.1 * s * math.sin(math.radians(a))) for a in range(0, 360, 15)) / 24.0
 
 
-def measure(img, cx, cy, plate_w):
-    """The numbers: blue cone pixels, dust cap level (centre), thin black ring, bezel grey on top / bottom, cone brightness above / below the cap.
-    cx, cy: centre of the plate in pixel-edge coordinates; the centre of the speaker is searched within 1.5 px of it (the darkest thin ring), because the plate is not exactly centred on the artwork."""
-    s = plate_w / PLATE_REF
+def measure(img, cx, cy, s):
+    """The look numbers: blue cone pixels, dust cap level (centre), thin black ring, bezel grey on top / bottom, cone brightness above / below the cap.
+    s = speaker size relative to Tj's drawer (1.0 = 39.34 px wide). cx, cy: centre of the speaker in pixel-edge coordinates; it is refined within 1.5 px (the darkest thin ring)."""
     best = None
     for i in range(-6, 7):
         for j in range(-6, 7):
@@ -101,7 +120,7 @@ def measure(img, cx, cy, plate_w):
                     blue += 1
     capvals = [lum(img, cx + dx * s, cy + dy * s) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
     return {
-        "blue": blue / (s * s),                                      # normalised to Tj's plate size
+        "blue": blue / (s * s),                                      # normalised to Tj's speaker size
         "cap": sum(capvals) / len(capvals),
         "ring": ring,
         "bezel_top": spot(18.3, -1),
@@ -118,8 +137,12 @@ MEASURED = {"blue": 528.0, "cap": 41.7, "ring": 7.3, "bezel_top": 130.4, "bezel_
 
 def verdict(m):
     """Windows around Tj's numbers, wide on purpose: the emulator draws the same plate and scales the same artwork, but anti-aliasing and the wallpaper edge differ a little.
-    The pink note icon of upstream's Eleven fails every one of them (no blue, no dark cap, no black ring)."""
+    The pink note icon of upstream's Eleven fails every one of them (no blue, no dark cap, no black ring); the first, legacy icon (CI run #554) failed the size and the ring."""
     why = []
+    if abs(m["ratio"] - RATIO_REF) > RATIO_TOL:
+        why.append("speaker is %.3f of the plate, Tj's is %.3f (+-%.3f)" % (m["ratio"], RATIO_REF, RATIO_TOL))
+    if m["roundness"] > 0.06 * m["diameter"]:
+        why.append("speaker is not round (%d px wider than tall or taller than wide)" % m["roundness"])
     if not (0.6 * MEASURED["blue"] <= m["blue"] <= 1.6 * MEASURED["blue"]):
         why.append("blue cone pixels %.0f (Tj's: %.0f)" % (m["blue"], MEASURED["blue"]))
     for key, lo, hi in (("cap", 10, 90), ("ring", 0, 60), ("bezel_top", 95, 175), ("bezel_bottom", 35, 110), ("cone_top", 45, 115), ("cone_bottom", 125, 200)):
@@ -131,7 +154,7 @@ def verdict(m):
 def main(argv):
     if len(argv) >= 6 and argv[1] == "--at":
         img = load(argv[2])
-        m = measure(img, float(argv[3]), float(argv[4]), float(argv[5]))
+        m = measure(img, float(argv[3]), float(argv[4]), float(argv[5]) / PLATE_REF)
         print(" ".join("%s=%.1f" % kv for kv in m.items()))
         return 0
     if len(argv) < 3:
@@ -156,10 +179,20 @@ def main(argv):
         return 2
     x0, y0, x1, y1 = plate
     pw, ph = x1 - x0 + 1, y1 - y0 + 1
-    cx, cy = (x0 + x1 + 1) / 2.0, (y0 + y1 + 1) / 2.0
-    m = measure(img, cx, cy, pw)
+    box = speaker_box(img, plate)
+    if not box:
+        print("entry=%s plate=%dx%d at %d,%d: nothing but white on the plate -> NOT THE SPEAKER" % (node, pw, ph, x0, y0))
+        return 1
+    bw, bh = box[2] - box[0] + 1, box[3] - box[1] + 1
+    diameter = (bw + bh) / 2.0
+    cx, cy = (box[0] + box[2] + 1) / 2.0, (box[1] + box[3] + 1) / 2.0
+    m = measure(img, cx, cy, diameter / (2 * R_REF))
+    m["ratio"] = diameter / pw
+    m["diameter"] = diameter
+    m["roundness"] = abs(bw - bh)
     why = verdict(m)
-    print("entry=%s plate=%dx%d at %d,%d %s -> %s" % (node, pw, ph, x0, y0, " ".join("%s=%.0f" % kv for kv in m.items()), "SPEAKER" if not why else "NOT THE SPEAKER: " + "; ".join(why)))
+    shown = " ".join("%s=%.0f" % (k, m[k]) for k in ("blue", "cap", "ring", "bezel_top", "bezel_bottom", "cone_top", "cone_bottom"))
+    print("entry=%s plate=%dx%d at %d,%d speaker=%dx%d (%.3f of the plate, Tj's %.3f) %s -> %s" % (node, pw, ph, x0, y0, bw, bh, m["ratio"], RATIO_REF, shown, "SPEAKER" if not why else "NOT THE SPEAKER: " + "; ".join(why)))
     return 0 if not why else 1
 
 
