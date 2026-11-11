@@ -403,6 +403,8 @@ public class TjAccessibilityService extends AccessibilityService {
     static final long LOCK_TOUCH_AWAY_MS = 1500;
     private String patchShowCause = "";                // BN3: who asks patchShow() for a RETURN (touchBack, padBack, restRecheck), for the lock log line "patch visible again"
     private long lastReturnLogMs = 0;
+    private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
+    private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) showWithCause("settle"); } catch (Throwable ignored) { } } };
     private final Runnable touchBack = new Runnable() { @Override public void run() {
         try {
             if (android.os.SystemClock.uptimeMillis() < touchAwayUntilMs) return;
@@ -1525,7 +1527,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { ((WindowManager) getSystemService(WINDOW_SERVICE)).removeView(patchView); } catch (Throwable ignored) { }
         closing = false; handler.removeCallbacks(closeFinishRun);   // BC2
         handler.removeCallbacks(homeBuild); handler.removeCallbacks(homeShowCheck); patchHomeMode = false; homeBuiltAtMs = 0; homeBuiltStep = -1; homeWallBmp = null;   // BI1
-        patchView = null; patchAt.setEmpty(); patchRot = -1; patchLockMode = false; patchResting = false; patchRestable = false; touchAwayUntilMs = 0; handler.removeCallbacks(touchBack); handler.removeCallbacks(padBack); patchOpenHome = false; lockShot = null; lockShotFresh = false; patchMaskOpen = null; patchMaskRest = null; patchShotBmp = null; patchTouchable = false; handler.removeCallbacks(touchableOn); handler.removeCallbacks(touchableOff); touchableOnPending = false;
+        patchView = null; patchAt.setEmpty(); patchRot = -1; patchLockMode = false; patchResting = false; patchRestable = false; touchAwayUntilMs = 0; handler.removeCallbacks(touchBack); handler.removeCallbacks(padBack); patchOpenHome = false; restableSinceMs = 0; handler.removeCallbacks(settleRun); lockShot = null; lockShotFresh = false; patchMaskOpen = null; patchMaskRest = null; patchShotBmp = null; patchTouchable = false; handler.removeCallbacks(touchableOn); handler.removeCallbacks(touchableOff); touchableOnPending = false;
         Log.i(TAG, "PATCH removed");
     }
 
@@ -4268,14 +4270,16 @@ public class TjAccessibilityService extends AccessibilityService {
      */
     private void onOutsideTouch() {
         try {
-            if (patchView == null || !patchLockMode || overlayShown || !patchResting || pinHide) return;
+            if (patchView == null || !patchLockMode || overlayShown || pinHide) return;
+            if (!patchResting && patchHomeMode) return;      // (the home flavour has its own finger rule: homeTouchDown)
             long now = android.os.SystemClock.uptimeMillis();
             lastTouchDownMs = now;
             final long away = patchHomeMode ? TOUCH_AWAY_MS : LOCK_TOUCH_AWAY_MS;   // BN3: the lock screen holds the patch away longer (see LOCK_TOUCH_AWAY_MS)
-            touchAwayUntilMs = now + away;
+            touchAwayUntilMs = now + away;                   // BT1a: recorded EVEN when the patch is not resting yet: a patch that becomes restable during the pull-up must find the finger's DOWN in its books
+            final boolean was = patchResting;
             patchView.setAlpha(0f);                          // first: gone in the next frame (patchResting is left alone: the patch is still restable, so the stock dialog's own event brings it back at once, and the PIN-pad logic keeps its log lines)
             handler.removeCallbacks(touchBack); handler.postDelayed(touchBack, away + 20);
-            if (now - lastTouchLogMs > 3000) { lastTouchLogMs = now; Log.i(TAG, "PATCH touch hide (a finger went down) t=" + now); logPatch("resting patch hidden at the finger's DOWN"); }
+            if (now - lastTouchLogMs > 3000) { lastTouchLogMs = now; Log.i(TAG, "PATCH touch hide (a finger went down) t=" + now); logPatch(was ? "resting patch hidden at the finger's DOWN" : "finger DOWN while the patch was not resting (restable " + patchRestable + (restableSinceMs > 0 ? ", for " + (now - restableSinceMs) + " ms" : "") + "), kept away for " + away + " ms"); }
         } catch (Throwable t) { Log.e(TAG, "touch hide failed", t); }
     }
     private long lastTouchLogMs = 0;
@@ -4354,6 +4358,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     private void patchShow(boolean on) {
         if (!on && patchOpenFlag) Log.i(TAG, "PATCH menu closed t=" + android.os.SystemClock.uptimeMillis());
+        if (!on) homeOpenStale = false;   // BT1c: the stale patch adopted for the last opening is over with it
         boolean opening = on && !patchOpenFlag;   // AZ1: only the closed -> open transition starts a fade (repeated "still open" calls must not restart it); decided even while the patch window does not exist yet
         patchOpenFlag = on;
         if (opening || !on) pinHide = false;   // BC5: a new menu, or no menu: the PIN-pad hide is over
@@ -4371,7 +4376,10 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean can = PatchRest.visible(false, lockPatchAlways(), true, lastBouncer);
             patchRestable = can;                                                                  // BE1: the fast open path asks THIS, not "is it visible right now"
             long nowMs = android.os.SystemClock.uptimeMillis();
-            vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs;                  // BE1: away for a PIN pad or a finger = not visible, but still restable
+            if (can) { if (restableSinceMs == 0) restableSinceMs = nowMs; } else restableSinceMs = 0;   // BT1a: since when it has been restable
+            boolean settled = PatchRest.settled(nowMs, restableSinceMs);
+            vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs && settled;       // BE1: away for a PIN pad or a finger = not visible, but still restable; BT1a: and not for the first PatchRest.SETTLE_MS after it became restable
+            if (can && !settled) { handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.settleLeftMs(nowMs, restableSinceMs) + 20); }
         }
         boolean rest = vis && !on;
         boolean changed = rest != patchResting;

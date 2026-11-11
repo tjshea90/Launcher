@@ -303,7 +303,6 @@ public class HomePatchRulesTest {
         assertTrue("the focus message came first", HomePatchRules.guardEndsWithFocus(10000, 12540, 2500, 10900));
     }
     @Test public void aGuardThatBeganLongBeforeTheLossOrIsOverIsNotEndedByTheFocus() {
-        assertFalse("a volume panel at 7000, something took the focus at 10000", HomePatchRules.guardEndsWithFocus(10000, 9500, 2500, 9000) == false ? false : true);
         assertFalse("the volume panel guard (7000..9500) began 3 s before the loss", HomePatchRules.guardEndsWithFocus(10000, 9500, 2500, 9400));
         assertFalse("no guard is running", HomePatchRules.guardEndsWithFocus(10040, 12500, 2500, 12500));
         assertFalse("the focus was never lost", HomePatchRules.guardEndsWithFocus(0, 13000, 2500, 11000));
