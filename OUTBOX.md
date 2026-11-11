@@ -1941,3 +1941,7 @@
 ## 2026-11-11T08:23:56Z
 > `ship.sh` is running (about 4 to 5 minutes: self-test, unit suite, lint, push). While it runs I'll stay out of the working tree. When it exits I'll check `SHIP_EXIT`, then trigger the GitHub build.
 <!-- sha:a6e2f3034b62 -->
+
+## 2026-11-11T08:27:42Z
+> The signed build is running on GitHub (Build APK run #46, about 3 minutes). I'll check it at 08:30 UTC, then confirm the Release, record it in BUILDLOG, tick the BT1 items, and send Tj the answer.
+<!-- sha:51c0e1ed9213 -->
