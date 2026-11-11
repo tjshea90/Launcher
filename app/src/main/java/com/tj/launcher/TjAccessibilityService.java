@@ -4396,7 +4396,8 @@ public class TjAccessibilityService extends AccessibilityService {
             if (can) { if (restableSinceMs == 0) restableSinceMs = nowMs; } else if (!lastBouncer) restableSinceMs = 0;   // BT1a: since when it has been restable (a PIN pad does not reset it: its own return rule, padBack, waits already)
             boolean settled = PatchRest.settled(nowMs, restableSinceMs);
             vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs && settled;       // BE1: away for a PIN pad or a finger = not visible, but still restable; BT1a: and not for the first PatchRest.SETTLE_MS after it became restable
-            if (can && !settled) { handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.settleLeftMs(nowMs, restableSinceMs) + 20); }
+            if (can && !vis) { handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.returnInMs(nowMs, restableSinceMs, pinHiddenUntilMs, touchAwayUntilMs) + 20); }   // review B #1: restable but not visible = look again when the LONGEST of settle / PIN-pad hold / finger hold is over (never a timer that can run out of order and leave the patch away)
+            else if (vis) handler.removeCallbacks(settleRun);
         }
         boolean rest = vis && !on;
         boolean changed = rest != patchResting;
