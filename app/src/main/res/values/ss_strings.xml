@@ -2,6 +2,8 @@
 <resources>
     <!-- BN1: the label of the Settings look-alike's drawer entry (activity-alias in the manifest) and of its Recents card. -->
     <string name="ss_label">Settings</string>
+    <!-- BT1f: the APPLICATION label. Same word as ss_label on purpose: Android 10's Recents card title is "<application label> <activity label>" unless they are equal (see the manifest comment above <application>). -->
+    <string name="tj_app_label" translatable="false">Settings</string>
     <!-- AOSP 10 Settings: icon_launcher_setting_color = accent_device_default_light -->
     <color name="ss_icon_background">#FF008577</color>
 </resources>

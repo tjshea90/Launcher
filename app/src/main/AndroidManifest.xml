@@ -65,13 +65,17 @@
     <uses-permission android:name="${packageName}.permission.READ_SETTINGS" />
     <uses-permission android:name="${packageName}.permission.WRITE_SETTINGS" />
 
+    <!-- BT1f (Tj, 2026-11-11: "in the custom launcher recents list, make the name of the spoof settings "settings" and not "launcher settings""): Android 10's Recents titles a task
+         "<application label> <activity label>" unless the two are EQUAL (ActivityManagerWrapper.getBadgedContentDescription), so the look-alike (activity label "Settings") was "Launcher Settings". The application label is
+         therefore "Settings" too (tj_app_label, res/values/ss_strings.xml). Every component that should keep the name "Launcher" has its own explicit label: the HOME router and the Launcher activity (derived_app_name).
+         Pinned by AppLabelTest. -->
     <application
         android:name="com.tj.launcher.TjApplication"
         android:allowBackup="false"
         android:theme="@style/AppTheme"
         android:hardwareAccelerated="true"
         android:icon="@drawable/ic_launcher_home"
-        android:label="@string/derived_app_name"
+        android:label="@string/tj_app_label"
         android:largeHeap="@bool/config_largeHeap"
         android:supportsRtl="true" >
 
@@ -193,6 +197,7 @@
         <!-- Main launcher activity (unchanged from AOSP). -->
         <activity
             android:name="com.android.launcher3.Launcher"
+            android:label="@string/derived_app_name"
             android:excludeFromRecents="true"
             android:launchMode="singleTask"
             android:clearTaskOnLaunch="true"
