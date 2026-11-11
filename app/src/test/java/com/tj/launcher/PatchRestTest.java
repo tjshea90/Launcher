@@ -185,4 +185,33 @@ public class PatchRestTest {
         assertEquals(0, PatchRest.settleLeftMs(5000 + PatchRest.SETTLE_MS, 5000));
         assertEquals(0, PatchRest.settleLeftMs(99_999, 5000));
     }
+
+    // ---- review B #1 (BT1): ONE return time, re-derived from the books every time the patch is left invisible
+    @Test public void theReturnTimeIsTheLongestOfSettleHoldAndFinger() {
+        assertEquals("nothing holds it", 0, PatchRest.returnInMs(60_000, 1000, 0, 0));
+        assertEquals("settle only", PatchRest.SETTLE_MS - 400, PatchRest.returnInMs(5400, 5000, 0, 0));
+        assertEquals("PIN-pad hold longer than the settle", 2500, PatchRest.returnInMs(5000, 1000, 7500, 0));
+        assertEquals("finger hold longer than the rest", 1500, PatchRest.returnInMs(5000, 1000, 5200, 6500));
+        assertEquals("a hold in the past is nothing", 0, PatchRest.returnInMs(9000, 1000, 8000, 7000));
+    }
+    @Test public void aPadSeenForUnderNinetyMillisecondsStillGetsItsReturnAfterTheHold() {
+        // the tablet's short pull-up: last sign S = 10000 holds the patch away until 12500; the pad leaves at L = 10700 and the old padBack ran at L + 1600 = 12300, 200 ms BEFORE the hold ended, and nothing looked again
+        long sign = 10_000, holdUntil = sign + 2500, left = 10_700, padBackRan = left + 1600;
+        assertTrue("the old timer ran inside the hold", padBackRan < holdUntil);
+        long in = PatchRest.returnInMs(padBackRan, 1000, holdUntil, 0);
+        assertEquals(200, in);
+        assertTrue("settled by then", PatchRest.settled(padBackRan + in, 1000));
+        assertTrue("at that moment nothing holds it any more", padBackRan + in >= holdUntil);
+    }
+    @Test public void atTheReturnTimeNothingHoldsThePatchAnyMore() {
+        for (long since : new long[]{1, 1000, 4800})
+            for (long hold : new long[]{0, 4000, 5000, 7000})
+                for (long touch : new long[]{0, 4500, 5900})
+                    for (long now : new long[]{1500, 4999, 5000, 5001, 6000, 6500}) {
+                        long at = now + PatchRest.returnInMs(now, since, hold, touch);
+                        assertTrue(PatchRest.settled(at, since));
+                        assertTrue(at >= hold);
+                        assertTrue(at >= touch);
+                    }
+    }
 }
