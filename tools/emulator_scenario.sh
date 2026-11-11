@@ -4557,7 +4557,7 @@ if want mu; then # section mu
 ensurehome
 # ---- BV1 (Tj, 2026-11-11): the music app (Eleven, package org.lineageos.eleven, built from eleven/) is in the custom drawer BY ITSELF and shows NO album art anywhere (research/ELEVEN_PORT_2026-11-11.md).
 #      The test song carries a FLAT MAGENTA cover; every picture of the app (tabs, artist / album pages, the player, the notification, the lock screen) is searched for that colour.
-#      MU-2 is the CONTROL: Android itself serves that cover to any app that asks the usual way (content://media/external/audio/albumart/<id>), so "no magenta" means the app did not ask, not that the cover was missing.
+#      MU-2 is the CONTROL: UPSTREAM's Eleven (album-art code intact, built by emulator.yml from the pinned baseline commit) shows that cover on this emulator in the same screens, so "no magenta" in OUR pictures means the app does not ask for covers, not that the cover never arrived.
 #      The placeholders (letter tiles / note tile) are judged by eye from the pictures (shots=true) and by the JVM guard (eleven/src/test .../NoAlbumArtGuardTest).
 #      Part 2 is the drawer rule: allowed once by itself (MU-4..6), launches from the drawer (MU-7); hidden by hand it stays hidden (MU-12/13); uninstall + reinstall allows it again (MU-14/15).
 beat "before MU"
