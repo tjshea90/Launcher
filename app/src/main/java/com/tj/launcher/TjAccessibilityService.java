@@ -420,7 +420,7 @@ public class TjAccessibilityService extends AccessibilityService {
         Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away " + PAD_LEFT_HOLD_MS + " ms");
     }
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
-    private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) showWithCause("settle"); } catch (Throwable ignored) { } } };
+    private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) { updateLockNumber(); showWithCause("settle"); } } catch (Throwable ignored) { } } };   // review B #1: a FRESH look at the PIN pad first (as touchBack and padBack do: lastBouncer is a scan result and can lag), then decide
     private final Runnable touchBack = new Runnable() { @Override public void run() {
         try {
             if (android.os.SystemClock.uptimeMillis() < touchAwayUntilMs) return;
