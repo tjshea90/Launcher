@@ -1,7 +1,9 @@
 package com.tj.launcher;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -28,5 +30,29 @@ public class KeyboardPolicyTest {
     }
     @Test public void prefersTheAospLatinKeyboard() {
         assertEquals(LATIN.id, KeyboardPolicy.pickStock(Arrays.asList(GBOARD, LATIN)));
+    }
+
+    // ---- BT1e (Tj, 2026-11-11): the Settings look-alike never names SwiftKey ("remove the text 'and Microsoft SwiftKey keyboard' even if that keyboard is installed")
+    @Test public void swiftKeyIsRecognisedByPackageOrByLabelInAnyLetterCase() {
+        assertTrue(KeyboardPolicy.isSwiftKey("com.touchtype.swiftkey", "Microsoft SwiftKey keyboard"));
+        assertTrue(KeyboardPolicy.isSwiftKey("com.touchtype.swiftkey.beta", null));
+        assertTrue(KeyboardPolicy.isSwiftKey(null, "Microsoft SWIFTKEY Keyboard"));
+        assertTrue(KeyboardPolicy.isSwiftKey("com.other", "SwiftKey"));
+        assertFalse(KeyboardPolicy.isSwiftKey("com.google.android.inputmethod.latin", "Gboard"));
+        assertFalse(KeyboardPolicy.isSwiftKey(null, null));
+    }
+    @Test public void theVirtualKeyboardRowDropsSwiftKeyEvenWhenItIsEnabled() {
+        List<String> shown = KeyboardPolicy.visibleLabels(Arrays.asList("com.google.android.inputmethod.latin", "com.touchtype.swiftkey"), Arrays.asList("Gboard", "Microsoft SwiftKey keyboard"));
+        assertEquals(Arrays.asList("Gboard"), shown);
+        assertEquals("Gboard", SsFormat.joinAnd(shown));   // the text Tj saw was "Gboard and Microsoft SwiftKey keyboard"
+    }
+    @Test public void otherKeyboardsStayInOrderAndASwiftKeyOnlyListIsEmpty() {
+        assertEquals(Arrays.asList("Android keyboard (AOSP)", "Gboard"), KeyboardPolicy.visibleLabels(Arrays.asList("a", "com.touchtype.swiftkey", "b"), Arrays.asList("Android keyboard (AOSP)", "Microsoft SwiftKey keyboard", "Gboard")));
+        assertEquals(0, KeyboardPolicy.visibleLabels(Arrays.asList("com.touchtype.swiftkey"), Arrays.asList("Microsoft SwiftKey keyboard")).size());
+        assertEquals("", SsFormat.joinAnd(KeyboardPolicy.visibleLabels(Arrays.asList("com.touchtype.swiftkey"), Arrays.asList("Microsoft SwiftKey keyboard"))));
+    }
+    @Test public void aMissingPackageListOrBlankLabelsAreHandled() {
+        assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(null, Arrays.asList("Gboard", "Microsoft SwiftKey keyboard", " ", null)));
+        assertEquals(0, KeyboardPolicy.visibleLabels(Arrays.asList("x"), null).size());
     }
 }
