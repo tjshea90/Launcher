@@ -17,16 +17,10 @@
  */
 package org.lineageos.eleven.cache;
 
-import android.content.ContentResolver;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.net.Uri;
 import android.widget.ImageView;
 
 import org.lineageos.eleven.Config;
-import org.lineageos.eleven.MusicPlaybackService;
-import org.lineageos.eleven.cache.PlaylistWorkerTask.PlaylistWorkerType;
 import org.lineageos.eleven.utils.MusicUtils;
 import org.lineageos.eleven.utils.PreferenceUtils;
 import org.lineageos.eleven.utils.colors.BitmapWithColors;
@@ -34,17 +28,12 @@ import org.lineageos.eleven.utils.colors.ColorExtractor;
 import org.lineageos.eleven.widgets.AlbumScrimImage;
 import org.lineageos.eleven.widgets.LetterTileDrawable;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-
 /**
- * A subclass of {@link ImageWorker} that fetches images from a URL.
+ * MODIFIED for the Launcher build (TASKS BV1; see CHANGES.md): the entry points every screen calls to "load" an album, artist or playlist picture, with the same names and
+ * signatures as upstream, but they only ever draw the app's own placeholder tiles (see {@link ImageWorker}). Nothing is fetched, decoded, cached or read from the media
+ * library, a file or the network; the user can no longer pick or fetch a picture either (upstream's cache, photo picker and "fetch album art" are gone).
  */
 public class ImageFetcher extends ImageWorker {
-    private static final int DEFAULT_MAX_IMAGE_HEIGHT = 1024;
-
-    private static final int DEFAULT_MAX_IMAGE_WIDTH = 1024;
 
     private static ImageFetcher sInstance = null;
     private boolean mUseBlur;
@@ -77,27 +66,27 @@ public class ImageFetcher extends ImageWorker {
     }
 
     /**
-     * Loads a playlist's most played song's artist image
+     * Shows a playlist's placeholder (upstream: its most played song's artist image)
      *
      * @param playlistId id of the playlist
      * @param imageView  imageview to load into
      */
     public void loadPlaylistArtistImage(final long playlistId, final ImageView imageView) {
-        loadPlaylistImage(playlistId, PlaylistWorkerType.Artist, imageView);
+        loadPlaylistImage(playlistId, imageView);
     }
 
     /**
-     * Loads a playlist's most played songs into a combined image, or show 1 if not enough images
+     * Shows a playlist's placeholder (upstream: a combined cover of its most played songs)
      *
      * @param playlistId id of the playlist
      * @param imageView  imageview to load into
      */
     public void loadPlaylistCoverArtImage(final long playlistId, final ImageView imageView) {
-        loadPlaylistImage(playlistId, PlaylistWorkerType.CoverArt, imageView);
+        loadPlaylistImage(playlistId, imageView);
     }
 
     /**
-     * Used to fetch album images.
+     * Used to show album placeholders.
      */
     public void loadAlbumImage(final String artistName, final String albumName, final long albumId,
                                final ImageView imageView) {
@@ -106,7 +95,7 @@ public class ImageFetcher extends ImageWorker {
     }
 
     /**
-     * Used to fetch the current artwork.
+     * Used to show the current artwork placeholder.
      */
     public void loadCurrentArtwork(final ImageView imageView) {
         loadImage(getCurrentCacheKey(), MusicUtils.getArtistName(), MusicUtils.getAlbumName(),
@@ -123,7 +112,7 @@ public class ImageFetcher extends ImageWorker {
     }
 
     /**
-     * Used to fetch the current artwork blurred.
+     * The scrim in its default state (upstream blurred the album picture here).
      */
     private void loadCurrentBlurredArtwork(final AlbumScrimImage image) {
         loadBlurImage(getCurrentCacheKey(), MusicUtils.getArtistName(), MusicUtils.getAlbumName(),
@@ -144,14 +133,14 @@ public class ImageFetcher extends ImageWorker {
     }
 
     /**
-     * Used to fetch artist images.
+     * Used to show artist placeholders (coloured tile with the first letters).
      */
     public void loadArtistImage(final String key, final ImageView imageView) {
         loadImage(key, key, null, -1, imageView, ImageType.ARTIST);
     }
 
     /**
-     * Used to fetch artist images. It also scales the image to fit the image view, if necessary.
+     * Used to show artist placeholders. {@code scaleImgToView} only mattered for a real picture.
      */
     public void loadArtistImage(final String key, final ImageView imageView,
                                 boolean scaleImgToView) {
@@ -159,64 +148,25 @@ public class ImageFetcher extends ImageWorker {
     }
 
     /**
-     * Clears the disk and memory caches
-     */
-    public void clearCaches() {
-        if (mImageCache != null) {
-            mImageCache.clearCaches();
-        }
-
-        // clear the keys of images we've already downloaded
-        sKeys.clear();
-    }
-
-    /**
-     * @param key The key used to find the image to remove
-     */
-    public void removeFromCache(final String key) {
-        if (mImageCache != null) {
-            mImageCache.removeFromCache(key);
-        }
-    }
-
-    /**
-     * Finds cached or downloads album art. Used in {@link MusicPlaybackService}
-     * to set the current album art in the notification and lock screen
+     * The artwork of the current album, used by {@link org.lineageos.eleven.MusicPlaybackService}
+     * for the notification, the lock screen and the widgets, and for the colours of the playing screen.
+     * Upstream returned the album picture when it found one; this build returns ONLY the placeholder tile (the same bitmap upstream uses for music without a picture).
      *
-     * @param albumName  The name of the current album
-     * @param albumId    The ID of the current album
-     * @param smallArtwork Get the small version of the default artwork if no artwork exists
-     * @return The album art as an {@link Bitmap}
+     * @param albumName    Unused (kept as upstream's signature)
+     * @param albumId      The ID of the current album (the key of the tile colour)
+     * @param smallArtwork Get the small version of the placeholder
+     * @return The placeholder tile as an {@link android.graphics.Bitmap} with its colours
      */
     public BitmapWithColors getArtwork(final String albumName, final long albumId,
                                        boolean smallArtwork) {
         final String key = String.valueOf(albumId);
-        final Bitmap artwork = getArtworkBitmap(albumName, albumId);
-        if (artwork != null) {
-            return new BitmapWithColors(artwork, key.hashCode());
-        }
-
         return LetterTileDrawable.createDefaultBitmap(mContext, key, ImageType.ALBUM, false,
                 smallArtwork);
     }
 
-    public Bitmap getArtworkBitmap(final String albumName, final long albumId) {
-        final String key = String.valueOf(albumId);
-        Bitmap artwork = null;
-
-        if (albumName != null && mImageCache != null) {
-            artwork = mImageCache.getBitmapFromDiskCache(key);
-        }
-        if (artwork == null && albumId >= 0 && mImageCache != null) {
-            artwork = mImageCache.getArtworkFromFile(mContext, albumId);
-        }
-
-        return artwork;
-    }
-
     /**
-     * Generates key used by album art cache. It needs both album name and artist name
-     * to let to select correct image for the case when there are two albums with the
+     * Generates key used to tell albums apart. It needs both album name and artist name
+     * to let to select correct tile for the case when there are two albums with the
      * same artist.
      *
      * @param albumName  The album name the cache key needs to be generated.
@@ -227,95 +177,5 @@ public class ImageFetcher extends ImageWorker {
             return null;
         }
         return albumName + "_" + artistName + "_" + Config.ALBUM_ART_SUFFIX;
-    }
-
-    /**
-     * Decode and sample down a {@link Bitmap} from a Uri.
-     *
-     * @param selectedImage Uri of the Image to decode
-     * @return A {@link Bitmap} sampled down from the original with the same
-     * aspect ratio and dimensions that are equal to or greater than the
-     * requested width and height
-     */
-    public static Bitmap decodeSampledBitmapFromUri(ContentResolver cr, final Uri selectedImage) {
-        // First decode with inJustDecodeBounds=true to check dimensions
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-
-        try {
-            InputStream input = cr.openInputStream(selectedImage);
-            BitmapFactory.decodeStream(input, null, options);
-            input.close();
-
-            if (options.outHeight == -1 || options.outWidth == -1) {
-                return null;
-            }
-
-            // Calculate inSampleSize
-            options.inSampleSize = calculateInSampleSize(options, DEFAULT_MAX_IMAGE_WIDTH,
-                    DEFAULT_MAX_IMAGE_HEIGHT);
-
-            // Decode bitmap with inSampleSize set
-            options.inJustDecodeBounds = false;
-            input = cr.openInputStream(selectedImage);
-            return BitmapFactory.decodeStream(input, null, options);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            return null;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return null;
-    }
-
-    /**
-     * Calculate an inSampleSize for use in a
-     * {@link android.graphics.BitmapFactory.Options} object when decoding
-     * bitmaps using the decode* methods from {@link BitmapFactory}. This
-     * implementation calculates the closest inSampleSize that will result in
-     * the final decoded bitmap having a width and height equal to or larger
-     * than the requested width and height. This implementation does not ensure
-     * a power of 2 is returned for inSampleSize which can be faster when
-     * decoding but results in a larger bitmap which isn't as useful for caching
-     * purposes.
-     *
-     * @param options   An options object with out* params already populated (run
-     *                  through a decode* method with inJustDecodeBounds==true
-     * @param reqWidth  The requested width of the resulting bitmap
-     * @param reqHeight The requested height of the resulting bitmap
-     * @return The value to be used for inSampleSize
-     */
-    public static int calculateInSampleSize(final BitmapFactory.Options options,
-                                            final int reqWidth, final int reqHeight) {
-        /* Raw height and width of image */
-        final int height = options.outHeight;
-        final int width = options.outWidth;
-        int inSampleSize = 1;
-
-        if (height > reqHeight || width > reqWidth) {
-            if (width > height) {
-                inSampleSize = Math.round((float) height / (float) reqHeight);
-            } else {
-                inSampleSize = Math.round((float) width / (float) reqWidth);
-            }
-
-            // This offers some additional logic in case the image has a strange
-            // aspect ratio. For example, a panorama may have a much larger
-            // width than height. In these cases the total pixels might still
-            // end up being too large to fit comfortably in memory, so we should
-            // be more aggressive with sample down the image (=larger
-            // inSampleSize).
-
-            final float totalPixels = width * height;
-
-            /* More than 2x the requested pixels we'll sample down further */
-            final float totalReqPixelsCap = reqWidth * reqHeight * 2;
-
-            while (totalPixels / (inSampleSize * inSampleSize) > totalReqPixelsCap) {
-                inSampleSize++;
-            }
-        }
-        return inSampleSize;
     }
 }

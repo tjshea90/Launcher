@@ -31,7 +31,7 @@ import org.lineageos.eleven.widgets.AlbumScrimImage;
 import org.lineageos.eleven.widgets.LetterTileDrawable;
 
 /**
- * MODIFIED for the Launcher build (TASKS BV1; see CHANGES.md). Tj: "never at any time show album art on any tab or anywhere in the app. It should never load or display album
+ * MODIFIED for the Launcher build (TASKS BV1; see CHANGES.md). Tj: "never at any time show album art on any tab or anywhere in the app. It should never load or display
  * album art, ever."
  *
  * Upstream's ImageWorker looked for album, artist and playlist pictures (memory and disk cache, the MediaStore album-art store, embedded pictures, background tasks, a blur of
