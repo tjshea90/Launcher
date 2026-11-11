@@ -4384,14 +4384,19 @@ check "WF8: after a plain PIN into the custom launcher the symbol is hidden agai
 check "WF8b: Wi-Fi is ON in the custom launcher" test "$WFW" = 1
 shot wf-5-custom-again; WFPC2="$(wfwhite "$OUT/wf-5-custom-again.png" 543 3 20 17)"
 check "WF8c: no Wi-Fi symbol in the custom launcher's status bar (${WFPC2:-999} white pixels)" test "${WFPC2:-999}" -lt 10
-# ---- N: NOTHING turns a radio on (Tj: "Only keep them on if they are already on. Don't turn them on automatically."): Wi-Fi is OFF before the lock and a memory of an old lock ('w1b1' = both were on, the put-back
-#         after a gesture unlock would turn them on) is planted; after a gesture unlock and after a plain PIN Wi-Fi is still OFF
+# ---- N: NOTHING turns a radio on (Tj: "Only keep them on if they are already on. Don't turn them on automatically."): Wi-Fi is OFF and the feature is switched on, the lock rule and the put-back are ON;
+#         after taking the hold, after a lock + gesture unlock into Quickstep and after a lock + plain PIN into the custom launcher Wi-Fi is still OFF (the only older path that can turn a radio on is AK1's
+#         put-back of a radio AK1 itself switched off; with the feature on nothing is switched off at the lock, so there is nothing to put back)
 adb shell svc wifi disable; sleep 3
-wffeat true true true w1b1; adb shell am force-stop "$PKG"; sleep 1; rebind; sleep 4
+wffeat true true true; adb shell am force-stop "$PKG"; sleep 1; setmode custom; rebind; home; sleep 8
+WFW="$(wfwifi)"; WFL="$(wflist)"
+info "WF N0 (Wi-Fi off, the feature taken in the custom launcher): wifi_on=$WFW icon_blacklist=$WFL"
+check "WF12a: taking the hold does NOT turn Wi-Fi on (it was off)" test "$WFW" = 0
+setmode quickstep; rebind; home; sleep 4
 lockpad; sleep 9; pad d d 1 2 3 4 e; sleep 9
 WFW="$(wfwifi)"
-info "WF N (Wi-Fi off before the lock, old lock memory w1b1 planted): after the gesture unlock wifi_on=$WFW"
-check "WF12: a gesture unlock into Quickstep does NOT turn Wi-Fi on (it was off; an old lock memory said it had been on)" test "$WFW" = 0
+info "WF N (Wi-Fi off before the lock): after the gesture unlock wifi_on=$WFW"
+check "WF12: a gesture unlock into Quickstep does NOT turn Wi-Fi on (it was off before the lock)" test "$WFW" = 0
 lockpad; sleep 9; pad 1 2 3 4 e; sleep 8
 WFW="$(wfwifi)"
 info "WF N: after a plain PIN wifi_on=$WFW"
