@@ -1,13 +1,13 @@
-# CHECKPOINT 1113 — read me first, then TASKS.md
+# CHECKPOINT 1114 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T05:53:05Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `9776a7f7` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T06:01:22Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `d027fe80` (this checkpoint is the commit after it)
 
 ## Just done
-section bt added to emulator_scenario.sh + gate-map (BT1f look-alike Recents card name; BT1c shade then side key at gaps 0.4/1.2/4 s + no-shade control); gate.sh --check ok
+run #529 (id 42968657835, job 130351718801, sections=bt on d027fe8): 10 PASS 3 FAIL. BT1f PASS (Recents card = Settings). REPRODUCED BT1c: Screenshot entry visible at control (no shade), gap 0.4 s, gap 1.2 s; covered at gap 4 s (pictures in ci-shots, fetched to scratchpad/shots529). cause: not-ready home patch leaves short card with Screenshot slot uncovered (cardArea uses full only if patchView==null)
 
 ## Do this next
-Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: dispatch emulator.yml sections=bt on main (mcp__github__actions_run_trigger run_workflow; load via ToolSearch select:mcp__github__actions_run_trigger,mcp__github__actions_list,mcp__github__get_job_logs), shots=true if the input exists; read RESULTS (get_job_logs tail_lines ~60); BT1c rounds tell which gap fails. Meanwhile read TAS home-patch code (homeForeignWindow 700-760, homeFocusChanged, homeDrew, buildHomePatchNow ~790-830)
+Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: (1) widen bt INFO diagnostics (full fast-skip reasons, HOMEPATCH away/stale/built timeline); (2) fix: cardArea returns full panel whenever the home patch will not be shown for this menu (never leave the Screenshot slot open) + lift foreign guard on focus regain + per-press diagnostics line; (3) lock side BT1a: onOutsideTouch returns early when !patchResting (touch before resting is not recorded) - record touchAway regardless
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: dispatch emulator.yml sections=bt
 
 ## Last ten checkpoints
 ```
+  d027fe80 ckpt 1113: section bt added to emulator_scenario.sh + gate-map (BT1f look-alike Recents
   3c05741c ckpt 1112: BT1e+BT1f code done, JVM green (KeyboardPolicyTest, AppLabelTest, BUILD SUCC
   72acd019 ckpt 1111: BT1 first analysis written (research/BT1_ANALYSIS_2026-11-11.md): BT1c/d = B
   3b9848af ckpt 1110: BT1a-f written in TASKS from Tj 05:03Z msg; BS1/BS2/BS2g ticked (answer in O
@@ -25,8 +26,4 @@ Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: dispatch emulator.yml sections=bt
   b64b0e1a ckpt 1100: BS2d GATE COMPLETE: #527 (id 42947197401, job 130282725555, ss solo) step co
   471266e9 ckpt 1099: BS2d GATE reruns dispatched 02:36Z on main@ccd1024 (app diff vs gated b44f03
   ccd1024c ckpt 1098: BS2d GATE raw: #524 (id 42942929350, job 130268804149, base,n6,o,x,uf,cs2,an
-  67c16d80 ckpt 1095: BS2d GATE: #526 (id 42942938730, job 130268830144, rg solo, main@b44f033): 7
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
