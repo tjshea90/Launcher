@@ -4277,7 +4277,11 @@ check "SS8: switch on: the look-alike's launcher entry is listed in the custom m
 adb logcat -c; ssfeat false; setmode custom; rebind; home; sleep 8   # logcat cleared first: SS8's Quickstep phase already logged one 'Settings entry OFF' (run #457)
 adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-off.txt" 2>&1
 check "SS6: with the switch off the Settings entry was switched OFF again" grep -q "Settings entry OFF" "$OUT/ss-log-off.txt"
-ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-03-real-settings; resumed > "$OUT/ss-resumed2.txt"
+ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi
+# SS7 failed in 2 of 3 head runs (#549, #553) and passed in #556 (tag v0.9.5) and #557 (head): the cold start of the real Settings app is slower than the fixed 4 s the check used to allow on a busy runner. Poll for it (at most 20 s).
+SS7_T=0; for i in 1 2 3 4 5 6 7 8 9 10; do sleep 2; SS7_T=$((SS7_T+2)); resumed > "$OUT/ss-resumed2.txt"; grep -q "com.android.settings" "$OUT/ss-resumed2.txt" && break; done
+shot ss-03-real-settings
+info "SS7: the real Settings was in front after $SS7_T s (drawer entry bounds: ${SB:-none}; resumed = $(tr -s ' \n' ' ' < "$OUT/ss-resumed2.txt" | cut -c1-120))"
 check "SS7: switch off: the drawer's Settings is the real one" grep -q "com.android.settings" "$OUT/ss-resumed2.txt"
 setfeat; setmode custom; rebind; home; sleep 6
 fi # section ss
