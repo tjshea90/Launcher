@@ -65,14 +65,18 @@ public final class HiddenApps {
     public static boolean isPackageShown(Context c, String pkg) {
         try {
             if (SettingsSpoof.hidesRealSettings(c, pkg)) return false;   // BN1: same rule as isShown (the Recents sweep asks by package)
-            synchronized (LOCK) { return AppVisibility.isShown(allowed(c), pkg, null, c.getPackageName()); }
+            synchronized (LOCK) { autoAllowIfDue(c, pkg); return AppVisibility.isShown(allowed(c), pkg, null, c.getPackageName()); }
         } catch (Throwable t) { return true; }
     }
 
     public static void setShown(Context c, String pkg, boolean shown) {
         synchronized (LOCK) {
             Set<String> a = AppVisibility.withShown(allowed(c), pkg, shown);
-            p(c).edit().putStringSet(ALLOWED, a).commit();
+            SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, a);
+            if (AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) {   // Tj decided by hand: the automatic allowing must never override it
+                e.putStringSet(AUTO_DONE, AppVisibility.withDone(new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())), pkg));
+            }
+            e.commit();
         }
     }
 
@@ -80,7 +84,11 @@ public final class HiddenApps {
         try {
             synchronized (LOCK) {
                 Set<String> a = AppVisibility.withoutRemoved(allowed(c), pkg);
-                p(c).edit().putStringSet(ALLOWED, a).commit();
+                SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, a);
+                if (AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) {   // a reinstall of the music app is auto-allowed again
+                    e.putStringSet(AUTO_DONE, AppVisibility.withoutDone(new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())), pkg));
+                }
+                e.commit();
             }
         } catch (Throwable ignored) { }
     }
