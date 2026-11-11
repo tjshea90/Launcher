@@ -1,21 +1,23 @@
-# CHECKPOINT 1168 — read me first, then TASKS.md
+# CHECKPOINT 1169 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T17:30:55Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `6e4a2562` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T17:36:43Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `4b17f561` (this checkpoint is the commit after it)
 
 ## Just done
-Run 545 (id 43066812780, head ae8cb7e1, mu shots=true): 23 PASS 1 FAIL = MU-2 control only (albumart content read: SecurityException, Files Audio root: 0 magenta). MU-8/9/16-20 PASS: tour stayed in app, placeholders 2224/54284/2367 px, art probe 0 magenta in 19 pictures
+BV1e: mu control = upstream Eleven (baseline db65f024 + port fix, built by emulator.yml step, APK eleven-upstream-control.apk) plays the same song through the same screens; recipe built locally OK (dex has ImageCache, ours none); scenario spliced (MU-2 now needs >1000 cover px in a muc-* picture), not yet run
 
 ## Do this next
-git fetch origin ci-shots; git archive into scratchpad/shots545; LOOK at mud-* control pictures; fix MU-2 so the control really proves Android serves the cover (else MU-10 proves little); rerun mu; read reviewer a44d508ea75bfa88b report; then gate.sh v0.9.5, ship v0.9.6. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab; never update_trigger/delete_trigger
+git push done by ckpt; dispatch emulator.yml main sections=mu shots=true; read RESULTS (list_workflow_runs emulator.yml main workflow_dispatch perPage 1 -> get_job_logs run_id failed_only tail 75); fetch ci-shots to scratchpad/shots546 and look at muc-* (does upstream show magenta?) and mua-*. Reviewer a44d508ea75bfa88b report pending. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab; never update_trigger/delete_trigger
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M eleven/UPSTREAM.md
 
 ## Last ten checkpoints
 ```
+  67f04fc9 ckpt 1168: Run 545 (id 43066812780, head ae8cb7e1, mu shots=true): 23 PASS 1 FAIL = MU-
   ae8cb7e1 ckpt 1167: BV1: audit items 3/4/5 done (dead BitmapWithColors ctor + Palette call remov
   cde47d6c ckpt 1166: BV1: audit report saved (research/ELEVEN_AUDIT_2026-11-11.md: no HIGH; TO DO
   25bb7e5a ckpt 1165: Run 544 (id 43063412826, head ff924adf, sections=mu shots=true): 18 PASS 4 F
@@ -25,8 +27,7 @@ git fetch origin ci-shots; git archive into scratchpad/shots545; LOOK at mud-* c
   6d4faaf3 ckpt 1161: BV1b/c: art code cut from eleven/ (ImageWorker/ImageFetcher placeholder-only
   d65b3668 ckpt 1160: BV1: exact eleven patch list written (research note section 6); drawer findi
   da67a382 ckpt 1159: BV1d: eleven module builds (AGP 8.13.2, debug APK 8.3 MB) after ONE port fix
-  db65f024 ckpt 1158: BV1: eleven/ vendored PRISTINE from upstream ca22308 (426 files, only paths 
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(3 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)

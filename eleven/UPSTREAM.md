@@ -8,4 +8,5 @@
 - To re-check against upstream: `git clone --branch lineage-17.1 https://github.com/LineageOS/android_packages_apps_Eleven` somewhere OUTSIDE this repo, check out the commit above, and compare (never commit a clone).
 
 - Baseline in THIS repo: commit `db65f0240c22` ("ckpt 1158") holds the upstream files unchanged (only moved to the Gradle layout), so `git diff db65f0240c22..HEAD -- eleven` is exactly what we changed. The same list in words, with the reason for each change (Apache License 2.0 section 4(b)): `CHANGES.md`. The guard that keeps album art out: `src/test/java/org/lineageos/eleven/NoAlbumArtGuardTest.java`.
+- Full SHA of that baseline: `db65f0240c22f5352ff509d3363b011919621108`. The emulator workflow (section `mu`) fetches it and builds upstream's app WITH its album-art code (+ the one port fix, CHANGES.md 1) as the CONTROL that proves the test picture can see a cover (TASKS BV1e, MU-2). Never rewrite that history.
 - Never merge a newer upstream branch over this folder blindly: re-do the cut (see research/ELEVEN_PORT_2026-11-11.md section 6) and keep the guard green.
