@@ -164,6 +164,22 @@ public final class LockQuiet {
         } catch (Throwable t) { Log.e(TAG, "unlock restore failed", t); }
     }
 
+    /** Called when the helper (re)connects: forgets a leftover lock memory ({@link #shouldForgetPrev}). Worker thread (binder reads and a disk write), exception-safe, silent when there is nothing to forget. */
+    public static void forgetStalePrevAsync(final Context c) {
+        final Context app = c.getApplicationContext();
+        new Thread(new Runnable() { @Override public void run() {
+            try {
+                String prev = Features.getString(app, PREV_KEY, "");
+                if (prev.isEmpty()) return;
+                android.os.PowerManager pm = (android.os.PowerManager) app.getSystemService(Context.POWER_SERVICE);
+                if (shouldForgetPrev(TileProfile.keyguardLocked(app), pm != null && pm.isInteractive(), prev)) {
+                    Features.setString(app, PREV_KEY, "");
+                    Log.i(TAG, "stale lock memory forgotten (" + prev + "): the helper connected while no lock was in progress");
+                }
+            } catch (Throwable t) { Log.e(TAG, "forgetting the stale lock memory failed", t); }
+        } }, "tj-lockquiet-forget").start();
+    }
+
     public static void onUnlockAsync(final Context c, final boolean quickstep) {
         final Context app = c.getApplicationContext();
         new Thread(new Runnable() { @Override public void run() { onUnlock(app, quickstep); } }, "tj-lockquiet-unlock").start();
