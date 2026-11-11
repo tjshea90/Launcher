@@ -167,4 +167,22 @@ public class PatchRestTest {
         int[] w = PatchRest.slotWindow(485, 547, 596, 642, 2, 9, 26, 4, 600, 1024);
         assertEquals(600, w[2]);
     }
+
+    // ---- BT1a (Tj, 2026-11-11): a patch that only BECOMES restable during a pull-up must not appear over the darkening wallpaper
+    @Test public void aPatchRestsVisiblyOnlyAfterItHasBeenRestableForTheSettleTime() {
+        assertFalse("just became restable", PatchRest.settled(1000, 1000));
+        assertFalse(PatchRest.settled(1000 + PatchRest.SETTLE_MS - 1, 1000));
+        assertTrue(PatchRest.settled(1000 + PatchRest.SETTLE_MS, 1000));
+        assertTrue(PatchRest.settled(60_000, 1000));
+    }
+    @Test public void aPatchThatIsNotRestableIsNeverSettled() {
+        assertFalse(PatchRest.settled(60_000, 0));
+        assertEquals(0, PatchRest.settleLeftMs(60_000, 0));
+    }
+    @Test public void theSettleTimerSaysHowLongIsLeft() {
+        assertEquals(PatchRest.SETTLE_MS, PatchRest.settleLeftMs(5000, 5000));
+        assertEquals(PatchRest.SETTLE_MS - 400, PatchRest.settleLeftMs(5400, 5000));
+        assertEquals(0, PatchRest.settleLeftMs(5000 + PatchRest.SETTLE_MS, 5000));
+        assertEquals(0, PatchRest.settleLeftMs(99_999, 5000));
+    }
 }

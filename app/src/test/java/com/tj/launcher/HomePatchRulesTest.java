@@ -265,4 +265,35 @@ public class HomePatchRulesTest {
     @Test public void theGraceRecheckIsShorterThanTheGuardItMayLift() {
         assertEquals(true, HomePatchRules.FOREIGN_RECHECK_MS < 2500);
     }
+
+    // ---- BT1c / BT1d (Tj, 2026-11-11): the stock Screenshot entry is never left uncovered when the patch is not fresh at the press
+    private static HomePatchRules.OpenFacts open(boolean window, boolean restable, boolean kept, boolean step, boolean focus, boolean rest, boolean cal) {
+        HomePatchRules.OpenFacts f = new HomePatchRules.OpenFacts();
+        f.patchWindow = window; f.restable = restable; f.compositeKept = kept; f.stepMatches = step; f.launcherFocus = focus; f.homeAtRest = rest; f.calibrating = cal;
+        return f;
+    }
+    @Test public void aFreshPatchOpensTheFastWayAsEver() {
+        assertEquals(HomePatchRules.OPEN_FRESH, HomePatchRules.openTreatment(open(true, true, true, true, true, true, false)));
+    }
+    @Test public void aStalePatchIsShownAsItIsWhenTheLauncherHasTheFocusOnThePlainHome() {
+        // emulator run 529: a draw since the build, no shade at all, the press found "the patch is not resting" and the Screenshot entry showed
+        assertEquals(HomePatchRules.OPEN_STALE, HomePatchRules.openTreatment(open(true, false, true, true, true, true, false)));
+    }
+    @Test public void withoutTheFocusAFolderOrADragTheCardCoversTheWholePanel() {
+        assertEquals("the shade (or another window) holds the focus: the Launcher's pixels are not what is under the slot", HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(true, false, true, true, false, true, false)));
+        assertEquals("a folder / popup / drag / All Apps", HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(true, false, true, true, true, false, false)));
+        assertEquals("the focus decides even for a restable patch's neighbours: no window, no patch", HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(false, false, true, true, true, true, false)));
+    }
+    @Test public void aCompositeForAnotherWallpaperPositionOrNoCompositeOrACalibrationNeverShows() {
+        assertEquals(HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(true, false, true, false, true, true, false)));
+        assertEquals(HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(true, false, false, true, true, true, false)));
+        assertEquals("the Launcher is hidden for the screenshot", HomePatchRules.OPEN_FULL_CARD, HomePatchRules.openTreatment(open(true, true, true, true, true, true, true)));
+    }
+    @Test public void theLogWordsNameTheFirstReasonAndTheNumbers() {
+        assertEquals("the Launcher drew 700 ms after the build [built 1000 ms ago, last draw 300 ms ago, guard 0 ms left, focus true]", HomePatchRules.notFreshWhy(true, true, 1000, 300, 0, true, false));
+        assertEquals("a window guard is running [built 1000 ms ago, last draw 5000 ms ago, guard 1800 ms left, focus true]", HomePatchRules.notFreshWhy(true, true, 1000, 5000, 1800, true, false));
+        assertEquals("the Launcher has no window focus [built 10 ms ago, last draw never, guard 0 ms left, focus false]", HomePatchRules.notFreshWhy(true, true, 10, -1, 0, false, false));
+        assertEquals("no composite built yet [built never, last draw never, guard 0 ms left, focus true]", HomePatchRules.notFreshWhy(false, false, -1, -1, -5, true, false));
+        assertEquals("calibrating [built never, last draw never, guard 0 ms left, focus true]", HomePatchRules.notFreshWhy(false, false, -1, -1, 0, true, true));
+    }
 }
