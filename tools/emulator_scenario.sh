@@ -4708,9 +4708,14 @@ check "MU-10: NO album art anywhere: no picture of the music app (tabs, artist a
 adb logcat -d -b crash 2>/dev/null | tr -d '\r' > "$OUT/mu-crash-log.txt"
 check "MU-11: the music app did not crash during the tour" bash -c "! grep -q 'Process: $MU' $OUT/mu-crash-log.txt"
 
-# ---- part 2b: Tj hides it by hand (not in 'allowed', still in 'auto_done'): it stays hidden. Part 2c: uninstall + reinstall allows it again
+# ---- part 2b: Tj hides it by hand (on the real screen: not in 'allowed', still in 'auto_done'): it stays hidden. Part 2c: uninstall + reinstall allows it again
 adb shell am force-stop "$MU" >/dev/null 2>&1
-muprefs "$MUDONE"; setmode custom; rebind; home; sleep 2
+# Tj hides it ON THE REAL Hidden apps screen (it exists in Quickstep mode only): the app's own code writes both sets (review M2: the state used to be written into the XML by hand, which tested nothing of setShown)
+setmode quickstep; home; adb shell am start -n "$PKG/com.tj.launcher.HiddenAppsActivity" >/dev/null 2>&1; sleep 3
+mutap "Music" 300 300; sleep 2; shot mud-02a-hidden-apps-screen
+muset allowed > "$OUT/mu-allowed-h.txt"; muset auto_done > "$OUT/mu-auto-done-h.txt"
+check "MU-12a: switching it off on the real Hidden apps screen removes it from 'allowed' and keeps this install's 'auto_done' entry (both written by the app's own code)" bash -c "! grep -qx $MU $OUT/mu-allowed-h.txt && grep -qx '$MUDONE' $OUT/mu-auto-done-h.txt"
+setmode custom; rebind; home; sleep 2
 mudrawer; shot mud-02-hidden-by-hand
 mudump > "$OUT/mu-drawer-hidden.txt"
 check "MU-12: hidden by hand it stays out of the drawer (the rule never undoes Tj's choice); the drawer was open (Contacts listed)" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-hidden.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-hidden.txt"
