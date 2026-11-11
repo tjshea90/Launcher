@@ -1907,3 +1907,7 @@
 ## 2026-11-11T07:37:16Z
 > The numbers explain the failure: the measured look ended at −0.87% vs a −0.23% generic look. The check allows |generic| + 0.5% = 0.73%, so it missed by 0.14 percentage points, while the real requirement (within 1.2%) passed. Earlier runs measured −0.12% and −0.24%, so I can't call this noise yet. Per the project's triage rule, I'll repeat the exact same commit and also run the released v0.9.4 tag side by side.
 <!-- sha:9861f428ccda -->
+
+## 2026-11-11T07:39:21Z
+> The prepared answer now claims only what the code review verified. Everything is checkpointed (1130). Waiting for the timer at 07:50:30 UTC, then I read all four runs (#533, #534, the `pt` repeat, and the `pt` run on the v0.9.4 tag).
+<!-- sha:042ebb488ac7 -->
