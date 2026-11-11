@@ -4711,7 +4711,13 @@ check "MU-11: the music app did not crash during the tour" bash -c "! grep -q 'P
 # ---- part 2b: Tj hides it by hand (on the real screen: not in 'allowed', still in 'auto_done'): it stays hidden. Part 2c: uninstall + reinstall allows it again
 adb shell am force-stop "$MU" >/dev/null 2>&1
 # Tj hides it ON THE REAL Hidden apps screen (it exists in Quickstep mode only): the app's own code writes both sets (review M2: the state used to be written into the XML by hand, which tested nothing of setShown)
-setmode quickstep; home; adb shell am start -n "$PKG/com.tj.launcher.HiddenAppsActivity" >/dev/null 2>&1; sleep 3
+# (run 547: `am start` of HiddenAppsActivity from the shell showed the stock home = the activity is not exported and the shell was refused, so the screen is reached the way Tj reaches it: Launcher control -> "Choose the apps shown in the custom launcher")
+setmode quickstep; rebind; home; sleep 2
+adb shell am start -n "$PKG/com.tj.launcher.ControlActivity" >/dev/null 2>&1; sleep 3
+tapapp "Choose the apps shown in the custom launcher" 300 560; sleep 3
+resumed > "$OUT/mu-hidden-screen-resumed.txt"
+info "MU hidden-apps screen: resumed = $(tr -s ' \n' ' ' < "$OUT/mu-hidden-screen-resumed.txt" | cut -c1-140)"
+check "MU-12a0: the real Hidden apps screen is open (reached from Launcher control, as Tj reaches it)" grep -q "HiddenAppsActivity" "$OUT/mu-hidden-screen-resumed.txt"
 mutap "Music" 300 300; sleep 2; shot mud-02a-hidden-apps-screen
 muset allowed > "$OUT/mu-allowed-h.txt"; muset auto_done > "$OUT/mu-auto-done-h.txt"
 check "MU-12a: switching it off on the real Hidden apps screen removes it from 'allowed' and keeps this install's 'auto_done' entry (both written by the app's own code)" bash -c "! grep -qx $MU $OUT/mu-allowed-h.txt && grep -qx '$MUDONE' $OUT/mu-auto-done-h.txt"
