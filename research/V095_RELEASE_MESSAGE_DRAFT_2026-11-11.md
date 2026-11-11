@@ -18,7 +18,7 @@ Tj, all six of your reports are in v0.9.5:
 
 **5) "and Microsoft SwiftKey keyboard" under Virtual keyboard.** Gone, whether or not SwiftKey is installed or enabled; the list only names other keyboards. If SwiftKey is the default keyboard the line names the first other enabled one. Proven by unit tests; the emulator has no SwiftKey, so it cannot be seen there.
 
-**6) Recents name "Launcher settings".** Now "Settings". Proven on the emulator (the Recents card reads "Settings"). Side effect to know about: the app's own name is now "Settings", so Settings > Apps lists it as "Settings" and the "Select a Home app" chooser reads "Settings / Launcher" (the second part is the home activity). Tell me if you want the chooser or the Apps list to say "Launcher" and I will find another way.
+**6) Recents name "Launcher settings".** Now "Settings". Proven on the emulator (the Recents card reads "Settings"). Side effect to know about: Android takes the Recents title from the app's own name, so the app is now called "Settings" everywhere Android shows the app name: Settings > Apps, Battery and Special access (next to the real Settings, so you will see two rows), crash dialogs ("Settings keeps stopping") and the subtitle of the "Back to custom" tile. The home activity itself is still labelled "Launcher"; I did not check what the "Select a Home app" list shows. Tell me if you want any of those to say "Launcher" and I will find another way.
 
 **What is proven and what is not**
 - <<GATE>>
