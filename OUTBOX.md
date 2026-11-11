@@ -2114,3 +2114,14 @@
 > - **Its work:** it is still on your music-app requests, with checkpoint 1182 six minutes old. It is running emulator checks of the drawer and the music icon (`mu`, `rb`, `ss` runs #551–#553). Its newest commit is 2 minutes old.
 > - **Mine:** I took no action and wrote no checkpoint. I fast-forwarded this branch to its tip (`e5325a09`, the same as `main`) without a new commit, and I left this heartbeat armed.
 <!-- sha:3ce5e554895f -->
+
+## 2026-11-11T19:03:11Z
+> The adaptive music icon is committed and pushed, but I haven't seen it work in the real drawer yet. The run that checks it, #561, should finish around 19:06 UTC.
+>
+> - **Run #554 on the old icon:** 28 checks passed and `MU-21` failed. In the real drawer the speaker was 0.654 of the white square wide, and yours is 0.715. The launcher shrinks round old-style icons, so no offline check had seen it.
+> - **The fix:** the icon is now adaptive (white background layer plus the speaker, which the launcher does not shrink). `MU-21` now measures that size on the emulator picture. The icon's unit tests pass, the check's self-test passes, and the handoff test (which includes the self-test) is green.
+> - **Gate on the launcher code:** every section I need is green. The earlier `o` and `ss` failures were CI flakes: `o,last` passes on the v0.9.5 tag and again on the head, and `ss` passes on both too. The `ss` check (SS7) now polls up to 20 s for Settings to open.
+> - **`main` was stale for about 20 minutes:** the other account's heartbeat session pushed two commits that only touch `OUTBOX.md`, so my push to `main` was refused without a warning. I merged them cleanly and `main` matches my tip again. I cancelled the music-app run that had started on the stale `main`.
+>
+> Next I read #561's result and look at the drawer picture. Then I bump to v0.9.6 (versionCode 45), ship, build the release, and send you the answer with the Release link.
+<!-- sha:482ec28dd603 -->
