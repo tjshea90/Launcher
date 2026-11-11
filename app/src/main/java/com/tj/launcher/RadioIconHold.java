@@ -42,10 +42,17 @@ public final class RadioIconHold {
     public static boolean defaultOn(boolean debuggable) { return !debuggable; }
 
     /**
-     * Pure: do the radio switch-offs (AK1 lock-screen rule, the custom launcher's radio guard, the session reset) leave Wi-Fi AND Bluetooth ON? Only while the symbols can really be hidden: the switch is on, the adb
-     * permission is there (without it the symbols would show on the lock screen: today's behaviour, radios off, is the safer one) and automation is not paused ("Restore everything" / the crash breaker).
+     * Pure: do the radio switch-offs (AK1 lock-screen rule, the custom launcher's radio guard, the session reset) leave Wi-Fi AND Bluetooth ON? Only where the symbols WILL be hidden: exactly when
+     * {@link NotifQuietPolicy#why} wants the hold on a dark screen or a lock screen (the places those switch-offs run): the switch is on, the adb permission is there (without it the symbols would show on the lock
+     * screen), automation is not paused ("Restore everything" / the crash breaker), and in a Quickstep mode the accessibility helper is running (a lock screen that is up BEFORE the helper binds, as right after a
+     * boot, cannot have its symbols hidden yet: the radios go off like before, v0.9.3; review of BS1). One rule for both, so they can never disagree.
      */
-    public static boolean keepsRadiosOn(boolean switchOn, boolean grant, boolean automationOff) { return switchOn && grant && !automationOff; }
+    public static boolean keepsRadiosOn(boolean switchOn, boolean grant, boolean automationOff, boolean quickstepMode, boolean helperUp) {
+        final NotifQuietPolicy.Facts f = new NotifQuietPolicy.Facts();
+        f.switchOn = switchOn; f.grant = grant; f.automationOff = automationOff; f.quickstepMode = quickstepMode; f.helperUp = helperUp;
+        f.screenOn = false;   // the switch-offs run on a lock screen or in the custom launcher; a dark screen is "quiet" in the policy's words in every mode
+        return NotifQuietPolicy.wanted(f);
+    }
 
     // ---------------------------------------------------------------- the list, parsed exactly as SystemUI parses it (split at ',', empty entries dropped, no trimming, exact compare)
 
