@@ -1791,3 +1791,7 @@
 >
 > Still waiting on you, unchanged: BR1c (does the settings gear open the look-alike?), BN7a (start the shell helper, "Do everything that is missing"), BN8c / BN8d (tablet reports after the first side-key press, and before opening more Quickstep apps), BQ1b (tablet report after any lock-screen screenshot or white box), BH1c (where you saw a pop-up notification, and which app), BK1e (which unlock is slow, what is on screen, how many seconds).
 <!-- sha:5565cc62b57b -->
+
+## 2026-11-11T02:03:07Z
+> The full local suite is green (968 tests, 0 failures) and lint finished without blocking, since `abortOnError` is false for the upstream Launcher3 findings. Waiting for the `rg` gate run (#526), due about 02:07 UTC.
+<!-- sha:cc808e9ddfd6 -->
