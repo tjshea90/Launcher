@@ -21,9 +21,10 @@ import sys
 
 import numpy as np
 
-R_OUT = 19.66  # outer radius of the artwork in drawer pixels (the unit of every table below)
+R_OUT = 19.67  # outer radius of the artwork in drawer pixels (the unit of every table below)
 
 # MEASURED (drawer pixels, centre of the speaker = the origin, f = dy / r: +1 straight below the centre, -1 straight above, 0 at the sides).
+# Fit check (the --compare mode): mean absolute difference to the screenshot 4.8 levels per channel over the 1400 pixels of the speaker.
 # Per radius the colour of every pixel is a straight line in f (least squares over all angles, 0.5 px bins; the residual is 2 to 5 levels).
 # THE CONE: colour = M(r) + D(r) * f with the SAME D for red, green and blue: the speaker is lit from below by a white glow (lighter at the bottom, darker at the top).
 CONE_R = [5.8, 6.2, 6.8, 7.2, 7.8, 8.2, 8.8, 9.2, 9.8, 10.2, 10.8, 11.2, 11.8, 12.2, 12.8, 13.2, 13.8, 14.2, 14.8, 15.4]
@@ -36,12 +37,12 @@ CONE_D = [63, 69, 69, 67, 65, 63, 60, 56, 52, 49, 45, 42, 38, 36, 32, 31, 26, 26
 BEZEL_R = [16.7, 17.2, 17.8, 18.2, 18.8, 19.3, 19.7]
 BEZEL_M = [70, 90, 93, 97, 105, 125, 140]
 BEZEL_D = [-8, -18, -33, -34, -39, -39, -30]
-BLACK_R0, BLACK_R1 = 15.5, 16.7       # the thin black ring
-BLACK = (4, 4, 6)
-CAP_R = 4.0                           # the dust cap: a glossy dome, 40 + 13.4 * (height above the centre in px), black at the bottom
-CAP_BASE, CAP_GAIN = 40.0, 13.4
-CAP_EDGE_R = 5.09                     # the dark edge ring around the dome ends here
-CAP_EDGE = (24, 24, 28)
+BLACK_R0, BLACK_R1 = 15.54, 16.70      # the thin black ring
+BLACK = (1, 1, 3)
+CAP_R = 4.03                          # the dust cap: a glossy dome, 38.3 + 11.8 * (height above the centre in px), black at the bottom
+CAP_BASE, CAP_GAIN = 38.3, 11.8
+CAP_EDGE_R = 5.3                      # the dark edge ring around the dome ends here
+CAP_EDGE = (19, 19, 23)
 def shade(x, y):
     """RGB (floats 0..255) and coverage (0 or 1) of the speaker at points (x, y) in drawer pixels, centre = (0, 0), y down. No anti-aliasing here (the caller supersamples)."""
     r = np.hypot(x, y)
