@@ -116,7 +116,7 @@ public class RadioIconHoldTest {
         assertFalse(RadioIconHold.keepsRadiosOn(true, true, true, false, true));     // paused / breaker tripped
     }
 
-    /** The radios are kept exactly when the policy wants the hold on a LOCK screen with the screen on, for every combination of the five facts: the two rules can never disagree (review of BS1, finding 1). */
+    /** The radios are kept exactly when the policy wants the hold on a LOCK screen with the screen on, for every combination of the five facts. A dark screen and a lock screen are the same moment for both rules; this fails when the policy ever treats them differently (review of BS1, finding 1). */
     @Test public void theRadioRuleIsTheHoldRuleOnALockScreen() {
         for (int m = 0; m < 32; m++) {
             boolean sw = (m & 1) != 0, grant = (m & 2) != 0, off = (m & 4) != 0, qs = (m & 8) != 0, helper = (m & 16) != 0;

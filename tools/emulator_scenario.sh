@@ -4376,6 +4376,25 @@ check "WF7b: and nothing is held" test "$WFM" = null
 check "WF7c: Wi-Fi is still ON" test "$WFW" = 1
 shot wf-4-quickstep-again; WFPQ2="$(wfwhite "$OUT/wf-4-quickstep-again.png" 543 3 20 17)"
 check "WF7d: the Wi-Fi symbol is back in the Quickstep status bar (${WFPQ2:-0} white pixels)" test "${WFPQ2:-0}" -ge 60
+# ---- D2: the helper goes away while the lock screen is up in a Quickstep session (review of BS2, finding 2): the hold ends (the symbols cannot be kept hidden without the helper), so the lock rule must switch
+#          the radio OFF instead of leaving it on with its symbol showing; with the helper back the symbols are hidden again and the radio stays OFF (nothing turns it on); the gesture unlock puts back what the lock rule itself switched off
+lockpad; sleep 9
+WFW="$(wfwifi)"; WFL="$(wflist)"
+info "WF D2a (locked from Quickstep, helper running): icon_blacklist=$WFL wifi_on=$WFW"
+check "WF13: locked from a Quickstep session with the helper running, Wi-Fi stays ON and the symbols are hidden" bash -c "[ \"$WFW\" = 1 ] && [ \"$WFL\" = \"$WFHIDDEN\" ]"
+adb shell uiautomator dump /sdcard/wf-gone.xml >/dev/null 2>&1      # unbinds the helper for about a second, ON the lock screen
+for i in 1 2 3 4 5 6 7 8 9 10; do [ "$(wfwifi)" = 0 ] && break; sleep 1; done
+WFW="$(wfwifi)"; WFL="$(wflist)"
+info "WF D2b (the helper was away on the lock screen): wifi_on=$WFW icon_blacklist=$WFL"
+check "WF13b: when the helper goes away on the lock screen the symbols cannot be kept hidden, so the Wi-Fi radio is switched OFF" test "$WFW" = 0
+sleep 5
+WFL="$(wflist)"; WFW="$(wfwifi)"
+info "WF D2c (the helper is back): icon_blacklist=$WFL wifi_on=$WFW"
+check "WF13c: with the helper back the symbols are hidden again and the radio stays OFF (nothing turns it on)" bash -c "[ \"$WFL\" = \"$WFHIDDEN\" ] && [ \"$WFW\" = 0 ]"
+pad d d 1 2 3 4 e; sleep 9
+WFW="$(wfwifi)"; WFL="$(wflist)"
+info "WF D2d (gesture unlock into Quickstep): wifi_on=$WFW icon_blacklist=$WFL"
+check "WF13d: the gesture unlock puts back the radio that the lock rule itself switched off" test "$WFW" = 1
 # ---- E: lock again and a plain PIN into the custom launcher: hidden again
 lockpad; sleep 9; pad 1 2 3 4 e; sleep 8
 WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
@@ -4388,10 +4407,12 @@ check "WF8c: no Wi-Fi symbol in the custom launcher's status bar (${WFPC2:-999} 
 #         after taking the hold, after a lock + gesture unlock into Quickstep and after a lock + plain PIN into the custom launcher Wi-Fi is still OFF (the only older path that can turn a radio on is AK1's
 #         put-back of a radio AK1 itself switched off; with the feature on nothing is switched off at the lock, so there is nothing to put back)
 adb shell svc wifi disable; sleep 3
-wffeat true true true; adb shell am force-stop "$PKG"; sleep 1; setmode custom; rebind; home; sleep 8
+wffeat true true true w1b1; adb shell am force-stop "$PKG"; sleep 1; setmode custom; rebind; home; sleep 8      # w1b1 = a lock memory left over from an unlock the helper never saw (both radios "were on")
 WFW="$(wfwifi)"; WFL="$(wflist)"
-info "WF N0 (Wi-Fi off, the feature taken in the custom launcher): wifi_on=$WFW icon_blacklist=$WFL"
+WFPREV="$(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | tr -d '\r' | grep -c 'name="lq_prev">w1b1')"
+info "WF N0 (Wi-Fi off, the feature taken in the custom launcher, stale lock memory w1b1 planted before the helper connected): wifi_on=$WFW icon_blacklist=$WFL stale memory still stored: $WFPREV"
 check "WF12a: taking the hold does NOT turn Wi-Fi on (it was off)" test "$WFW" = 0
+check "WF12c: a lock memory left over from an unlock the helper never saw is forgotten when the helper connects with no lock in progress (review of BS2, finding 1)" test "${WFPREV:-1}" = 0
 setmode quickstep; rebind; home; sleep 4
 lockpad; sleep 9; pad d d 1 2 3 4 e; sleep 9
 WFW="$(wfwifi)"
