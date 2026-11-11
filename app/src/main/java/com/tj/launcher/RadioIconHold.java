@@ -54,6 +54,13 @@ public final class RadioIconHold {
         return NotifQuietPolicy.wanted(f);
     }
 
+    /**
+     * Pure (review of BS2, finding 2): the hold has just ENDED with this reason from {@link NotifQuietPolicy#why}; must the radios that were being kept on go off NOW? Yes when the accessibility helper went away
+     * while the screen is dark or the lock screen is up: the symbols would show with both radios still on, and the helper is what hears a radio come on (nothing else would switch them off). Never for the normal
+     * end (an unlocked Quickstep session: the symbols are meant to show), a deliberate pause ("Restore everything", the crash breaker: the launcher does nothing then), a missing permission or the switch.
+     */
+    public static boolean radiosGoOffWhenHoldEnds(String why, boolean darkOrLocked) { return darkOrLocked && NotifQuietPolicy.WHY_NO_HELPER.equals(why); }
+
     // ---------------------------------------------------------------- the list, parsed exactly as SystemUI parses it (split at ',', empty entries dropped, no trimming, exact compare)
 
     private static List<String> slots(String list) {
