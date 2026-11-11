@@ -1,13 +1,13 @@
-# CHECKPOINT 1145 — read me first, then TASKS.md
+# CHECKPOINT 1146 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T08:52:37Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `dad80ef4` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T08:56:45Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `73069441` (this checkpoint is the commit after it)
 
 ## Just done
-#541 (id 42988210547, job 130414401792, v,ps,hp on 3e4d1d2): 32 PASS 15 FAIL 45 INFO, ALL 15 FAIL in hp (HP1 calibration never started, HP2, HP4 cardless, HP5-HP7, HP11, HP8, HP13): home patch status 'away: not on the plain home screen' from phase B on; no NATIVE CRASH; HP4 INFO-skip DID fire (stock fit 0.749). v,ps all PASS. Scenario diff vs 3627dbaf is HP4 block only, no product diff
+BT2c: #541 (v,ps,hp) was red with 15 FAIL all in hp (patch never rested, 'away: not on the plain home screen'); added HP B DIAG info line (who is in front, focus, pid, service log tail) to emulator_scenario.sh; bash -n + test_handoff 48/0. Dispatching v,ps,hp on the branch with shots=true
 
 ## Do this next
-Heartbeat trig_01GVcBRvTAzqf97UhMTJszab STAYS ARMED. Triage: grep 'not on the plain home screen' in app/src to see the state; rerun hp SOLO and v,ps,hp on head side by side (refs main and branch), plus v,ps,hp on tag v0.9.4 (#540 passed HP1/HP2, only HP4 failed); do NOT answer Tj before this is explained
+Heartbeat trig_01GVcBRvTAzqf97UhMTJszab STAYS ARMED. Find the new run (list_workflow_runs resource_id emulator.yml branch ccr-3e66a8c0-ruc8aa event workflow_dispatch perPage 1), read at +14 min: header + FAILs (subagent a082feb7763c08dc0 / new haiku with get_job_logs tail 170). PASS = HP4 INFO-skip proven, #541 = flake (write BT2c). FAIL again = read the HP B DIAG line + fetch ci-shots (git archive) pictures 161-hp-rest/162-hp-open. Do NOT answer Tj before this is explained
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ Heartbeat trig_01GVcBRvTAzqf97UhMTJszab STAYS ARMED. Triage: grep 'not on the pl
 
 ## Last ten checkpoints
 ```
+  c17eac6b ckpt 1145: #541 (id 42988210547, job 130414401792, v,ps,hp on 3e4d1d2): 32 PASS 15 FAIL
   dad80ef4 ckpt 1144: CLAUDE.md lessons from the v0.9.5 session added; GATE wording checked: wf/lq
   0bdaac12 ckpt 1143: HANDOFF.md block 0s (v0.9.5 state) written; #541 id 42988210547 still runnin
   78d6cb20 ckpt 1142: BT2 proof run #541 id 42988210547 (v,ps,hp on branch, head 3e4d1d2, dispatch
@@ -25,5 +26,7 @@ Heartbeat trig_01GVcBRvTAzqf97UhMTJszab STAYS ARMED. Triage: grep 'not on the pl
   6172610b ckpt 1138: gated v0.9.5 (code 44) and pushed it: the handoff self-test, the full unit s
   6f1d0a9d ckpt 1137: tag v0.9.4 chain #540 (id 42984659617, job 130402860592): 47 PASS 1 FAIL = H
   0df075f1 ckpt 1136: tag chain #540 (id 42984659617, job 130402860592, v0.9.4 v,ps,hp) FAILED; FA
-  4e8bb812 ckpt 1135: heartbeat 08:14Z: no other session working (other account last commit 70 min
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
