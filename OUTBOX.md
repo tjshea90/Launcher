@@ -2022,3 +2022,9 @@
 > **Auto-resume timers**
 > One timer per account may still be armed (every 2 hours). I tried twice to switch mine off, but the app's approval prompt ended with my session being restarted both times, so I stopped trying. A wake-up only reads the state and stops, so it costs very little. If you don't want them, delete the scheduled task "Launcher auto-resume heartbeat" on each account in the app.
 <!-- sha:8c66020efd53 -->
+
+## 2026-11-11T14:19:42Z
+> Heartbeat check at 14:18 UTC: nothing for me to do. v0.9.5 is released and your six reports are answered. Everything left waits on you: the tablet checks from that answer first, then the older items. Branch and `main` are in sync.
+>
+> My auto-resume timer is still armed and fires every 2 hours. I'm not retrying to switch it off, because the approval prompt interrupted my session both times. You can delete "Launcher auto-resume heartbeat" in the app. Each firing only reads the state and stops.
+<!-- sha:38deaf5e88f0 -->
