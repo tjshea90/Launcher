@@ -403,6 +403,21 @@ public class TjAccessibilityService extends AccessibilityService {
     static final long LOCK_TOUCH_AWAY_MS = 1500;
     private String patchShowCause = "";                // BN3: who asks patchShow() for a RETURN (touchBack, padBack, restRecheck), for the lock log line "patch visible again"
     private long lastReturnLogMs = 0;
+    private long lastPadLeftMs = 0;                    // BT1b: uptime of the PIN pad's last disappearance
+    /**
+     * BT1b (Tj, 2026-11-11: "the first time I unlock from the lock screen to the custom launcher the power menu sometimes flickers on and off even without me pressing the side key"). The PIN pad LEAVES about 270 ms before
+     * USER_PRESENT (tablet report 2026-11-10-2); the keyguard is still exiting then (the lock screen content slides and brightens). Every pad sign pushes the resting patch's hold out by 2.5 s, but a long PIN entry lets
+     * the hold run out, and the pad's disappearance itself called patchShow() with no hold at all: the lock patch (a block of the lock screen's wallpaper over the Screenshot slot) came back in front of the exit for the
+     * 0.3-0.7 s until the layer refresh removed it = a ghost of the power menu's shape. The disappearance counts as a sign of the pad: the patch stays away 2.5 s (a pad that was only CANCELLED gets it back then, as every
+     * return since BE1 does; a power menu pressed meanwhile still shows it at the dialog's own event). Audit of the unlock path: research/BT1_ANALYSIS_2026-11-11.md.
+     */
+    private void padLeft() {
+        long now = android.os.SystemClock.uptimeMillis();
+        lastPadLeftMs = now;
+        pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + 2500);
+        handler.removeCallbacks(padBack); handler.postDelayed(padBack, 2600);
+        Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away 2.5 s");
+    }
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
     private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) showWithCause("settle"); } catch (Throwable ignored) { } } };
     private final Runnable touchBack = new Runnable() { @Override public void run() {
@@ -438,7 +453,8 @@ public class TjAccessibilityService extends AccessibilityService {
         long f = lastTouchDownMs > 0 ? now - lastTouchDownMs : -1, p = lastPadSignMs > 0 ? now - lastPadSignMs : -1;
         String what = "patch visible again (" + cause + "), " + (f >= 0 && f < 60_000 ? f + " ms after the finger" : "no finger lately") + ", " + (p >= 0 && p < 60_000 ? p + " ms after the last PIN pad sign" : "no PIN pad sign lately") + ", pad scan " + (lastBouncer ? "says UP" : "says gone");
         Log.i(TAG, "PATCH " + what);
-        if (!patchHomeMode && ((f >= 0 && f < 4000) || (p >= 0 && p < 4000)) && now - lastReturnLogMs > 700) { lastReturnLogMs = now; logPatch(what); }
+        long pl = lastPadLeftMs > 0 ? now - lastPadLeftMs : -1;   // BT1b: a patch that comes back right after the pad left is the unlock-exit ghost's signature
+        if (!patchHomeMode && ((f >= 0 && f < 4000) || (p >= 0 && p < 4000) || (pl >= 0 && pl < 5000)) && now - lastReturnLogMs > 700) { lastReturnLogMs = now; logPatch(what + (pl >= 0 && pl < 5000 ? ", the PIN pad left " + pl + " ms ago, keyguard " + (keyguardLockedFast() ? "still locked" : "unlocked") : "")); }
     }
     private boolean patchOpenFlag = false;             // AZ1: the last patchShow() call said "menu open"
     private long scanNotBeforeMs = 0;   // AZ1: the node scan of a freshly opened menu waits for the fade
@@ -1468,7 +1484,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 return true;
             }
         });
-        if (patchLockMode) { if (patchHomeMode) { patchResting = false; patchRestable = false; homeBuiltAtMs = 0; homeBuiltStep = -1; } else { patchResting = !overlayShown && PatchRest.visible(false, lockPatchAlways(), true, lastBouncer); patchRestable = patchResting; } v.setAlpha(overlayShown || patchResting ? 1f : 0f); logPatch("window created, resting=" + patchResting + ", " + (screenOnEpoch > 0 ? Math.max(0, System.currentTimeMillis() - screenOnEpoch) + " ms after the screen came on" : "screen-on time unknown") + ", screen " + (isScreenOn() ? "on" : "OFF (prepared in the dark)")); handler.removeCallbacks(restRecheck); handler.postDelayed(restRecheck, 400); handler.postDelayed(restRecheck, 1600); if (patchResting) Log.i(TAG, "PATCH rest on (new window) top=" + patchRestTop); Log.i(TAG, "PATCH window created: resting=" + patchResting + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + " overlayShown=" + overlayShown + "]"); }   // V1: on the lock screen it is only visible while the power menu is open (it must never paint over the clock / PIN pad); AE3: or RESTING (switch on, PIN pad not up)
+        if (patchLockMode) { if (patchHomeMode) { patchResting = false; patchRestable = false; homeBuiltAtMs = 0; homeBuiltStep = -1; } else { boolean can = !overlayShown && PatchRest.visible(false, lockPatchAlways(), true, lastBouncer); patchRestable = can; patchResting = false; if (can) { restableSinceMs = android.os.SystemClock.uptimeMillis(); handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.SETTLE_MS + 20); } } v.setAlpha(overlayShown ? 1f : 0f);   // BT1a / BT1b: a NEW lock window starts hidden and rests after PatchRest.SETTLE_MS (it used to start visible, ignoring every hold: a window created inside a pull-up or an unlock exit showed at once) logPatch("window created, resting=" + patchResting + ", " + (screenOnEpoch > 0 ? Math.max(0, System.currentTimeMillis() - screenOnEpoch) + " ms after the screen came on" : "screen-on time unknown") + ", screen " + (isScreenOn() ? "on" : "OFF (prepared in the dark)")); handler.removeCallbacks(restRecheck); handler.postDelayed(restRecheck, 400); handler.postDelayed(restRecheck, 1600); if (patchResting) Log.i(TAG, "PATCH rest on (new window) top=" + patchRestTop); Log.i(TAG, "PATCH window created: resting=" + patchResting + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + " overlayShown=" + overlayShown + "]"); }   // V1: on the lock screen it is only visible while the power menu is open (it must never paint over the clock / PIN pad); AE3: or RESTING (switch on, PIN pad not up)
         patchView = v; patchAt.set(r); patchRot = rotation();
         try { Rect cc = cachedCard(); if (cc != null) { Rect ca = cardArea(cc); patchRestTop = PatchRest.restTop(r.top, ca.bottom, r.bottom); } } catch (Throwable ignored) { }   // AE3: the resting patch paints only the part BELOW the card = the Screenshot slot
         patchStatus("active over " + r.toShortString());
@@ -2839,7 +2855,7 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean locked = km != null && km.isKeyguardLocked();
             boolean bouncer = (enabled || locked) && on && locked && bouncerShown();   // also needed by the handshakes (a fresh pad, the peek count), not just the number
             if (bouncer) lastPadSeenMs = android.os.SystemClock.uptimeMillis();   // AU2: a screenshot taken around a PIN pad is refused
-            if (bouncer != lastBouncer) { lastBouncer = bouncer; ensureUnlockListener(); unlock.onPad(bouncer, System.currentTimeMillis()); LockLog.add(getApplicationContext(), "PAD", bouncer ? "shown" : "hidden"); if (bouncer) pinPadCameUp("the PIN pad scan found it"); patchShow(overlayShown); }   // AE3: the resting patch hides while the PIN pad is up and comes back after
+            if (bouncer != lastBouncer) { lastBouncer = bouncer; ensureUnlockListener(); unlock.onPad(bouncer, System.currentTimeMillis()); LockLog.add(getApplicationContext(), "PAD", bouncer ? "shown" : "hidden"); if (bouncer) pinPadCameUp("the PIN pad scan found it"); else padLeft(); patchShow(overlayShown); }   // AE3: the resting patch hide; BT1b: a pad that LEAVES keeps it away toos while the PIN pad is up and comes back after
             if (LockNumber.shouldShow(enabled, on, locked, bouncer)) showLockNumber(); else removeLockNumber();
         } catch (Throwable t) { Log.e(TAG, "lock number update failed", t); removeLockNumber(); }
     }
