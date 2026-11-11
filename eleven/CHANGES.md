@@ -23,3 +23,9 @@ Upstream looked for album, artist and playlist pictures in many places. All of t
 
 ## 4. The guard
 `src/test/java/org/lineageos/eleven/NoAlbumArtGuardTest.java` scans this module's source and fails when a way to read, decode, cache, fetch or choose a picture comes back, or when the placeholders are no longer what the app draws. It runs in the unit-test step of every release.
+
+## 5. Name and icon (TASKS BW1, Tj 2026-11-11: "called Music with that exact icon", the speaker of the ATG music player)
+- `res/values-*/strings.xml`: all 70 translated `app_name` lines removed; `values/strings.xml` keeps "Music" (upstream's own default), so the app is called Music in every language.
+- Launcher icon: upstream's ADAPTIVE icon (`res/mipmap-anydpi/ic_launcher.xml`, `ic_background.png` and `ic_foreground.png` in every density) deleted; one LEGACY `res/mipmap-<density>/ic_launcher.png` per density (48 / 72 / 96 / 144 / 192 px) drawn by `tools/make_music_icon.py` from numbers measured on Tj's screenshots (the blue speaker). Details and the fit: `research/MUSIC_ICON_2026-11-11.md`.
+- `build.gradle.kts`: the module's `src/main` and its build file are inputs of the unit-test task (the tests read them from disk).
+- `src/test/java/org/lineageos/eleven/MusicIdentityTest.java`: pins the name and the icon files (see section 4 for the album-art guard).
