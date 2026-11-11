@@ -1929,3 +1929,7 @@
 > - If both are green, I ship v0.9.5.
 > - If only the chain fails with a 0.75 scrim again, I'll make that check tolerant of the emulator's scrim state, since the tablet's is always 0.80.
 <!-- sha:c89c28fa793d -->
+
+## 2026-11-11T08:10:03Z
+> The tag chain run (`v,ps,hp` on v0.9.4) is the last open question for the gate; the timer fires at 08:20:30 UTC and I'll read it then. Everything is checkpointed (1134).
+<!-- sha:1412e6360921 -->
