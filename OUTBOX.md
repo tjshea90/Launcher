@@ -1937,3 +1937,7 @@
 ## 2026-11-11T08:15:16Z
 > Heartbeat check done: I'm the only session working, and the job is unchanged. The tag chain (#540) finishes around 08:20 UTC, and my timer fires at 08:20:30 UTC.
 <!-- sha:d559fbb62ad5 -->
+
+## 2026-11-11T08:23:56Z
+> `ship.sh` is running (about 4 to 5 minutes: self-test, unit suite, lint, push). While it runs I'll stay out of the working tree. When it exits I'll check `SHIP_EXIT`, then trigger the GitHub build.
+<!-- sha:a6e2f3034b62 -->
