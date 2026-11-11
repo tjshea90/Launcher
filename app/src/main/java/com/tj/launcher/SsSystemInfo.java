@@ -31,17 +31,26 @@ final class SsSystemInfo {
         } catch (Throwable t) { return ""; }
     }
 
-    /** The labels of all ENABLED input methods, joined (VirtualKeyboardPreferenceController). */
+    /**
+     * The labels of the ENABLED input methods, joined (VirtualKeyboardPreferenceController). BT1e (Tj, 2026-11-11: "remove the text 'and Microsoft SwiftKey keyboard' even if that keyboard is installed"):
+     * the look-alike never names SwiftKey, whether or not it is installed and enabled ({@link KeyboardPolicy#visibleLabels}).
+     */
     static String enabledKeyboards(Context c) {
-        try {
-            InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
-            List<String> labels = new ArrayList<>();
-            if (imm != null) for (InputMethodInfo i : imm.getEnabledInputMethodList()) labels.add(String.valueOf(i.loadLabel(c.getPackageManager())));
-            return SsFormat.joinAnd(labels);
-        } catch (Throwable t) { return ""; }
+        try { return SsFormat.joinAnd(visibleKeyboardLabels(c)); } catch (Throwable t) { return ""; }
     }
 
-    /** The label of the DEFAULT input method (the System page's summary for "Languages & input"). */
+    /** BT1e: the labels of the enabled input methods the look-alike may show (SwiftKey's left out). */
+    private static List<String> visibleKeyboardLabels(Context c) {
+        InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
+        List<String> pkgs = new ArrayList<>(), labels = new ArrayList<>();
+        if (imm != null) for (InputMethodInfo i : imm.getEnabledInputMethodList()) { pkgs.add(i.getPackageName()); labels.add(String.valueOf(i.loadLabel(c.getPackageManager()))); }
+        return KeyboardPolicy.visibleLabels(pkgs, labels);
+    }
+
+    /**
+     * The label of the DEFAULT input method (the System page's summary for "Languages & input"). BT1e: never SwiftKey's name; when SwiftKey is the default (the keyboard switch is off, or the custom launcher has not
+     * switched yet) the first other enabled keyboard is named instead, as the real page would after SwiftKey was removed from the list.
+     */
     static String defaultKeyboardLabel(Context c) {
         try {
             String flat = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
@@ -49,12 +58,18 @@ final class SsSystemInfo {
             if (cn == null) return "";
             InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null) {
-                InputMethodInfo samePackage = null;
+                InputMethodInfo samePackage = null, exact = null;
                 for (InputMethodInfo i : imm.getInputMethodList()) {
-                    if (cn.equals(i.getComponent())) return String.valueOf(i.loadLabel(c.getPackageManager()));   // review A #5: the exact input method first
+                    if (cn.equals(i.getComponent())) { exact = i; break; }   // review A #5: the exact input method first
                     if (samePackage == null && i.getPackageName().equals(cn.getPackageName())) samePackage = i;
                 }
-                if (samePackage != null) return String.valueOf(samePackage.loadLabel(c.getPackageManager()));   // a package with two input methods: the first one only when the exact one is not listed
+                InputMethodInfo found = exact != null ? exact : samePackage;   // a package with two input methods: the first one only when the exact one is not listed
+                if (found != null) {
+                    String label = String.valueOf(found.loadLabel(c.getPackageManager()));
+                    if (!KeyboardPolicy.isSwiftKey(found.getPackageName(), label)) return label;
+                    List<String> others = visibleKeyboardLabels(c);   // BT1e
+                    return others.isEmpty() ? "" : others.get(0);
+                }
             }
         } catch (Throwable ignored) { }
         return "";
