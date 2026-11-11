@@ -61,17 +61,30 @@ def plate_of(img, l, t, r, b):
     return cols[0], y0, cols[-1], y1
 
 
+def lum(img, x, y):
+    return sum(at(img, x, y)) / 3.0
+
+
+def ring_level(img, cx, cy, s):
+    """Mean luminance on the thin black ring (16.1 px from the centre on Tj's tablet), 24 directions."""
+    return sum(lum(img, cx + 16.1 * s * math.cos(math.radians(a)), cy + 16.1 * s * math.sin(math.radians(a))) for a in range(0, 360, 15)) / 24.0
+
+
 def measure(img, cx, cy, plate_w):
-    """The numbers: blue cone pixels, dust cap level (centre), thin black ring, bezel grey on top / bottom, cone brightness above / below the cap. cx, cy: centre of the plate in pixel-edge coordinates."""
+    """The numbers: blue cone pixels, dust cap level (centre), thin black ring, bezel grey on top / bottom, cone brightness above / below the cap.
+    cx, cy: centre of the plate in pixel-edge coordinates; the centre of the speaker is searched within 1.5 px of it (the darkest thin ring), because the plate is not exactly centred on the artwork."""
     s = plate_w / PLATE_REF
+    best = None
+    for i in range(-6, 7):
+        for j in range(-6, 7):
+            lv = ring_level(img, cx + i * 0.25, cy + j * 0.25, s)
+            if best is None or lv < best[0]:
+                best = (lv, cx + i * 0.25, cy + j * 0.25)
+    ring, cx, cy = best
     R = R_REF * s
 
-    def ring_mean(rad, dy_sign, half=2):
-        vals = []
-        for k in range(-half, half + 1):
-            p = at(img, cx + k * s, cy + dy_sign * rad * R / R_REF * 0 + dy_sign * rad * s)
-            vals.append(sum(p) / 3.0)
-        return sum(vals) / len(vals)
+    def spot(rad, up):                      # mean luminance of 5 points at distance rad (Tj's pixels) straight above (up=-1) or below (up=+1) the centre
+        return sum(lum(img, cx + k * s, cy + up * rad * s) for k in range(-2, 3)) / 5.0
 
     blue = 0
     for y in range(int(cy - R - 1), int(cy + R + 2)):
@@ -80,18 +93,15 @@ def measure(img, cx, cy, plate_w):
                 p = at(img, x, y)
                 if p[2] - p[0] >= 50 and p[2] >= 110:
                     blue += 1
-    capvals = [sum(at(img, cx + dx * s, cy + dy * s)) / 3.0 for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
-    ring = []
-    for a in range(0, 360, 15):                                     # the thin black ring (16.1 px from the centre on Tj's tablet)
-        ring.append(sum(at(img, cx + 16.1 * s * math.cos(math.radians(a)), cy + 16.1 * s * math.sin(math.radians(a)))) / 3.0)
+    capvals = [lum(img, cx + dx * s, cy + dy * s) for dx in (-1, 0, 1) for dy in (-1, 0, 1)]
     return {
         "blue": blue / (s * s),                                      # normalised to Tj's plate size
         "cap": sum(capvals) / len(capvals),
-        "ring": sum(ring) / len(ring),
-        "bezel_top": ring_mean(18.3, -1),
-        "bezel_bottom": ring_mean(18.3, 1),
-        "cone_top": ring_mean(10.8, -1),
-        "cone_bottom": ring_mean(10.8, 1),
+        "ring": ring,
+        "bezel_top": spot(18.3, -1),
+        "bezel_bottom": spot(18.3, 1),
+        "cone_top": spot(10.8, -1),
+        "cone_bottom": spot(10.8, 1),
     }
 
 
