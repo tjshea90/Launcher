@@ -24,8 +24,9 @@ import org.junit.Test;
  *
  * The name: Android shows the app under the label of its launcher activity. It must be the plain string resource {@code app_name}, that resource must say "Music" and NO translation may
  * override it (upstream translated it: "Musique", "Musica", ...), so the app is called Music in every language.
- * The icon: a LEGACY icon (one PNG per density, drawn by tools/make_music_icon.py from the speaker of Tj's screenshots) and no adaptive icon. Launcher3 puts a legacy icon on its white plate
- * exactly as it does for his existing Music, which an adaptive icon (upstream's pink note, background + foreground layers) would not.
+ * The icon: an ADAPTIVE icon (a pure white background colour + a foreground layer per density holding only the speaker, drawn by tools/make_music_icon.py from the speaker of Tj's screenshots).
+ * It is adaptive because Launcher3 shrinks a round LEGACY icon to at most about 64 % of its white plate (CI run #554 showed 62 %), while the speaker of his existing Music is 71.5 % of the plate;
+ * an adaptive icon is not shrunk, so its size on the plate is exactly what the foreground layer says.
  * Runs in the unit-test step of every release and locally with: bash tools/gradle.sh :eleven:testDebugUnitTest
  */
 public class MusicIdentityTest {
