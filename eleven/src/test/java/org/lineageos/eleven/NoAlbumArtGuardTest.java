@@ -38,6 +38,10 @@ public class NoAlbumArtGuardTest {
             {"blur (RenderScript) of a picture", "RenderScript|ScriptIntrinsicBlur"},
             {"choosing or fetching a picture", "PhotoSelection|selectNewPhoto|CHANGE_IMAGE|FETCH_ALBUM_ART|FETCH_ARTIST_IMAGE|ACTION_GET_CONTENT|ACTION_PICK|ACTION_OPEN_DOCUMENT|ACTION_IMAGE_CAPTURE"},
             {"network", "HttpURLConnection|HttpsURLConnection|URLConnection|okhttp|java\\.net\\.URL\\b|WebView|java\\.net\\.Socket"},
+            {"icon / image sinks fed from data", "setImageURI|setImageIcon|setImageViewUri|setImageViewIcon|Icon\\s*\\.\\s*createWith(Bitmap|ContentUri|FilePath|Data|AdaptiveBitmap)|createFromPath|createFromStream|BitmapRegionDecoder"},
+            {"notification picture style / image libraries", "BigPictureStyle|bigPicture|Glide|Picasso|Fresco|\\bCoil\\b"},
+            {"Palette over a picture", "Palette\\s*\\.\\s*from"},
+            {"media-session art URIs", "METADATA_KEY_(ALBUM_)?ART_URI|METADATA_KEY_DISPLAY_ICON_URI"},
     };
 
     // ---- what must not appear inside a string literal ----
@@ -73,7 +77,7 @@ public class NoAlbumArtGuardTest {
         Arrays.sort(kids);
         for (File k : kids) {
             if (k.isDirectory()) walk(k, out);
-            else if (k.getName().endsWith(".java")) out.add(k);
+            else if (k.getName().endsWith(".java") || k.getName().endsWith(".kt")) out.add(k);
         }
     }
 
@@ -143,6 +147,10 @@ public class NoAlbumArtGuardTest {
             {"blur (RenderScript) of a picture", "RenderScript rs = RenderScript.create(context);"},
             {"choosing or fetching a picture", "Intent i = new Intent(Intent.ACTION_GET_CONTENT);"},
             {"network", "HttpURLConnection c = (HttpURLConnection) url.openConnection();"},
+            {"icon / image sinks fed from data", "view.setImageURI(uri);"},
+            {"notification picture style / image libraries", "new Notification.BigPictureStyle().bigPicture(b);"},
+            {"Palette over a picture", "Palette p = Palette.from(bitmap).generate();"},
+            {"media-session art URIs", "b.putString(MediaMetadata.METADATA_KEY_ART_URI, u);"},
     };
 
     @Test public void everyCodeRuleCatchesItsOwnExample() {
@@ -186,7 +194,7 @@ public class NoAlbumArtGuardTest {
         List<String> offenders = new ArrayList<>();
         for (File f : javaFiles()) {
             String code = lex(read(f)).code;
-            boolean system = Pattern.compile("setLargeIcon|METADATA_KEY_ALBUM_ART|METADATA_KEY_ART\\b|METADATA_KEY_DISPLAY_ICON|putBitmap").matcher(code).find();
+            boolean system = Pattern.compile("setLargeIcon|METADATA_KEY_ALBUM_ART|METADATA_KEY_ART|METADATA_KEY_DISPLAY_ICON|putBitmap").matcher(code).find();
             if (system && !SYSTEM_BITMAP_FILES.contains(f.getName())) offenders.add(f.getName() + " puts a bitmap into the notification / media session");
             if (system && SYSTEM_BITMAP_FILES.contains(f.getName()) && !code.contains("getAlbumArt(")) offenders.add(f.getName() + " does not take that bitmap from getAlbumArt()");
             boolean widget = code.contains("setImageViewBitmap");
@@ -196,19 +204,18 @@ public class NoAlbumArtGuardTest {
         assertTrue(offenders.toString(), offenders.isEmpty());
     }
 
-    @Test public void thePaletteOnlyRunsInBitmapWithColorsOnThePlaceholder() throws IOException {
-        List<String> users = new ArrayList<>();
-        for (File f : javaFiles()) {
-            if (Pattern.compile("Palette\\s*\\.\\s*from").matcher(lex(read(f)).code).find()) users.add(f.getName());
-        }
-        assertEquals(Arrays.asList("BitmapWithColors.java"), users);
+    @Test public void bitmapWithColorsOnlyTakesItsColoursFromTheCaller() throws IOException {
+        // upstream had a second constructor that ran Palette over any decoded picture; the one that is left receives the colours of the placeholder
+        String code = lex(read(new File(module(), "src/main/java/org/lineageos/eleven/utils/colors/BitmapWithColors.java"))).code;
+        assertEquals(1, code.split("public\\s+BitmapWithColors\\s*\\(", -1).length - 1);
+        assertTrue(code.contains("BitmapWithColors(Bitmap bitmap, int bitmapKey, int vibrantColor, int vibrantDarkColor)"));
     }
 
     @Test public void theCachePackageHoldsOnlyThePlaceholderClasses() {
         File[] files = new File(module(), "src/main/java/org/lineageos/eleven/cache").listFiles();
         Set<String> names = new TreeSet<>();
         if (files != null) for (File f : files) names.add(f.getName());
-        assertEquals(new TreeSet<>(Arrays.asList("ImageFetcher.java", "ImageWorker.java", "LruCache.java")), names);
+        assertEquals(new TreeSet<>(Arrays.asList("ImageFetcher.java", "ImageWorker.java")), names);
     }
 
     @Test public void theProviderPackageHasNoArtworkStore() {
@@ -226,6 +233,15 @@ public class NoAlbumArtGuardTest {
         String gradle = read(new File(module(), "build.gradle.kts"));
         assertTrue(!gradle.toLowerCase().contains("renderscript") || gradle.contains("//"));   // only mentioned in a comment, never switched on
         assertTrue(gradle.contains("applicationId = \"org.lineageos.eleven\""));
+    }
+
+    @Test public void theBuildHasNoImageOrNetworkLibrary() throws IOException {
+        for (String line : read(new File(module(), "build.gradle.kts")).split("\n")) {
+            String code = line.contains("//") ? line.substring(0, line.indexOf("//")) : line;
+            if (code.contains("implementation(") || code.contains("api(")) {
+                assertTrue("image / network library in the build: " + line, !Pattern.compile("(?i)glide|picasso|coil|fresco|renderscript|okhttp|retrofit|volley|exoplayer").matcher(code).find());
+            }
+        }
     }
 
     @Test public void thePlaceholdersAreStillWhatTheAppDraws() throws IOException {
