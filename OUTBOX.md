@@ -1795,3 +1795,7 @@
 ## 2026-11-11T02:03:07Z
 > The full local suite is green (968 tests, 0 failures) and lint finished without blocking, since `abortOnError` is false for the upstream Launcher3 findings. Waiting for the `rg` gate run (#526), due about 02:07 UTC.
 <!-- sha:cc808e9ddfd6 -->
+
+## 2026-11-11T02:08:58Z
+> Gate run #526 (`rg`) is green (7 PASS), and the local unit suite and lint are done. Waiting for the two long gate runs, #524 and #525, due about 02:34 UTC. Then I ship v0.9.4 if both are green.
+<!-- sha:be8a4287176d -->
