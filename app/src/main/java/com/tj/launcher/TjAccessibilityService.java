@@ -829,13 +829,27 @@ public class TjAccessibilityService extends AccessibilityService {
         return HomePatchRules.openTreatment(f);
     }
 
+    private long homeFocusGapMs = -1;   // review A #1: how long before the dialog's own event (else before now) the Launcher lost the focus; -1 = never lost
+
+    /**
+     * BT1c + review A #1: does the Launcher count as having the focus at this opening? The stock dialog takes the focus itself and whether its event or the Launcher's loss arrives first is not fixed, so a loss within
+     * {@link HomePatchRules#FOCUS_TOLERANCE_MS} of the dialog's own event is the dialog's, not a shade's. The ONE definition: the decision and the words of the log line both use it.
+     */
+    private boolean homeLauncherFocus() {
+        com.android.launcher3.Launcher l = TjHooks.launcher();
+        long now = android.os.SystemClock.uptimeMillis();
+        long ref = dialogEventMs > 0 && now - dialogEventMs < 1000 ? dialogEventMs : now;
+        homeFocusGapMs = homeFocusLostAtMs > 0 ? ref - homeFocusLostAtMs : -1;
+        return l != null && HomePatchRules.launcherFocus(l.hasWindowFocus(), homeFocusLostAtMs, ref);
+    }
+
     /** BT1c: why the home patch is not fresh right now, in words and numbers (the log line of every press that finds it so). */
     private String homeNotFreshWhy() {
         long up = android.os.SystemClock.uptimeMillis();
-        com.android.launcher3.Launcher l = TjHooks.launcher();
+        boolean focus = homeLauncherFocus();
         return HomePatchRules.notFreshWhy(patchShotBmp != null && homeBuiltAtMs > 0, HomePatchRules.sameStep(homeBuiltStep, homeStepNow()),
                 homeBuiltAtMs > 0 ? up - homeBuiltAtMs : -1, TjHooks.lastHomeDrawMs > 0 ? up - TjHooks.lastHomeDrawMs : -1, homeForeignUntilMs - up,
-                l != null && l.hasWindowFocus(), homeCalRunning);
+                focus, homeCalRunning) + (homeFocusGapMs >= 0 ? " (focus lost " + homeFocusGapMs + " ms before the dialog)" : "");
     }
 
     /**
