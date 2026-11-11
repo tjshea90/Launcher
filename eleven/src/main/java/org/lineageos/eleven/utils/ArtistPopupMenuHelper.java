@@ -25,7 +25,6 @@ import androidx.fragment.app.FragmentManager;
 import org.lineageos.eleven.Config;
 import org.lineageos.eleven.menu.DeleteDialog;
 import org.lineageos.eleven.menu.FragmentMenuItems;
-import org.lineageos.eleven.menu.PhotoSelectionDialog;
 import org.lineageos.eleven.model.Artist;
 
 public abstract class ArtistPopupMenuHelper extends PopupMenuHelper {
@@ -69,19 +68,5 @@ public abstract class ArtistPopupMenuHelper extends PopupMenuHelper {
     @Override
     protected String getArtistName() {
         return mArtist.mArtistName;
-    }
-
-    @Override
-    public boolean onMenuItemClick(MenuItem item) {
-        boolean handled = super.onMenuItemClick(item);
-        if (!handled && item.getGroupId() == getGroupId()) {
-            if (item.getItemId() == FragmentMenuItems.CHANGE_IMAGE) {
-                PhotoSelectionDialog.newInstance(getArtistName(), getArtistName())
-                        .show(mFragmentManager, "PhotoSelectionDialog");
-                return true;
-            }
-        }
-
-        return handled;
     }
 }

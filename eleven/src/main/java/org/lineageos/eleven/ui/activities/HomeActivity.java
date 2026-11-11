@@ -24,14 +24,11 @@ import android.animation.ObjectAnimator;
 import android.app.ActionBar;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
@@ -78,12 +75,10 @@ public class HomeActivity extends SlidingPanelActivity implements
 
     private static final String STATE_KEY_BASE_FRAGMENT = "BaseFragment";
 
-    private static final int NEW_PHOTO = 1;
     public static final int EQUALIZER = 2;
 
     private Bundle mSavedInstanceState;
 
-    private String mKey;
     private boolean mLoadedBaseFragment = false;
     private boolean mHasPendingPlaybackRequest = false;
     private final Handler mHandler = new Handler();
@@ -333,36 +328,6 @@ public class HomeActivity extends SlidingPanelActivity implements
             }
         }
         return handled;
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == NEW_PHOTO && !TextUtils.isEmpty(mKey)) {
-            if (resultCode == RESULT_OK) {
-                MusicUtils.removeFromCache(this, mKey);
-                final Uri selectedImage = data.getData();
-
-                new Thread(() -> {
-                    Bitmap bitmap = ImageFetcher.decodeSampledBitmapFromUri(getContentResolver(),
-                            selectedImage);
-                    ImageFetcher imageFetcher = ElevenUtils.getImageFetcher(HomeActivity.this);
-                    imageFetcher.addBitmapToCache(mKey, bitmap);
-                    MusicUtils.refresh();
-                }).start();
-            }
-        }
-    }
-
-    /**
-     * Starts an activity for result that returns an image from the Gallery.
-     */
-    public void selectNewPhoto(String key) {
-        mKey = key;
-        // Now open the gallery
-        final Intent intent = new Intent(Intent.ACTION_GET_CONTENT, null);
-        intent.setType("image/*");
-        startActivityForResult(intent, NEW_PHOTO);
     }
 
     @Override

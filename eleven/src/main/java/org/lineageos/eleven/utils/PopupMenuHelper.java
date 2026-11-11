@@ -209,7 +209,6 @@ public abstract class PopupMenuHelper implements PopupMenu.OnMenuItemClickListen
                         FragmentMenuItems.ADD_TO_QUEUE,
                         FragmentMenuItems.ADD_TO_PLAYLIST,
                         FragmentMenuItems.DELETE,
-                        FragmentMenuItems.CHANGE_IMAGE,
                 };
             case Album:
                 return new int[]{
@@ -218,7 +217,6 @@ public abstract class PopupMenuHelper implements PopupMenu.OnMenuItemClickListen
                         FragmentMenuItems.ADD_TO_PLAYLIST,
                         FragmentMenuItems.MORE_BY_ARTIST,
                         FragmentMenuItems.DELETE,
-                        FragmentMenuItems.CHANGE_IMAGE,
                 };
             case Song:
                 return new int[]{
@@ -310,10 +308,6 @@ public abstract class PopupMenuHelper implements PopupMenu.OnMenuItemClickListen
                 return R.string.context_menu_more_by_artist;
             case FragmentMenuItems.DELETE:
                 return R.string.context_menu_delete;
-            case FragmentMenuItems.FETCH_ARTIST_IMAGE:
-                return R.string.context_menu_fetch_artist_image;
-            case FragmentMenuItems.FETCH_ALBUM_ART:
-                return R.string.context_menu_fetch_album_art;
             case FragmentMenuItems.USE_AS_RINGTONE:
                 return R.string.context_menu_use_as_ringtone;
             case FragmentMenuItems.REMOVE_FROM_PLAYLIST:
@@ -324,8 +318,6 @@ public abstract class PopupMenuHelper implements PopupMenu.OnMenuItemClickListen
                 return R.string.context_menu_play_next;
             case FragmentMenuItems.PLAY_ALBUM:
                 return R.string.context_menu_play_album;
-            case FragmentMenuItems.CHANGE_IMAGE:
-                return R.string.context_menu_change_image;
         }
 
         return 0;

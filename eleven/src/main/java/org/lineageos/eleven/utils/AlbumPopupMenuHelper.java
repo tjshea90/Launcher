@@ -27,7 +27,6 @@ import org.lineageos.eleven.Config;
 import org.lineageos.eleven.cache.ImageFetcher;
 import org.lineageos.eleven.menu.DeleteDialog;
 import org.lineageos.eleven.menu.FragmentMenuItems;
-import org.lineageos.eleven.menu.PhotoSelectionDialog;
 import org.lineageos.eleven.model.Album;
 
 import java.util.TreeSet;
@@ -79,22 +78,6 @@ public abstract class AlbumPopupMenuHelper extends PopupMenuHelper {
     @Override
     protected String getArtistName() {
         return mAlbum.mArtistName;
-    }
-
-    @Override
-    public boolean onMenuItemClick(MenuItem item) {
-        boolean handled = super.onMenuItemClick(item);
-        if (!handled && item.getGroupId() == getGroupId()) {
-            if (item.getItemId() == FragmentMenuItems.CHANGE_IMAGE) {
-                String key = ImageFetcher.generateAlbumCacheKey(mAlbum.mAlbumName,
-                        getArtistName());
-                PhotoSelectionDialog.newInstance(mAlbum.mAlbumName, key)
-                        .show(mFragmentManager, "PhotoSelectionDialog");
-                return true;
-            }
-        }
-
-        return handled;
     }
 
     @Override

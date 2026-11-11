@@ -26,8 +26,6 @@ import androidx.fragment.app.DialogFragment;
 
 import org.lineageos.eleven.Config;
 import org.lineageos.eleven.R;
-import org.lineageos.eleven.cache.ImageFetcher;
-import org.lineageos.eleven.utils.ElevenUtils;
 import org.lineageos.eleven.utils.MusicUtils;
 
 /**
@@ -51,7 +49,6 @@ public class DeleteDialog extends DialogFragment {
     /**
      * The image cache
      */
-    private ImageFetcher mFetcher;
 
     /**
      * Empty constructor as per the Fragment documentation
@@ -81,21 +78,15 @@ public class DeleteDialog extends DialogFragment {
     public Dialog onCreateDialog(final Bundle savedInstanceState) {
         final String delete = getString(R.string.context_menu_delete);
         final Bundle arguments = getArguments();
-        // Get the image cache key
-        final String key = arguments == null ? "" : arguments.getString("cachekey");
         // Get the track(s) to delete
         mItemList = arguments == null ? new long[]{} : arguments.getLongArray("items");
         // Get the dialog title
         final String title = arguments == null ? "" : arguments.getString(Config.NAME);
         final String dialogTitle = getString(R.string.delete_dialog_title, title);
-        // Initialize the image cache
-        mFetcher = ElevenUtils.getImageFetcher(getActivity());
         // Build the dialog
         return new AlertDialog.Builder(getActivity()).setTitle(dialogTitle)
                 .setMessage(R.string.cannot_be_undone)
                 .setPositiveButton(delete, (dialog, which) -> {
-                    // Remove the items from the image cache
-                    mFetcher.removeFromCache(key);
                     // Delete the selected item(s)
                     MusicUtils.deleteTracks(getActivity(), mItemList);
                     if (getActivity() instanceof DeleteDialogCallback) {

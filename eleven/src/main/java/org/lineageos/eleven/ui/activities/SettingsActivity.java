@@ -84,19 +84,6 @@ public class SettingsActivity extends AppCompatActivity {
         public void onCreate(final Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
 
-            final Preference deleteCache = findPreference("delete_cache");
-            if (deleteCache != null) {
-                deleteCache.setOnPreferenceClickListener(preference -> {
-                    new AlertDialog.Builder(getContext())
-                            .setMessage(R.string.delete_warning)
-                            .setPositiveButton(android.R.string.ok, (dialog, which) ->
-                                    ImageFetcher.getInstance(getContext()).clearCaches())
-                            .setNegativeButton(R.string.cancel, (dialog, which) -> dialog.dismiss())
-                            .show();
-                    return true;
-                });
-            }
-
             PreferenceUtils prefUtils = PreferenceUtils.getInstance(getContext());
             prefUtils.setOnSharedPreferenceChangeListener(this);
 
@@ -165,7 +152,6 @@ public class SettingsActivity extends AppCompatActivity {
                         final boolean useBlur = sharedPreferences.getBoolean(key, false);
                         final ImageFetcher fetcher = ImageFetcher.getInstance(activity);
                         fetcher.setUseBlur(useBlur);
-                        fetcher.clearCaches();
                     }
                     break;
 

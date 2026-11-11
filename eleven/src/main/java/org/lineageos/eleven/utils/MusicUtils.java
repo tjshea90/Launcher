@@ -29,7 +29,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
-import android.os.SystemClock;
 import android.provider.BaseColumns;
 import android.provider.MediaStore;
 import android.provider.MediaStore.Audio.AlbumColumns;
@@ -43,7 +42,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.WorkerThread;
 import androidx.fragment.app.FragmentActivity;
 
 import org.lineageos.eleven.BuildConfig;
@@ -52,7 +50,6 @@ import org.lineageos.eleven.Config.SmartPlaylistType;
 import org.lineageos.eleven.IElevenService;
 import org.lineageos.eleven.MusicPlaybackService;
 import org.lineageos.eleven.R;
-import org.lineageos.eleven.cache.ImageFetcher;
 import org.lineageos.eleven.loaders.AlbumSongLoader;
 import org.lineageos.eleven.loaders.LastAddedLoader;
 import org.lineageos.eleven.loaders.PlaylistLoader;
@@ -1608,28 +1605,6 @@ public final class MusicUtils {
             }
         }
         return true;
-    }
-
-    /**
-     * Removes the header image from the cache.
-     */
-    @WorkerThread
-    public static void removeFromCache(FragmentActivity activity, String key) {
-        ImageFetcher imageFetcher = ElevenUtils.getImageFetcher(activity);
-        imageFetcher.removeFromCache(key);
-
-        // Give the disk cache a little time before requesting a new image.
-        // TODO: this is bad
-        SystemClock.sleep(80);
-    }
-
-    /**
-     * Removes image from cache so that the stock image is retrieved on reload
-     */
-    public static void selectOldPhoto(FragmentActivity activity, String key) {
-        // First remove the old image
-        removeFromCache(activity, key);
-        MusicUtils.refresh();
     }
 
     /**

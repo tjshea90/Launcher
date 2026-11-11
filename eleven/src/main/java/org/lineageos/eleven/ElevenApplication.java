@@ -22,8 +22,6 @@ import android.os.StrictMode;
 import android.os.StrictMode.ThreadPolicy;
 import android.os.StrictMode.VmPolicy;
 
-import org.lineageos.eleven.cache.ImageCache;
-
 public class ElevenApplication extends Application {
     @Override
     public void onCreate() {
@@ -32,12 +30,6 @@ public class ElevenApplication extends Application {
         if (BuildConfig.DEBUG) {
             enableStrictMode();
         }
-    }
-
-    @Override
-    public void onLowMemory() {
-        ImageCache.getInstance(this).evictAll();
-        super.onLowMemory();
     }
 
     private void enableStrictMode() {

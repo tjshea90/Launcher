@@ -81,9 +81,6 @@
     <string name="clear_recent_title">Clear recently played?</string>
     <string name="clear_last_added">Clear last added?</string>
     <string name="cannot_be_undone">This cannot be undone</string>
-    <string name="delete_warning">This will permanently delete the cached image entries</string>
-    <string name="new_photo">Choose photo from Gallery</string>
-    <string name="use_default">Use default photo</string>
     <string name="visualizer_perm_denied">Audio recording permission was denied, enable it from Settings app to enable music visualization</string>
 
     <!-- Context menu items -->
@@ -93,12 +90,9 @@
     <string name="context_menu_more_by_artist">More by artist</string>
     <string name="context_menu_rename_playlist">Rename</string>
     <string name="context_menu_delete">Delete</string>
-    <string name="context_menu_fetch_album_art">Fetch album art</string>
-    <string name="context_menu_fetch_artist_image">Fetch artist image</string>
     <string name="context_menu_remove_from_recent">Remove from recent</string>
     <string name="context_menu_use_as_ringtone">Use as ringtone</string>
     <string name="context_menu_remove_from_playlist">Remove from playlist</string>
-    <string name="context_menu_change_image">Change image</string>
 
     <!-- Content descriptions -->
     <string name="accessibility_play">Play</string>
@@ -116,8 +110,6 @@
 
     <!-- Settings -->
     <string name="settings_storage_category">Storage</string>
-    <string name="settings_delete_cache_title">Delete cache</string>
-    <string name="settings_delete_cache_summary">Remove all cached images</string>
     <string name="settings_general_category">General</string>
     <string name="settings_show_music_visualization_title">Show music visualization</string>
     <string name="settings_use_blur_title">Blur background</string>

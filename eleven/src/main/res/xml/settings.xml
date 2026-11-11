@@ -48,13 +48,4 @@
 
     </PreferenceCategory>
 
-    <!-- Storage catetory -->
-    <PreferenceCategory android:title="@string/settings_storage_category" >
-
-        <!-- Delete cache -->
-        <Preference
-            android:key="delete_cache"
-            android:summary="@string/settings_delete_cache_summary"
-            android:title="@string/settings_delete_cache_title" />
-    </PreferenceCategory>
 </PreferenceScreen>

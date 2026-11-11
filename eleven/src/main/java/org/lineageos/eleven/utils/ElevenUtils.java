@@ -29,7 +29,6 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
-import org.lineageos.eleven.cache.ImageCache;
 import org.lineageos.eleven.cache.ImageFetcher;
 
 /**
@@ -102,14 +101,13 @@ public final class ElevenUtils {
     }
 
     /**
-     * Creates a new instance of the {@link ImageCache} and {@link ImageFetcher}
+     * Gets the {@link ImageFetcher} (no cache any more: this build only draws placeholders)
      *
      * @param activity The {@link Activity} to use.
      * @return A new {@link ImageFetcher} used to fetch images asynchronously.
      */
     public static ImageFetcher getImageFetcher(final FragmentActivity activity) {
         final ImageFetcher imageFetcher = ImageFetcher.getInstance(activity);
-        imageFetcher.setImageCache(ImageCache.findOrCreateCache(activity));
         return imageFetcher;
     }
 

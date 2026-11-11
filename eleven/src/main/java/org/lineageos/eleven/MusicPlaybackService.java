@@ -73,7 +73,6 @@ import org.lineageos.eleven.Config.IdType;
 import org.lineageos.eleven.appwidgets.AppWidgetLarge;
 import org.lineageos.eleven.appwidgets.AppWidgetLargeAlternate;
 import org.lineageos.eleven.appwidgets.AppWidgetSmall;
-import org.lineageos.eleven.cache.ImageCache;
 import org.lineageos.eleven.cache.ImageFetcher;
 import org.lineageos.eleven.provider.MusicPlaybackState;
 import org.lineageos.eleven.provider.RecentStore;
@@ -613,8 +612,6 @@ public class MusicPlaybackService extends Service
 
         // Initialize the image fetcher
         mImageFetcher = ImageFetcher.getInstance(this);
-        // Initialize the image cache
-        mImageFetcher.setImageCache(ImageCache.getInstance(this));
 
         // Start up the thread running the service. Note that we create a
         // separate thread because the service normally runs in the process's
