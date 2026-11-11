@@ -2089,3 +2089,11 @@
 >
 > I took no action and wrote no checkpoint, since a second one would only collide with its pushes. I fast-forwarded this branch to its tip (`f5be702b`, the same as `main`) without a new commit, and I left this heartbeat armed.
 <!-- sha:869b91b1ecd9 -->
+
+## 2026-11-11T17:52:12Z
+> Status: four emulator runs are in flight on `ca64c7f9`. One is the `mu` music-app run (the first with the real Hidden apps tap, the update-in-place check and the missed-uninstall check). The other three are the launcher gate groups.
+>
+> - **Control worked.** Upstream Eleven, with its album-art code, shows the magenta cover on the songs tab, albums tab, player and notification card. Our build shows 0 magenta pixels in 19 pictures and draws the placeholders instead.
+> - **Drawer rule hardened after the review.** The "already handled" mark is now tied to the install time, so a missed uninstall event can't leave it stale. The music app also gets no automatic home-screen icon. All 1025 unit tests and lint are green.
+> - **Next.** I'll read the four results at about 17:58 and 18:05 UTC, then bump to v0.9.6, ship it and answer you.
+<!-- sha:9384400b1061 -->
