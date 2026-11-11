@@ -77,7 +77,7 @@ public abstract class PopupMenuHelper implements PopupMenu.OnMenuItemClickListen
         final ContextThemeWrapper wrapper = new ContextThemeWrapper(mActivity,
                 R.style.Eleven_Theme_PopupMenuOverlapAnchor);
         final PopupMenu popupMenu = new PopupMenu(wrapper, view, Gravity.NO_GRAVITY,
-                R.attr.actionOverflowMenuStyle, 0);
+                androidx.appcompat.R.attr.actionOverflowMenuStyle, 0);   // Launcher port: this project builds with android.nonTransitiveRClass=true, so appcompat's attr is not in our R (CHANGES.md)
         final Menu menu = popupMenu.getMenu();
 
         // figure what type of pop up menu it is
