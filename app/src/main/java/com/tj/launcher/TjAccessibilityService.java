@@ -5026,7 +5026,7 @@ public class TjAccessibilityService extends AccessibilityService {
         ensurePatch();   // the wallpaper patch must be added BEFORE the card so the card is on top
         if (!cardWanted()) return;   // AM1 (Tj): the stock menu stays completely stock: the patch alone hides the Screenshot spot
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
-        Rect area = cardArea(cached);
+        Rect area = cardAreaGeom(cached);   // review A #2: ALWAYS the short design: the content of a card built for the whole panel (1.25 x) is clipped when a later opening needs only the short window; a short card in a whole-panel window (showOverlay resizes it) still covers everything with its panel colour
         overlay = buildCard(area.height());
         overlay.setAlpha(0f);
         wm.addView(overlay, overlayParams(area, false));
