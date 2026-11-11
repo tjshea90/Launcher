@@ -18,7 +18,7 @@ Run:  python3 -I tools/make_music_icon.py            -> writes eleven/src/main/r
           mipmap-anydpi/ic_launcher.xml and values/ic_launcher_background.xml (white)
       python3 -I tools/make_music_icon.py --compare <drawer screenshot, 600x1024> <centre x> <centre y> [<out.png>]
           -> draws the speaker at the drawer's own size on a white plate and prints the difference to the screenshot (the fit check of BW1; the screenshot stays outside the repo)
-      python3 -I tools/make_music_icon.py --drawer-sim <out.png> [<plate px, default 52>]
+      python3 -I tools/make_music_icon.py --drawer-sim <out.png> [<plate px, default 52> [<shrink, default 1.0>]]
           -> a synthetic drawer: the written foreground cut to the plate window on a white plate, on grey (self-test input of tools/music_icon_check.py, tools/test_music_icon_check.sh)
 """
 import math
