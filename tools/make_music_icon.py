@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Draws the launcher icon of the music app ("Music": the blue speaker) and writes the five legacy PNGs.
+"""Draws the launcher icon of the music app ("Music": the blue speaker) and writes it as an ADAPTIVE icon (white background + the speaker as the foreground).
 
-WHY (TASKS BW1, Tj 2026-11-11): the music app must show the speaker icon of the "ATG music player" he already has. Two web searches found no copy of
+WHY (TASKS BW1, Tj 2026-11-11): the music app must show the speaker icon of the "ATG music player" he already has. Three web searches found no copy of
 that icon online, so it is REDRAWN from Tj's own screenshots (his drawer, where the icon is 39 px wide on Launcher's white plate, and the Files app).
 Nothing of the screenshots is stored in the repo: only the NUMBERS measured from them (the table below) and the result of this script.
+WHY ADAPTIVE (CI run #554, the real drawer on the emulator): Launcher3 wraps a LEGACY icon on its white plate and shrinks it, so a round legacy icon can never be
+bigger than about 64 % of the plate (ours came out at 62 %); his speaker is 71.5 % of the plate (39.34 of 55 px). An adaptive icon is not shrunk, so the size is exact:
+the 108 dp foreground layer shows its middle 72 dp (= the plate), the speaker is R_OUT / 55 of that window wide (FOREGROUND_RADIUS) and the background layer is pure white.
 
 HOW the numbers were measured (research/MUSIC_ICON_2026-11-11.md): the speaker is a round driver, 39.5 px wide in the 600x1024 drawer. Mean colour per
 radius (r, in drawer pixels, centre = the fitted centre of the thin black ring) separately for the top and the bottom of the picture:
