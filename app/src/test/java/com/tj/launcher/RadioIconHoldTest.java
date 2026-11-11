@@ -107,10 +107,23 @@ public class RadioIconHoldTest {
     // ---------------------------------------------------------------- the radio rule
 
     @Test public void radiosStayOnOnlyWhileTheSymbolsCanReallyBeHidden() {
-        assertTrue(RadioIconHold.keepsRadiosOn(true, true, false));
-        assertFalse(RadioIconHold.keepsRadiosOn(false, true, false));   // switch off: today's behaviour
-        assertFalse(RadioIconHold.keepsRadiosOn(true, false, false));   // no adb permission: the symbols would show on the lock screen, so the radios go off like before
-        assertFalse(RadioIconHold.keepsRadiosOn(true, true, true));     // paused / breaker tripped
+        // arguments: switchOn, grant, automationOff, quickstepMode, helperUp
+        assertTrue(RadioIconHold.keepsRadiosOn(true, true, false, false, false));    // the custom launcher needs no helper
+        assertTrue(RadioIconHold.keepsRadiosOn(true, true, false, true, true));      // Quickstep with the helper: the lock screen is next
+        assertFalse(RadioIconHold.keepsRadiosOn(true, true, false, true, false));    // Quickstep without the helper (a lock screen right after a boot): the symbols cannot be hidden yet, so the radios go off like before
+        assertFalse(RadioIconHold.keepsRadiosOn(false, true, false, false, true));   // switch off: today's behaviour
+        assertFalse(RadioIconHold.keepsRadiosOn(true, false, false, false, true));   // no adb permission: the symbols would show on the lock screen, so the radios go off like before
+        assertFalse(RadioIconHold.keepsRadiosOn(true, true, true, false, true));     // paused / breaker tripped
+    }
+
+    /** The radios are kept exactly when the policy wants the hold on a LOCK screen with the screen on, for every combination of the five facts: the two rules can never disagree (review of BS1, finding 1). */
+    @Test public void theRadioRuleIsTheHoldRuleOnALockScreen() {
+        for (int m = 0; m < 32; m++) {
+            boolean sw = (m & 1) != 0, grant = (m & 2) != 0, off = (m & 4) != 0, qs = (m & 8) != 0, helper = (m & 16) != 0;
+            NotifQuietPolicy.Facts f = new NotifQuietPolicy.Facts();
+            f.switchOn = sw; f.grant = grant; f.automationOff = off; f.quickstepMode = qs; f.helperUp = helper; f.screenOn = true; f.lockUp = true;
+            assertEquals("combination " + m, NotifQuietPolicy.wanted(f), RadioIconHold.keepsRadiosOn(sw, grant, off, qs, helper));
+        }
     }
 
     @Test public void theSwitchIsOnInTheShippedAppAndOffInDebug() {
