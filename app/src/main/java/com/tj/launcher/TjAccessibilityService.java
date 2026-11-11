@@ -861,21 +861,26 @@ public class TjAccessibilityService extends AccessibilityService {
         if (!patchHomeMode || overlayShown) return;
         int t = homeOpenTreatment();
         homeOpenStale = false;
+        homeOpenLogPersist = t != HomePatchRules.OPEN_FRESH;   // review A #5: the tablet report keeps the rare presses (stale / full card), not every normal one
         if (t == HomePatchRules.OPEN_FRESH) { homeOpenLogLine = "menu opened (home): fresh patch"; }
         else if (t == HomePatchRules.OPEN_STALE) {
-            homeOpenLogLine = "menu opened (home): patch not fresh, shown as it is and rebuilt now: " + homeNotFreshWhy();
+            homeOpenLogLine = "menu opened (home): patch not fresh, shown as it is and rebuilt after the fade: " + homeNotFreshWhy();
             homeOpenStale = true; patchRestable = true;   // adopted for THIS opening: cardWanted() = false, patchShow(true) makes it visible; patchShow(false) at the close recomputes both
-            handler.postDelayed(homeRefreshOpenRun, 40);
+            handler.removeCallbacks(homeRefreshOpenRun); handler.postDelayed(homeRefreshOpenRun, PatchFade.SETTLE_MS + 20);   // review A #6: the rebuild (a PixelCopy callback + a composite on THIS thread) waits for the end of the stock fade, which this thread has to redraw frame by frame
         } else {
             homeOpenLogLine = "menu opened (home): no usable patch, the card covers the whole panel: " + homeNotFreshWhy();
+            patchRestable = false;   // review A #4: the verdict is ENFORCED (a fresh patch with a folder open or a calibration running is not trusted): cardWanted() = true, the card covers the whole panel
+            if (patchResting) { patchResting = false; if (patchView != null) patchView.setAlpha(0f); }
         }
         handler.post(homeOpenLogRun);   // AFTER the frame of the patch / the card: never before the time-critical part
     }
-    private final Runnable homeOpenLogRun = new Runnable() { @Override public void run() { try { Log.i(TAG, "HOMEPRESS " + homeOpenLogLine); logPatch(homeOpenLogLine); } catch (Throwable t) { Log.e(TAG, "home press log failed", t); } } };
+    private boolean homeOpenLogPersist = false;
+    private final Runnable homeOpenLogRun = new Runnable() { @Override public void run() { try { Log.i(TAG, "HOMEPRESS " + homeOpenLogLine); if (homeOpenLogPersist) logPatch(homeOpenLogLine); } catch (Throwable t) { Log.e(TAG, "home press log failed", t); } } };
     private final Runnable homeRefreshOpenRun = new Runnable() { @Override public void run() {
         try {
             if (patchView == null || !patchHomeMode || !overlayShown || !homeOpenStale || homeBuilding || homeCalRunning || homeWallBmp == null) return;
             if (!HomePatchRules.sameStep(homeWallStep, homeStepNow())) return;
+            if (homeCompositeFresh()) return;   // review A #6: it became fresh meanwhile (a build that was already running): nothing to rebuild
             startHomeCopy();
         } catch (Throwable t) { Log.e(TAG, "home refresh while open failed", t); }
     } };
