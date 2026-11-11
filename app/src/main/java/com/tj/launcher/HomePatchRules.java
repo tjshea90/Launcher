@@ -309,4 +309,14 @@ public final class HomePatchRules {
         else why = "not restable (other)";
         return why + " [built " + (builtAgoMs < 0 ? "never" : builtAgoMs + " ms ago") + ", last draw " + (drawAgoMs < 0 ? "never" : drawAgoMs + " ms ago") + ", guard " + Math.max(0, guardLeftMs) + " ms left, focus " + launcherFocus + "]";
     }
+
+    /**
+     * BT1c: the Launcher's window has the focus again. The guard a foreign window started (it runs until {@code guardUntilMs}, {@code guardLenMs} long, so it began at the difference) belongs to the window that took
+     * the focus when it began no earlier than 1.5 s before the Launcher lost it, or later (the shade's own opening events, or a closing event of that same window): that window is gone now and its guard has
+     * nothing left to guard. A guard that began long BEFORE the loss (a volume panel that does not take the focus) is not ended by it. {@code focusLostAtMs} 0 = never lost.
+     */
+    public static boolean guardEndsWithFocus(long focusLostAtMs, long guardUntilMs, long guardLenMs, long nowMs) {
+        if (focusLostAtMs <= 0 || guardUntilMs <= nowMs) return false;
+        return guardUntilMs - guardLenMs >= focusLostAtMs - 1500;
+    }
 }

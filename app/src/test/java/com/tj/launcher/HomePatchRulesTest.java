@@ -296,4 +296,16 @@ public class HomePatchRulesTest {
         assertEquals("no composite built yet [built never, last draw never, guard 0 ms left, focus true]", HomePatchRules.notFreshWhy(false, false, -1, -1, -5, true, false));
         assertEquals("calibrating [built never, last draw never, guard 0 ms left, focus true]", HomePatchRules.notFreshWhy(false, false, -1, -1, 0, true, true));
     }
+    @Test public void theShadesGuardEndsWhenTheLauncherGetsTheFocusBack() {
+        // the shade opened at 10000 (guard 2500 ms), the Launcher lost the focus at 10040, the shade closed at 11200 and the focus came back; a closing event of the shade at 11190 re-armed the guard to 13690
+        assertTrue(HomePatchRules.guardEndsWithFocus(10040, 13690, 2500, 11210));
+        assertTrue("the opening event alone", HomePatchRules.guardEndsWithFocus(10040, 12500, 2500, 10900));
+        assertTrue("the focus message came first", HomePatchRules.guardEndsWithFocus(10000, 12540, 2500, 10900));
+    }
+    @Test public void aGuardThatBeganLongBeforeTheLossOrIsOverIsNotEndedByTheFocus() {
+        assertFalse("a volume panel at 7000, something took the focus at 10000", HomePatchRules.guardEndsWithFocus(10000, 9500, 2500, 9000) == false ? false : true);
+        assertFalse("the volume panel guard (7000..9500) began 3 s before the loss", HomePatchRules.guardEndsWithFocus(10000, 9500, 2500, 9400));
+        assertFalse("no guard is running", HomePatchRules.guardEndsWithFocus(10040, 12500, 2500, 12500));
+        assertFalse("the focus was never lost", HomePatchRules.guardEndsWithFocus(0, 13000, 2500, 11000));
+    }
 }
