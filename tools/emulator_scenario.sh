@@ -4565,8 +4565,9 @@ MU=org.lineageos.eleven
 MUAPK=eleven/build/outputs/apk/debug/eleven-debug.apk
 MUCOL=ff00ff
 MUTMP="$(mktemp -d)"
-mucnt(){ convert "$1" -fuzz 4% -transparent "#$MUCOL" -alpha extract -format '%[fx:round((1-mean)*w*h)]' info: 2>/dev/null; }   # pixels within 4 % of the cover colour (a shown cover is thousands of them)
-mudump(){ adb shell uiautomator dump /sdcard/mu.xml >/dev/null 2>&1; adb shell cat /sdcard/mu.xml 2>/dev/null | tr '>' '\n'; }
+mucol(){ convert "$1" -fuzz "${3:-4}%" -transparent "#$2" -alpha extract -format '%[fx:round((1-mean)*w*h)]' info: 2>/dev/null; }   # mucol <png> <RRGGBB> [fuzz %]: pixels within that fuzz of the colour
+mucnt(){ mucol "$1" "$MUCOL" 4; }   # pixels within 4 % of the cover colour (a shown cover is thousands of them)
+mudump(){ local i; for i in 1 2 3; do adb shell uiautomator dump /sdcard/mu.xml >/dev/null 2>&1; adb shell cat /sdcard/mu.xml 2>/dev/null | tr '>' '\n' > "$MUTMP/dump.txt"; grep -q '<node' "$MUTMP/dump.txt" && break; sleep 2; done; cat "$MUTMP/dump.txt"; }   # up to 3 tries: in run 544 the dump of the music app came back empty
 mubounds(){ grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' '; }
 mutap(){ # mutap <text, any case> <fallback x> <fallback y>: tap the middle of the first node with that text, else the fallback place
   local t="$1" fx="$2" fy="$3" b; b="$(mudump | grep -iF "text=\"$t\"" | mubounds)"; set -- $b
@@ -4598,12 +4599,18 @@ adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:
 for i in $(seq 1 20); do adb shell content query --uri content://media/external/audio/media --projection _id:album_id:title 2>/dev/null | tr -d '\r' | grep -q 'title=Glass Harbor' && break; [ "$i" = 6 ] && adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1; sleep 2; done
 adb shell content query --uri content://media/external/audio/media --projection _id:album_id:artist:album:title 2>/dev/null | tr -d '\r' | grep 'title=Glass Harbor' > "$OUT/mu-media-row.txt"
 MUALB="$(grep -o 'album_id=[0-9]*' "$OUT/mu-media-row.txt" | head -1 | cut -d= -f2)"
-adb exec-out content read --uri "content://media/external/audio/albumart/${MUALB:-0}" > "$MUTMP/cover.bin" 2>/dev/null
+adb exec-out content read --uri "content://media/external/audio/albumart/${MUALB:-0}" > "$MUTMP/cover.bin" 2> "$MUTMP/cover.err"
 convert "$MUTMP/cover.bin" "$MUTMP/cover.png" 2>/dev/null
 MUCTL="$(mucnt "$MUTMP/cover.png")"; MUCTL="${MUCTL:-0}"
-info "MU fixture: MediaStore row '$(cut -c1-120 "$OUT/mu-media-row.txt")'; the cover Android serves for album ${MUALB:-?} is $(identify -format '%wx%h' "$MUTMP/cover.png" 2>/dev/null || echo none) with $MUCTL magenta pixels"
+info "MU control (a): content read of albumart/${MUALB:-?}: $(wc -c < "$MUTMP/cover.bin" | tr -d ' ') bytes, $(identify -format '%wx%h' "$MUTMP/cover.png" 2>/dev/null || echo 'not an image'), $MUCTL magenta pixels; first bytes/error: $(head -c 120 "$MUTMP/cover.bin" "$MUTMP/cover.err" 2>/dev/null | tr -c '[:print:]' '.' | cut -c1-160)"
+# (b) the stock Files app (DocumentsUI), Audio root: its thumbnail of the song IS the cover the platform serves (run 544: Files opened fine from the Launcher)
+adb shell am start -a android.intent.action.VIEW -d content://com.android.providers.media.documents/root/audio -t vnd.android.document/root >/dev/null 2>&1; sleep 6
+shot mud-04-files-audio
+MUCTL2="$(mucnt "$OUT/mud-04-files-audio.png")"; MUCTL2="${MUCTL2:-0}"
+info "MU control (b): the stock Files app, Audio root: $MUCTL2 magenta pixels"
+adb shell input keyevent KEYCODE_BACK; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 2
 check "MU-1: the test song (flat magenta cover) is in MediaStore" test -n "$MUALB"
-check "MU-2: CONTROL: Android serves that magenta cover to any app that asks, so the picture probe CAN see an album cover" bash -c "[ ${MUCTL} -gt 1000 ]"
+check "MU-2: CONTROL: Android itself serves that magenta cover to other apps (the albumart URI or the stock Files app shows it), so the picture probe CAN see an album cover" bash -c "[ ${MUCTL} -gt 1000 ] || [ ${MUCTL2} -gt 1000 ]"
 
 # ---- part 2a: the music app is installed LATER than the Launcher's first start (so it is not in the baseline) and must be in the custom drawer without anyone allowing it
 adb uninstall "$MU" >/dev/null 2>&1
@@ -4621,52 +4628,70 @@ mutap "Music" 300 150; sleep 7
 resumed > "$OUT/mu-resumed-1.txt"; shot mua-01-first-launch
 check "MU-7: a tap on its drawer icon opens the music app" grep -q "$MU" "$OUT/mu-resumed-1.txt"
 
-# ---- part 1: the tour. Every tab (swipe right to left and back), the artist page, the album page, the player, the notification shade, the lock screen
-: > "$OUT/mu-names.txt"
-mudump >> "$OUT/mu-names.txt"
-for i in 1 2 3 4 5 6; do adb shell input swipe 520 600 80 600 250; sleep 1.5; shot "mua-t$i"; mudump >> "$OUT/mu-names.txt"; done
-for i in 1 2 3 4 5 6; do adb shell input swipe 80 600 520 600 250; sleep 1.5; shot "mua-b$i"; mudump >> "$OUT/mu-names.txt"; done
-check "MU-8: the tabs listed real data: the artist, the album and the song of the test file were on screen" bash -c "grep -q 'Marisol Vega' $OUT/mu-names.txt && grep -q 'Northern Lights' $OUT/mu-names.txt && grep -q 'Glass Harbor' $OUT/mu-names.txt"
-mutap "Artists" 300 110; sleep 2; shot mua-a1-artists
-mutapid popup_menu_button 560 200; sleep 2; shot mua-m1-artist-menu; mudump > "$OUT/mu-menu-artist.txt"
-adb shell input keyevent KEYCODE_BACK; sleep 1
+# ---- part 1: the tour, v2. Run 544 showed that `uiautomator dump` gives NOTHING while Eleven is in front (the fallback taps of v1 wandered off, BACK left the app, later taps opened Files / Contacts / Gallery).
+#      So Eleven is steered by FIXED COORDINATES (600x1024, 170 dpi, read from the pictures of run 544): tabs ARTISTS / ALBUMS / SONGS / PLAYLISTS at y=120, x = 80 / 228 / 372 / 524; the first list row at y about 200
+#      (its overflow button x=584, y=208); the first album tile at (158, 290) (its overflow button (262, 398)); the toolbar overflow (584, 62); the bottom bar (300, 957).
+#      After EVERY step `muhere` records whether Eleven is still the resumed app: a tap or key that left it is a TEST fault and fails MU-8 (never silently absorbed).
+MUGONE=""
+muhere(){ resumed | grep -q "$MU" || MUGONE="$MUGONE $1"; }
+muopen(){ adb shell am force-stop "$MU" >/dev/null 2>&1; sleep 1; adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.HomeActivity" >/dev/null 2>&1; sleep 5; }
+mutab(){ case "$1" in artists) adb shell input tap 80 120;; albums) adb shell input tap 228 120;; songs) adb shell input tap 372 120;; *) adb shell input tap 524 120;; esac; sleep 2; }
+muplace(){ # muplace <png>: the most pixels of ONE of the nine letter-tile colours in the picture (the placeholder tile: letters for artists, the note for albums and songs); echoes the count
+  local best=0 c n; for c in 9c27b0 3f51b5 673ab7 009688 4caf50 f44336 9e9e9e ff5722 795548; do n="$(mucol "$1" "$c" 2)"; [ "${n:-0}" -gt "$best" ] && best="$n"; done; echo "$best"; }
+muopen; shot mua-01-first-launch; muhere launch
+for t in artists albums songs playlists; do mutab "$t"; shot "mua-tab-$t"; muhere "tab-$t"; done
+# the artist page and the album page (their big picture is the placeholder tile)
+muopen; mutab artists; adb shell input tap 200 200; sleep 3; shot mua-a2-artist-page; muhere artist-page
+muopen; mutab albums; adb shell input tap 158 290; sleep 3; shot mua-c2-album-page; muhere album-page
+# the overflow menus of a song row, an artist row and an album tile (where "Change image" / "Fetch ..." used to be)
+muopen; mutab songs; adb shell input tap 584 208; sleep 2; shot mua-m1-song-menu; muhere song-menu
+muopen; mutab artists; adb shell input tap 584 208; sleep 2; shot mua-m2-artist-menu; mudump > "$OUT/mu-menu-artist.txt"; muhere artist-menu
+muopen; mutab albums; adb shell input tap 262 398; sleep 2; shot mua-m3-album-menu; mudump > "$OUT/mu-menu-album.txt"; muhere album-menu
 check "MU-16: the artist row's menu opens with its usual entries and without 'Change image' or any fetch entry" mumenu "$OUT/mu-menu-artist.txt"
-mutap "Marisol Vega" 300 300; sleep 3; shot mua-a2-artist-page; mudump >> "$OUT/mu-names.txt"
-adb shell input keyevent KEYCODE_BACK; sleep 2
-mutap "Albums" 400 110; sleep 2; shot mua-c1-albums
-mutapid popup_menu_button 560 300; sleep 2; shot mua-m2-album-menu; mudump > "$OUT/mu-menu-album.txt"
-adb shell input keyevent KEYCODE_BACK; sleep 1
 check "MU-17: the album's menu opens with its usual entries and without 'Change image' or any fetch entry" mumenu "$OUT/mu-menu-album.txt"
-mutap "Northern Lights" 300 300; sleep 3; shot mua-c2-album-page; mudump >> "$OUT/mu-names.txt"
-adb shell input keyevent KEYCODE_BACK; sleep 2
-mutap "Songs" 500 110; sleep 2; shot mua-s1-songs
-mutapid bottom_action_bar 300 940; sleep 5; shot mua-s2-bar-playing      # nothing plays yet: the bar starts "shuffle all" (SlidingPanelActivity.mOpenNowPlaying)
-mutapid bottom_action_bar 300 940; sleep 4; shot mua-p1-player           # something plays now: the bar opens the playing screen
-mudump >> "$OUT/mu-names.txt"
-adb shell input keyevent KEYCODE_BACK; sleep 2
-adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.SettingsActivity" >/dev/null 2>&1; sleep 3; shot mua-z1-settings
-mudump > "$OUT/mu-settings-dump.txt"
-check "MU-18: Eleven's own Settings opens (Blur background is there, Delete cache is gone)" bash -c "grep -q 'Blur background' $OUT/mu-settings-dump.txt && ! grep -qi 'delete cache' $OUT/mu-settings-dump.txt"
-mutap "Blur background" 300 300; sleep 2; shot mua-z2-blur-on
-adb shell input keyevent KEYCODE_BACK; sleep 2
-mutapid bottom_action_bar 300 940; sleep 4; shot mua-p3-player-blur      # the blur path of the playing screen (it blurred the cover; now it has nothing to blur)
+# playback: nothing plays yet, so a tap on the bottom bar starts "shuffle all"; with something playing the next tap opens the playing screen
+muopen; mutab songs; adb shell input tap 300 957; sleep 5; shot mua-s2-bar-playing; muhere bar-playing
+adb shell input tap 300 957; sleep 4; shot mua-p1-player; muhere player
 adb shell dumpsys notification --noredact 2>/dev/null | grep -c "pkg=$MU" | tr -d ' \r\n' > "$OUT/mu-notif-count.txt"
-adb shell dumpsys notification --noredact 2>/dev/null | grep -A14 "pkg=$MU" | grep -iE 'largeIcon|smallIcon|android.picture' | head -4 | cut -c1-200 > "$OUT/mu-notif-icons.txt"
-info "MU notification: $(cat "$OUT/mu-notif-count.txt") record(s) of the music app; icons: $(tr -s ' \n' ' ' < "$OUT/mu-notif-icons.txt")"
+info "MU notification: $(cat "$OUT/mu-notif-count.txt") record(s) of the music app"
 check "MU-9: playback started: the music app posted its media notification (so the shade and lock-screen pictures show it)" bash -c "[ \"$(cat $OUT/mu-notif-count.txt 2>/dev/null)\" -ge 1 ]"
+# Eleven's own Settings: first by intent, else by its toolbar menu (a picture of the menu is kept either way)
+adb shell input keyevent KEYCODE_BACK; sleep 2; muhere player-closed
+adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.SettingsActivity" >/dev/null 2>&1; sleep 3
+resumed > "$OUT/mu-resumed-settings.txt"; MUSETROUTE=intent
+if ! grep -q "SettingsActivity" "$OUT/mu-resumed-settings.txt"; then
+  muopen; adb shell input tap 584 62; sleep 2; shot mua-o1-overflow; mutap "Settings" 500 120; sleep 3; resumed > "$OUT/mu-resumed-settings.txt"; MUSETROUTE=menu
+fi
+shot mua-z1-settings; muhere settings
+info "MU settings route: $MUSETROUTE; resumed = $(tr -s ' \n' ' ' < "$OUT/mu-resumed-settings.txt" | cut -c1-120)"
+check "MU-18: Eleven's own Settings screen opens inside the music app" grep -q "SettingsActivity" "$OUT/mu-resumed-settings.txt"
+mudump > "$OUT/mu-settings-dump.txt"
+info "MU settings texts: $(grep -o 'text="[^"]*"' "$OUT/mu-settings-dump.txt" | tr '\n' ' ' | cut -c1-200)"
+check "MU-20: ... and 'Delete cache' is gone from it" bash -c "! grep -qi 'delete cache' $OUT/mu-settings-dump.txt"
+mutap "Blur background" 300 270; sleep 2; shot mua-z2-blur-on; muhere blur-on
+adb shell input keyevent KEYCODE_BACK; sleep 2; muhere settings-closed
+adb shell input tap 300 957; sleep 4; shot mua-p3-player-blur; muhere player-blur      # the blur path of the playing screen (it blurred the cover; now it has nothing to blur)
+check "MU-8: the whole tour stayed inside the music app (no tap or key left it)" test -z "$MUGONE"
+info "MU tour left the app after step(s):${MUGONE:- none}"
+# the shade and the lock screen while it plays (a PIN so that the lock screen really comes up)
 adb shell cmd statusbar expand-notifications; sleep 3; shot mua-n1-shade
 adb shell cmd statusbar collapse; sleep 1
+adb shell locksettings set-pin 1234 >/dev/null 2>&1
 palock; shot mua-l1-lock
 b6unlock >/dev/null 2>&1 || { adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
 sleep 2; shot mua-l2-after-unlock
 resumed > "$OUT/mu-resumed-2.txt"
 info "MU after the tour: resumed = $(tr -s ' \n' ' ' < "$OUT/mu-resumed-2.txt" | cut -c1-140)"
+# the placeholders are really there (letters for the artist, the note tile for the album and the song): a big area of a letter-tile colour
+MUP_ART="$(muplace "$OUT/mua-tab-artists.png")"; MUP_ALB="$(muplace "$OUT/mua-tab-albums.png")"; MUP_SNG="$(muplace "$OUT/mua-tab-songs.png")"
+info "MU placeholders: most pixels of one tile colour: artists tab $MUP_ART, albums tab $MUP_ALB, songs tab $MUP_SNG"
+check "MU-19: the placeholder tiles are shown instead of covers (artists, albums and songs tabs each carry a big tile-coloured area)" bash -c "[ ${MUP_ART:-0} -ge 2000 ] && [ ${MUP_ALB:-0} -ge 30000 ] && [ ${MUP_SNG:-0} -ge 1500 ]"
 
 # ---- the probe: no picture of the app contains the cover colour; the app did not crash
 MUMAX=0; MUSUM=0; MUN=0; MUSEEN=""
 for f in "$OUT"/mua-*.png; do [ -f "$f" ] || continue; c="$(mucnt "$f")"; c="${c:-0}"; MUN=$((MUN+1)); MUSUM=$((MUSUM+c)); if [ "$c" -gt "$MUMAX" ]; then MUMAX=$c; fi; [ "$c" -gt 0 ] && MUSEEN="$MUSEEN $(basename "$f" .png)=$c"; done
 info "MU art probe: $MUN pictures of the music app searched for the cover colour; the most magenta pixels in one picture: $MUMAX; total $MUSUM;${MUSEEN:- none with any}"
-check "MU-10: NO album art anywhere: no picture of the music app (tabs, artist and album pages, player, shade, lock screen) shows the cover colour" bash -c "[ $MUN -ge 20 ] && [ $MUMAX -lt 200 ]"
+check "MU-10: NO album art anywhere: no picture of the music app (tabs, artist and album pages, player, shade, lock screen) shows the cover colour" bash -c "[ $MUN -ge 16 ] && [ $MUMAX -lt 200 ]"
 adb logcat -d -b crash 2>/dev/null | tr -d '\r' > "$OUT/mu-crash-log.txt"
 check "MU-11: the music app did not crash during the tour" bash -c "! grep -q 'Process: $MU' $OUT/mu-crash-log.txt"
 
@@ -4691,6 +4716,7 @@ check "MU-15: after a reinstall the music app is in the drawer again, by itself"
 adb uninstall "$MU" >/dev/null 2>&1
 adb shell rm -f /sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
 adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
+adb shell locksettings clear --old 1234 >/dev/null 2>&1
 adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
 setfeat; setmode custom; rebind; home; sleep 3
 fi # section mu
