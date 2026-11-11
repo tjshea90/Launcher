@@ -26,6 +26,9 @@ public final class NotifQuietPolicy {
     /** The default of {@link #KEY}. */
     public static boolean defaultOn(boolean debuggable) { return !debuggable; }
 
+    /** The {@link #why} text for "a Quickstep mode and the accessibility helper is not running" (also asked by {@link RadioIconHold#radiosGoOffWhenHoldEnds}, so the words live in one place). */
+    public static final String WHY_NO_HELPER = "accessibility helper not running";
+
     /** Everything the decision reads, by name. All false = nothing is wanted ("switch off"). */
     public static final class Facts {
         /** the switch in Launcher control */
