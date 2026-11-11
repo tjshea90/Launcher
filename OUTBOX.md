@@ -1751,3 +1751,9 @@
 >
 > Still open on your side: BR1c (does the settings gear open the look-alike), BN7a (start the shell helper, tap "Do everything that is missing"), BN8c/BN8d and BQ1b (tablet reports), BH1c (where you saw a notification), BK1e (which unlock is slow), and, once v0.9.4 ships, a look at whether the Wi-Fi and Bluetooth symbols are gone on your lock screen.
 <!-- sha:6208d8222c04 -->
+
+## 2026-11-11T00:33:47Z
+> Nothing was unpushed. `ccr-5ef85f7a-ngtgj1`, its remote and `main` all point at `cd6a93b`, which includes the 0.9.4 version bump, and the working tree is clean. The hook fired in the moment between an automatic checkpoint commit and its push.
+>
+> Still waiting on emulator run #521 (due about 00:40 UTC) and the third code review. Then the release gate, ship, and the answer to both of your questions.
+<!-- sha:7a9423608fe9 -->
