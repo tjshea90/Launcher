@@ -340,7 +340,8 @@
         <!-- AA2: keep-alive foreground service (does no work; one silent notification). Started by the router and the accessibility helper, stopped by the switch / Restore everything. -->
         <service
             android:name="com.tj.launcher.KeepAliveService"
-            android:exported="false" />
+            android:exported="false"
+            android:label="@string/derived_app_name" />
 
         <!-- Tj: power-menu helper. Does nothing until Tj turns it on in Settings > Accessibility, and nothing unless a power mode is chosen. -->
         <service
