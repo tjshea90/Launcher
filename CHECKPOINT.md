@@ -1,13 +1,13 @@
-# CHECKPOINT 1123 — read me first, then TASKS.md
+# CHECKPOINT 1124 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T06:58:23Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `2b793e68` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T07:03:35Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `c032a156` (this checkpoint is the commit after it)
 
 ## Just done
-review B (HIGH fixed): lock patch return = one level-triggered timer (PatchRest.returnInMs, patchShow posts settleRun while restable+invisible, padLeft padBack not before hold end, padLeft lock-only); PatchRestTest 34 green; new emulator step AE3-short in ae; A still running
+review A fixes in (focus tolerance 450 + launcherFocus rule, warm card short for home, FULL_CARD enforced, HOMEPRESS persisted only when not fresh, refresh after fade); all 3 reviews done, written in research/BT1_REVIEW_2026-11-11.md; FULL unit suite 990 tests 0 fail GRADLE_EXIT=0
 
 ## Do this next
-Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. Wait for review A (aeaeedd027fb69d06), append to research/BT1_REVIEW_2026-11-11.md, fix valid findings in ONE batch + JVM tests, run FULL unit suite (bash tools/gradle.sh :app:testDebugUnitTest, check GRADLE_EXIT), ckpt, then dispatch the 3 gate runs of bash tools/gate.sh 9676905 on the branch (pt SOLO); run 2 must include ae (new step AE3-short) and bt; ckpt the raw verdict before analysing
+Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: bash tools/gate.sh 9676905 (prints the 3 runs), dispatch emulator.yml on branch claude/dazzling-knuth-f1khhb: run1 base,x1,n,v,ps,hp,hf,fp; run2 e1,o,ac,ae,pa,rb,ss,bt,last; run3 pt SOLO (use the exact sections the script prints); ckpt run ids; read each RESULTS block, ckpt the raw verdict before analysing
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. Wait for review A (aeaeedd027fb69d06), 
 
 ## Last ten checkpoints
 ```
+  9671f217 ckpt 1123: review B (HIGH fixed): lock patch return = one level-triggered timer (PatchR
   cef15801 ckpt 1122: review C done (7 LOW): fixed #1 #2 (service label + AppLabelTest 3 tests gre
   323f69fd ckpt 1121: BT1b boxed [~], BT1 findings written to research/BT1_ANALYSIS; review slices
   9a8b660d ckpt 1120: fix compile error (comment swallowed addPatch tail); unit suite green; BT1b:
@@ -25,8 +26,7 @@ Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. Wait for review A (aeaeedd027fb69d06), 
   fb838402 ckpt 1116: dispatched at 06:12Z on head 79c74bf: bt run #530 (id 42970805392, main, sho
   79c74bf6 ckpt 1115: BT1c/BT1d code: HomePatchRules.openTreatment (fresh/stale/full card) + notFr
   e8aba8f8 ckpt 1114: run #529 (id 42968657835, job 130351718801, sections=bt on d027fe8): 10 PASS
-  d027fe80 ckpt 1113: section bt added to emulator_scenario.sh + gate-map (BT1f look-alike Recents
 ```
 
-(11 automatic checkpoint(s) since the last deliberate one — the
+(10 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
