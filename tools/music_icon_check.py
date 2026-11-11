@@ -20,7 +20,7 @@ PLATE_REF = 55.0          # plate width on Tj's tablet (px)
 R_REF = 19.67             # outer radius of the speaker in plate pixels on Tj's tablet (tools/make_music_icon.py)
 RATIO_REF = 2 * R_REF / PLATE_REF     # 0.715: speaker diameter / plate width on Tj's tablet
 RATIO_TOL = 0.035         # the emulator's pixel grid and the soft outer edge move the measured ratio by about 0.01
-INK = 225                 # a pixel darker than this (mean of R, G, B) inside the plate belongs to the speaker
+INK = 200                 # a pixel darker than this (mean of R, G, B) inside the plate belongs to the speaker
 
 def load(png):
     out = subprocess.run(["identify", "-format", "%w %h", png], capture_output=True, text=True, check=True).stdout.split()
