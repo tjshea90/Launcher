@@ -1,13 +1,13 @@
-# CHECKPOINT 1156 — read me first, then TASKS.md
+# CHECKPOINT 1157 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T16:15:32Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `8efb6646` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T16:19:16Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `cd5b3ddd` (this checkpoint is the commit after it)
 
 ## Just done
-BU1c ticked; Tj 16:10Z asked for Eleven (org.lineageos.eleven, lineage-17.1) in the custom drawer with NO album art ever; written as TASKS BV1 a-h in his words (separate APK allowed by him)
+BV1a/b audit written: research/ELEVEN_PORT_2026-11-11.md (pin ca22308cfe54, 10 art paths, no-art look, delete/slim/keep plan, guard + emulator proof design)
 
 ## Do this next
-BV1a/b: read the Eleven clone in the scratchpad (eleven-17.1) for every album-art path, then the launcher drawer code and android.yml/emulator.yml/settings.gradle.kts to plan the eleven/ module; write research/ELEVEN_PORT_2026-11-11.md (pinned sha + art paths) BEFORE code. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab armed, fires 13 */2 (rule 4: continue from here); never call update_trigger or delete_trigger
+BV1a/d: read upstream build.gradle + this project's settings.gradle.kts, app/build.gradle.kts, android.yml, emulator.yml (how APKs are built, signed, installed, released); then create module eleven/ (copy upstream at the pinned sha from the scratchpad clone eleven-17.1, remove art code per the note, port to AGP 8.13.2). Check the launcher drawer code (BV1f) on the way. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab armed (rule 4: continue from here); never call update_trigger or delete_trigger
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ BV1a/b: read the Eleven clone in the scratchpad (eleven-17.1) for every album-ar
 
 ## Last ten checkpoints
 ```
+  0b81f71b ckpt 1156: BU1c ticked; Tj 16:10Z asked for Eleven (org.lineageos.eleven, lineage-17.1)
   917bb443 ckpt 1155: Merged main (other session's 14:35Z OUTBOX heartbeat notes, clean) into the 
   2e29f290 ckpt 1154: BU1a/b done: Eleven (org.lineageos.eleven) branch lineage-17.1 verified, def
   21fda685 ckpt 1153: BU1 written in TASKS (Tj 15:48Z: find the stock lineage music app source for
@@ -25,8 +26,7 @@ BV1a/b: read the Eleven clone in the scratchpad (eleven-17.1) for every album-ar
   4ea7eb30 ckpt 1150: 11:18Z: other session inactive since its ckpt 1149 (10:15Z, over 60 min, no 
   3d1739b3 ckpt 1149: Worker restarted 09:12-10:13Z; heartbeat trig_01GVcBRvTAzqf97UhMTJszab fired
   0186d7b8 ckpt 1148: #542 (id 42991071905, job 130423824216, v,ps,hp on a36083d2, shots=true) job
-  a82b0b85 ckpt 1147: BT2c written in TASKS (open: #541 hp all-red, patch never rested). Rerun #54
 ```
 
-(3 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
