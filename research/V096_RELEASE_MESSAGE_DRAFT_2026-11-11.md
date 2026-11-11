@@ -18,7 +18,7 @@ Tj, the music app is in v0.9.6, as its own app next to the launcher.
 
 **No album art, ever.** I did not hide it, I removed every place that reads or shows it: the app no longer asks Android for a cover, never decodes one, keeps no picture cache, and has no internet permission, so nothing can be fetched. Artists show the coloured letter cards, albums and songs the music-note tile, as the app draws them when it finds no art. Removed with it: "Change image" on artists and albums, the photo picker, "Delete cache" in Settings. A unit test (12 checks, runs for every release) fails the build if any way to read, cache or show a cover comes back.
 
-**What is proven** <<MU>>
+**What is proven** (it all ran; the last music-app run on the final code, #561: 29 checks passed, 0 failed)
 - Emulator, same song with a flat bright magenta cover, same screens: upstream's app WITH its art code shows that cover on the songs tab, the albums tab, the playing screen and the notification card; our app shows none of it in 19 pictures (tabs, artist and album pages, menus, playing screen, shade, lock screen) and shows the placeholders instead. The app stayed in front through the whole tour and did not crash.
 - Drawer rule on the emulator: appears by itself, a system app outside your list stays hidden, opens from the drawer, a hide on the real Hidden apps screen sticks (also across an update in place), uninstall + reinstall brings it back, also when the launcher did not see the uninstall.
 - Icon on the emulator (MU-21): <<ICONPROOF>>
