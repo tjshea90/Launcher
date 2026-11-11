@@ -6,7 +6,9 @@ Rules (CLAUDE.md "Messages from Tj", TASKS BP3b): the answer is the LAST message
 
 Tj, the music app is in v0.9.6, as its own app next to the launcher.
 
-<<RELEASE>>   (the Release link on its own line; the three APKs in it: `Launcher-v0.9.6.apk` = update in place as always, `Eleven-v0.9.6.apk` = the music app, install it once, same signing key, `PhoneGuide-v0.9.6.apk` unchanged)
+https://github.com/tjshea90/Launcher/releases/tag/v0.9.6
+
+It holds three files: `Launcher-v0.9.6.apk` (update in place, as always), `Eleven-v0.9.6.apk` (the music app: install it once, it is signed with the same key) and `PhoneGuide-v0.9.6.apk` (unchanged).  The release was built and its signature checked by GitHub (run #47, green).
 
 **What it is.** LineageOS's own music app, Eleven (package `org.lineageos.eleven`, from the `lineage-17.1` branch, pinned to one commit, Apache-2.0 notice and a list of my changes are in the repo under `eleven/`). It looks and works as upstream wrote it, with the album art removed.
 
