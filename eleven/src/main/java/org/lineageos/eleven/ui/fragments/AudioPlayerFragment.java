@@ -318,8 +318,6 @@ public class AudioPlayerFragment extends Fragment implements ServiceConnection {
             mAlertDialog.dismiss();
         }
 
-        mImageFetcher.flush();
-
         // Unbind from the service
         MusicUtils.unbindFromService(mToken);
         mToken = null;

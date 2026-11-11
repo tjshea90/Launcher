@@ -152,12 +152,6 @@ public class ArtistFragment extends MusicBrowserFragment implements
         initLoader(this);
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        mAdapter.flush();
-    }
-
     public void onItemClick(final int position) {
         Artist artist = mAdapter.getItem(position);
         NavUtils.openArtistProfile(getActivity(), artist.mArtistName);

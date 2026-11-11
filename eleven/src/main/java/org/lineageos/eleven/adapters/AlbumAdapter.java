@@ -173,13 +173,6 @@ public class AlbumAdapter extends RecyclerView.Adapter<MusicHolder> implements I
         notifyItemRangeRemoved(0, size);
     }
 
-    /**
-     * Flushes the disk cache.
-     */
-    public void flush() {
-        mImageFetcher.flush();
-    }
-
     @Override
     public void setPopupMenuClickedListener(IPopupMenuCallback.IListener listener) {
         mListener = listener;

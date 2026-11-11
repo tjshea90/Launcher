@@ -142,12 +142,6 @@ public class AlbumFragment extends MusicBrowserFragment implements
 
 
     @Override
-    public void onPause() {
-        super.onPause();
-        mAdapter.flush();
-    }
-
-    @Override
     @NonNull
     public Loader<SectionListContainer<Album>> onCreateLoader(final int id, final Bundle args) {
         mLoadingEmptyContainer.showLoading();

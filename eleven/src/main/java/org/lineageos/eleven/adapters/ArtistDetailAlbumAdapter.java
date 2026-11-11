@@ -179,7 +179,6 @@ public class ArtistDetailAlbumAdapter
     public void unload() {
         int size = mAlbums.size();
         mAlbums.clear();
-        mImageFetcher.flush();
         notifyItemRangeRemoved(0, size);
     }
 }

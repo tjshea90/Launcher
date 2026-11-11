@@ -129,13 +129,6 @@ public class ArtistAdapter extends RecyclerView.Adapter<MusicHolder> implements 
         notifyItemRangeRemoved(0, size);
     }
 
-    /**
-     * Flushes the disk cache.
-     */
-    public void flush() {
-        mImageFetcher.flush();
-    }
-
     @Override
     public void setPopupMenuClickedListener(IListener listener) {
         mListener = listener;
