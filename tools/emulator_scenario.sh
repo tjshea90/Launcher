@@ -4457,6 +4457,67 @@ adb shell settings delete secure icon_blacklist >/dev/null 2>&1; adb shell setti
 adb shell svc wifi enable; adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section wf
+if want bt; then # section bt
+ensurehome
+# ---- BT1 (Tj, 2026-11-11, v0.9.4 on the tablet; research/BT1_ANALYSIS_2026-11-11.md).
+#      BT1f: the look-alike's Recents card is called "Settings", not "Launcher Settings" (Android 10 joins the application label and the activity label unless they are equal).
+#      BT1c: custom home, the home patch rests; the shade is pulled down and closed, then the side key is held after a gap: the Screenshot spot must be covered on that FIRST press, at every gap. A control round
+#      without the shade proves the measurement (pb_probe core_mean: the mean deviation of the slot interior from the dimmed home; ~0 = covered, large = the stock Screenshot entry shows).
+beat "before BT"
+adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
+# ---------------- BT1f: the look-alike in Recents
+hpinit false; hpkey settings_spoof true
+setmode custom; rebind; home; sleep 8     # SettingsSpoof flips the alias on, 3 s after the process starts
+adb shell am start -n "$PKG/com.tj.launcher.SettingsAlias" > "$OUT/bt-start.txt" 2>&1; sleep 4
+resumed > "$OUT/bt-resumed.txt"
+check "BT1f0: premise: the look-alike is on screen" grep -qE "com.tj.launcher/(\.|com\.tj\.launcher\.)(SsPageActivity|SettingsAlias)" "$OUT/bt-resumed.txt"
+adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4; shot bt-01-recents
+adb shell uiautomator dump /sdcard/bt.xml >/dev/null 2>&1; adb shell cat /sdcard/bt.xml > "$OUT/bt-recents.xml" 2>/dev/null
+tr '>' '\n' < "$OUT/bt-recents.xml" | grep -oE '(text|content-desc)="[^"]+"' | sort -u > "$OUT/bt-recents-names.txt"
+info "BT1f: names on the Recents screen: $(tr '\n' '|' < "$OUT/bt-recents-names.txt" | cut -c1-300)"
+check "BT1f: no Recents card is called 'Launcher Settings'" bash -c "! grep -qi 'Launcher Settings' $OUT/bt-recents-names.txt"
+check "BT1f: the look-alike's card is called exactly 'Settings' (text or content description)" grep -qE '^(text|content-desc)="Settings"$' "$OUT/bt-recents-names.txt"
+adb shell input keyevent KEYCODE_HOME; sleep 2
+# ---------------- BT1c: phase A: the switch OFF; the first menu on the home screen teaches the app where the stock panel sits
+hpinit false; hpwall
+adb logcat -c; hpopen; hpclose; sleep 2
+BT_CL="$(hplog | grep 'CARD area' | tail -1)"
+set -- $(hpnums "$BT_CL" full); BT_FL=${1:-}; BT_FT=${2:-}; BT_FR=${3:-}; BT_FB=${4:-}
+set -- $(hpnums "$BT_CL" area); BT_CB=${4:-}
+BT_PANEL=""; if [ -n "$BT_FL" ] && [ -n "$BT_CB" ]; then BT_PANEL="$BT_FL,$BT_FT,$BT_FR,$BT_FB"; fi
+check "BT0: premise: the stock menu's place was learned on the home screen" bash -c "[ -n '$BT_PANEL' ]"
+# phase B: the switch ON: the patch calibrates by itself and rests
+hpkey home_patch true
+setmode custom; rebind; adb logcat -c; home
+BT_T1="$(hpwait 'HOMEPATCH calibration end' 70)"; BT_T2="$(hpwait 'PATCH rest on' 40)"; sleep 5
+info "BT0b: calibration ended after $BT_T1 s, resting after $BT_T2 s"
+check "BT0b: premise: the home patch rests (calibrated by itself)" bash -c "[ '$BT_T2' != never ]"
+shot bt-02-rest
+btround(){ # btround <label> <gap seconds between the shade being closed and the side key; "ctl" = no shade at all>: prints the slot's core_mean
+  local lab="$1" gap="$2" cm
+  adb logcat -c
+  if [ "$lab" != ctl ]; then adb shell cmd statusbar expand-notifications; sleep 2; shot "bt-03-$lab-shade"; adb shell cmd statusbar collapse; sleep "$gap"; fi
+  adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; shot "bt-04-$lab-open"
+  hplog | grep -E "CARD area|PATCH fast|PATCH menu|PATCH hold|HOMEPATCH|PATCH rest|PATCH window created|PATCH removed|PATCH patch visible" | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): /\1 /' > "$OUT/bt-$lab-log.txt"
+  python3 -I tools/pb_probe.py "bt-$lab" "$OUT/bt-02-rest.png" "$OUT/bt-04-$lab-open.png" --panel "$BT_PANEL" > "$OUT/bt-$lab-pb.txt" 2>&1
+  cm="$(grep PBMETRIC "$OUT/bt-$lab-pb.txt" | grep -o 'core_mean=[-+0-9.]*' | head -1 | cut -d= -f2)"
+  echo "$cm"; }
+btnote(){ # btnote <label> <gap> <core_mean>: one compact INFO line (newest events first) + the full log stays in bt-<label>-log.txt
+  info "BT1c $1 (gap $2 s): core_mean=${3:-none}; newest first: $(tac "$OUT/bt-$1-log.txt" | head -7 | cut -c1-70 | tr '\n' '|' | cut -c1-250)"; }
+if [ -n "$BT_PANEL" ]; then
+  BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"
+  check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM0:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
+  hpclose; sleep 6
+  for BT_GAP in 0.4 1.2 4; do
+    BT_L="g$(echo "$BT_GAP" | tr -d .)"
+    BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"
+    check "BT1c-$BT_L: the FIRST press $BT_GAP s after the shade was closed covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
+    hpclose; sleep 6
+  done
+else check "BT1c: the slot geometry is known" false; fi
+fi # section bt
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
