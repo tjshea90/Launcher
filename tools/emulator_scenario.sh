@@ -4750,9 +4750,11 @@ muset auto_done > "$OUT/mu-auto-done-4.txt"; MUDONE2="$(grep "^$MU@[0-9]" "$OUT/
 muprefs "$MUDONE2"                                   # hand-hide state of THIS install; stops the launcher process
 adb uninstall "$MU" >/dev/null 2>&1; sleep 3
 adb install -r -g "$MUAPK" > "$OUT/mu-reinstall-2.txt" 2>&1; sleep 4
-setmode custom; rebind; home; sleep 2
-mudrawer; shot mud-04-missed-removal
-for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-missed.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-missed.txt" && break; sleep 3; done
+setmode custom; rebind; home; sleep 4
+# the launcher process was stopped by muprefs and starts cold: the first swipe can come before its home is ready (run 551: the picture showed the home, the drawer never opened). Swipe again until the drawer is OPEN (Contacts listed), at most 5 times.
+for i in 1 2 3 4 5; do mudrawer; mudump > "$OUT/mu-drawer-missed.txt"; grep -q 'text="Contacts"' "$OUT/mu-drawer-missed.txt" && break; sleep 2; done
+shot mud-04-missed-removal
+grep -q 'text="Music"' "$OUT/mu-drawer-missed.txt" || { sleep 4; mudump > "$OUT/mu-drawer-missed.txt"; }
 muset auto_done > "$OUT/mu-auto-done-5.txt"
 check "MU-14b: hidden by hand, then uninstalled and installed again while the launcher was NOT running (removal never seen): it is a new install, so it is in the drawer again and 'auto_done' holds the NEW install time" bash -c "grep -q Success $OUT/mu-reinstall-2.txt && grep -q 'text=\"Music\"' $OUT/mu-drawer-missed.txt && grep -q '^$MU@[0-9]' $OUT/mu-auto-done-5.txt && ! grep -qx '$MUDONE2' $OUT/mu-auto-done-5.txt"
 
