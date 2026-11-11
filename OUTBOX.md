@@ -2097,3 +2097,7 @@
 > - **Drawer rule hardened after the review.** The "already handled" mark is now tied to the install time, so a missed uninstall event can't leave it stale. The music app also gets no automatic home-screen icon. All 1025 unit tests and lint are green.
 > - **Next.** I'll read the four results at about 17:58 and 18:05 UTC, then bump to v0.9.6, ship it and answer you.
 <!-- sha:9384400b1061 -->
+
+## 2026-11-11T17:52:47Z
+> Heartbeat acknowledged: I'm mid-job (rule 4), so I'm continuing from "Do this next". The four emulator runs on `ca64c7f9` are still going. I'll read the music-app run (`#547`) at about 17:58 UTC and the three gate groups around 18:05.
+<!-- sha:ac2861a00172 -->
