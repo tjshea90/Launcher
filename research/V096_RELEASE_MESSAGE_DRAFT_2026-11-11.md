@@ -1,0 +1,39 @@
+# Draft of the answer to Tj for v0.9.6 (BV1: the music app), written BEFORE the release so a cut-off session can send it
+
+Rules (CLAUDE.md "Messages from Tj", TASKS BP3b): the answer is the LAST message of the turn and is also appended to OUTBOX.md. Fill the markers (`<<RELEASE>>`, `<<GATE>>`, `<<MU>>`) from the real results and DELETE any sentence the results do not support (check each one against the RUN LIST in `CHECKPOINT.md` / the ckpt texts, not memory). Do not claim a tablet result. Keep it short; the Release link goes on its own line as plain text.
+
+---
+
+Tj, the music app is in v0.9.6, as its own app next to the launcher.
+
+<<RELEASE>>   (the Release link on its own line; the three APKs in it: `Launcher-v0.9.6.apk` = update in place as always, `Eleven-v0.9.6.apk` = the music app, install it once, same signing key, `PhoneGuide-v0.9.6.apk` unchanged)
+
+**What it is.** LineageOS's own music app, Eleven (package `org.lineageos.eleven`, from the `lineage-17.1` branch, pinned to one commit, Apache-2.0 notice and a list of my changes are in the repo under `eleven/`). It looks and works as upstream wrote it, with the album art removed.
+
+**In the custom drawer.** The launcher puts the music app into the custom drawer by itself, once per install, the first time it sees it. If you switch it off on the Hidden apps screen it stays off, also after an update. Uninstall and reinstall counts as new and puts it back. It does not appear on the home screen by itself (the stock "add icon to home on install" is switched off for it; reasoned, the emulator cannot test an installer install).
+
+**No album art, ever.** I did not hide it, I removed every place that reads or shows it: the app no longer asks Android for a cover, never decodes one, keeps no picture cache, and has no internet permission, so nothing can be fetched. Artists show the coloured letter cards, albums and songs the music-note tile, as the app draws them when it finds no art. Removed with it: "Change image" on artists and albums, the photo picker, "Delete cache" in Settings. A unit test (12 checks, runs for every release) fails the build if any way to read, cache or show a cover comes back.
+
+**What is proven** <<MU>>
+- Emulator, same song with a flat bright magenta cover, same screens: upstream's app WITH its art code shows that cover on the songs tab, the albums tab, the playing screen and the notification card; our app shows none of it in 19 pictures (tabs, artist and album pages, menus, playing screen, shade, lock screen) and shows the placeholders instead. The app stayed in front through the whole tour and did not crash.
+- Drawer rule on the emulator: appears by itself, a system app outside your list stays hidden, opens from the drawer, a hide on the real Hidden apps screen sticks (also across an update in place), uninstall + reinstall brings it back, also when the launcher did not see the uninstall.
+- <<GATE>>
+
+**What only your tablet can show**
+- The permission prompt on first start (tap Allow), real music files, the Go-edition memory, headset and Bluetooth buttons, and how the media card looks on the MediaTek lock screen (on the emulator the card is green with the placeholder note).
+- The notification, the lock-screen card and the widgets show the PLACEHOLDER tile (not art), as Eleven does for songs without art.
+
+**Two questions for you**
+1. "Blur background" is still in Eleven's Settings; with no art it blurs nothing. Remove it?
+2. Do you want the notification and lock-screen media card without any picture (no placeholder note either)?
+
+**Still waiting on you** (unchanged):
+- BR1c: does the settings gear in the custom notification panel open the look-alike?
+- BN7a: start the shell helper and tap "Do everything that is missing".
+- BN8c / BN8d: tablet reports, one right after the first side-key press on the custom home and one before you open more stock-launcher apps.
+- BQ1b: a tablet report right after any lock-screen screenshot or white box.
+- BH1c: where you saw a pop-up notification, and from which app.
+- BK1e: which unlock is slow, what is on screen, and how many seconds.
+- BM1: the account plugin `session-handoff`.
+- BS2e: the Wi-Fi / Bluetooth symbol check from v0.9.4.
+- BT1h: the five tablet checks of v0.9.5 (pull-up cover, flicker after unlock, side-key after the notification panel, home wallpaper cover, "Settings" name).
