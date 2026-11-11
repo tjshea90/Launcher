@@ -1,13 +1,13 @@
-# CHECKPOINT 1151 — read me first, then TASKS.md
+# CHECKPOINT 1152 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T12:22:47Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `d8c02111` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T14:19:27Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `697aa151` (this checkpoint is the commit after it)
 
 ## Just done
-Merged main into the branch (d8c02111): the account-1 session sent the BT1 answer at 11:19Z (OUTBOX.md) and ticked BT1g; NO second answer sent from here; branches reconciled
+14:18Z heartbeat fired (rules 1-5 done): hooks ok; newest main commit 697aa151 (12:34Z) is an OUTBOX-only auto-checkpoint of the account-1 session = not work (merged, no conflict); no new Tj message in INBOX; nothing Claude-owned left, no action taken
 
 ## Do this next
-NOTHING Claude-owned is left. Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b BH1c BK1e BM1; LOW: BT2c BT2b BQ4 BN6 BS2f. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab (mine) is STILL ARMED, every 2 h: update_trigger/delete_trigger need Tj's approval and both attempts (09:12Z, 10:15Z) ended with a worker restart, so do NOT call them; when a firing wakes this session: rule 5, one short line, stop. Tj can delete both heartbeats in the app (mine and account 1's trig_01DZ15y7gsi1bXpJ7P2KBghc)
+Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b BH1c BK1e BM1; LOW: BT2c BT2b BQ4 BN6 BS2f. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab (mine) STILL ARMED, every 2 h: I do NOT retry update_trigger/delete_trigger (approval prompts ended the turn twice; Tj was told in OUTBOX how to delete both heartbeats). Next firing: rule 5, one short line, stop
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ NOTHING Claude-owned is left. Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b 
 
 ## Last ten checkpoints
 ```
+  f6a84b4d ckpt 1151: Merged main into the branch (d8c02111): the account-1 session sent the BT1 a
   b9051ceb ckpt 1150: 12:18Z heartbeat fired again (rules 1-4 ok, no other session). update_trigge
   4ea7eb30 ckpt 1150: 11:18Z: other session inactive since its ckpt 1149 (10:15Z, over 60 min, no 
   3d1739b3 ckpt 1149: Worker restarted 09:12-10:13Z; heartbeat trig_01GVcBRvTAzqf97UhMTJszab fired
@@ -25,8 +26,7 @@ NOTHING Claude-owned is left. Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b 
   c17eac6b ckpt 1145: #541 (id 42988210547, job 130414401792, v,ps,hp on 3e4d1d2): 32 PASS 15 FAIL
   dad80ef4 ckpt 1144: CLAUDE.md lessons from the v0.9.5 session added; GATE wording checked: wf/lq
   0bdaac12 ckpt 1143: HANDOFF.md block 0s (v0.9.5 state) written; #541 id 42988210547 still runnin
-  78d6cb20 ckpt 1142: BT2 proof run #541 id 42988210547 (v,ps,hp on branch, head 3e4d1d2, dispatch
 ```
 
-(3 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
