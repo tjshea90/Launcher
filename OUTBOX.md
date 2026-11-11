@@ -1731,3 +1731,13 @@
 > - BK1e: which unlock is slow, and how many seconds.
 > - New once v0.9.4 ships: check the lock screen and tell me whether the Wi-Fi or Bluetooth symbol is gone.
 <!-- sha:54866e141b8a -->
+
+## 2026-11-11T00:18:55Z
+> Nothing was unpushed. `ccr-5ef85f7a-ngtgj1`, `origin/ccr-5ef85f7a-ngtgj1` and `main` all point at `0cb4bb5`, and the working tree is clean. The hook most likely ran in the moment between an automatic checkpoint commit and its push. I pushed again to make sure, and the branch now tracks its remote.
+>
+> I'm still waiting on two results:
+> - **Emulator run #520** for the Wi-Fi and Bluetooth section; the wake-up timer is set for 00:25 UTC.
+> - **Second code review** of the Bluetooth changes.
+>
+> Once both are in, I'll fix anything they find, run the release gate, ship v0.9.4 and answer both of your questions.
+<!-- sha:08eeca0a09ad -->
