@@ -1809,3 +1809,7 @@
 >
 > Still waiting on you, unchanged: BR1c, BN7a, BN8c / BN8d, BQ1b, BH1c, BK1e. The details are in my earlier messages.
 <!-- sha:e4597c9d6eb3 -->
+
+## 2026-11-11T02:50:05Z
+> `ship.sh` is running in the background (unit tests, lint, version check, push). Once it's green I dispatch the signed build. Both solo reruns were green, so the gate is complete on the exact code being shipped.
+<!-- sha:e0a0dc10770a -->
