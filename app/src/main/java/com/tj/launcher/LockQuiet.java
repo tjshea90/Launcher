@@ -66,6 +66,13 @@ public final class LockQuiet {
     /** Pure: remember the radios at the lock moment? The first lock moment of a lock, or whenever a radio is on right now (that is the freshest truth). */
     public static boolean shouldRecordPrev(String stored, boolean wifiOnNow, boolean btOnNow) { return stored == null || stored.isEmpty() || wifiOnNow || btOnNow; }
 
+    /**
+     * Pure (review of BS2, finding 1): is the stored memory of "what was on before the lock" a leftover? Only an unlock the helper handled clears it ({@link #onUnlock}); a boot unlock before the helper bound (or a
+     * helper that crashed during a lock) leaves it behind, and with the radios now kept on at every later lock nothing rewrites it, so a much later gesture unlock would switch on a radio that was off. When the helper
+     * (re)connects while the screen is ON and the keyguard is NOT up no lock is in progress: whatever is stored belongs to a lock that has ended. (A lock that is just starting has the screen off or the keyguard up.)
+     */
+    public static boolean shouldForgetPrev(boolean keyguardLocked, boolean screenOn, String prev) { return !keyguardLocked && screenOn && prev != null && !prev.isEmpty(); }
+
     // ---------------------------------------------------------------- Android side
 
     private static String stamp() { return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()); }
