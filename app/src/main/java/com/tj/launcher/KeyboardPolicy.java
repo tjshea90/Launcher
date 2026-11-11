@@ -33,6 +33,30 @@ public final class KeyboardPolicy {
         return null;
     }
 
+    /**
+     * BT1e (Tj, 2026-11-11: in the Settings look-alike, Languages and input, "remove the text 'and Microsoft SwiftKey keyboard' even if that keyboard is installed"). Is this input method SwiftKey's? The look-alike is
+     * the custom launcher's world, which must not know the keyboard of the Quickstep side, so it never names it. Decided by the package (the same rule as {@link #pickSwiftKey}) or by the label, in any letter case.
+     */
+    public static boolean isSwiftKey(String pkg, String label) { return mentionsSwiftKey(pkg) || mentionsSwiftKey(label); }
+
+    private static boolean mentionsSwiftKey(String s) { return s != null && s.toLowerCase(Locale.ROOT).contains("swiftkey"); }
+
+    /**
+     * BT1e: the keyboard names the look-alike may show. {@code pkgs} and {@code labels} are parallel lists describing the ENABLED input methods (a missing package is fine, the label then decides); SwiftKey's entry and
+     * blank labels are left out. Never null; the order is kept.
+     */
+    public static List<String> visibleLabels(List<String> pkgs, List<String> labels) {
+        List<String> out = new ArrayList<>();
+        if (labels == null) return out;
+        for (int i = 0; i < labels.size(); i++) {
+            String label = labels.get(i);
+            String pkg = pkgs != null && i < pkgs.size() ? pkgs.get(i) : null;
+            if (label == null || label.trim().isEmpty() || isSwiftKey(pkg, label)) continue;
+            out.add(label);
+        }
+        return out;
+    }
+
     /** Which keyboard to use for a mode; null = leave things alone. Quickstep mode returns SwiftKey, or the keyboard that was the default before we ever switched. */
     public static String target(String mode, List<Ime> enabled, String originalId) {
         if (Mode.QUICKSTEP.equals(mode)) {
