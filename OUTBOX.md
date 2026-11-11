@@ -2000,3 +2000,11 @@
 > **Auto-resume timers**
 > One timer per account may still be armed (every 2 hours). I tried twice to switch mine off, but the app's approval prompt ended with my session being restarted both times, so I stopped trying. A wake-up only reads the state and stops, so it costs very little. If you don't want them, delete the scheduled task "Launcher auto-resume heartbeat" on each account in the app.
 <!-- sha:8c66020efd53 -->
+
+## 2026-11-11T12:34:25Z
+> Nothing is left for me to do. v0.9.5 is released, and the answer to your six reports went out at 11:19 UTC (it's in `OUTBOX.md`). The session on your other account confirmed it didn't send a second one. My branch matches `main` again, and nothing is running on CI.
+>
+> What's left depends on you (the tablet checks BT1h, BS2e and BR1c, plus BN7a, BN8c/d, BQ1b, BH1c, BK1e and BM1), plus a few low-priority items of mine that I'm not starting.
+>
+> One thing you can do from the app: each account still has an auto-resume heartbeat armed (mine is `trig_01DZ15y7gsi1bXpJ7P2KBghc`). Turning them off needs your approval, and those approval requests keep dying when the worker restarts. Until they're deleted, each wakes its session every 2 hours for nothing. You can delete "Launcher auto-resume heartbeat" in both accounts' scheduled tasks.
+<!-- sha:e653e9c5d0fe -->
