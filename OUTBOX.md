@@ -1890,3 +1890,16 @@
 >
 > I'll continue automatically when the runs finish.
 <!-- sha:767196c2617f -->
+
+## 2026-11-11T07:36:43Z
+> `pt` has one failure (`BA1`, a margin comparison between two noisy film measurements), and the other two runs are still going. I'm waiting on a subagent that is extracting the exact numbers from that log, then I'll decide the triage.
+>
+> - **Done so far:**
+>   - `rg` is green.
+>   - `pt` is 30 pass, 1 fail.
+>   - The failing check is not about the code I changed. It compares the patch's end brightness against the generic one, and the same check also failed on the released v0.8.8 tag.
+> - **Next:**
+>   - Once I have the numbers, I compare against the v0.9.4 tag side by side. A regression only counts if the tag passes and the head fails repeatedly.
+>   - Runs #533 and #534 finish around 07:48 UTC.
+>   - Everything is checkpointed (1129).
+<!-- sha:79dd89a87b92 -->
