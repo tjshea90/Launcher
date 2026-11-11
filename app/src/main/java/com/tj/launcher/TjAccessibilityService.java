@@ -2856,7 +2856,7 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean locked = km != null && km.isKeyguardLocked();
             boolean bouncer = (enabled || locked) && on && locked && bouncerShown();   // also needed by the handshakes (a fresh pad, the peek count), not just the number
             if (bouncer) lastPadSeenMs = android.os.SystemClock.uptimeMillis();   // AU2: a screenshot taken around a PIN pad is refused
-            if (bouncer != lastBouncer) { lastBouncer = bouncer; ensureUnlockListener(); unlock.onPad(bouncer, System.currentTimeMillis()); LockLog.add(getApplicationContext(), "PAD", bouncer ? "shown" : "hidden"); if (bouncer) pinPadCameUp("the PIN pad scan found it"); else padLeft(); patchShow(overlayShown); }   // AE3: the resting patch hide; BT1b: a pad that LEAVES keeps it away toos while the PIN pad is up and comes back after
+            if (bouncer != lastBouncer) { lastBouncer = bouncer; ensureUnlockListener(); unlock.onPad(bouncer, System.currentTimeMillis()); LockLog.add(getApplicationContext(), "PAD", bouncer ? "shown" : "hidden"); if (bouncer) pinPadCameUp("the PIN pad scan found it"); else if (!patchHomeMode) padLeft(); patchShow(overlayShown); }   // AE3: the resting patch hide; BT1b: a pad that LEAVES keeps it away toos while the PIN pad is up and comes back after
             if (LockNumber.shouldShow(enabled, on, locked, bouncer)) showLockNumber(); else removeLockNumber();
         } catch (Throwable t) { Log.e(TAG, "lock number update failed", t); removeLockNumber(); }
     }
