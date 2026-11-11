@@ -1,13 +1,13 @@
-# CHECKPOINT 1152 — read me first, then TASKS.md
+# CHECKPOINT 1153 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T14:19:27Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `697aa151` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T15:50:59Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `9d1c8b01` (this checkpoint is the commit after it)
 
 ## Just done
-14:18Z heartbeat fired (rules 1-5 done): hooks ok; newest main commit 697aa151 (12:34Z) is an OUTBOX-only auto-checkpoint of the account-1 session = not work (merged, no conflict); no new Tj message in INBOX; nothing Claude-owned left, no action taken
+BU1 written in TASKS (Tj 15:48Z: find the stock lineage music app source for this os). Fact: tablet is NOT LineageOS (ro.lineage.version empty, Alps MT8168 Android 10 Go); no music package named in tablet reports
 
 ## Do this next
-Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b BH1c BK1e BM1; LOW: BT2c BT2b BQ4 BN6 BS2f. Heartbeat trig_01GVcBRvTAzqf97UhMTJszab (mine) STILL ARMED, every 2 h: I do NOT retry update_trigger/delete_trigger (approval prompts ended the turn twice; Tj was told in OUTBOX how to delete both heartbeats). Next firing: rule 5, one short line, stop
+Heartbeat trig_01GVcBRvTAzqf97UhMTJszab still armed (do not call update/delete_trigger). BU1a: find LineageOS Eleven (org.lineageos.eleven) repo + Android 10 branch (lineage-17.1?) + licence + build needs, verify from the repo (add_repo LineageOS/android_packages_apps_Eleven read, or git ls-remote, or web-fetch agent); BU1b: save to research/LINEAGE_MUSIC_APP_2026-11-11.md + ckpt; BU1c: answer Tj with links and ask what it is for; NO code until he says
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b BH1c BK1e BM1; LOW: BT2c BT2b 
 
 ## Last ten checkpoints
 ```
+  4425299c ckpt 1152: 14:18Z heartbeat fired (rules 1-5 done): hooks ok; newest main commit 697aa1
   f6a84b4d ckpt 1151: Merged main into the branch (d8c02111): the account-1 session sent the BT1 a
   b9051ceb ckpt 1150: 12:18Z heartbeat fired again (rules 1-4 ok, no other session). update_trigge
   4ea7eb30 ckpt 1150: 11:18Z: other session inactive since its ckpt 1149 (10:15Z, over 60 min, no 
@@ -25,8 +26,7 @@ Waiting on Tj: BT1h BS2e BR1c BN7a BN8c BN8d BQ1b BH1c BK1e BM1; LOW: BT2c BT2b 
   a36083d2 ckpt 1146: BT2c: #541 (v,ps,hp) was red with 15 FAIL all in hp (patch never rested, 'aw
   c17eac6b ckpt 1145: #541 (id 42988210547, job 130414401792, v,ps,hp on 3e4d1d2): 32 PASS 15 FAIL
   dad80ef4 ckpt 1144: CLAUDE.md lessons from the v0.9.5 session added; GATE wording checked: wf/lq
-  0bdaac12 ckpt 1143: HANDOFF.md block 0s (v0.9.5 state) written; #541 id 42988210547 still runnin
 ```
 
-(2 automatic checkpoint(s) since the last deliberate one — the
+(4 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
