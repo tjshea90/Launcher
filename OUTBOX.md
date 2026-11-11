@@ -1868,3 +1868,25 @@
 ## 2026-11-11T06:49:08Z
 > Review C is done and checkpointed (1122); reviews A and B are still running. The existing lock-screen checks read log lines that arrive within the new 1.2 s and 1.5 s holds, so they should still pass. The gate will confirm that.
 <!-- sha:c7869f0a0e06 -->
+
+## 2026-11-11T07:22:06Z
+> I've taken over and the work is on track. Nothing has been released yet; v0.9.5 is not built.
+>
+> - **Where it stood:** the other account's last checkpoint was 07:03 UTC, with all six of your 05:03 reports coded and reviewed. The final test gate had not been started. GitHub had no runs in flight and v0.9.4 was the newest release, so I took over.
+> - **Checked here:**
+>   - Unit tests: 990 pass, 0 fail.
+>   - Lint: runs and does not fail the build. That is the project's setting, because of the old Launcher3 code.
+>   - Code review: I read the ~75 lines of production code changed after the three reviews and found no defect.
+>   - Gate run `rg` (Recents filter): green.
+> - **Still running:** three emulator runs on commit `980012c`, which together cover the lock-screen, home-patch, Settings look-alike, `bt` (power-menu cover after the notification panel) and power-menu timing checks. Two finish around 07:48 UTC and `pt` (power-menu timing) around 07:33.
+> - **Next, if they are green:** I ship v0.9.5. The version is already bumped to 0.9.5 (code 44), and the ship step re-checks that nothing else in the app code changed after the gate. Then I trigger the GitHub build, confirm the Release, record it, and answer each of your six points in plain words.
+> - **What the answer will say:**
+>   - Items 3, 4 and 6 were reproduced and checked on the emulator.
+>   - Item 5 is covered by unit tests.
+>   - Items 1 and 2 are reasoned fixes, because I could not see them happen; I will ask you to check those two on the tablet.
+>   - Item 6 means the app's own name is now "Settings" in Settings > Apps. I will word that carefully.
+> - **If this session is cut off:** every step is checkpointed and pushed (checkpoint 1128). A heartbeat, `trig_01GVcBRvTAzqf97UhMTJszab`, wakes a session every 2 hours.
+>   - I cannot see the other account's heartbeat from here. It will find my recent commits and stand down.
+>
+> I'll continue automatically when the runs finish.
+<!-- sha:767196c2617f -->
