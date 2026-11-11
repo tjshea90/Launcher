@@ -44,6 +44,23 @@ public class AppLabelTest {
         assertEquals("@string/ss_label", label(tagOf(manifest, "activity-alias", "com.tj.launcher.SettingsAlias")));
         assertEquals("Settings", string("ss_label"));
         assertEquals(string("ss_label"), string("tj_app_label"));
+        assertEquals("the closer's exemption for the look-alike's own card (RecentsFilter) must name what the resources name", SettingsSpoof.LABEL, string("ss_label"));   // review C #1 (BT1)
+    }
+
+    /** Review C #2 (BT1): a component WITHOUT its own label inherits the application label, which is now "Settings". The ones a person can meet by name (activities, aliases, services) all say what they are. */
+    @Test public void everyActivityAliasAndServiceCarriesItsOwnLabel() throws Exception {
+        String manifest = read(new File(module(), "AndroidManifest.xml")).replaceAll("(?s)<!--.*?-->", "");
+        Matcher m = Pattern.compile("<(activity-alias|activity|service)\\b([^>]*)>", Pattern.DOTALL).matcher(manifest);
+        int seen = 0;
+        while (m.find()) {
+            seen++;
+            Matcher n = Pattern.compile("android:name=\"([^\"]*)\"").matcher(m.group(2));
+            assertTrue("a component without a name", n.find());
+            String name = n.group(1);
+            if (name.endsWith("ColorExtractionService")) continue;   // an upstream bound service nobody can reach by name
+            assertTrue(m.group(1) + " " + name + " has no android:label and would read \"Settings\"", label(m.group()) != null);
+        }
+        assertTrue("the manifest scan found the components", seen >= 15);
     }
 
     @Test public void theHomeRouterAndTheLauncherActivityKeepTheNameLauncher() throws Exception {
