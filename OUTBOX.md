@@ -1773,3 +1773,15 @@
 > - BH1c: where you saw a pop-up notification, and which app.
 > - BK1e: which unlock is slow, what is on screen, and how many seconds.
 <!-- sha:22fa710badbe -->
+
+## 2026-11-11T01:50:37Z
+> Run #523 (the rerun with the fix) is in flight and due about 01:58 UTC. Everything is checkpointed and pushed. If it's green, I dispatch the three-run release gate, build v0.9.4 and send you the answer for both the Wi-Fi and Bluetooth requests.
+>
+> Still waiting on you, unchanged:
+> - BR1c: does the settings gear in the custom notification panel open the look-alike?
+> - BN7a: start the shell helper and tap "Do everything that is missing" (usage access).
+> - BN8c / BN8d: tablet reports right after the first side-key press on the custom home, and before you open more Quickstep apps.
+> - BQ1b: a tablet report right after any lock-screen screenshot or white box.
+> - BH1c: where you saw a pop-up notification, and which app.
+> - BK1e: which unlock is slow, what is on screen, and how many seconds.
+<!-- sha:dce8891a2406 -->
