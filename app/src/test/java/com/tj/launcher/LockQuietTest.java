@@ -51,6 +51,17 @@ public class LockQuietTest {
         assertTrue("a radio that is on right now is the freshest truth", LockQuiet.shouldRecordPrev("w0b0", true, false));
     }
 
+    /** Review of BS2, finding 1: a lock memory left over from an unlock the helper never saw must not survive a helper connect on an UNLOCKED, lit screen (it would put a radio back much later). */
+    @Test public void aLockMemoryIsForgottenOnlyWhenNoLockIsInProgress() {
+        assertTrue("the helper connected on a lit, unlocked tablet: the memory is a leftover", LockQuiet.shouldForgetPrev(false, true, "w1b1"));
+        assertTrue(LockQuiet.shouldForgetPrev(false, true, "w0b1"));
+        assertFalse("on the lock screen the memory belongs to this lock", LockQuiet.shouldForgetPrev(true, true, "w1b1"));
+        assertFalse("a dark screen may be the start of a lock", LockQuiet.shouldForgetPrev(false, false, "w1b1"));
+        assertFalse("a dark screen with the keyguard up", LockQuiet.shouldForgetPrev(true, false, "w1b1"));
+        assertFalse("nothing stored: nothing to forget", LockQuiet.shouldForgetPrev(false, true, ""));
+        assertFalse(LockQuiet.shouldForgetPrev(false, true, null));
+    }
+
     @Test public void theNamesAreAndroidsOwnAndTheSwitchKeysAreStable() {
         assertEquals("lock_screen_show_notifications", LockQuiet.SHOW);
         assertEquals("lock_screen_allow_private_notifications", LockQuiet.PRIVATE);
