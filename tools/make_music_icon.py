@@ -21,81 +21,45 @@ import sys
 
 import numpy as np
 
-R_OUT = 19.7  # outer radius of the artwork in drawer pixels (the unit of every table below)
+R_OUT = 19.66  # outer radius of the artwork in drawer pixels (the unit of every table below)
 
-# (r in drawer px, top colour, bottom colour) of the blue cone, measured: mean of the north and south sectors, +-30 degrees, 1 px steps
-CONE = [
-    # r      north (R,G,B)        south (R,G,B)
-    (5.0, (30, 44, 80), (110, 118, 140)),
-    (6.0, (41, 60, 108), (164, 181, 218)),
-    (7.0, (35, 53, 99), (161, 181, 224)),
-    (8.0, (35, 54, 105), (152, 174, 221)),
-    (9.0, (36, 59, 117), (143, 167, 219)),
-    (10.0, (39, 64, 130), (133, 160, 215)),
-    (11.0, (39, 65, 134), (120, 149, 207)),
-    (12.0, (36, 61, 129), (105, 133, 190)),
-    (13.0, (31, 53, 113), (88, 114, 165)),
-    (14.0, (24, 41, 91), (70, 92, 137)),
-    (15.0, (15, 26, 59), (53, 71, 108)),
-    (15.6, (6, 9, 18), (20, 28, 44)),
-]
-# (r, grey at the top, grey at the bottom) of the bezel between the black ring and the edge
-BEZEL = [
-    (16.6, 66, 52),
-    (17.0, 83, 54),
-    (18.0, 127, 63),
-    (19.0, 153, 72),
-    (19.7, 160, 78),
-]
-BLACK_R0, BLACK_R1 = 15.6, 16.65      # the thin black ring
-BLACK = (3, 4, 6)
-CAP_R = 4.75                          # the dust cap
-CAP_EDGE_R = 5.1                      # its dark edge ring ends here
-CAP_EDGE = (18, 18, 22)
-
-
-def interp(table, r, k):
-    """Linear interpolation of column k (1 or 2 = the two sides) of the table at radius r (numpy arrays); clamped at both ends."""
-    xs = np.array([row[0] for row in table], float)
-    out = []
-    for c in range(3):
-        ys = np.array([row[k][c] if isinstance(row[k], tuple) else row[k] for row in table], float)
-        out.append(np.interp(r, xs, ys))
-    return np.stack(out, axis=-1)
-
-
-def interp1(table, r, k):
-    xs = np.array([row[0] for row in table], float)
-    ys = np.array([row[k] for row in table], float)
-    return np.interp(r, xs, ys)
-
-
+# MEASURED (drawer pixels, centre of the speaker = the origin, f = dy / r: +1 straight below the centre, -1 straight above, 0 at the sides).
+# Per radius the colour of every pixel is a straight line in f (least squares over all angles, 0.5 px bins; the residual is 2 to 5 levels).
+# THE CONE: colour = M(r) + D(r) * f with the SAME D for red, green and blue: the speaker is lit from below by a white glow (lighter at the bottom, darker at the top).
+CONE_R = [5.8, 6.2, 6.8, 7.2, 7.8, 8.2, 8.8, 9.2, 9.8, 10.2, 10.8, 11.2, 11.8, 12.2, 12.8, 13.2, 13.8, 14.2, 14.8, 15.4]
+CONE_M = [  # mean colour (R, G, B)
+    (98, 118, 163), (103, 124, 174), (99, 120, 168), (95, 117, 167), (92, 115, 167), (91, 115, 170), (89, 113, 171), (87, 114, 174),
+    (85, 112, 175), (83, 111, 176), (80, 108, 174), (77, 106, 172), (73, 101, 166), (69, 97, 160), (63, 89, 149), (59, 84, 140),
+    (52, 73, 124), (48, 69, 116), (41, 60, 102), (24, 34, 58)]
+CONE_D = [63, 69, 69, 67, 65, 63, 60, 56, 52, 49, 45, 42, 38, 36, 32, 31, 26, 26, 22, 14]   # glow amplitude, the same in all three channels
+# THE BEZEL (the grey ring): colour = M(r) + D(r) * f, grey, lighter at the top (D < 0)
+BEZEL_R = [16.7, 17.2, 17.8, 18.2, 18.8, 19.3, 19.7]
+BEZEL_M = [70, 90, 93, 97, 105, 125, 140]
+BEZEL_D = [-8, -18, -33, -34, -39, -39, -30]
+BLACK_R0, BLACK_R1 = 15.5, 16.7       # the thin black ring
+BLACK = (4, 4, 6)
+CAP_R = 4.0                           # the dust cap: a glossy dome, 40 + 13.4 * (height above the centre in px), black at the bottom
+CAP_BASE, CAP_GAIN = 40.0, 13.4
+CAP_EDGE_R = 5.09                     # the dark edge ring around the dome ends here
+CAP_EDGE = (24, 24, 28)
 def shade(x, y):
-    """RGBA (floats 0..255, alpha 0..1) of the speaker at points (x, y) in drawer pixels, centre = (0, 0), y down. No anti-aliasing here (the caller supersamples)."""
+    """RGB (floats 0..255) and coverage (0 or 1) of the speaker at points (x, y) in drawer pixels, centre = (0, 0), y down. No anti-aliasing here (the caller supersamples)."""
     r = np.hypot(x, y)
-    safe = np.maximum(r, 1e-6)
-    f = y / safe                                   # +1 below the centre, -1 above
-    rgb = np.zeros(x.shape + (3,), float)
+    f = y / np.maximum(r, 1e-6)                    # +1 below the centre, -1 above
     alpha = (r <= R_OUT).astype(float)
-    # bezel
-    top = interp1(BEZEL, r, 1)
-    bot = interp1(BEZEL, r, 2)
-    g = (top + bot) / 2 + (top - bot) / 2 * (-f)
-    bez = np.stack([g, g, g], axis=-1)
-    rgb = np.where((r >= BLACK_R1)[..., None], bez, rgb)
-    # cone
-    north = interp(CONE, r, 1)
-    south = interp(CONE, r, 2)
-    cone = (north + south) / 2 + (south - north) / 2 * f[..., None]
-    cone = np.clip(cone, 0, 255)
+    rgb = np.zeros(x.shape + (3,), float)
+    # bezel (grey ring)
+    g = np.interp(r, BEZEL_R, BEZEL_M) + np.interp(r, BEZEL_R, BEZEL_D) * f
+    rgb = np.where((r >= BLACK_R1)[..., None], np.stack([g, g, g], axis=-1), rgb)
+    # cone (blue, lit from below)
+    m = np.stack([np.interp(r, CONE_R, [c[k] for c in CONE_M]) for k in range(3)], axis=-1)
+    cone = np.clip(m + (np.interp(r, CONE_R, CONE_D) * f)[..., None], 0, 255)
     rgb = np.where(((r >= CAP_EDGE_R) & (r < BLACK_R0))[..., None], cone, rgb)
-    # thin black ring
+    # the thin black ring
     rgb = np.where(((r >= BLACK_R0) & (r < BLACK_R1))[..., None], np.array(BLACK, float), rgb)
-    # dust cap: glossy dome, light on top
-    up = -y
-    cap_v = np.clip(42 + 60 * (up / CAP_R), 8, 92)
-    cap = np.stack([cap_v, cap_v, cap_v], axis=-1)
-    rgb = np.where((r < CAP_R)[..., None], cap, rgb)
+    # the dust cap
+    v = np.clip(CAP_BASE - CAP_GAIN * y, 8, 92)
+    rgb = np.where((r < CAP_R)[..., None], np.stack([v, v, v], axis=-1), rgb)
     rgb = np.where(((r >= CAP_R) & (r < CAP_EDGE_R))[..., None], np.array(CAP_EDGE, float), rgb)
     return rgb, alpha
 
