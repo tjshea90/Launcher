@@ -1,13 +1,13 @@
-# CHECKPOINT 1049 — read me first, then TASKS.md
+# CHECKPOINT 1050 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T00:15:52Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `5dbf04b` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T00:17:22Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `ce7f000` (this checkpoint is the commit after it)
 
 ## Just done
-BS2: docs (TASKS BS1b/2a/2b/2c done, HANDOFF row, research moments walked), scenario phase N rewritten (no planted memory), gate-map names; test_handoff 48 green
+BS2d: emulator run #520 (id 42930004319, main@ce7f000, sections=wf shots=true) dispatched 00:16:09Z; read-only review of the BS2 delta started
 
 ## Do this next
-push is done by ckpt; verify main==tip; dispatch emulator.yml sections=wf shots=true on main; read RESULTS (ckpt the raw verdict first); fetch ci-shots into a fresh scratchpad dir. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
+when run 42930004319 ends (~00:24Z): list_workflow_jobs -> get_job_logs tail_lines ~58, ckpt the RAW verdict (PASS/FAIL counts, FAIL names) BEFORE analysing; fetch ci-shots (git archive into a fresh scratchpad dir) and look at wf pictures; fix FAILs; then ship v0.9.4 (ship.sh, android.yml full_build, record-release, answer Tj for BS1+BS2). Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ push is done by ckpt; verify main==tip; dispatch emulator.yml sections=wf shots=
 
 ## Last ten checkpoints
 ```
+  ce7f000 ckpt 1049: BS2: docs (TASKS BS1b/2a/2b/2c done, HANDOFF row, research moments walked), s
   65bf8f5 ckpt 1046: BS2a code done: Radio* rename, wifi+bluetooth slots, keepsRadiosOn mirrors th
   d41f968 ckpt 1030: BS2: scenario wf v2 written (Bluetooth list, picture probe, lock control, pha
   b2cfbb6 ckpt 1026: BS1d wf run #519 (id 42926361302, job 130213726774, main@8babd57): 24 PASS 0 
@@ -25,8 +26,4 @@ push is done by ckpt; verify main==tip; dispatch emulator.yml sections=wf shots=
   dece682 ckpt 1015: BS1c code: WifiIconHold (24 tests green) + WifiIconHide + hooks (syncNow/tick
   e40df78 ckpt 1006: BS1a done: AOSP10 source confirms icon_blacklist=wifi hides the symbol in sta
   1ae6eee ckpt 1004: BS1 (Tj's Wi-Fi symbol question) written into TASKS; v0.9.3 answer is in OUTB
-  d35f676 ckpt 1000: v0.9.3 RELEASED + recorded (android.yml run 44 id 42891423582, a542594, publi
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
