@@ -776,13 +776,78 @@ public class TjAccessibilityService extends AccessibilityService {
     /** TjHooks: the Launcher's window got or lost the focus. Regained: the patch may come back (after a shade, a dialog, the power menu). Lost: nothing here (the dialog's own event must find the patch ready). */
     void homeFocusChanged(boolean has) {
         try {
-            if (has && patchView != null && patchHomeMode && !overlayShown) {
+            long up = android.os.SystemClock.uptimeMillis();
+            if (!has) { homeFocusLostAtMs = up; return; }   // BT1c: when the Launcher lost the focus (the shade, a dialog, the stock power menu itself): homeOpenTreatment tells those apart
+            if (patchView != null && patchHomeMode && !overlayShown) {
                 if (HomePatchRules.recheck(true, homeForeignUntilMs, homeForeignProvisionalUntilMs) == HomePatchRules.RECHECK_LIFT) { handler.removeCallbacks(homeForeignRecheck); homeForeignLift(); }   // BN2: the focus is back while the guard was only provisional: the keyguard is gone
-                else patchShow(false);
+                else if (HomePatchRules.guardEndsWithFocus(homeFocusLostAtMs, homeForeignUntilMs, HOME_FOREIGN_AWAY_MS, up)) {   // BT1c: the window that took the focus (the shade) is gone: its 2.5 s guard has nothing left to guard
+                    handler.removeCallbacks(homeForeignRecheck);
+                    homeForeignProvisionalUntilMs = 0; homeForeignUntilMs = 0;
+                    Log.i(TAG, "HOMEPATCH guard lifted: the Launcher has the focus again (lost " + (up - homeFocusLostAtMs) + " ms ago)");
+                    patchShow(false);
+                } else patchShow(false);
                 scheduleHomeBuild();
             }
         } catch (Throwable t) { Log.e(TAG, "home focus failed", t); }
     }
+
+    private long homeFocusLostAtMs = 0;       // uptime of the Launcher window's last loss of the focus
+    private boolean homeOpenStale = false;    // BT1c: THIS opening of the stock menu shows a patch that was not fresh (decided once, in homeOpenDecide)
+    private String homeOpenLogLine = "";
+
+    /** BT1c: the facts of this moment for {@link HomePatchRules#openTreatment}. Main thread. */
+    private int homeOpenTreatment() {
+        HomePatchRules.OpenFacts f = new HomePatchRules.OpenFacts();
+        com.android.launcher3.Launcher l = TjHooks.launcher();
+        long now = android.os.SystemClock.uptimeMillis();
+        f.patchWindow = patchView != null && patchHomeMode;
+        f.restable = patchRestable;
+        f.compositeKept = patchShotBmp != null && homeBuiltAtMs > 0;
+        f.stepMatches = HomePatchRules.sameStep(homeBuiltStep, homeStepNow());
+        // the stock dialog takes the focus itself: whether its event or the Launcher's loss of the focus arrives first is not fixed, so a loss within 300 ms of the dialog's own event is the dialog's, not a shade's
+        long ref = dialogEventMs > 0 && now - dialogEventMs < 1000 ? dialogEventMs : now;
+        f.launcherFocus = l != null && (l.hasWindowFocus() || (homeFocusLostAtMs > 0 && homeFocusLostAtMs >= ref - 300));
+        f.homeAtRest = TjHooks.homeScreenShowing() && !TjHooks.homeFloatingViewOpen() && !TjHooks.homeBusy();
+        f.calibrating = homeCalRunning;
+        return HomePatchRules.openTreatment(f);
+    }
+
+    /** BT1c: why the home patch is not fresh right now, in words and numbers (the log line of every press that finds it so). */
+    private String homeNotFreshWhy() {
+        long up = android.os.SystemClock.uptimeMillis();
+        com.android.launcher3.Launcher l = TjHooks.launcher();
+        return HomePatchRules.notFreshWhy(patchShotBmp != null && homeBuiltAtMs > 0, HomePatchRules.sameStep(homeBuiltStep, homeStepNow()),
+                homeBuiltAtMs > 0 ? up - homeBuiltAtMs : -1, TjHooks.lastHomeDrawMs > 0 ? up - TjHooks.lastHomeDrawMs : -1, homeForeignUntilMs - up,
+                l != null && l.hasWindowFocus(), homeCalRunning);
+    }
+
+    /**
+     * BT1c / BT1d: called at the start of every showOverlay, i.e. once per opening on the home screen (the fast path and the scan path both come through it). A patch that is not fresh is ADOPTED when
+     * {@link HomePatchRules#openTreatment} says so (shown as it is, rebuilt in place right after the first frame); otherwise the card covers the whole panel ({@link #cardArea}). One persistent log line per press
+     * says which, and why (it goes to the tablet report: Tj's "sometimes the patch doesn't work" had no trace before).
+     */
+    private void homeOpenDecide() {
+        if (!patchHomeMode || overlayShown) return;
+        int t = homeOpenTreatment();
+        homeOpenStale = false;
+        if (t == HomePatchRules.OPEN_FRESH) { homeOpenLogLine = "menu opened (home): fresh patch"; }
+        else if (t == HomePatchRules.OPEN_STALE) {
+            homeOpenLogLine = "menu opened (home): patch not fresh, shown as it is and rebuilt now: " + homeNotFreshWhy();
+            homeOpenStale = true; patchRestable = true;   // adopted for THIS opening: cardWanted() = false, patchShow(true) makes it visible; patchShow(false) at the close recomputes both
+            handler.postDelayed(homeRefreshOpenRun, 40);
+        } else {
+            homeOpenLogLine = "menu opened (home): no usable patch, the card covers the whole panel: " + homeNotFreshWhy();
+        }
+        handler.post(homeOpenLogRun);   // AFTER the frame of the patch / the card: never before the time-critical part
+    }
+    private final Runnable homeOpenLogRun = new Runnable() { @Override public void run() { try { Log.i(TAG, "HOMEPRESS " + homeOpenLogLine); logPatch(homeOpenLogLine); } catch (Throwable t) { Log.e(TAG, "home press log failed", t); } } };
+    private final Runnable homeRefreshOpenRun = new Runnable() { @Override public void run() {
+        try {
+            if (patchView == null || !patchHomeMode || !overlayShown || !homeOpenStale || homeBuilding || homeCalRunning || homeWallBmp == null) return;
+            if (!HomePatchRules.sameStep(homeWallStep, homeStepNow())) return;
+            startHomeCopy();
+        } catch (Throwable t) { Log.e(TAG, "home refresh while open failed", t); }
+    } };
 
     /** "Is there a crop for this wallpaper position?", remembered until a crop is stored or forgotten or the wallpaper or the position changes (the answer is asked on every layer refresh). */
     private boolean homeCropValid(int step, String sig) {
@@ -898,8 +963,16 @@ public class TjAccessibilityService extends AccessibilityService {
             }
             homeLoadFails = 0;
         }
+        startHomeCopy();
+    }
+
+    /**
+     * The copy of the Launcher's pixels under the stored wallpaper crop, composed into the patch (asynchronous: PixelCopy). Called by the normal build and, BT1c, right after a menu opened with a patch that was not
+     * fresh (the open menu hides every later draw, so nothing waits for a quiet home). Needs {@code homeWallBmp}; sets {@code homeBuilding} until the answer comes.
+     */
+    private void startHomeCopy() {
         homeBuilding = true;
-        final long reqAt = now; final int builtStep = homeWallStep;
+        final long reqAt = android.os.SystemClock.uptimeMillis(); final int builtStep = homeWallStep;
         final android.graphics.Bitmap wall = homeWallBmp; final int l = homeWallLeft, t = homeWallTop;
         Rect crop = new Rect(l, t, l + wall.getWidth(), t + wall.getHeight());
         HomeLayer.copy(crop, handler, new HomeLayer.Done() {
@@ -914,10 +987,10 @@ public class TjAccessibilityService extends AccessibilityService {
                     homeBuildFails = 0;
                     patchShotBmp = comp; patchShotLeft = l; patchShotTop = t; homeBuiltAtMs = reqAt; homeBuiltStep = builtStep;
                     homeStatus("home patch built; " + (homeCompositeFresh() ? "fresh" : "stale already, building again"));
-                    Log.i(TAG, "HOMEPATCH patch built, fresh=" + homeCompositeFresh() + " step " + builtStep);
-                    patchShow(false);
+                    Log.i(TAG, "HOMEPATCH patch built, fresh=" + homeCompositeFresh() + " step " + builtStep + (overlayShown ? " (while the menu is open)" : ""));
+                    patchShow(overlayShown);   // BT1c: a build that ends while the stock menu is open must not close the patch's open look (it used to call patchShow(false) whatever the state)
                     patchView.invalidate();
-                    if (!homeCompositeFresh()) scheduleHomeBuild();
+                    if (!homeCompositeFresh() && !overlayShown) scheduleHomeBuild();
                 } catch (Throwable th) { Log.e(TAG, "home patch apply failed", th); }
             }
         });
