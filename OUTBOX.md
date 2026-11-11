@@ -1850,3 +1850,7 @@
 > - BM1: the account plugin `session-handoff`.
 > - New: the Wi-Fi / Bluetooth symbol check above.
 <!-- sha:260a9ad06707 -->
+
+## 2026-11-11T06:39:10Z
+> Three read-only reviews (home patch, lock hold, label/keyboard) are still running. Once they report, I fix what's valid in one batch. Then I dispatch the three gate runs; `pt` runs alone. The draft of the answer to you is saved as `research/V095_RELEASE_MESSAGE_DRAFT_2026-11-11.md`, and the heartbeat is armed.
+<!-- sha:d0a33d60073f -->
