@@ -51,3 +51,4 @@ No releases yet.
 | v0.9.1 | code 40 | 2026-11-10T04:49Z | BN1p+BN8 v0.9.1: Settings texts and first-frame fixes, pencil cover slide guard + fast watch, Recents diagnostics, lock log digest
 | v0.9.2 | code 41 | 2026-11-10T11:31Z | BQ1a/BQ2: the lock-screen dimming is measured once per wallpaper (light look only, the dark look reuses it, a run counts when it starts); BQ1b: the pencil cover is hidden the instant a finger touches the open panel
 | v0.9.3 | code 42 | 2026-11-10T20:07Z | BR1: the gear in the custom notification panel opens the Settings look-alike (Tj 2026-11-10); fast tier only (no tiered gate), emulator section gear green (run 518); android.yml run 44 id 42891423582 on a542594
+| v0.9.4 | code 43 | 2026-11-11T02:56Z | v0.9.4: keep Wi-Fi and Bluetooth on, hide their symbols on the lock screen and in the custom launcher (BS1/BS2)
