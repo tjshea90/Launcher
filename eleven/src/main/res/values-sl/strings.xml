@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Glasba</string>
     <string name="page_artists">Izvajalci</string>
     <string name="page_albums">Albumi</string>
     <string name="page_songs">Skladbe</string>

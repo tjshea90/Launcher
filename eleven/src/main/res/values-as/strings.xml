@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">মিউজিক</string>
     <string name="page_artists">চিত্ৰকৰসকল</string>
     <string name="page_albums">এলবামসমূহ</string>
     <string name="page_songs">গীতসমূহ</string>

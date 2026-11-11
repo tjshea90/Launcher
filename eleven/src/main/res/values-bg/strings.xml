@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Музика</string>
     <string name="page_artists">Изпълнители</string>
     <string name="page_albums">Албуми</string>
     <string name="page_songs">Песни</string>

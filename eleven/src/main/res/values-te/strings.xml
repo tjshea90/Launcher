@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">సంగీతం</string>
     <string name="page_artists">ఆర్టిస్టులు</string>
     <string name="page_albums">ఆల్బమ్‌లు</string>
     <string name="page_songs">పాటలు</string>

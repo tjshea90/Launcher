@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">نەغمە</string>
     <string name="page_artists">سەنئەتكار</string>
     <string name="page_albums">ئالبۇم</string>
     <string name="page_songs">ناخشا</string>

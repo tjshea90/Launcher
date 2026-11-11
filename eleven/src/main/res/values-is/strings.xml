@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Tónlist</string>
     <string name="page_artists">Flytjendur</string>
     <string name="page_albums">Albúm</string>
     <string name="page_songs">Lög</string>

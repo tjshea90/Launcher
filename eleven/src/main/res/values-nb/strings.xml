@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Musikk</string>
     <string name="page_artists">Artister</string>
     <string name="page_albums">Albumer</string>
     <string name="page_songs">Sanger</string>

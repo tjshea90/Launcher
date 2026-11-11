@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Aẓawan</string>
     <string name="page_artists">Inaẓuren</string>
     <string name="page_albums">Iseɣraz</string>
     <string name="page_songs">Tizlatin</string>

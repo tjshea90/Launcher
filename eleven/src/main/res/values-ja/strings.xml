@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">音楽</string>
     <string name="page_artists">アーティスト</string>
     <string name="page_albums">アルバム</string>
     <string name="page_songs">曲</string>

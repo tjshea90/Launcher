@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">ಸಂಗೀತ</string>
     <string name="page_artists">ಕಲಾವಿದರು</string>
     <string name="page_albums">ಇಡುವಹಿಗಳು</string>
     <string name="page_songs">ಹಾಡುಗಳು</string>

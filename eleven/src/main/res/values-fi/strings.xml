@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Musiikki</string>
     <string name="page_artists">Esittäjät</string>
     <string name="page_albums">Albumit</string>
     <string name="page_songs">Kappaleet</string>

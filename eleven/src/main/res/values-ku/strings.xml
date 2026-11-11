@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">مۆسیقا</string>
     <string name="page_artists">هونەرمەند</string>
     <string name="page_albums">ئەلبوم</string>
     <string name="page_songs">گۆرانییەکان</string>

@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">இசை</string>
     <string name="page_artists">கலைஞர்கள்</string>
     <string name="page_albums">ஆல்பங்கள்</string>
     <string name="page_songs">பாடல்கள்</string>

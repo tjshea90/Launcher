@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Musika</string>
     <string name="page_artists">Artistak</string>
     <string name="page_albums">Albumak</string>
     <string name="page_songs">Abestiak</string>

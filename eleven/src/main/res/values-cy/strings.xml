@@ -17,7 +17,6 @@
      limitations under the License.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="app_name">Cerddoriaeth</string>
     <string name="page_artists">Artistiaid</string>
     <string name="page_albums">Casgliadau</string>
     <string name="page_songs">Traciau</string>
