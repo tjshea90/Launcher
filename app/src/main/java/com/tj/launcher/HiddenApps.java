@@ -39,10 +39,23 @@ public final class HiddenApps {
         return new HashSet<>(sp.getStringSet(ALLOWED, new HashSet<String>()));
     }
 
+    /**
+     * BV1: a package of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} (the music app) is allowed the first time anyone asks about it, once; asking means it is installed. Level-triggered on
+     * purpose (no install broadcast to miss, nothing to run at boot). Call inside LOCK. The first test ends almost every call at once; the one commit() happens once per install.
+     */
+    private static void autoAllowIfDue(Context c, String pkg) {
+        if (pkg == null || !AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) return;
+        SharedPreferences sp = p(c);
+        Set<String> done = new HashSet<>(sp.getStringSet(AUTO_DONE, new HashSet<String>()));
+        if (!AppVisibility.autoAllowDue(pkg, done)) return;
+        Set<String> a = AppVisibility.withShown(allowed(c), pkg, true);
+        sp.edit().putStringSet(ALLOWED, a).putStringSet(AUTO_DONE, AppVisibility.withDone(done, pkg)).commit();
+    }
+
     public static boolean isShown(Context c, ComponentName app) {
         try {
             if (SettingsSpoof.hidesRealSettings(c, app.getPackageName())) return false;   // BN1: the look-alike is the Settings entry of the custom drawer; the real one stays out while it is
-            synchronized (LOCK) { return AppVisibility.isShown(allowed(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
+            synchronized (LOCK) { autoAllowIfDue(c, app.getPackageName()); return AppVisibility.isShown(allowed(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
         } catch (Throwable t) {
             android.util.Log.e("TjHidden", "isShown failed, showing the app", t);
             return true;
