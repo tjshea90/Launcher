@@ -62,7 +62,7 @@ public final class NotifQuietPolicy {
         if (!f.grant) return "no adb permission";
         if (f.automationOff) return "automation paused";
         if (!f.quickstepMode) return "";        // the custom launcher and everything opened from it
-        if (!f.helperUp) return "accessibility helper not running";   // Quickstep without the helper: nothing could end a hold when the lock screen goes
+        if (!f.helperUp) return WHY_NO_HELPER;   // Quickstep without the helper: nothing could end a hold when the lock screen goes
         if (!f.screenOn) return "";             // dark screen: the lock screen is next, in any launcher
         if (f.lockUp) return "";                // the lock screen
         if (f.unlockUndecided) return "";       // a plain PIN is still being decided: the custom launcher may be what opens
