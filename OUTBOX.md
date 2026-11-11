@@ -2129,3 +2129,52 @@
 ## 2026-11-11T19:03:30Z
 > Heartbeat acknowledged: I'm mid-job (rule 4), so I'm continuing from "Do this next". Only the music-app run #561 is in flight. It finishes about 19:06 UTC and I read it first, then fetch its pictures. The newest commits on `main` are my own checkpoints, so nothing else is working on it.
 <!-- sha:355a91cb5c1f -->
+
+## 2026-11-11T19:28:22Z
+> Tj, the music app is in v0.9.6, as its own app next to the launcher.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.6
+>
+> **What to do**
+> 1. Install `Launcher-v0.9.6.apk` over the old launcher, as always.
+> 2. Install `Eleven-v0.9.6.apk` once. It is the music app, signed with the same key. `PhoneGuide-v0.9.6.apk` is unchanged.
+> 3. Open the custom drawer. "Music" with the speaker should already be there. It should ask for storage permission on first start, so tap Allow. I could not test that prompt on the emulator.
+>
+> **The stock Lineage music app source.** It is Eleven, LineageOS's own music app, from the `lineage-17.1` (Android 10) branch, pinned to one commit. The source, the Apache licence notice and a list of every change I made are in the repo under `eleven/`.
+>
+> **Name and icon.** The app is called "Music" in every language. Upstream had translated the name ("Musique" and so on), and I removed all 70 translations.
+> - **Icon file:** I searched the web three times for the speaker icon file and found nothing. So I redrew it from your two screenshots.
+> - **How close:** it differs from your drawer screenshot by about 5 of 255 colour levels on average. On a second crop I did not tune to, it differs by about 6.
+> - **Size:** my first version came out about 9 % too small in the launcher's own drawer. The launcher shrinks old-style round icons (0.65 of the white square, against your 0.715). The icon is now the newer "adaptive" kind, which is not shrunk. On the emulator's drawer the speaker is 38 of 52 pixels wide, and on yours 39 of 55 (0.73 and 0.715). A test now measures that, and I looked at the picture.
+> - **Exact icon:** if you send me the old ATG music app's APK file, I can take its original icon out of it exactly. Say so if you want that.
+>
+> **Two "Music" entries.** Your tablet already has the ATG "Music". After you install this one, the custom drawer shows two entries with the same name and icon until you hide or uninstall the old one on the Hidden apps screen. I did not touch the old one.
+> - **Side effect (reasoned, not run):** with the shell helper off, the part that clears hidden apps from Recents goes by app name, so it cannot tell the two apart.
+> - **Fix:** uninstall the old one, or tell me and I handle it in the code.
+>
+> **In the custom drawer.** The launcher adds the music app by itself, once per install.
+> - A hide you make on the Hidden apps screen sticks, also after an update.
+> - Uninstall and reinstall counts as new and brings it back.
+> - It does not appear on the home screen by itself. This is reasoned from the code, because the emulator cannot test an installer install.
+>
+> **No album art, ever.** I removed every place that reads or shows it instead of hiding it.
+> - The app no longer asks Android for covers, never decodes one, keeps no picture cache, and has no internet permission.
+> - Artists show the coloured letter cards. Albums and songs show the music-note tile.
+> - "Change image", the photo picker and "Delete cache" are gone.
+> - A unit test (12 che
+> [... 2182 characters omitted ...]
+>  either?
+>
+> **Still waiting on you**
+> - **BT1h:** the five tablet checks of v0.9.5.
+> - **BS2e:** the Wi-Fi/Bluetooth symbol check from v0.9.4.
+> - **BR1c:** does the gear in the custom notification panel open the look-alike?
+> - **BN7a:** start the shell helper and tap "Do everything that is missing".
+> - **BN8c / BN8d:** tablet reports, one right after the first side-key press on the custom home and one before you open more stock-launcher apps.
+> - **BQ1b:** a tablet report right after any lock-screen screenshot or white box.
+> - **BH1c:** where you saw a pop-up notification, and from which app.
+> - **BK1e:** which unlock is slow, what is on screen, and how many seconds.
+> - **BM1:** the account plugin `session-handoff`.
+>
+> Nothing is in flight now. Two auto-resume timers (one per account) still exist and wake a session every two hours, and it finds nothing to do. Deleting them in the app saves that usage.
+<!-- sha:1ea6f8962b9f -->
