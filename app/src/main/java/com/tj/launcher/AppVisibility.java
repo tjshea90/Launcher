@@ -37,4 +37,30 @@ public final class AppVisibility {
 
     /** An uninstalled app is forgotten, so reinstalling it later counts as a NEW app (hidden until allowed). */
     public static Set<String> withoutRemoved(Set<String> allowed, String pkg) { return withShown(allowed, pkg, false); }
+
+    /**
+     * Packages Tj wants in the custom drawer from the moment they are installed, without a visit to Hidden apps (BV1, 2026-11-11: "The music app should be in the custom launcher
+     * app drawer"): Eleven, the LineageOS music app that ships beside the Launcher (module eleven/). They are allowed ONCE, automatically ({@link #autoAllowDue}); if Tj hides one
+     * later it stays hidden, and a reinstall counts as new again ({@link #withoutDone}).
+     */
+    public static final Set<String> AUTO_ALLOWED_PACKAGES = Collections.unmodifiableSet(new HashSet<>(Collections.singletonList("org.lineageos.eleven")));
+
+    /** True when {@code pkg} is an auto-allowed package that has not been handled yet ({@code done} = the ones already allowed automatically once). */
+    public static boolean autoAllowDue(String pkg, Set<String> done) {
+        return pkg != null && AUTO_ALLOWED_PACKAGES.contains(pkg) && (done == null || !done.contains(pkg));
+    }
+
+    /** {@code done} with {@code pkg} added (the automatic allowing has happened, or Tj decided by hand: never repeat it). */
+    public static Set<String> withDone(Set<String> done, String pkg) {
+        Set<String> s = done == null ? new HashSet<String>() : new HashSet<>(done);
+        if (pkg != null) s.add(pkg);
+        return s;
+    }
+
+    /** {@code done} without {@code pkg}: the app was uninstalled, so a reinstall is auto-allowed again. */
+    public static Set<String> withoutDone(Set<String> done, String pkg) {
+        Set<String> s = done == null ? new HashSet<String>() : new HashSet<>(done);
+        s.remove(pkg);
+        return s;
+    }
 }
