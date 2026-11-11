@@ -1445,3 +1445,13 @@ This session's worker process was restarted. If your previous turn was already c
 ```
 Continue 
 ```
+
+## 2026-11-11T05:03:44Z
+```
+1) the first time I pull up to enter the pin from the lock screen, the patch for the power menu shows. 
+2) the first time I unlock from the lock screen to the custom launcher the power menu sometimes flickers on and off even without me pressing the side key 
+3) after I pull down from the notification panel then return back to the home screen and hold the side key, the full power menu with screenshot button shows up the first time, then fixes after that. I think this may be a side effect of the pencil hiding modifications 
+4) sometimes the home screen wallpaper patch doesn't work 
+5) in the spoof settings, system, languages, under virtual keyboard, remove the text "and Microsoft SwiftKey keyboard" even if that keyboard is installed 
+6) in the custom launcher recents list, make the name of the spoof settings "settings" and not "launcher settings"
+```
