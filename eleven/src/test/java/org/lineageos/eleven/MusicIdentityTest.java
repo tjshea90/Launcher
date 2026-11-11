@@ -84,42 +84,72 @@ public class MusicIdentityTest {
         assertFalse(manifest.contains("android:label=\"Eleven\"") || manifest.contains("android:label=\"Music\""));
     }
 
+    /**
+     * The icon is ADAPTIVE (CI run #554: Launcher3 shrinks a round LEGACY icon to 62 % of its white plate, Tj's speaker is 71.5 %; an adaptive icon is not shrunk): a pure white background layer
+     * and a foreground layer that holds only the speaker. No second source (no legacy ic_launcher.png, no upstream pink note layers).
+     */
     @Test
-    public void theIconIsALegacyIconWithoutAnAdaptiveOne() {
+    public void theIconIsAnAdaptiveIconWithAPureWhiteBackground() throws IOException {
         File res = new File(module(), "src/main/res");
+        String xml = read(new File(res, "mipmap-anydpi/ic_launcher.xml"));
+        assertTrue("not an adaptive icon", xml.contains("<adaptive-icon"));
+        assertTrue("the background layer must be the white colour", xml.contains("<background android:drawable=\"@color/ic_launcher_background\""));
+        assertTrue("the foreground layer must be the speaker", xml.contains("<foreground android:drawable=\"@mipmap/ic_launcher_foreground\""));
+        assertFalse("the icon has more layers than background + foreground", xml.contains("<monochrome") || xml.contains("<inset"));
+        Matcher c = Pattern.compile("<color name=\"ic_launcher_background\">#([0-9A-Fa-f]{6,8})</color>").matcher(read(new File(res, "values/ic_launcher_background.xml")));
+        assertTrue("values/ic_launcher_background.xml has no ic_launcher_background colour", c.find());
+        assertTrue("the plate behind the speaker is pure white, as in Tj's drawer (found #" + c.group(1) + ")", c.group(1).equalsIgnoreCase("FFFFFF") || c.group(1).equalsIgnoreCase("FFFFFFFF"));
         File[] dirs = res.listFiles();
         assertNotNull(dirs);
         for (File d : dirs) {
             if (!d.getName().startsWith("mipmap")) continue;
-            assertFalse("an adaptive icon (mipmap-anydpi / -v26) would replace the speaker: " + d.getName(), d.getName().contains("anydpi") || d.getName().contains("-v26"));
             File[] files = d.listFiles();
             if (files == null) continue;
             for (File f : files) {
-                assertTrue("only ic_launcher.png may be in " + d.getName() + ", found " + f.getName(), f.getName().equals("ic_launcher.png"));
+                if (d.getName().equals("mipmap-anydpi")) assertEquals("only the adaptive xml may be in mipmap-anydpi", "ic_launcher.xml", f.getName());
+                else assertEquals("only the speaker foreground may be in " + d.getName() + ", found " + f.getName(), "ic_launcher_foreground.png", f.getName());
             }
         }
         assertFalse(new File(res, "drawable/ic_launcher.xml").exists());
     }
 
+    /**
+     * Every density's foreground layer is 108 dp; Launcher3 shows its middle 72 dp (the white plate) and Tj's speaker is 39.34 of the plate's 55 px = 71.5 % wide, so the speaker is 0.4769 of the layer
+     * (tools/make_music_icon.py FOREGROUND_RADIUS). Nothing but the speaker is drawn: the corners and the ring just outside it are transparent.
+     */
     @Test
     public void everyDensityHasTheSpeakerAtTheRightSize() throws Exception {
-        String[][] sizes = {{"mdpi", "48"}, {"hdpi", "72"}, {"xhdpi", "96"}, {"xxhdpi", "144"}, {"xxxhdpi", "192"}};
+        String[][] sizes = {{"mdpi", "108"}, {"hdpi", "162"}, {"xhdpi", "216"}, {"xxhdpi", "324"}, {"xxxhdpi", "432"}};
         for (String[] s : sizes) {
-            File f = new File(module(), "src/main/res/mipmap-" + s[0] + "/ic_launcher.png");
+            File f = new File(module(), "src/main/res/mipmap-" + s[0] + "/ic_launcher_foreground.png");
             assertTrue("missing " + f, f.isFile());
             Png img = Png.read(f);
             int n = Integer.parseInt(s[1]);
             assertEquals(f + " width", n, img.w);
             assertEquals(f + " height", n, img.h);
-            int c = (n - 1) / 2;
-            // the four corners are transparent (a round artwork, no plate of its own: Launcher3 adds the white plate)
+            int c = n / 2;
+            // the speaker's width along the middle row: 0.4769 of the layer (71.5 % of the plate), +- 0.012
+            int first = -1, last = -1;
+            for (int x = 0; x < n; x++) {
+                if (img.alpha(x, c) >= 128) {
+                    if (first < 0) first = x;
+                    last = x;
+                }
+            }
+            assertTrue("no speaker in " + f, first >= 0);
+            double width = (last - first + 1) / (double) n;
+            assertEquals("the speaker of " + f + " is 0.4769 of the layer (71.5 % of the plate)", 0.4769, width, 0.012);
+            // the four corners and the ring just outside the speaker are transparent: the plate is the background layer's, not the foreground's
             assertEquals("corner of " + f, 0, img.alpha(0, 0));
             assertEquals("corner of " + f, 0, img.alpha(n - 1, n - 1));
+            double rad = n * 0.2384;
+            for (int sign : new int[] {-1, 1}) {
+                assertEquals("outside the speaker of " + f, 0, img.alpha((int) Math.round(n / 2.0 - 0.5 + sign * rad * 1.08), c));
+            }
             // the dust cap in the middle: dark grey, opaque
             assertEquals(255, img.alpha(c, c));
             assertTrue("the dust cap of " + f + " is dark", lum(img.argb(c, c)) < 110);
             // the blue cone: at 55 % of the artwork radius to the left and to the right, blue clearly beats red, and it is opaque
-            double rad = n * 0.46;
             for (int sign : new int[] {-1, 1}) {
                 int px = img.argb((int) Math.round(n / 2.0 - 0.5 + sign * rad * 0.55), c);
                 assertEquals(255, (px >>> 24) & 0xff);
