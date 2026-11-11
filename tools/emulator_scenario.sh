@@ -1935,6 +1935,7 @@ adb shell 'input swipe 300 900 300 300 120; input keyevent KEYCODE_BACK' >/dev/n
 adb logcat -d -s TjA11y:I | grep -E "PATCH" > "$OUT/ae-a2-log.txt" 2>&1
 info "AE3 short pad: $(grep -E 'pin sign|pin hide|pin pad left|PATCH rest' "$OUT/ae-a2-log.txt" | sed -E 's/^[A-Z]\/TjA11y *\( *[0-9]+\): //' | cut -c1-90 | tr '\n' '|' | cut -c1-600)"
 check "AE3-short: a PIN pad seen for under a second: the resting patch comes back by itself within 6 s (a 'PATCH rest on' after the pad)" grep -q "PATCH rest on" "$OUT/ae-a2-log.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 2      # (a pad that was still up for any reason is closed again: the next steps start from the bare lock screen, as before)
 CL="$(grep 'CARD area' "$OUT/ae-a-log.txt" | tail -1)"
 SLOT=""   # v0.7.6 (review of v0.7.5): under `set -u` a missing CARD line must report a FAIL, not abort the whole scenario
 set -- $(aenums "$CL" full); FL=${1:-}; FT=${2:-}; FR=${3:-}; FB=${4:-}
