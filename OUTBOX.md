@@ -2045,3 +2045,32 @@
 > - **What's left:** only items waiting on you. These are BT1h, BS2e, BR1c, BN7a, BN8c, BN8d, BQ1b, BH1c, BK1e and BM1.
 > - **Your action:** both heartbeats are still armed, mine and the other account's `trig_01GVcBRvTAzqf97UhMTJszab`. Each wakes its session every 2 hours for nothing. Turning them off needs your approval in the app, and those prompts died unanswered every time. You can delete both "Launcher auto-resume heartbeat" tasks there.
 <!-- sha:e1d5d60427c7 -->
+
+## 2026-11-11T15:59:06Z
+> Tj, found it. LineageOS's stock music app is **Eleven** (package `org.lineageos.eleven`). The Android 10 version (LineageOS 17.1) is this branch:
+>
+> https://github.com/LineageOS/android_packages_apps_Eleven/tree/lineage-17.1
+>
+> I checked all of this in the repos themselves, not from memory:
+> - **It is the default player.** LineageOS 17.1's own package list (`android_vendor_lineage`, branch `lineage-17.1`, `config/common_mobile.mk`) includes `Eleven`.
+> - **Licence:** Apache 2.0, so reuse is allowed if the licence text and copyright notices stay.
+> - **Size:** about 4.3 MB, 152 Java files (about 34,000 lines) and 270 resource files. It needs Android 9 or newer, so Android 10 is fine.
+> - **Building it:** it has a build file for the Android source tree and a Gradle one. The Gradle one is old (AGP 7.0.4, compileSdk 30) and its blur uses RenderScript. This project builds with AGP 8.13.2, so it would need porting. I did not try to build it.
+> - **Newer LineageOS** replaced it with **Twelve** from 22.1 (Android 15). Twelve has no Android 10 version; its oldest branch is `lineage-22.0`:
+>
+> https://github.com/LineageOS/android_packages_apps_Twelve
+>
+> - **Android's own `Music` app** (AOSP, Android 10 branch) is only a 4-file leftover, not a full player.
+>
+> Your tablet is not LineageOS. The tablet reports show `ro.lineage.version` empty, and it is the MediaTek (Alps MT8168) Android 10 Go build. So Eleven is not necessarily the music app that came on it, and no tablet report names one. If you meant the music app that is on your tablet, tell me its name (Settings, Apps) or send a screenshot, and I'll look for that app's source.
+>
+> What do you want the source for? For example:
+> - a look-alike music page in the custom drawer, like the Settings one
+> - a reference for how a stock music app looks
+> - a player inside the launcher
+> - something else
+>
+> I haven't changed any code and copied nothing into the repo (it is public). I'll wait for your answer before starting anything. The details are saved in `research/LINEAGE_MUSIC_APP_2026-11-11.md`.
+>
+> Still waiting on you, nothing new: the tablet checks BT1h, BS2e and BR1c from the v0.9.5 answer, plus the older BN7a, BN8c, BN8d, BQ1b, BH1c, BK1e and BM1.
+<!-- sha:f4b096d560b8 -->
