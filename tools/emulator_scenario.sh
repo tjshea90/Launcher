@@ -4590,6 +4590,13 @@ muprefs(){ # muprefs <package for auto_done, or empty>: tj_apps.xml = the baseli
 mudrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; }   # from the custom home
 mumenu(){ # mumenu <dump file>: 0 when the popup menu on screen has at least two entries and none of them is "Change image" or a fetch entry (all removed with the album art)
   [ "$(grep -c 'id/title"' "$1")" -ge 2 ] && ! grep -qiE 'text="[^"]*(change image|fetch)' "$1"; }
+# tour helpers (used by the CONTROL tour and by our own tour): Eleven is steered by FIXED COORDINATES, see the tour comment below; muhere records a step that left the app
+MUGONE=""
+muhere(){ resumed > "$MUTMP/here.txt"; grep -q "$MU" "$MUTMP/here.txt" || MUGONE="$MUGONE $1"; }
+muopen(){ adb shell am force-stop "$MU" >/dev/null 2>&1; sleep 1; adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.HomeActivity" >/dev/null 2>&1; sleep 5; }
+mutab(){ case "$1" in artists) adb shell input tap 80 120;; albums) adb shell input tap 228 120;; songs) adb shell input tap 372 120;; *) adb shell input tap 524 120;; esac; sleep 2; }
+muplace(){ # muplace <png>: the most pixels of ONE of the nine letter-tile colours in the picture (the placeholder tile: letters for artists, the note for albums and songs); echoes the count
+  local best=0 c n; for c in 9c27b0 3f51b5 673ab7 009688 4caf50 f44336 9e9e9e ff5722 795548; do n="$(mucol "$1" "$c" 2)"; [ "${n:-0}" -gt "$best" ] && best="$n"; done; echo "$best"; }
 
 # ---- the fixture and the CONTROL: a song with a flat magenta cover, scanned into MediaStore; Android serves that cover to whoever asks
 python3 -I tools/mu_make_mp3.py "$MUTMP/song.mp3" "Glass Harbor" "Marisol Vega" "Northern Lights" "$MUCOL"
@@ -4599,18 +4606,29 @@ adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:
 for i in $(seq 1 20); do adb shell content query --uri content://media/external/audio/media --projection _id:album_id:title 2>/dev/null | tr -d '\r' | grep -q 'title=Glass Harbor' && break; [ "$i" = 6 ] && adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1; sleep 2; done
 adb shell content query --uri content://media/external/audio/media --projection _id:album_id:artist:album:title 2>/dev/null | tr -d '\r' | grep 'title=Glass Harbor' > "$OUT/mu-media-row.txt"
 MUALB="$(grep -o 'album_id=[0-9]*' "$OUT/mu-media-row.txt" | head -1 | cut -d= -f2)"
-adb exec-out content read --uri "content://media/external/audio/albumart/${MUALB:-0}" > "$MUTMP/cover.bin" 2> "$MUTMP/cover.err"
-convert "$MUTMP/cover.bin" "$MUTMP/cover.png" 2>/dev/null
-MUCTL="$(mucnt "$MUTMP/cover.png")"; MUCTL="${MUCTL:-0}"
-info "MU control (a): content read of albumart/${MUALB:-?}: $(wc -c < "$MUTMP/cover.bin" | tr -d ' ') bytes, $(identify -format '%wx%h' "$MUTMP/cover.png" 2>/dev/null || echo 'not an image'), $MUCTL magenta pixels; first bytes/error: $(head -c 120 "$MUTMP/cover.bin" "$MUTMP/cover.err" 2>/dev/null | tr -c '[:print:]' '.' | cut -c1-160)"
-# (b) the stock Files app (DocumentsUI), Audio root: its thumbnail of the song IS the cover the platform serves (run 544: Files opened fine from the Launcher)
-adb shell am start -a android.intent.action.VIEW -d content://com.android.providers.media.documents/root/audio -t vnd.android.document/root >/dev/null 2>&1; sleep 6
-shot mud-04-files-audio
-MUCTL2="$(mucnt "$OUT/mud-04-files-audio.png")"; MUCTL2="${MUCTL2:-0}"
-info "MU control (b): the stock Files app, Audio root: $MUCTL2 magenta pixels"
-adb shell input keyevent KEYCODE_BACK; sleep 1; adb shell input keyevent KEYCODE_HOME; sleep 2
+# ---- the CONTROL (MU-2): UPSTREAM's own Eleven, album-art code intact (emulator.yml builds it from the pinned baseline commit, eleven/UPSTREAM.md), plays the SAME song through the SAME screens.
+#      It must SHOW the flat magenta cover there. Only then does "no cover colour in any picture of OUR build" (MU-10) mean "our app never asks for covers" and not "the cover never arrived".
+#      (Run 545: the two cheap controls failed for reasons of the shell, not of the platform: `content read` as the shell user is refused by the media provider of this image, and a VIEW intent did not open the stock Files app.)
+MUUP=eleven/build/eleven-upstream-control.apk
+adb uninstall "$MU" >/dev/null 2>&1
+MUCNOTE="no control APK (the workflow step did not build it)"
+if [ -f "$MUUP" ] && adb install -r -g "$MUUP" > "$OUT/mu-up-install.txt" 2>&1 && grep -q Success "$OUT/mu-up-install.txt"; then
+  MUCNOTE="upstream installed"
+  muopen; shot muc-01-songs
+  mutab albums; shot muc-tab-albums
+  mutab artists; shot muc-tab-artists
+  muopen; mutab albums; adb shell input tap 158 290; sleep 3; shot muc-c2-album-page
+  muopen; mutab songs; adb shell input tap 300 957; sleep 5; adb shell input tap 300 957; sleep 4; shot muc-p1-player
+  adb shell cmd statusbar expand-notifications; sleep 3; shot muc-n1-shade
+  adb shell cmd statusbar collapse; sleep 1
+fi
+adb shell am force-stop "$MU" >/dev/null 2>&1; adb uninstall "$MU" >/dev/null 2>&1
+adb shell input keyevent KEYCODE_HOME; sleep 2
+MUCMAX=0; MUCSEEN=""; MUCN=0
+for f in "$OUT"/muc-*.png; do [ -f "$f" ] || continue; c="$(mucnt "$f")"; c="${c:-0}"; MUCN=$((MUCN+1)); [ "$c" -gt "$MUCMAX" ] && MUCMAX=$c; [ "$c" -gt 1000 ] && MUCSEEN="$MUCSEEN $(basename "$f" .png)=$c"; done
+info "MU control: $MUCNOTE; $MUCN pictures of upstream's app; most cover-coloured pixels in one: $MUCMAX; pictures that show the cover:${MUCSEEN:- none}"
 check "MU-1: the test song (flat magenta cover) is in MediaStore" test -n "$MUALB"
-check "MU-2: CONTROL: Android itself serves that magenta cover to other apps (the albumart URI or the stock Files app shows it), so the picture probe CAN see an album cover" bash -c "[ ${MUCTL} -gt 1000 ] || [ ${MUCTL2} -gt 1000 ]"
+check "MU-2: CONTROL: upstream's Eleven (album-art code intact) shows the magenta cover of the same song on this emulator (tabs, album page, player or shade), so the picture probe CAN see an album cover" bash -c "[ ${MUCMAX} -gt 1000 ]"
 
 # ---- part 2a: the music app is installed LATER than the Launcher's first start (so it is not in the baseline) and must be in the custom drawer without anyone allowing it
 adb uninstall "$MU" >/dev/null 2>&1
@@ -4632,12 +4650,6 @@ check "MU-7: a tap on its drawer icon opens the music app" grep -q "$MU" "$OUT/m
 #      So Eleven is steered by FIXED COORDINATES (600x1024, 170 dpi, read from the pictures of run 544): tabs ARTISTS / ALBUMS / SONGS / PLAYLISTS at y=120, x = 80 / 228 / 372 / 524; the first list row at y about 200
 #      (its overflow button x=584, y=208); the first album tile at (158, 290) (its overflow button (262, 398)); the toolbar overflow (584, 62); the bottom bar (300, 957).
 #      After EVERY step `muhere` records whether Eleven is still the resumed app: a tap or key that left it is a TEST fault and fails MU-8 (never silently absorbed).
-MUGONE=""
-muhere(){ resumed > "$MUTMP/here.txt"; grep -q "$MU" "$MUTMP/here.txt" || MUGONE="$MUGONE $1"; }
-muopen(){ adb shell am force-stop "$MU" >/dev/null 2>&1; sleep 1; adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.HomeActivity" >/dev/null 2>&1; sleep 5; }
-mutab(){ case "$1" in artists) adb shell input tap 80 120;; albums) adb shell input tap 228 120;; songs) adb shell input tap 372 120;; *) adb shell input tap 524 120;; esac; sleep 2; }
-muplace(){ # muplace <png>: the most pixels of ONE of the nine letter-tile colours in the picture (the placeholder tile: letters for artists, the note for albums and songs); echoes the count
-  local best=0 c n; for c in 9c27b0 3f51b5 673ab7 009688 4caf50 f44336 9e9e9e ff5722 795548; do n="$(mucol "$1" "$c" 2)"; [ "${n:-0}" -gt "$best" ] && best="$n"; done; echo "$best"; }
 muopen; shot mua-01-first-launch; muhere launch
 for t in artists albums songs playlists; do mutab "$t"; shot "mua-tab-$t"; muhere "tab-$t"; done
 # the artist page and the album page (their big picture is the placeholder tile)
