@@ -1803,3 +1803,9 @@
 ## 2026-11-11T02:23:00Z
 > The auto-resume heartbeat fired at 02:22, but this session is the one working: gate runs #524 and #525 are still in flight, and no other session is active. Nothing to take over. I'll read both runs at about 02:34 UTC.
 <!-- sha:dd426ac578c4 -->
+
+## 2026-11-11T02:37:45Z
+> The checkpoint is still running its handoff test, which takes a couple of minutes, and the timer for the two reruns is set for 02:48 UTC. Nothing else to do until then.
+>
+> Still waiting on you, unchanged: BR1c, BN7a, BN8c / BN8d, BQ1b, BH1c, BK1e. The details are in my earlier messages.
+<!-- sha:e4597c9d6eb3 -->
