@@ -68,9 +68,9 @@ for t in table:
 
 # ---- the change
 changed = [p for p in git("diff", "--name-only", base).split("\n") if p]
-lines = [l[1:] for l in git("diff", "-U0", base, "--", "app", "launcher3", "phoneguide").split("\n")
+lines = [l[1:] for l in git("diff", "-U0", base, "--", "app", "launcher3", "phoneguide", "eleven").split("\n")
          if l and l[0] in "+-" and not l.startswith("+++") and not l.startswith("---")]
-product = [p for p in changed if p.startswith(("app/", "launcher3/", "phoneguide/"))]
+product = [p for p in changed if p.startswith(("app/", "launcher3/", "phoneguide/", "eleven/"))]   # eleven/ = the music app (TASKS BV1)
 harness = [p for p in changed if p in ("tools/emulator_scenario.sh", ".github/workflows/emulator.yml", "tools/gate-map.txt")]
 
 print(f"change vs {base}: {len(changed)} file(s), {len(product)} product file(s), {len(lines)} changed product line(s)")
