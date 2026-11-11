@@ -1864,3 +1864,7 @@
 >
 > The three code reviews are still running. I'll fix any valid findings in one batch, then dispatch the gate.
 <!-- sha:843f9fd7dbd1 -->
+
+## 2026-11-11T06:49:08Z
+> Review C is done and checkpointed (1122); reviews A and B are still running. The existing lock-screen checks read log lines that arrive within the new 1.2 s and 1.5 s holds, so they should still pass. The gate will confirm that.
+<!-- sha:c7869f0a0e06 -->
