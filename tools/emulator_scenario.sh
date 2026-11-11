@@ -1929,6 +1929,12 @@ check "AE3: with the switch on and the menu closed the patch RESTS visible on th
 check "AE3: the resting patch window exists and is NOT touchable (it can never block a tap)" bash -c "grep -q TjWallpaperPatch $OUT/ae-a-window.txt && grep -q NOT_TOUCHABLE $OUT/ae-a-window.txt"
 check "AE3: it hides while the PIN pad is up (log 'PATCH rest off (PIN pad up)')" grep -q "PATCH rest off (PIN pad up)" "$OUT/ae-a-log.txt"
 check "AE3: ... and comes back when the pad is gone (a second 'PATCH rest on')" bash -c "[ \"\$(grep -c 'PATCH rest on' $OUT/ae-a-log.txt)\" -ge 2 ]"
+# review B #1 (BT1, v0.9.5): a PIN pad seen for well under a second (a pull-up cancelled at once) must not leave the patch away: the padBack that padLeft() posted ran BEFORE the 2.5 s hold from the pad's last sign had ended and nothing looked again
+adb logcat -c
+adb shell 'input swipe 300 900 300 300 120; input keyevent KEYCODE_BACK' >/dev/null 2>&1; sleep 6
+adb logcat -d -s TjA11y:I | grep -E "PATCH" > "$OUT/ae-a2-log.txt" 2>&1
+info "AE3 short pad: $(grep -E 'pin sign|pin hide|pin pad left|PATCH rest' "$OUT/ae-a2-log.txt" | sed -E 's/^[A-Z]\/TjA11y *\( *[0-9]+\): //' | cut -c1-90 | tr '\n' '|' | cut -c1-600)"
+check "AE3-short: a PIN pad seen for under a second: the resting patch comes back by itself within 6 s (a 'PATCH rest on' after the pad)" grep -q "PATCH rest on" "$OUT/ae-a2-log.txt"
 CL="$(grep 'CARD area' "$OUT/ae-a-log.txt" | tail -1)"
 SLOT=""   # v0.7.6 (review of v0.7.5): under `set -u` a missing CARD line must report a FAIL, not abort the whole scenario
 set -- $(aenums "$CL" full); FL=${1:-}; FT=${2:-}; FR=${3:-}; FB=${4:-}
