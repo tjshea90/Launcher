@@ -1945,3 +1945,7 @@
 ## 2026-11-11T08:27:42Z
 > The signed build is running on GitHub (Build APK run #46, about 3 minutes). I'll check it at 08:30 UTC, then confirm the Release, record it in BUILDLOG, tick the BT1 items, and send Tj the answer.
 <!-- sha:51c0e1ed9213 -->
+
+## 2026-11-11T11:17:27Z
+> Standing down for now. v0.9.5 is already released: the Anthropic account Tj switched to took over at my checkpoint 1124 and shipped it (published 08:29 UTC). The final answer to your six reports is the one thing still owed. That session's last checkpoint is 10:15 UTC, nothing is running on CI, and I've made no changes to `main`, the release or CI. I've set a timer for 11:16 UTC. If that session still hasn't answered by then, I'll send you the answer here as the last message.
+<!-- sha:f903f7c3cb41 -->
