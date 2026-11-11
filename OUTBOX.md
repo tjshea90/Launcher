@@ -1817,3 +1817,36 @@
 ## 2026-11-11T02:52:36Z
 > The signed build is running on GitHub (run #45, about three minutes). Next I confirm the Release, record it in BUILDLOG, update the handoff docs and send you the answer for both requests.
 <!-- sha:c6713388bb08 -->
+
+## 2026-11-11T03:17:03Z
+> Tj, both of your Wi-Fi / Bluetooth requests are in v0.9.4:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.4
+>
+> **Is it possible?** Yes. Android lets an app hide individual status-bar symbols. The launcher now hides the Wi-Fi and Bluetooth symbols in the custom launcher, and on the lock screen from either launcher, including while the screen is dark. In the unlocked stock launcher everything looks like stock again.
+>
+> **What changed**
+> - There is one new switch in Launcher control, "Keep Wi-Fi and Bluetooth on, hide their symbols". It is ON by default. Turn it off and everything is exactly as in v0.9.3, with the radios switched off on the lock screen and in the custom launcher.
+> - Nothing in this feature turns a radio on. A radio that was off before the lock is still off after a gesture unlock and after a plain PIN. The emulator tests checked this for Wi-Fi.
+> - One older exception remains. If the lock screen comes up before the launcher's helper is running, for example right after a restart that began in the stock launcher, the symbols can't be hidden yet. The radios are then switched off like in v0.9.3, and a gesture unlock puts back what was on. Nothing that was off gets turned on.
+> - If the helper stops while the screen is locked or dark, the symbols stay hidden until the radios have been switched off. In the emulator that took 213 ms.
+> - It needs the adb permission the launcher already uses. Without it the old behaviour applies, because a visible symbol on the lock screen would be worse.
+>
+> **What is proven and what is not**
+> - **Wi-Fi:** proven on the emulator with pictures. The radio stays on across the lock, and the symbol is gone in the custom launcher and on the lock screen. It is back in the stock launcher, and your original setting comes back after the switch is turned off or the app data is cleared. The `wf` test section passed 38 of 38 checks. The full gate (the test runs) is green on this exact code, with two flaky sections each green when rerun alone.
+> - **Bluetooth:** the emulator has no Bluetooth hardware, so it is proven only by unit tests and by reading Android's source. It uses the same mechanism.
+> - **Not proven:** your tablet's own lock screen. Its MediaTek system UI may not obey the hide. The symbols could also flash for a moment at the very first lock after a restart.
+> - **Uninstalling:** if you uninstall the launcher, switch this off first. Otherwise the symbols stay hidden everywhere.
+>
+> **What I need from you:** lock the tablet with Wi-Fi and Bluetooth on and tell me whether either symbol is still visible on the lock screen or in the custom launcher. If you still see one, send a tablet report right then.
+>
+> **Still waiting on you** (unchanged):
+> - BR1c: does the settings gear in the custom notification panel open the look-alike?
+> - BN7a: start the shell helper and tap "Do everything that is missing".
+> - BN8c / BN8d: tablet reports, one right after the first side-key press on the custom home and one before you open more stock-launcher apps.
+> - BQ1b: a tablet report right after any lock-screen screenshot or white box.
+> - BH1c: where you saw a pop-up notification, and from which app.
+> - BK1e: which unlock is slow, what is on screen, and how many seconds.
+> - BM1: the account plugin `session-handoff`.
+> - New: the Wi-Fi / Bluetooth symbol check above.
+<!-- sha:260a9ad06707 -->
