@@ -4715,6 +4715,11 @@ mudump > "$OUT/mu-drawer-hidden.txt"
 check "MU-12: hidden by hand it stays out of the drawer (the rule never undoes Tj's choice); the drawer was open (Contacts listed)" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-hidden.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-hidden.txt"
 muset allowed > "$OUT/mu-allowed-2.txt"; muset auto_done > "$OUT/mu-auto-done-2.txt"
 check "MU-13: ... and nothing was written behind his back (still 'handled', still not allowed)" bash -c "grep -qx $MU $OUT/mu-auto-done-2.txt && ! grep -qx $MU $OUT/mu-allowed-2.txt"
+# an UPDATE in place (the same package installed over itself, as a new Eleven build would be) is not a removal and not a new app: Tj's hand-hide must survive it (the removal hook is the only thing that forgets the mark)
+adb install -r "$MUAPK" > "$OUT/mu-update.txt" 2>&1; sleep 6
+muset auto_done > "$OUT/mu-auto-done-2b.txt"; muset allowed > "$OUT/mu-allowed-2b.txt"
+mudrawer; mudump > "$OUT/mu-drawer-updated.txt"
+check "MU-13b: an in-place UPDATE of the music app (installed over itself) keeps Tj's hand-hide: still 'handled', still not allowed, still out of the drawer (Contacts listed)" bash -c "grep -q Success $OUT/mu-update.txt && grep -qx $MU $OUT/mu-auto-done-2b.txt && ! grep -qx $MU $OUT/mu-allowed-2b.txt && grep -q 'text=\"Contacts\"' $OUT/mu-drawer-updated.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-updated.txt"
 home
 adb uninstall "$MU" >/dev/null 2>&1; sleep 4
 muset auto_done > "$OUT/mu-auto-done-3.txt"
