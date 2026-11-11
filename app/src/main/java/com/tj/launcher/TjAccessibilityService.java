@@ -317,6 +317,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked() && !CrashGuard.automationOff(getApplicationContext())) lockQuietNow("the helper connected on the lock screen"); } catch (Throwable t) { Log.e(TAG, "connect lock rules failed", t); } } }, 2000);   // AW2 / AW3: the first lock screen after a restart (or after the helper was away) gets the same rules
         try { BatterySaverGuard.start(this); } catch (Throwable t) { Log.e(TAG, "battery saver guard failed", t); }
         try { LockQuiet.applyNotificationsAsync(this); } catch (Throwable t) { Log.e(TAG, "lock quiet failed", t); }   // AK1
+        try { LockQuiet.forgetStalePrevAsync(this); } catch (Throwable t) { Log.e(TAG, "stale lock memory check failed", t); }   // review of BS2: a lock memory left over from an unlock this helper never saw (a boot unlock before it bound) must not put a radio back much later
         try { if (calibrating()) calibrationChanged(); } catch (Throwable t) { Log.e(TAG, "calibration resume failed", t); }   // AM1
         try { AnimationSpeedup.syncSoon(this, "helper connected"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: a Quickstep session that was already running when the helper (re)connected gets its animations off; the helper is what hears the screen go off
     }
