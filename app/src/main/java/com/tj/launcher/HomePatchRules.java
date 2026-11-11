@@ -254,4 +254,59 @@ public final class HomePatchRules {
         if (provisionalUntilMs == 0 || guardUntilMs != provisionalUntilMs) return RECHECK_NOT_OURS;
         return launcherHasFocus ? RECHECK_LIFT : RECHECK_KEEP;
     }
+
+    // ================================================================ BT1c / BT1d: the stock menu opens and the patch is not fresh
+    // Tj, 2026-11-11 (v0.9.4): "after I pull down from the notification panel then return back to the home screen and hold the side key, the full power menu with screenshot button shows up the first time, then fixes
+    // after that" and "sometimes the home screen wallpaper patch doesn't work". Emulator run #529 (section bt) showed the same picture after a plain return to the home screen: a patch that was not fresh at the
+    // press (a draw of the Launcher since it was built, the guard of a window that was just up) left the replacement card SHORT (Power off / Restart only) and nothing over the Screenshot slot. Rule: the
+    // stock Screenshot entry is never left uncovered.
+
+    /** What the stock menu's own window event gets on the home screen: the fresh patch, a built-before (stale) patch shown as it is, or the replacement card over the WHOLE panel. */
+    public static final int OPEN_FRESH = 0, OPEN_STALE = 1, OPEN_FULL_CARD = 2;
+
+    /** Everything {@link #openTreatment} reads, by name. */
+    public static final class OpenFacts {
+        /** the home patch window exists (the stored wallpaper crop is valid for this page, the panel's place is learned) */
+        public boolean patchWindow;
+        /** fresh and nothing on top of the home screen: the patch may rest (what the fast path has always required) */
+        public boolean restable;
+        /** a built composite is in memory */
+        public boolean compositeKept;
+        /** it was built for the wallpaper position of now */
+        public boolean stepMatches;
+        /** the Launcher's window has the focus: no shade, no dialog, no other app's window is over the home screen */
+        public boolean launcherFocus;
+        /** the plain home screen is showing: no folder, no popup, no drag, not All Apps */
+        public boolean homeAtRest;
+        /** the calibration (the Launcher hidden for a screenshot) is running */
+        public boolean calibrating;
+    }
+
+    /**
+     * The decision for ONE opening of the stock menu. {@link #OPEN_FRESH}: today's path. {@link #OPEN_STALE}: the composite was built before the Launcher's last draw (or while a window guard was running), but
+     * the Launcher has the focus on the plain home screen for the same wallpaper position: what is under the slot has almost always NOT changed (a draw is mostly a blinking clock, a press feedback or a returning
+     * shade), so the patch is shown as it is and rebuilt in place at once; a wrong patch under the stock scrim is far less than the stock Screenshot entry. {@link #OPEN_FULL_CARD}: nothing trustworthy to
+     * paint (another window has the focus, a folder is open, no composite, the calibration runs): our card covers the WHOLE panel, so the Screenshot entry still never shows.
+     */
+    public static int openTreatment(OpenFacts f) {
+        if (!f.patchWindow || f.calibrating || !f.homeAtRest) return OPEN_FULL_CARD;
+        if (f.restable) return OPEN_FRESH;
+        if (f.compositeKept && f.stepMatches && f.launcherFocus) return OPEN_STALE;
+        return OPEN_FULL_CARD;
+    }
+
+    /**
+     * The words for the persistent log: why the patch was not fresh at the press (first failing reason, then the numbers). {@code builtAgoMs} / {@code drawAgoMs} / {@code guardLeftMs}: milliseconds, -1 = never / none.
+     */
+    public static String notFreshWhy(boolean compositeKept, boolean stepMatches, long builtAgoMs, long drawAgoMs, long guardLeftMs, boolean launcherFocus, boolean calibrating) {
+        String why;
+        if (calibrating) why = "calibrating";
+        else if (!compositeKept) why = "no composite built yet";
+        else if (!stepMatches) why = "built for another wallpaper position";
+        else if (builtAgoMs >= 0 && drawAgoMs >= 0 && drawAgoMs < builtAgoMs) why = "the Launcher drew " + (builtAgoMs - drawAgoMs) + " ms after the build";
+        else if (guardLeftMs > 0) why = "a window guard is running";
+        else if (!launcherFocus) why = "the Launcher has no window focus";
+        else why = "not restable (other)";
+        return why + " [built " + (builtAgoMs < 0 ? "never" : builtAgoMs + " ms ago") + ", last draw " + (drawAgoMs < 0 ? "never" : drawAgoMs + " ms ago") + ", guard " + Math.max(0, guardLeftMs) + " ms left, focus " + launcherFocus + "]";
+    }
 }

@@ -145,4 +145,23 @@ public final class PatchRest {
         float k = stock * (1f + nudgePct / 100f);
         return Math.max(0.3f, Math.min(1f, k));
     }
+
+    /**
+     * BT1a (Tj, 2026-11-11: "the first time I pull up to enter the pin from the lock screen, the patch for the power menu shows"). The finger's DOWN hides a RESTING patch at once, but a patch that only BECOMES
+     * restable during the pull-up (its window was created late, the lock screen came up in Quickstep mode and the custom mode took over, the crop was loaded, the PIN pad went away) was never hidden by anything: it
+     * appeared over the darkening wallpaper. It now rests visibly only after it has been restable for this long. Not a loss: the stock menu's own window event shows a restable patch that is merely not visible yet
+     * in the same frame (the fast path, BE1), and nobody opens the menu within a second of the lock screen coming up.
+     */
+    public static final long SETTLE_MS = 1200;
+
+    /** The patch has been restable for {@link #SETTLE_MS}. {@code restableSinceMs} = uptime ms of the moment it became restable, 0 = it is not restable. */
+    public static boolean settled(long nowMs, long restableSinceMs) {
+        return restableSinceMs > 0 && nowMs - restableSinceMs >= SETTLE_MS;
+    }
+
+    /** Milliseconds until the patch counts as settled (0 = now, or not restable). For the timer that looks again. */
+    public static long settleLeftMs(long nowMs, long restableSinceMs) {
+        if (restableSinceMs <= 0) return 0;
+        return Math.max(0, SETTLE_MS - (nowMs - restableSinceMs));
+    }
 }
