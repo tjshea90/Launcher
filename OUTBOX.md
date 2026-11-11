@@ -1741,3 +1741,13 @@
 >
 > Once both are in, I'll fix anything they find, run the release gate, ship v0.9.4 and answer both of your questions.
 <!-- sha:08eeca0a09ad -->
+
+## 2026-11-11T00:33:37Z
+> Waiting on two background results, nothing else to do in between:
+> - **Emulator run #521** is testing the Wi-Fi and Bluetooth code with the review fixes (it also checks the new "helper goes away on the lock screen" case); it should finish around 00:40 UTC.
+> - **A third read-only code review** of just those fixes is running.
+>
+> When both are in, I'll fix anything real, run the release gate (the version is already bumped to 0.9.4), ship, and answer both of your questions. Nothing is needed from you now.
+>
+> Still open on your side: BR1c (does the settings gear open the look-alike), BN7a (start the shell helper, tap "Do everything that is missing"), BN8c/BN8d and BQ1b (tablet reports), BH1c (where you saw a notification), BK1e (which unlock is slow), and, once v0.9.4 ships, a look at whether the Wi-Fi and Bluetooth symbols are gone on your lock screen.
+<!-- sha:6208d8222c04 -->
