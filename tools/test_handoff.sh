@@ -158,6 +158,9 @@ check "no phone-guide command is destructive" '! grep -E "^(cmd|alt):.*(pm unins
 # ---------------------------------------------------------------- the tablet intake: what Tj sends from the tablet is saved redacted + summarised (its own self-test, ~2 s)
 if TI_OUT="$(bash "$D/tools/test_tablet_intake.sh" 2>&1)"; then ok; else bad "tablet intake self-test failed (bash tools/test_tablet_intake.sh)"; printf '%s\n' "$TI_OUT" | grep FAIL | head -10; fi
 
+# ---------------------------------------------------------------- the music icon check of emulator check MU-21 (tools/music_icon_check.py; its own self-test, ~5 s; it skips itself where numpy / PIL / ImageMagick are missing)
+if MI_OUT="$(bash "$D/tools/test_music_icon_check.sh" 2>&1)"; then ok; else bad "music icon check self-test failed (bash tools/test_music_icon_check.sh)"; printf '%s\n' "$MI_OUT" | grep FAIL | head -10; fi
+
 # ---------------------------------------------------------------- the node finder the emulator scenario's phone-guide checks use (tools/uinode.py; its own self-test, ~1 s)
 if UN_OUT="$(bash "$D/tools/test_uinode.sh" 2>&1)"; then ok; else bad "uinode self-test failed (bash tools/test_uinode.sh)"; printf '%s\n' "$UN_OUT" | grep FAIL | head -10; fi
 
