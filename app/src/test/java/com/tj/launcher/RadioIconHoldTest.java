@@ -126,6 +126,25 @@ public class RadioIconHoldTest {
         }
     }
 
+    /** Review of BS2, finding 2: the helper goes away while the lock screen is up -> the hold ends (symbols would show) -> the radios must go off. Nothing else ends a hold with a radio switch-off. */
+    @Test public void theRadiosGoOffOnlyWhenTheHelperIsGoneOnADarkOrLockedScreen() {
+        assertTrue(RadioIconHold.radiosGoOffWhenHoldEnds(NotifQuietPolicy.WHY_NO_HELPER, true));
+        assertFalse("an unlocked Quickstep session without the helper: the symbols are meant to show, nothing to hide", RadioIconHold.radiosGoOffWhenHoldEnds(NotifQuietPolicy.WHY_NO_HELPER, false));
+        assertFalse("the normal end of the hold", RadioIconHold.radiosGoOffWhenHoldEnds("Quickstep session", true));
+        assertFalse("paused on purpose: the launcher does nothing then", RadioIconHold.radiosGoOffWhenHoldEnds("automation paused", true));
+        assertFalse("without the permission nothing can be switched or hidden by us", RadioIconHold.radiosGoOffWhenHoldEnds("no adb permission", true));
+        assertFalse("the switch is handled by the Control handler", RadioIconHold.radiosGoOffWhenHoldEnds("switch off", true));
+        assertFalse(RadioIconHold.radiosGoOffWhenHoldEnds("", true));
+        assertFalse(RadioIconHold.radiosGoOffWhenHoldEnds(null, true));
+    }
+
+    /** The words come from the policy itself: a changed text cannot silently disable the rule above. */
+    @Test public void theHelperReasonIsThePolicysOwnText() {
+        NotifQuietPolicy.Facts f = new NotifQuietPolicy.Facts();
+        f.switchOn = true; f.grant = true; f.quickstepMode = true; f.helperUp = false;
+        assertEquals(NotifQuietPolicy.WHY_NO_HELPER, NotifQuietPolicy.why(f));
+    }
+
     @Test public void theSwitchIsOnInTheShippedAppAndOffInDebug() {
         assertTrue(RadioIconHold.defaultOn(false));
         assertFalse(RadioIconHold.defaultOn(true));
