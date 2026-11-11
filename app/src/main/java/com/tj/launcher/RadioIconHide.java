@@ -147,11 +147,15 @@ public final class RadioIconHide {
     static void offThenSync(Context c, Runnable switchOff, String trigger) {
         final Context app = c.getApplicationContext();
         try { switchOff.run(); } catch (Throwable t) { Log.e(TAG, "radios off failed", t); }
+        boolean left = false;
         try {
             final long deadline = android.os.SystemClock.elapsedRealtime() + RADIOS_OFF_WAIT_MS;
             while (android.os.SystemClock.elapsedRealtime() < deadline && LockQuiet.anyRadioOn(app)) Thread.sleep(150);
+            left = LockQuiet.anyRadioOn(app);
         } catch (InterruptedException e) { Thread.currentThread().interrupt();
         } catch (Throwable t) { Log.e(TAG, "waiting for the radios failed", t); }
+        // the order in the lock log (milliseconds) is what the emulator section wf reads: deferral, then this line, then "shown again"
+        LockLog.addAsync(app, "SYMBOLS", left ? "a radio is STILL ON after " + (RADIOS_OFF_WAIT_MS / 1000) + " s: the symbols come back anyway (" + trigger + ")" : "no radio that must go is left on: the symbols may come back (" + trigger + ")");
         try { AnimationSpeedup.syncNow(app, trigger); } catch (Throwable t) { Log.e(TAG, "sync after the radios went off failed", t); }
     }
 

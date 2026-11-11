@@ -4391,6 +4391,11 @@ sleep 5
 WFL="$(wflist)"; WFW="$(wfwifi)"
 info "WF D2c (the helper is back): icon_blacklist=$WFL wifi_on=$WFW"
 check "WF13c: with the helper back the symbols are hidden again and the radio stays OFF (nothing turns it on)" bash -c "[ \"$WFL\" = \"$WFHIDDEN\" ] && [ \"$WFW\" = 0 ]"
+# third review of BS2: the symbols must not come back BEFORE the radio is off. The lock log has milliseconds: deferral started -> "no radio that must go is left on" -> "shown again" (this order is the code's, not luck)
+WFOR="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep ' SYMBOLS ')"
+WFO="$(echo "$WFOR" | awk '/symbols stay hidden until they are off/{a=NR} /the symbols may come back \(radios off after the helper left\)/{b=NR} /shown again.*radios off after the helper left/{c=NR} END{print (a>0 && b>a && c>b) ? "ok" : "bad a=" a " b=" b " c=" c}')"
+info "WF D2e (symbol lines of the lock log, order deferral / radios off / shown again: $WFO): $(echo "$WFOR" | tail -5 | cut -c1-120 | tr '\n' '|')"
+check "WF13e: the symbols stayed hidden until the radio was off (deferral, then radios off, then symbols shown again)" test "$WFO" = ok
 pad d d 1 2 3 4 e; sleep 9
 WFW="$(wfwifi)"; WFL="$(wflist)"
 info "WF D2d (gesture unlock into Quickstep): wifi_on=$WFW icon_blacklist=$WFL"
