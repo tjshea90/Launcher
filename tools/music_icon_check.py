@@ -17,10 +17,6 @@ import sys
 PLATE_REF = 55.0          # plate width on Tj's tablet (px)
 R_REF = 19.67             # outer radius of the speaker in plate pixels on Tj's tablet (tools/make_music_icon.py)
 
-# measured on Tj's drawer screenshot (plate 55 px), see MEASURED below; thresholds are wide on purpose: this is "is it the same speaker", not "is it pixel exact"
-REF = {"blue": 0, "cap": 0, "ring": 0, "bezel_top": 0, "bezel_bottom": 0, "cone_top": 0, "cone_bottom": 0}
-
-
 def load(png):
     out = subprocess.run(["identify", "-format", "%w %h", png], capture_output=True, text=True, check=True).stdout.split()
     w, h = int(out[0]), int(out[1])
@@ -105,24 +101,20 @@ def measure(img, cx, cy, plate_w):
     }
 
 
-# Measured on Tj's drawer screenshot (plate 55 x 55 at x 386-440, y 556-610; speaker centre 412.7 / 582.8 = the plate centre):
-MEASURED = {"blue": 0.0}   # filled in below by the --at run; kept as a literal so the check needs no screenshot
-MEASURED = {"blue": 650.0, "cap": 40.0, "ring": 12.0, "bezel_top": 131.0, "bezel_bottom": 62.0, "cone_top": 70.0, "cone_bottom": 155.0}
+# MEASURED on Tj's drawer screenshot with `--at 413.5 583.5 55` (plate 55 x 55 at x 386-440, y 556-610; the speaker is 39.3 px wide; kept as literals so the check needs no screenshot).
+# The same measuring code gives blue 518 / cap 38 / ring 10 / bezel 129 and 78 / cone 76 and 161 on tools/make_music_icon.py's own drawing at that size.
+MEASURED = {"blue": 528.0, "cap": 41.7, "ring": 7.3, "bezel_top": 130.4, "bezel_bottom": 67.8, "cone_top": 77.9, "cone_bottom": 160.9}
 
 
 def verdict(m):
-    """Wide tolerances: the emulator draws the same plate and scales the same artwork, but anti-aliasing and the wallpaper edge differ a little."""
+    """Windows around Tj's numbers, wide on purpose: the emulator draws the same plate and scales the same artwork, but anti-aliasing and the wallpaper edge differ a little.
+    The pink note icon of upstream's Eleven fails every one of them (no blue, no dark cap, no black ring)."""
     why = []
-    if not (0.55 * MEASURED["blue"] <= m["blue"] <= 1.6 * MEASURED["blue"]):
+    if not (0.6 * MEASURED["blue"] <= m["blue"] <= 1.6 * MEASURED["blue"]):
         why.append("blue cone pixels %.0f (Tj's: %.0f)" % (m["blue"], MEASURED["blue"]))
-    if not (m["cap"] <= 95):
-        why.append("dust cap not dark (%.0f)" % m["cap"])
-    if not (m["ring"] <= 70):
-        why.append("no thin black ring (%.0f)" % m["ring"])
-    if not (m["bezel_top"] > m["bezel_bottom"] + 25):
-        why.append("bezel not lighter on top (%.0f / %.0f)" % (m["bezel_top"], m["bezel_bottom"]))
-    if not (m["cone_bottom"] > m["cone_top"] + 35):
-        why.append("cone not lit from below (%.0f / %.0f)" % (m["cone_top"], m["cone_bottom"]))
+    for key, lo, hi in (("cap", 10, 90), ("ring", 0, 60), ("bezel_top", 95, 175), ("bezel_bottom", 35, 110), ("cone_top", 45, 115), ("cone_bottom", 125, 200)):
+        if not (lo <= m[key] <= hi):
+            why.append("%s %.0f outside %d..%d (Tj's: %.0f)" % (key, m[key], lo, hi, MEASURED[key]))
     return why
 
 
