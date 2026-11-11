@@ -63,7 +63,7 @@ public final class NotifQuiet {
     }
 
     /**
-     * Fills in every fact except {@code switchOn} (the caller's own switch, already set on {@code f}). Shared with {@link WifiIconHide} (BS1): the Wi-Fi symbol is hidden in exactly the same world as the pop-up banners
+     * Fills in every fact except {@code switchOn} (the caller's own switch, already set on {@code f}). Shared with {@link RadioIconHide} (BS1 + BS2): the Wi-Fi and Bluetooth symbols are hidden in exactly the same world as the pop-up banners
      * are quiet, so both read the same facts the same way. Binder calls only when the world could still be "not quiet" (an unlocked Quickstep candidate with everything granted).
      */
     static void fillFacts(Context app, NotifQuietPolicy.Facts f, AnimationSpeedup.Look look, boolean assumeHelper) {

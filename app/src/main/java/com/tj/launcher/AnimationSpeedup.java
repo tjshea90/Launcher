@@ -165,7 +165,7 @@ public final class AnimationSpeedup {
         if (now - tickAt < 500) return;
         tickAt = now;
         Context app = c.getApplicationContext();
-        if (!AnimationPolicy.has(holds(app), AnimationPolicy.HOLD_QUICKSTEP) && !(Mode.QUICKSTEP.equals(Mode.get(app)) && (quickstepSwitch(app) || NotifQuiet.switchOn(app) || WifiIconHide.switchOn(app)))) return;   // BH1: the banner quiet is level-triggered in Quickstep too (a lock screen that came up without its broadcast); still nothing at all in the custom launcher
+        if (!AnimationPolicy.has(holds(app), AnimationPolicy.HOLD_QUICKSTEP) && !(Mode.QUICKSTEP.equals(Mode.get(app)) && (quickstepSwitch(app) || NotifQuiet.switchOn(app) || RadioIconHide.switchOn(app)))) return;   // BH1: the banner quiet is level-triggered in Quickstep too (a lock screen that came up without its broadcast); still nothing at all in the custom launcher
         syncSoon(app, "window change");
     }
     private static volatile long tickAt = 0;
@@ -201,7 +201,7 @@ public final class AnimationSpeedup {
         // BH1: the pop-up banners follow the same triggers and the same "which session is this" facts (their rule is the complement of the animation rule); first, so nothing below can keep them from being decided
         try { NotifQuiet.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "banner quiet sync failed", t); }
         // BS1: the Wi-Fi symbol hold is decided in exactly the same world (custom launcher, dark or locked screen, undecided PIN), from the same triggers and the same look
-        try { WifiIconHide.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "wifi symbol sync failed", t); }
+        try { RadioIconHide.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "Wi-Fi and Bluetooth symbol sync failed", t); }
         try {
             final int before = holds(app);
             final boolean holding = AnimationPolicy.has(before, AnimationPolicy.HOLD_QUICKSTEP);
