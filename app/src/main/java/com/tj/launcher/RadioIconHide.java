@@ -99,20 +99,60 @@ public final class RadioIconHide {
             final String why = NotifQuietPolicy.why(f);
             final boolean want = why.isEmpty();
             final ContentResolver cr = app.getContentResolver();
+            if (before && !want && deferRelease(app, why, look)) return;   // the symbols stay hidden until the radios are off (reviews of BS2)
             final boolean after = RadioIconHold.set(new MarkerState(cr), new ListSetting(cr), f.grant, want, SINK);
             if (before != after) {
                 String msg = after ? "Wi-Fi and Bluetooth symbols HIDDEN (" + NotifQuietPolicy.quietFor(f) + ", " + trigger + ")" : "Wi-Fi and Bluetooth symbols shown again: " + (why.isEmpty() ? "hold ended" : why) + " (" + trigger + ")";
                 Log.i(TAG, msg);
                 LockLog.addAsync(app, "SYMBOLS", msg);
                 p(app).edit().putString("last", new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + msg).apply();
-                // review of BS2, finding 2: the hold ended because the helper went away while the screen is dark or the lock screen is up. The symbols would show with the radios still on and nothing else would switch
-                // them off (the radio receiver and the lock re-check live in the helper): run the lock rule now (keepsRadiosOn is false without the helper, so it switches both radios off and remembers them for a gesture unlock)
-                if (before && !after && look != null && RadioIconHold.radiosGoOffWhenHoldEnds(why, !look.screenOn() || look.lockUp())) {
-                    LockLog.addAsync(app, "SYMBOLS", "the helper is gone on a dark or locked screen: the lock rule switches the radios off");
-                    LockQuiet.onLockAsync(app);
-                }
             }
         } catch (Throwable t) { Log.e(TAG, "sync failed", t); }
+    }
+
+    /** How long the radios get to report off before the symbols come back (deadline checked first), and the window in which a hold that ends again is released at once (no loop). */
+    private static final long RADIOS_OFF_WAIT_MS = 4_000, DEFER_WINDOW_MS = 9_000;
+    private static volatile long deferUntil = 0;
+
+    /**
+     * Reviews of BS2 (findings 2 and 1): the hold is about to END because the accessibility helper went away while the screen is dark or the lock screen is up (a crash, a restart, a {@code uiautomator dump}). The
+     * radios were being kept on and nothing else would switch them off (the radio receiver and the lock re-check live in the helper), but releasing the list first would show both symbols until the radios report
+     * off. So the release is DEFERRED: the list stays as it is, a worker switches the radios off with the lock rule (it remembers them for a gesture unlock), waits until they report off, then syncs once more
+     * ({@link #offThenSync}). Returns true when the release was deferred; the caller then does nothing more. Called under the class lock: no binder work here except the two screen / lock reads, only when the reason matches.
+     */
+    private static boolean deferRelease(final Context app, String why, AnimationSpeedup.Look look) {
+        if (look == null || !NotifQuietPolicy.WHY_NO_HELPER.equals(why)) return false;
+        final long now = android.os.SystemClock.elapsedRealtime();
+        if (!RadioIconHold.deferRelease(why, !look.screenOn() || look.lockUp(), now, deferUntil)) return false;
+        deferUntil = now + DEFER_WINDOW_MS;
+        LockLog.addAsync(app, "SYMBOLS", "the helper is gone on a dark or locked screen: the lock rule switches the radios off, the symbols stay hidden until they are off");
+        new Thread(new Runnable() { @Override public void run() {
+            offThenSync(app, new Runnable() { @Override public void run() { if (darkOrLockedNow(app)) LockQuiet.onLock(app); } }, "radios off after the helper left");   // an unlock that happened meanwhile must not lose its radios
+        } }, "tj-radio-defer").start();
+        return true;
+    }
+
+    /** Dark screen or lock screen RIGHT NOW (binder reads, worker thread); on any doubt true (the safe side for "never show"). */
+    private static boolean darkOrLockedNow(Context app) {
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) app.getSystemService(Context.POWER_SERVICE);
+            return TileProfile.keyguardLocked(app) || pm == null || !pm.isInteractive();
+        } catch (Throwable t) { return true; }
+    }
+
+    /**
+     * Runs {@code switchOff} (blocking, on THIS worker thread), waits until neither radio is on (the deadline is checked first, {@link #RADIOS_OFF_WAIT_MS}), then syncs once, so the symbols come back only after
+     * the radios are gone (the Control switch uses it too). Never throws.
+     */
+    static void offThenSync(Context c, Runnable switchOff, String trigger) {
+        final Context app = c.getApplicationContext();
+        try { switchOff.run(); } catch (Throwable t) { Log.e(TAG, "radios off failed", t); }
+        try {
+            final long deadline = android.os.SystemClock.elapsedRealtime() + RADIOS_OFF_WAIT_MS;
+            while (android.os.SystemClock.elapsedRealtime() < deadline && LockQuiet.anyRadioOn(app)) Thread.sleep(150);
+        } catch (InterruptedException e) { Thread.currentThread().interrupt();
+        } catch (Throwable t) { Log.e(TAG, "waiting for the radios failed", t); }
+        try { AnimationSpeedup.syncNow(app, trigger); } catch (Throwable t) { Log.e(TAG, "sync after the radios went off failed", t); }
     }
 
     /** "Restore everything" and the crash breaker: put the list back now, whatever the switch says. Never throws. */

@@ -61,6 +61,12 @@ public final class RadioIconHold {
      */
     public static boolean radiosGoOffWhenHoldEnds(String why, boolean darkOrLocked) { return darkOrLocked && NotifQuietPolicy.WHY_NO_HELPER.equals(why); }
 
+    /**
+     * Pure (third review of BS2, finding 1): defer the RELEASE of the list (keep the symbols hidden) until the radios are off? When {@link #radiosGoOffWhenHoldEnds} says they must go off AND no deferral is running
+     * ({@code now} is past {@code deferUntil}): the worker's own final sync, and any sync inside the window, release at once, so the deferral can never repeat in a loop.
+     */
+    public static boolean deferRelease(String why, boolean darkOrLocked, long now, long deferUntil) { return radiosGoOffWhenHoldEnds(why, darkOrLocked) && now >= deferUntil; }
+
     // ---------------------------------------------------------------- the list, parsed exactly as SystemUI parses it (split at ',', empty entries dropped, no trimming, exact compare)
 
     private static List<String> slots(String list) {
