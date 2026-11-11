@@ -13,7 +13,7 @@ public final class HiddenApps {
     private static final String PREFS = "tj_apps";
     private static final String ALLOWED = "allowed";
     private static final String BASELINE = "baseline_done";
-    /** Packages of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} that were already allowed automatically once (BV1), so a later hide by Tj is never undone. */
+    /** One entry "pkg@firstInstallTime" per install of a package of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} that was already handled (BV1): allowed once by the rule, or decided by Tj, so a later hide is never undone. */
     private static final String AUTO_DONE = "auto_done";
     private static final Object LOCK = new Object();
 
@@ -39,17 +39,25 @@ public final class HiddenApps {
         return new HashSet<>(sp.getStringSet(ALLOWED, new HashSet<String>()));
     }
 
+    private static Set<String> done(Context c) { return new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())); }
+
+    /** The time this install of {@code pkg} began ({@code PackageInfo.firstInstallTime}: kept by an update in place, new after an uninstall + reinstall); 0 when it cannot be read, e.g. the app is not installed. */
+    private static long installStamp(Context c, String pkg) {
+        try { return c.getPackageManager().getPackageInfo(pkg, 0).firstInstallTime; } catch (Throwable t) { return 0; }
+    }
+
     /**
-     * BV1: a package of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} (the music app) is allowed the first time anyone asks about it, once; asking means it is installed. Level-triggered on
-     * purpose (no install broadcast to miss, nothing to run at boot). Call inside LOCK. The first test ends almost every call at once; the one commit() happens once per install.
+     * BV1: a package of {@link AppVisibility#AUTO_ALLOWED_PACKAGES} is allowed the first time anyone asks about THIS install of it, once; asking means it is installed. Level-triggered on
+     * purpose (no install broadcast to miss, nothing to run at boot) and keyed to the install time, so an uninstall whose event this process missed cannot leave a stale mark. Call inside LOCK.
+     * Every other package ends on the first line (one set lookup). The write is {@code apply()}: memory at once, no disk wait on the main thread, and the rule is idempotent if a kill loses it.
      */
     private static void autoAllowIfDue(Context c, String pkg) {
         if (pkg == null || !AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) return;
-        SharedPreferences sp = p(c);
-        Set<String> done = new HashSet<>(sp.getStringSet(AUTO_DONE, new HashSet<String>()));
-        if (!AppVisibility.autoAllowDue(pkg, done)) return;
-        Set<String> a = AppVisibility.withShown(allowed(c), pkg, true);
-        sp.edit().putStringSet(ALLOWED, a).putStringSet(AUTO_DONE, AppVisibility.withDone(done, pkg)).commit();
+        long stamp = installStamp(c, pkg);
+        if (stamp <= 0) return;   // not installed (a late ask after an uninstall) or unreadable: write nothing
+        AppVisibility.Marks now = new AppVisibility.Marks(allowed(c), done(c));
+        AppVisibility.Marks next = AppVisibility.asked(now, pkg, stamp);
+        if (next != now) p(c).edit().putStringSet(ALLOWED, next.allowed).putStringSet(AUTO_DONE, next.done).apply();
     }
 
     public static boolean isShown(Context c, ComponentName app) {
@@ -71,11 +79,10 @@ public final class HiddenApps {
 
     public static void setShown(Context c, String pkg, boolean shown) {
         synchronized (LOCK) {
-            Set<String> a = AppVisibility.withShown(allowed(c), pkg, shown);
-            SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, a);
-            if (AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) {   // Tj decided by hand: the automatic allowing must never override it
-                e.putStringSet(AUTO_DONE, AppVisibility.withDone(new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())), pkg));
-            }
+            AppVisibility.Marks now = new AppVisibility.Marks(allowed(c), done(c));
+            AppVisibility.Marks next = AppVisibility.handSet(now, pkg, shown, AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg) ? installStamp(c, pkg) : 0);   // Tj decided by hand: the automatic allowing must never override it
+            SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, next.allowed);
+            if (next.done != now.done) e.putStringSet(AUTO_DONE, next.done);
             e.commit();
         }
     }
@@ -83,11 +90,9 @@ public final class HiddenApps {
     public static void onRemoved(Context c, String pkg) {
         try {
             synchronized (LOCK) {
-                Set<String> a = AppVisibility.withoutRemoved(allowed(c), pkg);
-                SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, a);
-                if (AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) {   // a reinstall of the music app is auto-allowed again
-                    e.putStringSet(AUTO_DONE, AppVisibility.withoutDone(new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())), pkg));
-                }
+                AppVisibility.Marks next = AppVisibility.removed(new AppVisibility.Marks(allowed(c), done(c)), pkg);
+                SharedPreferences.Editor e = p(c).edit().putStringSet(ALLOWED, next.allowed);
+                if (AppVisibility.AUTO_ALLOWED_PACKAGES.contains(pkg)) e.putStringSet(AUTO_DONE, next.done);   // a reinstall of the music app is auto-allowed again
                 e.commit();
             }
         } catch (Throwable ignored) { }

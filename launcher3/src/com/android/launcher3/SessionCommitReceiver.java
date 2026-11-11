@@ -78,6 +78,8 @@ public class SessionCommitReceiver extends BroadcastReceiver {
     public static void queueAppIconAddition(Context context, String packageName, UserHandle user) {
         // Tj: a hidden / not-yet-allowed app must not be put on the home screen either.
         if (!com.tj.launcher.HiddenApps.isPackageShown(context, packageName)) return;
+        // BV1: the music app is in the DRAWER by itself (that is all Tj asked for); it must not also appear on his home screen after an install through the system installer.
+        if (com.tj.launcher.AppVisibility.noHomeIconOnInstall(packageName)) return;
         List<LauncherActivityInfo> activities = LauncherAppsCompat.getInstance(context)
                 .getActivityList(packageName, user);
         if (activities == null || activities.isEmpty()) {
