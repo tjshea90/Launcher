@@ -53,7 +53,17 @@ jobs:
           yes | "$SDKM" --licenses >/dev/null 2>&1 || true
           "$SDKM" "platforms;android-36" "build-tools;36.0.0" >/dev/null
       - name: ImageMagick (the scenario compares screenshots with it)
-        run: sudo apt-get install -y --no-install-recommends imagemagick >/dev/null
+        timeout-minutes: 6   # run 543 (2026-11-11): this step failed after 2 minutes on an apt error and ended the whole run before the scenario: skip the install when the runner image has it, else retry quickly
+        run: |
+          APT='sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20'
+          if ! command -v convert >/dev/null 2>&1; then
+            for i in 1 2 3; do
+              $APT update >/dev/null 2>&1 || true
+              if $APT install -y --no-install-recommends imagemagick > "$RUNNER_TEMP/apt.log" 2>&1; then break; fi
+              echo "imagemagick install, attempt $i failed:"; tail -5 "$RUNNER_TEMP/apt.log"; sleep 5
+            done
+          fi
+          command -v convert
       - name: ffmpeg (only for sections pt, hf and fp, which film the power menu opening and measure the patch frame by frame)
         if: contains(format(',{0},', inputs.sections), ',pt,') || contains(format(',{0},', inputs.sections), ',hf,') || contains(format(',{0},', inputs.sections), ',fp,')
         timeout-minutes: 4   # run 248: the package mirror stalled for 6 minutes; retry quickly instead of waiting
