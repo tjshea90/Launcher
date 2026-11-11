@@ -39,22 +39,32 @@ def white(p):
 
 
 def plate_of(img, l, t, r, b):
-    """Bounding box of the pure-white plate inside the entry's bounds: rows and columns that carry at least 30 pure-white pixels (letters of the label never do)."""
-    rows = [y for y in range(t, b) if sum(1 for x in range(l, r) if white(at(img, x, y))) >= 30]
-    if not rows:
+    """Bounding box of the pure-white plate inside the entry's bounds: the largest connected area of pure-white pixels (the white of the plate surrounds the round speaker, so it is one piece;
+    the letters of the label are separate small pieces)."""
+    w, h, _ = img
+    l, t, r, b = max(0, l), max(0, t), min(w, r), min(h, b)
+    seen = set()
+    best = None
+    for y in range(t, b):
+        for x in range(l, r):
+            if (x, y) in seen or not white(at(img, x, y)):
+                continue
+            stack, comp = [(x, y)], []
+            seen.add((x, y))
+            while stack:
+                cx, cy = stack.pop()
+                comp.append((cx, cy))
+                for nx, ny in ((cx + 1, cy), (cx - 1, cy), (cx, cy + 1), (cx, cy - 1)):
+                    if l <= nx < r and t <= ny < b and (nx, ny) not in seen and white(at(img, nx, ny)):
+                        seen.add((nx, ny))
+                        stack.append((nx, ny))
+            if best is None or len(comp) > len(best):
+                best = comp
+    if not best or len(best) < 400:
         return None
-    # the longest run of consecutive rows
-    runs, start = [], rows[0]
-    for a, c in zip(rows, rows[1:] + [None]):
-        if c is None or c != a + 1:
-            runs.append((start, a))
-            if c is not None:
-                start = c
-    y0, y1 = max(runs, key=lambda q: q[1] - q[0])
-    cols = [x for x in range(l, r) if sum(1 for y in range(y0, y1 + 1) if white(at(img, x, y))) >= 20]
-    if not cols:
-        return None
-    return cols[0], y0, cols[-1], y1
+    xs = [q[0] for q in best]
+    ys = [q[1] for q in best]
+    return min(xs), min(ys), max(xs), max(ys)
 
 
 def lum(img, x, y):
