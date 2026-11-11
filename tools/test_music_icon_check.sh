@@ -14,7 +14,7 @@ printf '<node text="Music" bounds="[129,213][243,333]"/>\n' > "$T/dump.txt"
 chk(){ # chk <name> <want exit code> <picture> [text the output must contain] [label]
   local name="$1" want="$2" pic="$3" has="${4:-}" label="${5:-Music}" out rc
   out="$(python3 -I "$D/tools/music_icon_check.py" "$pic" "$T/dump.txt" "$label" 2>&1)"; rc=$?
-  if [ "$rc" = "$want" ] && { [ -z "$has" ] || printf '%s' "$out" | grep -q "$has"; }; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "  FAIL  $name: want exit $want${has:+ and '$has'}, got exit $rc: $out"; fi
+  if [ "$rc" = "$want" ] && { [ -z "$has" ] || printf "%s" "$out" | grep -qF -- "$has"; }; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); echo "  FAIL  $name: want exit $want${has:+ and '$has'}, got exit $rc: $out"; fi
 }
 sim(){ python3 -I "$D/tools/make_music_icon.py" --drawer-sim "$@" >/dev/null; }
 
