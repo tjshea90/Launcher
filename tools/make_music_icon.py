@@ -142,20 +142,26 @@ def write_icons(res_dir):
     print("wrote the adaptive icon xml and the white background colour")
 
 
-def drawer_sim(out, plate=52):
+def drawer_sim(out, plate=52, shrink=1.0):
     """A synthetic 600 x 1024 drawer: grey backdrop, a white plate (plate x plate px, rounded corners) with the written foreground cut to its window, a label-less single entry at (160, 230).
-    What Launcher3 does with an adaptive icon: the 72 dp window of the layer fills the plate. Used as input of tools/music_icon_check.py by tools/test_music_icon_check.sh."""
+    What Launcher3 does with an adaptive icon: the 72 dp window of the layer fills the plate. `shrink` scales the speaker alone about the plate's centre (0.87 = what Launcher3's wrapper
+    did to the first, legacy icon: the self-test's negative control). Used as input of tools/music_icon_check.py by tools/test_music_icon_check.sh."""
     from PIL import Image, ImageDraw
     big = foreground(layer_px("xxxhdpi"))                      # 432 px = 108 dp
     layer = int(round(plate * 108 / 72.0))
     lay = Image.fromarray(big, "RGBA").resize((layer, layer), Image.LANCZOS)
     win = lay.crop(((layer - plate) // 2, (layer - plate) // 2, (layer - plate) // 2 + plate, (layer - plate) // 2 + plate))
+    if shrink != 1.0:
+        n = max(2, int(round(plate * shrink)))
+        small = win.resize((n, n), Image.LANCZOS)
+        win = Image.new("RGBA", (plate, plate), (0, 0, 0, 0))
+        win.paste(small, ((plate - n) // 2, (plate - n) // 2), small)
     img = Image.new("RGB", (600, 1024), (169, 160, 163))
     d = ImageDraw.Draw(img)
     d.rounded_rectangle((160, 230, 160 + plate - 1, 230 + plate - 1), radius=max(3, plate // 12), fill=(255, 255, 255))
     img.paste(win, (160, 230), win)
     img.save(out)
-    print("wrote", out, "plate", plate)
+    print("wrote", out, "plate", plate, "shrink", shrink)
 
 
 def compare(shot, cx, cy, out=None):
