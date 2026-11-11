@@ -192,7 +192,7 @@ if __name__ == "__main__":
     if len(sys.argv) >= 5 and sys.argv[1] == "--compare":
         compare(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]), sys.argv[5] if len(sys.argv) > 5 else None)
     elif len(sys.argv) >= 3 and sys.argv[1] == "--drawer-sim":
-        drawer_sim(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 52)
+        drawer_sim(sys.argv[2], int(sys.argv[3]) if len(sys.argv) > 3 else 52, float(sys.argv[4]) if len(sys.argv) > 4 else 1.0)
     elif len(sys.argv) == 1:
         here = os.path.dirname(os.path.abspath(__file__))
         write_icons(os.path.join(here, "..", "eleven", "src", "main", "res"))
