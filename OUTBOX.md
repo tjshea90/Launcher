@@ -1903,3 +1903,7 @@
 >   - Runs #533 and #534 finish around 07:48 UTC.
 >   - Everything is checkpointed (1129).
 <!-- sha:79dd89a87b92 -->
+
+## 2026-11-11T07:37:16Z
+> The numbers explain the failure: the measured look ended at −0.87% vs a −0.23% generic look. The check allows |generic| + 0.5% = 0.73%, so it missed by 0.14 percentage points, while the real requirement (within 1.2%) passed. Earlier runs measured −0.12% and −0.24%, so I can't call this noise yet. Per the project's triage rule, I'll repeat the exact same commit and also run the released v0.9.4 tag side by side.
+<!-- sha:9861f428ccda -->
