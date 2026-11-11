@@ -1,13 +1,13 @@
-# CHECKPOINT 1144 — read me first, then TASKS.md
+# CHECKPOINT 1145 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T08:42:11Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `13da1a40` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T08:52:37Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3e66a8c0-ruc8aa` · **builds on:** `dad80ef4` (this checkpoint is the commit after it)
 
 ## Just done
-CLAUDE.md lessons from the v0.9.5 session added; GATE wording checked: wf/lq NOT in this gate (do not claim Wi-Fi/Bluetooth)
+#541 (id 42988210547, job 130414401792, v,ps,hp on 3e4d1d2): 32 PASS 15 FAIL 45 INFO, ALL 15 FAIL in hp (HP1 calibration never started, HP2, HP4 cardless, HP5-HP7, HP11, HP8, HP13): home patch status 'away: not on the plain home screen' from phase B on; no NATIVE CRASH; HP4 INFO-skip DID fire (stock fit 0.749). v,ps all PASS. Scenario diff vs 3627dbaf is HP4 block only, no product diff
 
 ## Do this next
-Heartbeat trig_01GVcBRvTAzqf97UhMTJszab. Read #541 id 42988210547 at ~08:48Z: get_job_logs run_id failed_only tail 12 (No failed jobs + completed = green; INFO 'HP4: NOT CHECKED' expected). Green -> TASKS BT2 [x] (run id), update_trigger enabled=false, then send the answer (research/V095 draft; GATE = e1,o,ac,ae,pa,rb,ss,bt,last + rg green, base,x1,n,v,ps,hp,hf,fp one HP4 fail explained, pt BA1 flake rerun green) as the LAST message
+Heartbeat trig_01GVcBRvTAzqf97UhMTJszab STAYS ARMED. Triage: grep 'not on the plain home screen' in app/src to see the state; rerun hp SOLO and v,ps,hp on head side by side (refs main and branch), plus v,ps,hp on tag v0.9.4 (#540 passed HP1/HP2, only HP4 failed); do NOT answer Tj before this is explained
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ Heartbeat trig_01GVcBRvTAzqf97UhMTJszab. Read #541 id 42988210547 at ~08:48Z: ge
 
 ## Last ten checkpoints
 ```
+  dad80ef4 ckpt 1144: CLAUDE.md lessons from the v0.9.5 session added; GATE wording checked: wf/lq
   0bdaac12 ckpt 1143: HANDOFF.md block 0s (v0.9.5 state) written; #541 id 42988210547 still runnin
   78d6cb20 ckpt 1142: BT2 proof run #541 id 42988210547 (v,ps,hp on branch, head 3e4d1d2, dispatch
   3e4d1d26 ckpt 1141: BT2 fix written: HP4 in tools/emulator_scenario.sh now INFO-skips (never sil
@@ -25,8 +26,4 @@ Heartbeat trig_01GVcBRvTAzqf97UhMTJszab. Read #541 id 42988210547 at ~08:48Z: ge
   6f1d0a9d ckpt 1137: tag v0.9.4 chain #540 (id 42984659617, job 130402860592): 47 PASS 1 FAIL = H
   0df075f1 ckpt 1136: tag chain #540 (id 42984659617, job 130402860592, v0.9.4 v,ps,hp) FAILED; FA
   4e8bb812 ckpt 1135: heartbeat 08:14Z: no other session working (other account last commit 70 min
-  a691789e ckpt 1134: GATE STATE on 3627dbaf (= gated 980012c + 2 version lines, ship candidate). 
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
