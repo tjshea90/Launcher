@@ -2028,3 +2028,20 @@
 >
 > My auto-resume timer is still armed and fires every 2 hours. I'm not retrying to switch it off, because the approval prompt interrupted my session both times. You can delete "Launcher auto-resume heartbeat" in the app. Each firing only reads the state and stops.
 <!-- sha:38deaf5e88f0 -->
+
+## 2026-11-11T14:35:20Z
+> Nothing is left for me to do. v0.9.5 is released, and the answer to your six reports went out at 11:19 UTC (it's in `OUTBOX.md`). The session on your other account confirmed it didn't send a second one. My branch matches `main` again, and nothing is running on CI.
+>
+> What's left depends on you (the tablet checks BT1h, BS2e and BR1c, plus BN7a, BN8c/d, BQ1b, BH1c, BK1e and BM1), plus a few low-priority items of mine that I'm not starting.
+>
+> One thing you can do from the app: each account still has an auto-resume heartbeat armed (mine is `trig_01DZ15y7gsi1bXpJ7P2KBghc`). Turning them off needs your approval, and those approval requests keep dying when the worker restarts. Until they're deleted, each wakes its session every 2 hours for nothing. You can delete "Launcher auto-resume heartbeat" in both accounts' scheduled tasks.
+<!-- sha:e653e9c5d0fe -->
+
+## 2026-11-11T14:35:35Z
+> Heartbeat 14:32Z (`trig_01DZ15y7gsi1bXpJ7P2KBghc`): nothing for me to do, so I took no action.
+>
+> - **Other session:** the other account's session only wrote a heartbeat status note at 14:19Z, which isn't real work. Nothing is running on CI and no new message from you is waiting.
+> - **State:** my branch is fast-forwarded to `main` (`3baa5548`) without a new commit. v0.9.5 is released, and your answer went out at 11:19Z.
+> - **What's left:** only items waiting on you. These are BT1h, BS2e, BR1c, BN7a, BN8c, BN8d, BQ1b, BH1c, BK1e and BM1.
+> - **Your action:** both heartbeats are still armed, mine and the other account's `trig_01GVcBRvTAzqf97UhMTJszab`. Each wakes its session every 2 hours for nothing. Turning them off needs your approval in the app, and those prompts died unanswered every time. You can delete both "Launcher auto-resume heartbeat" tasks there.
+<!-- sha:e1d5d60427c7 -->
