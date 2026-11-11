@@ -14,9 +14,12 @@ radius (r, in drawer pixels, centre = the fitted centre of the thin black ring) 
     bezel = mean(r) + dev(r) * (-dy / r)     (the grey ring is lighter on top)
     dust cap = 42 + 60 * (up / 4.75)         (a glossy dome: lighter on top, black at the bottom), 4.75 px radius, a dark edge ring around it
     thin black ring at r = 16.1 px (about 1.1 px wide), outer edge of the bezel at r = 19.7 px.
-Run:  python3 -I tools/make_music_icon.py            -> writes eleven/src/main/res/mipmap-*/ic_launcher.png (48 / 72 / 96 / 144 / 192 px)
+Run:  python3 -I tools/make_music_icon.py            -> writes eleven/src/main/res/mipmap-*/ic_launcher_foreground.png (108 dp layer: 108 / 162 / 216 / 324 / 432 px),
+          mipmap-anydpi/ic_launcher.xml and values/ic_launcher_background.xml (white)
       python3 -I tools/make_music_icon.py --compare <drawer screenshot, 600x1024> <centre x> <centre y> [<out.png>]
           -> draws the speaker at the drawer's own size on a white plate and prints the difference to the screenshot (the fit check of BW1; the screenshot stays outside the repo)
+      python3 -I tools/make_music_icon.py --drawer-sim <out.png> [<plate px, default 52>]
+          -> a synthetic drawer: the written foreground cut to the plate window on a white plate, on grey (self-test input of tools/music_icon_check.py, tools/test_music_icon_check.sh)
 """
 import math
 import os
