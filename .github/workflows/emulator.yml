@@ -70,9 +70,23 @@ jobs:
         run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg >/dev/null
       - name: Build the debug APK
         run: ./gradlew :app:assembleDebug :phoneguide:assembleDebug :testnotifier:assembleDebug --console=plain
-      - name: Build the music app (Eleven; only for section mu, TASKS BV1e)
+      - name: Build the music app and its upstream CONTROL (Eleven; only for section mu, TASKS BV1e)
         if: contains(format(',{0},', inputs.sections), ',mu,')
-        run: ./gradlew :eleven:assembleDebug --console=plain
+        run: |
+          set -e
+          # 1. The CONTROL (MU-2): upstream's own Eleven WITH its album-art code = eleven/src/main of the pinned baseline commit (UPSTREAM.md) + the one port fix (CHANGES.md 1) + this repo's build file.
+          #    The scenario plays the same song through the same screens and must SEE the cover there; otherwise "no cover in our pictures" would prove nothing. Built first and copied away, the tree is then put back.
+          BASE=db65f0240c22f5352ff509d3363b011919621108
+          git fetch --depth=1 origin "$BASE"
+          git checkout --no-overlay "$BASE" -- eleven/src/main
+          sed -i 's/\([ (]\)R\.attr\.actionOverflowMenuStyle/\1androidx.appcompat.R.attr.actionOverflowMenuStyle/' eleven/src/main/java/org/lineageos/eleven/utils/PopupMenuHelper.java
+          grep -q 'androidx.appcompat.R.attr.actionOverflowMenuStyle' eleven/src/main/java/org/lineageos/eleven/utils/PopupMenuHelper.java
+          ./gradlew :eleven:assembleDebug --console=plain
+          cp eleven/build/outputs/apk/debug/eleven-debug.apk eleven/build/eleven-upstream-control.apk
+          # 2. Back to the real source (no overlay: files that exist only in the baseline are removed again), then the real build the scenario installs.
+          git checkout --no-overlay HEAD -- eleven/src/main
+          test -z "$(git status --porcelain eleven)"
+          ./gradlew :eleven:assembleDebug --console=plain
       - name: Boot Android 10, run the scenario
         uses: reactivecircus/android-emulator-runner@v2
         env:
