@@ -25,35 +25,21 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
-import android.view.View;
 import android.widget.ImageView;
 
-import org.lineageos.eleven.cache.PlaylistWorkerTask.PlaylistWorkerType;
-import org.lineageos.eleven.provider.PlaylistArtworkStore;
-import org.lineageos.eleven.utils.ElevenUtils;
-import org.lineageos.eleven.utils.ImageUtils;
 import org.lineageos.eleven.widgets.AlbumScrimImage;
 import org.lineageos.eleven.widgets.LetterTileDrawable;
 
-import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.RejectedExecutionException;
-
 /**
- * This class wraps up completing some arbitrary long running work when loading
- * a {@link Bitmap} to an {@link ImageView}. It handles things like using a
- * memory and disk cache, running the work in a background thread and setting a
- * placeholder image.
+ * MODIFIED for the Launcher build (TASKS BV1; see CHANGES.md). Tj: "never at any time show album art on any tab or anywhere in the app. It should never load or display album
+ * album art, ever."
+ *
+ * Upstream's ImageWorker looked for album, artist and playlist pictures (memory and disk cache, the MediaStore album-art store, embedded pictures, background tasks, a blur of
+ * the picture). ALL OF THAT IS GONE. This class only draws the app's own placeholders, the very ones upstream draws while it has found nothing: a {@link LetterTileDrawable}
+ * (artists: the first letters of the name on a coloured tile; albums, songs and playlists: the music-note tile). It has no cache, no worker task and reads no file, no
+ * content provider and no network. A guard test (src/test, NoAlbumArtGuardTest) fails if any of that comes back.
  */
 public abstract class ImageWorker {
-
-    /**
-     * Tracks which images we've tried to download and prevents it from trying again
-     * In the future we might want to throw this into a db
-     */
-    public static final Set<String> sKeys = Collections.synchronizedSet(new HashSet<>());
 
     /**
      * Default transition drawable fade time
@@ -66,19 +52,9 @@ public abstract class ImageWorker {
     public static final int FADE_IN_TIME_SLOW = 1000;
 
     /**
-     * First layer of the transition drawable
-     */
-    private final ColorDrawable mTransparentDrawable;
-
-    /**
      * The Context to use
      */
     protected final Context mContext;
-
-    /**
-     * Disk and memory caches
-     */
-    protected ImageCache mImageCache;
 
     /**
      * Constructor of <code>ImageWorker</code>
@@ -87,51 +63,6 @@ public abstract class ImageWorker {
      */
     protected ImageWorker(final Context context) {
         mContext = context.getApplicationContext();
-
-        // Create the transparent layer for the transition drawable
-        mTransparentDrawable = new ColorDrawable(Color.TRANSPARENT);
-    }
-
-    /**
-     * Set the {@link ImageCache} object to use with this ImageWorker.
-     *
-     * @param cacheCallback new {@link ImageCache} object.
-     */
-    public void setImageCache(final ImageCache cacheCallback) {
-        mImageCache = cacheCallback;
-    }
-
-    /**
-     * Closes the disk cache associated with this ImageCache object. Note that
-     * this includes disk access so this should not be executed on the main/UI
-     * thread.
-     */
-    public void close() {
-        if (mImageCache != null) {
-            mImageCache.close();
-        }
-    }
-
-    /**
-     * flush() is called to synchronize up other methods that are accessing the
-     * cache first
-     */
-    public void flush() {
-        if (mImageCache != null) {
-            mImageCache.flush();
-        }
-    }
-
-    /**
-     * Adds a new image to the memory and disk caches
-     *
-     * @param key    The key used to store the image
-     * @param bitmap The {@link Bitmap} to cache
-     */
-    public void addBitmapToCache(final String key, final Bitmap bitmap) {
-        if (mImageCache != null) {
-            mImageCache.addBitmapToCache(key, bitmap);
-        }
     }
 
     /**
@@ -143,33 +74,6 @@ public abstract class ImageWorker {
         letterTileDrawable.setTileDetails(name, identifier, imageType);
         letterTileDrawable.setIsCircular(false);
         return letterTileDrawable;
-    }
-
-    public static Bitmap getBitmapInBackground(final Context context, final ImageCache imageCache,
-                                               final String key, final long albumId,
-                                               final ImageType imageType) {
-        // The result
-        Bitmap bitmap = null;
-
-        // First, check the disk cache for the image
-        if (key != null && imageCache != null) {
-            bitmap = imageCache.getCachedBitmap(key);
-        }
-
-        // Second, if we're fetching artwork, check the device for the image
-        if (bitmap == null && imageType.equals(ImageType.ALBUM) && albumId >= 0
-                && key != null && imageCache != null) {
-            bitmap = imageCache.getCachedArtwork(context, key, albumId);
-        }
-
-        // Finally, add the new image to the cache
-        if (bitmap != null) {
-            imageCache.addBitmapToCache(key, bitmap);
-        }
-
-        sKeys.add(key);
-
-        return bitmap;
     }
 
     /**
@@ -194,7 +98,8 @@ public abstract class ImageWorker {
     }
 
     /**
-     * Creates a transition drawable to Bitmap with params
+     * Creates a transition drawable to Bitmap with params. In this build the only caller is
+     * {@link AlbumScrimImage}, which passes the flat default colour, never a picture.
      *
      * @param resources    Android Resources!
      * @param fromDrawable the drawable to transition from
@@ -260,115 +165,6 @@ public abstract class ImageWorker {
     }
 
     /**
-     * Cancels and clears out any pending bitmap worker tasks on this image view
-     *
-     * @param image ImageView/BlurScrimImage to check
-     */
-    public static void cancelWork(final View image) {
-        Object tag = image.getTag();
-        if (tag instanceof AsyncTaskContainer) {
-            AsyncTaskContainer asyncTaskContainer = (AsyncTaskContainer) tag;
-            BitmapWorkerTask<?, ?, ?> bitmapWorkerTask = asyncTaskContainer.getBitmapWorkerTask();
-            if (bitmapWorkerTask != null) {
-                bitmapWorkerTask.cancel(false);
-            }
-
-            // clear out the tag
-            image.setTag(null);
-        }
-    }
-
-    /**
-     * Returns false if the existing async task is loading the same key value
-     * Returns true otherwise and also cancels the async task if one exists
-     */
-    public static boolean executePotentialWork(final String key, final View view) {
-        final AsyncTaskContainer asyncTaskContainer = getAsyncTaskContainer(view);
-        if (asyncTaskContainer != null) {
-            // we are trying to reload the same image, return false to indicate no work is needed
-            if (asyncTaskContainer.getKey().equals(key)) {
-                return false;
-            }
-
-            // since we don't match, cancel the work and switch to the new worker task
-            cancelWork(view);
-        }
-
-        return true;
-    }
-
-    /**
-     * Used to determine if the current image drawable has an instance of
-     * {@link AsyncTaskContainer}
-     *
-     * @param view Any {@link View} that either is or contains an ImageView.
-     * @return Retrieve the AsyncTaskContainer assigned to the {@link View}. null if there is no
-     * such task.
-     */
-    public static AsyncTaskContainer getAsyncTaskContainer(final View view) {
-        if (view != null) {
-            if (view.getTag() instanceof AsyncTaskContainer) {
-                return (AsyncTaskContainer) view.getTag();
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Used to determine if the current image drawable has an instance of
-     * {@link BitmapWorkerTask}.  A {@link BitmapWorkerTask} may not exist even if the {@link
-     * AsyncTaskContainer} does as it may have finished its work
-     *
-     * @param view Any {@link View} that either is or contains an ImageView.
-     * @return Retrieve the currently active work task (if any) associated with
-     * this {@link View}. null if there is no such task.
-     */
-    @SuppressWarnings("rawtypes")
-    public static BitmapWorkerTask getBitmapWorkerTask(final View view) {
-        AsyncTaskContainer asyncTask = getAsyncTaskContainer(view);
-        if (asyncTask != null) {
-            return asyncTask.getBitmapWorkerTask();
-        }
-
-        return null;
-    }
-
-    /**
-     * A custom {@link BitmapDrawable} that will be attached to the
-     * {@link View} which either is or contains an {@link ImageView} while the work is in progress.
-     * Contains a reference to the actual worker task, so that it can be stopped if a new binding is
-     * required, and makes sure that only the last started worker process can
-     * bind its result, independently of the finish order.
-     */
-    public static final class AsyncTaskContainer {
-
-        private final WeakReference<BitmapWorkerTask<?, ?, ?>> mBitmapWorkerTaskReference;
-        // keep a copy of the key in case the worker task mBitmapWorkerTaskReference is released
-        // after completion
-        private final String mKey;
-
-        /**
-         * Constructor of <code>AsyncDrawable</code>
-         */
-        public AsyncTaskContainer(final BitmapWorkerTask<?, ?, ?> bitmapWorkerTask) {
-            mBitmapWorkerTaskReference = new WeakReference<>(bitmapWorkerTask);
-            mKey = bitmapWorkerTask.mKey;
-        }
-
-        /**
-         * @return The {@link BitmapWorkerTask} associated with this drawable
-         */
-        public BitmapWorkerTask<?, ?, ?> getBitmapWorkerTask() {
-            return mBitmapWorkerTaskReference.get();
-        }
-
-        public String getKey() {
-            return mKey;
-        }
-    }
-
-    /**
      * Loads the default image into the image view given the image type
      *
      * @param imageView The {@link ImageView}
@@ -389,15 +185,14 @@ public abstract class ImageWorker {
     }
 
     /**
-     * Called to fetch the artist or album art.
+     * Shows the placeholder for an artist, album or playlist. Upstream then went looking for a picture; this build never does.
      *
      * @param key        The unique identifier for the image.
-     * @param artistName The artist name for the Last.fm API.
-     * @param albumName  The album name for the Last.fm API.
-     * @param albumId    The album art index, to check for missing artwork.
-     * @param imageView  The {@link ImageView} used to set the cached
-     *                   {@link Bitmap}.
-     * @param imageType  The type of image URL to fetch for.
+     * @param artistName The artist name (the letters of an artist tile).
+     * @param albumName  Unused here (kept so the callers stay as upstream wrote them).
+     * @param albumId    The album id (the key of an album tile).
+     * @param imageView  The {@link ImageView} that gets the placeholder.
+     * @param imageType  Artist, album or playlist.
      */
     protected void loadImage(final String key, final String artistName,
                              final String albumName, final long albumId,
@@ -407,158 +202,55 @@ public abstract class ImageWorker {
     }
 
     /**
-     * Called to fetch the artist or album art.
-     *
-     * @param key            The unique identifier for the image.
-     * @param artistName     The artist name for the Last.fm API.
-     * @param albumName      The album name for the Last.fm API.
-     * @param albumId        The album art index, to check for missing artwork.
-     * @param imageView      The {@link ImageView} used to set the cached
-     *                       {@link Bitmap}.
-     * @param imageType      The type of image URL to fetch for.
-     * @param scaleImgToView config option to scale the image to the image view's dimensions
+     * Same as above; {@code scaleImgToView} only mattered for a real picture and is ignored.
      */
     protected void loadImage(final String key, final String artistName, final String albumName,
                              final long albumId, final ImageView imageView,
                              final ImageType imageType, final boolean scaleImgToView) {
 
-        if (key == null || mImageCache == null || imageView == null) {
+        if (key == null || imageView == null) {
             return;
         }
 
-        // First, check the memory for the image
-        final Bitmap lruBitmap = mImageCache.getBitmapFromMemCache(key);
-        if (lruBitmap != null) {   // Bitmap found in memory cache
-            // scale image if necessary
-            if (scaleImgToView) {
-                imageView.setImageBitmap(ImageUtils.scaleBitmapForImageView(lruBitmap, imageView));
-            } else {
-                imageView.setImageBitmap(lruBitmap);
-            }
+        if (imageType == ImageType.ARTIST) {
+            loadDefaultImage(imageView, imageType, artistName, key);
+        } else if (imageType == ImageType.ALBUM) {
+            // don't show letters for albums so pass in null as the display string
+            // because an album could have multiple artists, use the album id as the key here
+            loadDefaultImage(imageView, imageType, null, String.valueOf(albumId));
         } else {
-            // load the default image
-            if (imageType == ImageType.ARTIST) {
-                loadDefaultImage(imageView, imageType, artistName, key);
-            } else if (imageType == ImageType.ALBUM) {
-                // don't show letters for albums so pass in null as the display string
-                // because an album could have multiple artists, use the album id as the key here
-                loadDefaultImage(imageView, imageType, null, String.valueOf(albumId));
-            } else {
-                // don't show letters for playlists so pass in null as the display string
-                loadDefaultImage(imageView, imageType, null, key);
-            }
-
-            if (executePotentialWork(key, imageView)) {
-                Drawable fromDrawable = imageView.getDrawable();
-                if (fromDrawable == null) {
-                    fromDrawable = mTransparentDrawable;
-                }
-
-                // Otherwise run the worker task
-                final SimpleBitmapWorkerTask bitmapWorkerTask = new SimpleBitmapWorkerTask(key,
-                        imageView, imageType, fromDrawable, mContext, scaleImgToView);
-
-                final AsyncTaskContainer asyncTaskContainer =
-                        new AsyncTaskContainer(bitmapWorkerTask);
-                imageView.setTag(asyncTaskContainer);
-                try {
-                    ElevenUtils.execute(bitmapWorkerTask,
-                            artistName, albumName, String.valueOf(albumId));
-                } catch (RejectedExecutionException e) {
-                    // Executor has exhausted queue space
-                }
-            }
+            // don't show letters for playlists so pass in null as the display string
+            loadDefaultImage(imageView, imageType, null, key);
         }
     }
 
-
     /**
-     * Called to fetch a playlist's top artist or cover art
+     * Shows the playlist placeholder (no letters). Upstream built a cover from the top songs' pictures; this build never does.
      *
      * @param playlistId playlist identifier
-     * @param type       of work to get (Artist or CoverArt)
-     * @param imageView  to set the image to
+     * @param imageView  to set the placeholder on
      */
-    public void loadPlaylistImage(final long playlistId, final PlaylistWorkerType type,
-                                  final ImageView imageView) {
-        if (mImageCache == null || imageView == null) {
+    public void loadPlaylistImage(final long playlistId, final ImageView imageView) {
+        if (imageView == null) {
             return;
         }
 
-        String key = null;
-        switch (type) {
-            case Artist:
-                key = PlaylistArtworkStore.getArtistCacheKey(playlistId);
-                break;
-            case CoverArt:
-                key = PlaylistArtworkStore.getCoverCacheKey(playlistId);
-                break;
-        }
-
-        // First, check the memory for the image
-        final Bitmap lruBitmap = mImageCache.getBitmapFromMemCache(key);
-        if (lruBitmap != null) {
-            // Bitmap found in memory cache
-            imageView.setImageBitmap(lruBitmap);
-        } else {
-            // load the default image
-            loadDefaultImage(imageView, ImageType.PLAYLIST, null, String.valueOf(playlistId));
-        }
-
-        // even though we may have found the image in the cache, we want to check if the playlist
-        // has been updated, or it's been too long since the last update and change the image
-        // accordingly
-        if (executePotentialWork(key, imageView)) {
-            // since a playlist's image can change based on changes to the playlist
-            // set the from drawable to be the existing image (if it exists) instead of transparent
-            // and fade from there
-            Drawable fromDrawable = imageView.getDrawable();
-            if (fromDrawable == null) {
-                fromDrawable = mTransparentDrawable;
-            }
-
-            // Otherwise run the worker task
-            final PlaylistWorkerTask bitmapWorkerTask = new PlaylistWorkerTask(key, playlistId,
-                    type, lruBitmap != null, imageView, fromDrawable, mContext);
-            final AsyncTaskContainer asyncTaskContainer = new AsyncTaskContainer(bitmapWorkerTask);
-            imageView.setTag(asyncTaskContainer);
-            try {
-                ElevenUtils.execute(bitmapWorkerTask);
-            } catch (RejectedExecutionException e) {
-                // Executor has exhausted queue space
-            }
-        }
+        loadDefaultImage(imageView, ImageType.PLAYLIST, null, String.valueOf(playlistId));
     }
 
     /**
-     * Called to fetch the blurred artist or album art.
+     * The blurred "scrim" behind the playing screen. Upstream blurred the album picture; with no picture it ends in the default state, which is all this build ever does.
+     *
      * @param key             The unique identifier for the image.
-     * @param artistName      The artist name for the Last.fm API.
-     * @param albumName       The album name for the Last.fm API.
-     * @param albumId         The album art index, to check for missing artwork.
-     * @param albumScrimImage The {@link AlbumScrimImage} used to set the cached {@link Bitmap}.
+     * @param albumScrimImage The {@link AlbumScrimImage} that gets the default state.
      */
     protected void loadBlurImage(final String key, final String artistName, final String albumName,
                                  final long albumId, final AlbumScrimImage albumScrimImage) {
-        if (key == null || mImageCache == null || albumScrimImage == null) {
+        if (key == null || albumScrimImage == null) {
             return;
         }
 
-        if (executePotentialWork(key, albumScrimImage)) {
-            // Otherwise run the worker task
-            final BlurBitmapWorkerTask blurWorkerTask = new BlurBitmapWorkerTask(key,
-                    albumScrimImage, ImageType.ALBUM, mTransparentDrawable, mContext);
-            final AsyncTaskContainer asyncTaskContainer = new AsyncTaskContainer(blurWorkerTask);
-            albumScrimImage.setTag(asyncTaskContainer);
-
-            try {
-                ElevenUtils.execute(blurWorkerTask, artistName, albumName,
-                        String.valueOf(albumId));
-            } catch (RejectedExecutionException e) {
-                // Executor has exhausted queue space, show default artwork
-                albumScrimImage.transitionToDefaultState();
-            }
-        }
+        albumScrimImage.transitionToDefaultState();
     }
 
     /**
