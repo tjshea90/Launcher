@@ -1945,3 +1945,44 @@
 ## 2026-11-11T08:27:42Z
 > The signed build is running on GitHub (Build APK run #46, about 3 minutes). I'll check it at 08:30 UTC, then confirm the Release, record it in BUILDLOG, tick the BT1 items, and send Tj the answer.
 <!-- sha:51c0e1ed9213 -->
+
+## 2026-11-11T11:17:27Z
+> Standing down for now. v0.9.5 is already released: the Anthropic account Tj switched to took over at my checkpoint 1124 and shipped it (published 08:29 UTC). The final answer to your six reports is the one thing still owed. That session's last checkpoint is 10:15 UTC, nothing is running on CI, and I've made no changes to `main`, the release or CI. I've set a timer for 11:16 UTC. If that session still hasn't answered by then, I'll send you the answer here as the last message.
+<!-- sha:f903f7c3cb41 -->
+
+## 2026-11-11T11:19:35Z
+> Tj, all six of your reports are in v0.9.5:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.5
+>
+> This account hit its usage limit. The session on your other account built and released v0.9.5, then was cut off before it sent you this answer, so I'm sending it from here.
+>
+> **1) The patch shows on the first pull-up to the PIN pad.** I could not make this happen on the emulator, so the fix is based on reading the code and I need your check. A new lock-screen cover now starts hidden and appears only after 1.2 s of being ready. Your finger touching the screen is now noted even when the cover isn't showing yet, and the cover stays away for 1.5 s after the PIN pad leaves. A code review found one real bug in my first version: a quick pull-up you cancel could have left the cover away. That is fixed too.
+>
+> **2) The power menu flickers after the first unlock.** Same status. I checked the whole unlock path and nothing in it opens the power menu on its own. The likely cause is the lock-screen cover coming back while the lock screen is still sliding away, and the 1.5 s hold above covers that. If it still happens, send a tablet report right then. The report now lists every time the cover came back, with the reason.
+>
+> **3) Full power menu with Screenshot after the notification panel.** I reproduced this on the emulator and found two causes.
+> - **Cover not ready:** when the home cover wasn't ready, the replacement panel covered only Power off and Restart. The Screenshot entry stayed visible.
+> - **"Another window" guard:** closing the notification panel starts a 2.5 s guard. On the emulator it started about 190 ms before the power menu's own event, which matches your "first time, then fine".
+>
+> Now the cover is shown as it is whenever the launcher is in front. The guard ends when the launcher regains focus. If nothing can be trusted, the replacement panel covers the whole menu. In the new emulator test, the Screenshot entry stayed covered at every gap after closing the panel, and the cover was ready again 0.5 s after the panel closed. I could not link this to the pencil changes: the guard starts on any other window, here the notification panel's. That part stays a guess.
+>
+> **4) The home cover sometimes doesn't work.** Same fix as 3. Each press on the home screen now logs which treatment ran and why, and the tablet report includes it. One emulator run had no home cover at all, and the next run was fine. I could not tie that to the product.
+>
+> **5) "and Microsoft SwiftKey keyboard".** Gone, whether or not SwiftKey is installed. If SwiftKey is the default keyboard, the line names the first other enabled keyboard instead. It's proven by unit tests only, because the emulator has no SwiftKey.
+>
+> **6) Recents name.** It now reads "Settings" (checked on the emulator). Side effect: the app's own name is now "Settings" wherever Android shows the app name. That means Settings > Apps, Battery and Special access (two rows next to the real Settings), crash dialogs ("Settings keeps stop
+> [... 1323 characters omitted ...]
+> ight then.
+> - Tell me if the name "Settings" in Settings > Apps and crash dialogs should be "Launcher" again, and I'll find another way.
+>
+> **Still waiting on you** (unchanged)
+> - BR1c: does the settings gear in the custom notification panel open the look-alike?
+> - BN7a: start the shell helper and tap "Do everything that is missing".
+> - BN8c and BN8d: tablet reports, one right after the first side-key press on the custom home and one before you open more stock-launcher apps.
+> - BQ1b: a tablet report right after any lock-screen screenshot or white box.
+> - BH1c: where you saw a pop-up notification, and from which app.
+> - BK1e: which unlock is slow, what is on screen, and how many seconds.
+> - BM1: the account plugin `session-handoff`.
+> - BS2e: the Wi-Fi/Bluetooth symbol check from v0.9.4. Lock the tablet with both on and tell me whether either symbol shows on the lock screen or in the custom launcher.
+<!-- sha:9c6a8a9b899f -->
