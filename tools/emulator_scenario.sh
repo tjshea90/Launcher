@@ -4640,6 +4640,11 @@ mudrawer; shot mud-01-drawer
 for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-dump.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-dump.txt" && break; sleep 3; done
 check "MU-4: the custom drawer lists the music app (label Music) with no allow step" grep -q 'text="Music"' "$OUT/mu-drawer-dump.txt"
 check "MU-5: control: the drawer is open and a system app outside the allowed set (Calendar) is still hidden while an allowed one (Contacts) is listed" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-dump.txt && ! grep -q 'text=\"Calendar\"' $OUT/mu-drawer-dump.txt"
+# MU-21 (TASKS BW1d, Tj: "must be called Music with that exact icon"): the entry's icon is the speaker of his existing Music. tools/music_icon_check.py finds the white plate Launcher3 puts under a legacy icon and measures
+# the speaker on it against numbers taken from HIS drawer screenshot (blue cone, dust cap, thin black ring, bezel, lit from below). Upstream's pink adaptive note has no white plate at all = exit 2 = this check fails.
+MUICON="$(python3 -I tools/music_icon_check.py "$OUT/mud-01-drawer.png" "$OUT/mu-drawer-dump.txt" Music 2>&1)"; MUICONRC=$?
+info "MU icon: $MUICON"
+check "MU-21: the drawer entry 'Music' shows Tj's speaker icon (legacy icon on the white plate: blue cone, dust cap, thin black ring, grey bezel within the windows measured on his own screenshot)" test "$MUICONRC" -eq 0
 muset allowed > "$OUT/mu-allowed-1.txt"; muset auto_done > "$OUT/mu-auto-done-1.txt"
 MUDONE="$(grep "^$MU@[0-9]" "$OUT/mu-auto-done-1.txt" | head -1)"   # the entry the app itself wrote: package@time of THIS install
 check "MU-6: the music app is in 'allowed' and in 'auto_done' as package@install time (allowed once per install, by the rule, written down)" bash -c "grep -qx $MU $OUT/mu-allowed-1.txt && [ -n '$MUDONE' ]"
