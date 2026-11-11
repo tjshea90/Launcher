@@ -4532,7 +4532,7 @@ if [ -n "$BT_PANEL" ]; then
   adb logcat -c; adb shell cmd statusbar expand-notifications; sleep 2; adb shell cmd statusbar collapse; BT_N0=0; BT_BACK=never
   for BT_I in $(seq 1 24); do sleep 0.5; if hplog | grep -q 'PATCH rest on'; then BT_BACK="$(awk -v i="$BT_I" 'BEGIN{printf "%.1f", i*0.5}')"; break; fi; done
   info "BT1c latency: the patch rested again $BT_BACK s after the shade was closed (never = not within 12 s)"
-  info "BT1c latency timeline (newest first): $(hplog | grep -E 'HOMEPATCH|PATCH rest' | sed -E 's/^[0-9-]+ [0-9]+:[0-9]+:([0-9.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): (HOMEPATCH|PATCH) /\1 /' | tac | head -9 | cut -c1-44 | tr '\n' '|' | cut -c1-300)"
+  info "BT1c latency timeline (newest first): $(hplog | grep -E 'HOMEPATCH|PATCH rest' | sed -E 's/^[0-9-]+ [0-9]+:[0-9]+:([0-9.]+) +[0-9]+ +[0-9]+ [A-Z] TjA11y *: (HOMEPATCH|PATCH) /\1 /' | tac | head -9 | cut -c1-44 | tr '\n' '|' | cut -c1-300)"
   check "BT1c-lat: the patch rests again within 6 s of the shade being closed" bash -c "[ '$BT_BACK' != never ] && awk -v b='$BT_BACK' 'BEGIN{exit !(b<=6.0)}'"
 else check "BT1c: the slot geometry is known" false; fi
 fi # section bt
