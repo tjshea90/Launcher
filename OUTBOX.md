@@ -1915,3 +1915,9 @@
 ## 2026-11-11T07:51:10Z
 > Run 2 (#534) is green. Run 1 (#533) has a failure and both `pt` repeats are done. A subagent is extracting the failing check names and the BA1 numbers from those logs. I'll triage them together when it reports.
 <!-- sha:00c5c895c5f2 -->
+
+## 2026-11-11T07:53:28Z
+> Raw verdicts are in. Recording them before analysing:
+> - **#534 (run 2): green.**
+> - **#533 (run 1): 95 PASS, 1 FAIL (`HP4`), plus one native-crash INFO** (SIGSEGV in jemalloc `free` via libz, the known flake signature).
+<!-- sha:bcdd6a71c5db -->
