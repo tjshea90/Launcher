@@ -1761,3 +1761,15 @@
 ## 2026-11-11T00:33:58Z
 > The auto-resume heartbeat fired, but this session is already mid-job, so there's nothing to take over. No other session is working. Emulator run #521 is still in flight (due about 00:40 UTC) and the third code review is running. I'll read both results when they arrive.
 <!-- sha:75fa34dd4df0 -->
+
+## 2026-11-11T00:50:31Z
+> Run #522 (Wi-Fi/Bluetooth symbol section with the new deferred symbol release) is in flight and due about 00:58 UTC. The code review fixes are in and 78 unit tests pass. After that comes the three-run release gate, then the v0.9.4 build and your answer.
+>
+> Still waiting on you, unchanged:
+> - BR1c: does the settings gear in the custom notification panel open the look-alike?
+> - BN7a: start the shell helper and tap "Do everything that is missing" (usage access).
+> - BN8c / BN8d: tablet reports right after the first side-key press on the custom home, and before you open more Quickstep apps.
+> - BQ1b: a tablet report right after any lock-screen screenshot or white box.
+> - BH1c: where you saw a pop-up notification, and which app.
+> - BK1e: which unlock is slow, what is on screen, and how many seconds.
+<!-- sha:22fa710badbe -->
