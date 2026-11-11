@@ -1,6 +1,8 @@
-# BS1: keep Wi-Fi ON on the lock screen and in the custom launcher, but hide its symbol (Tj, 2026-11-10 23:27 UTC)
+# BS1 + BS2: keep Wi-Fi and Bluetooth ON on the lock screen and in the custom launcher, but hide their symbols (Tj, 2026-11-10 23:27 and 23:55 UTC)
 
-Tj (verbatim): "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher"
+Tj (verbatim, BS1): "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher"
+
+Tj (verbatim, BS2, a follow-up the same night): "Make it also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any time, show up on the lock screen or in the custom launcher"
 
 ## Verdict from the AOSP 10 source (read 2026-11-10, branch `android10-release`, files under `frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/phone/` unless noted)
 
@@ -24,3 +26,16 @@ Tj (verbatim): "Is it possible to keep wifi on when I turn the screen off and it
 - WHEN the symbol is hidden = the same world as the pop-up banner quiet (`NotifQuietPolicy.why`): the custom launcher, a dark or locked screen in ANY launcher, a plain PIN still being decided. An unlocked, decided Quickstep session gets the original `icon_blacklist` back (Tj's "lock screen and custom launcher" only).
 - WHAT is written: `Settings.Secure icon_blacklist` = the original list (a missing setting counts as `rotate,headset`) + `wifi`; the original is saved FIRST in `Settings.Global tj_wifi_icon_original` (survives "Clear data", like `tj_banners_original`), and put back only while the value is still ours; a list somebody changed meanwhile only loses our `wifi` token.
 - WHAT stops being switched off: the Wi-Fi half of AK1 (`LockQuiet.onLock`, the lock-screen re-check) and of the custom-launcher radio guard / `ReturnReset.radiosOff` (one choke point). Bluetooth rules are unchanged (Tj did not mention Bluetooth). Condition `WifiIconHold.keepsWifiOn(switchOn, grant, automationOff)`: switch on AND grant AND automation not paused (breaker / Restore everything).
+
+## Emulator proof of the symbol (run #519, id 42926361302, main@8babd57, section `wf`, Wi-Fi only; pictures from branch ci-shots, RUN.txt named the run)
+
+Status-bar pictures at 600x1024: the Wi-Fi fan icon sits at x 545-560, y 5-17. Pure-white pixels in the box x 543-563, y 3-20: unlocked Quickstep **102**, custom launcher **0**, Quickstep again **102**, custom again **0**. The lock screen (a PIN set, Wi-Fi on, hold on) shows only the signal triangle, the battery and "100%" (no Wi-Fi fan); the lock-screen control (no hold) is added to the section in run #520. So on STOCK Android 10 SystemUI the list hides the symbol in the status bar and in the lock-screen status bar, live, with the radio on (`wifi_on=1`, `mNetworkInfo` CONNECTED not printed fully).
+The uiautomator dump is useless for this: it showed 0 SystemUI nodes in the unlocked states (the status bar is not part of the active window's tree) and none mentioning Wi-Fi on the lock screen. Pixels it is.
+
+## BS2: Bluetooth
+
+- Slot name: `bluetooth` (`status_bar_bluetooth`, in the framework `config_statusBarIcons` list read for BS1). The icon is drawn by `PhoneStatusBarPolicy.updateBluetooth` through the same `StatusBarIconController` (see the second source read below), so the same list hides it on the status bar, the lock screen and the panel header.
+- The emulator has NO Bluetooth hardware (the existing scenario says so at the tile checks): Bluetooth is proven by the JVM tests (list helpers for two slots, the restore rule) and by the list value `rotate,headset,wifi,bluetooth` on the emulator, never by a picture.
+- "Only keep them on if they are already on. Don't turn them on automatically": the feature only STOPS switching radios off. The one existing code path that turns a radio on is AK1's put-back after a gesture unlock (`LockQuiet.onUnlock`): it is skipped while the feature is active (`RadioIconHold.keepsRadiosOn`); emulator phase N plants an old lock memory and proves Wi-Fi stays off after both unlock kinds.
+- Known gap, said plainly: the first seconds after a reboot that started from an UNLOCKED Quickstep session (the hold was off at shutdown, the process starts a few seconds after the lock screen first draws). Closing it needs an ACTION_SHUTDOWN hook that only a real reboot can prove; not built.
+- Uninstalling the launcher while the hold is on leaves the two symbols hidden (the list stays in Settings); "Restore everything" first, or `adb shell settings delete secure icon_blacklist`.
