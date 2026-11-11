@@ -2189,3 +2189,10 @@
 >
 > The auto-resume timer on this account still wakes me every two hours, and the other account's timer does the same. I didn't delete either, because a delete needs your approval in the app. Deleting both in the app saves that usage.
 <!-- sha:e16b15c2b832 -->
+
+## 2026-11-11T20:35:59Z
+> Heartbeat 18:32Z (`trig_01DZ15y7gsi1bXpJ7P2KBghc`): standing down, because the other account's session is actively working.
+>
+> - **Its work:** it is still on your music-app requests, with checkpoint 1182 six minutes old. It is running emulator checks of the drawer and the music icon (`mu`, `rb`, `ss` runs #551–#553). Its newest commit is 2 minutes old.
+> - **Mine:** I took no action and wrote no checkpoint. I fast-forwarded this branch to its tip (`e5325a09`, the same as `main`) without a new commit, and I left this heartbeat armed.
+<!-- sha:3ce5e554895f -->
