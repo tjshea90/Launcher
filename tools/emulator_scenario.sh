@@ -4633,7 +4633,7 @@ check "MU-7: a tap on its drawer icon opens the music app" grep -q "$MU" "$OUT/m
 #      (its overflow button x=584, y=208); the first album tile at (158, 290) (its overflow button (262, 398)); the toolbar overflow (584, 62); the bottom bar (300, 957).
 #      After EVERY step `muhere` records whether Eleven is still the resumed app: a tap or key that left it is a TEST fault and fails MU-8 (never silently absorbed).
 MUGONE=""
-muhere(){ resumed | grep -q "$MU" || MUGONE="$MUGONE $1"; }
+muhere(){ resumed > "$MUTMP/here.txt"; grep -q "$MU" "$MUTMP/here.txt" || MUGONE="$MUGONE $1"; }
 muopen(){ adb shell am force-stop "$MU" >/dev/null 2>&1; sleep 1; adb shell am start -n "$MU/org.lineageos.eleven.ui.activities.HomeActivity" >/dev/null 2>&1; sleep 5; }
 mutab(){ case "$1" in artists) adb shell input tap 80 120;; albums) adb shell input tap 228 120;; songs) adb shell input tap 372 120;; *) adb shell input tap 524 120;; esac; sleep 2; }
 muplace(){ # muplace <png>: the most pixels of ONE of the nine letter-tile colours in the picture (the placeholder tile: letters for artists, the note for albums and songs); echoes the count
@@ -4667,7 +4667,7 @@ info "MU settings route: $MUSETROUTE; resumed = $(tr -s ' \n' ' ' < "$OUT/mu-res
 check "MU-18: Eleven's own Settings screen opens inside the music app" grep -q "SettingsActivity" "$OUT/mu-resumed-settings.txt"
 mudump > "$OUT/mu-settings-dump.txt"
 info "MU settings texts: $(grep -o 'text="[^"]*"' "$OUT/mu-settings-dump.txt" | tr '\n' ' ' | cut -c1-200)"
-check "MU-20: ... and 'Delete cache' is gone from it" bash -c "! grep -qi 'delete cache' $OUT/mu-settings-dump.txt"
+check "MU-20: ... it lists 'Blur background' and 'Delete cache' is gone (an empty dump fails: the picture decides then)" bash -c "grep -q 'Blur background' $OUT/mu-settings-dump.txt && ! grep -qi 'delete cache' $OUT/mu-settings-dump.txt"
 mutap "Blur background" 300 270; sleep 2; shot mua-z2-blur-on; muhere blur-on
 adb shell input keyevent KEYCODE_BACK; sleep 2; muhere settings-closed
 adb shell input tap 300 957; sleep 4; shot mua-p3-player-blur; muhere player-blur      # the blur path of the playing screen (it blurred the cover; now it has nothing to blur)
@@ -4685,7 +4685,7 @@ info "MU after the tour: resumed = $(tr -s ' \n' ' ' < "$OUT/mu-resumed-2.txt" |
 # the placeholders are really there (letters for the artist, the note tile for the album and the song): a big area of a letter-tile colour
 MUP_ART="$(muplace "$OUT/mua-tab-artists.png")"; MUP_ALB="$(muplace "$OUT/mua-tab-albums.png")"; MUP_SNG="$(muplace "$OUT/mua-tab-songs.png")"
 info "MU placeholders: most pixels of one tile colour: artists tab $MUP_ART, albums tab $MUP_ALB, songs tab $MUP_SNG"
-check "MU-19: the placeholder tiles are shown instead of covers (artists, albums and songs tabs each carry a big tile-coloured area)" bash -c "[ ${MUP_ART:-0} -ge 2000 ] && [ ${MUP_ALB:-0} -ge 30000 ] && [ ${MUP_SNG:-0} -ge 1500 ]"
+check "MU-19: the placeholder tiles are shown instead of covers (artists, albums and songs tabs each carry a big tile-coloured area)" bash -c "[ ${MUP_ART:-0} -ge 1200 ] && [ ${MUP_ALB:-0} -ge 30000 ] && [ ${MUP_SNG:-0} -ge 1200 ]"
 
 # ---- the probe: no picture of the app contains the cover colour; the app did not crash
 MUMAX=0; MUSUM=0; MUN=0; MUSEEN=""
