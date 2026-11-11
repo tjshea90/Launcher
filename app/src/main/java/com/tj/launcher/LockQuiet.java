@@ -95,7 +95,7 @@ public final class LockQuiet {
     }
 
     /** AW3: is Wi-Fi or Bluetooth on right now? Binder calls: from a worker thread or the main thread, never under a lock. */
-    public static boolean anyRadioOn(Context c) { return (wifiOn(c) && !WifiIconHide.keepsWifiOn(c)) || btOn(); }   // BS1: a Wi-Fi we leave on is not "a radio that must go"
+    public static boolean anyRadioOn(Context c) { return (wifiOn(c) || btOn()) && !RadioIconHide.keepsRadiosOn(c); }   // BS1 + BS2: a radio we leave on (its symbol is hidden instead) is not "a radio that must go"
 
     private static boolean wifiOn(Context c) {
         try { WifiManager wm = (WifiManager) c.getApplicationContext().getSystemService(Context.WIFI_SERVICE); return wm != null && wm.isWifiEnabled(); } catch (Throwable t) { return false; }
