@@ -15,6 +15,12 @@ check(){ if eval "$2" >/dev/null 2>&1; then ok; else bad "$1"; fi; }
 check "tools/gate.sh --check: gate-map.txt agrees with the scenario" "bash '$D/tools/gate.sh' --check"
 check "tools/gate.sh --list prints the gate table" "bash '$D/tools/gate.sh' --list"
 
+# ---------------------------------------------------------------- the music app (TASKS BV1): the pieces that must name the SAME package and the SAME APK path
+check "the music app: the Launcher's auto-allow list names eleven's applicationId" "pid=\$(grep -oE 'applicationId = \"[^\"]+\"' '$D/eleven/build.gradle.kts' | cut -d'\"' -f2); [ -n \"\$pid\" ] && grep -q \"\\\"\$pid\\\"\" '$D/app/src/main/java/com/tj/launcher/AppVisibility.java'"
+check "the music app: android.yml builds, verifies and publishes it with the Release" "grep -q ':eleven:assembleRelease' '$D/.github/workflows/android.yml' && grep -q 'verify-apk.sh eleven/build/outputs/apk/release/eleven-release.apk' '$D/.github/workflows/android.yml' && grep -q 'Eleven-v' '$D/.github/workflows/android.yml' && grep -q '\"\$MUSIC\"' '$D/.github/workflows/android.yml'"
+check "the music app: emulator.yml builds it for section mu, at the path the scenario installs from" "grep -q ':eleven:assembleDebug' '$D/.github/workflows/emulator.yml' && grep -q 'eleven/build/outputs/apk/debug/eleven-debug.apk' '$D/tools/emulator_scenario.sh'"
+check "the music app: the album-art guard test exists in the module" "[ -f '$D/eleven/src/test/java/org/lineageos/eleven/NoAlbumArtGuardTest.java' ]"
+
 # ---------------------------------------------------------------- workflow minute rules
 for W in "$D"/.github/workflows/*.yml; do
   # No `push:` trigger that is not tags-only (autosave pushes after every tool call).
