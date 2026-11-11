@@ -4559,7 +4559,7 @@ ensurehome
 #      The test song carries a FLAT MAGENTA cover; every picture of the app (tabs, artist / album pages, the player, the notification, the lock screen) is searched for that colour.
 #      MU-2 is the CONTROL: UPSTREAM's Eleven (album-art code intact, built by emulator.yml from the pinned baseline commit) shows that cover on this emulator in the same screens, so "no magenta" in OUR pictures means the app does not ask for covers, not that the cover never arrived.
 #      The placeholders (letter tiles / note tile) are judged by eye from the pictures (shots=true) and by the JVM guard (eleven/src/test .../NoAlbumArtGuardTest).
-#      Part 2 is the drawer rule: allowed once by itself (MU-4..6), launches from the drawer (MU-7); hidden by hand it stays hidden (MU-12/13); uninstall + reinstall allows it again (MU-14/15).
+#      Part 2 is the drawer rule: allowed once by itself (MU-4..6), launches from the drawer (MU-7); hidden by hand it stays hidden, also across an update in place (MU-12/13/13b); uninstall + reinstall allows it again, also when the removal was never seen (MU-14/15/14b).
 beat "before MU"
 MU=org.lineageos.eleven
 MUAPK=eleven/build/outputs/apk/debug/eleven-debug.apk
@@ -4581,7 +4581,7 @@ try: r=E.fromstring(sys.stdin.read())
 except Exception: sys.exit(0)
 for s in r.iter('set'):
     if s.get('name')==sys.argv[1]: print('\n'.join(x.text or '' for x in s))" "$1"; }
-muprefs(){ # muprefs <package for auto_done, or empty>: tj_apps.xml = the baseline (a tablet's apps at the first start, NOT the music app) [+ auto_done]; the Launcher process is stopped first
+muprefs(){ # muprefs <the exact auto_done entry ("pkg@install time", as the app itself wrote it) or empty>: tj_apps.xml = the baseline (a tablet's apps at the first start, NOT the music app) [+ auto_done]; the Launcher process is stopped first
   local SETA="" DONE="" a
   for a in com.android.contacts com.android.gallery3d com.android.camera2 com.android.deskclock com.android.documentsui com.android.messaging com.android.dialer com.android.quicksearchbox com.android.settings com.android.webview; do SETA="$SETA<string>$a</string>"; done
   [ -n "$1" ] && DONE="<set name=\\\"auto_done\\\"><string>$1</string></set>"
@@ -4641,7 +4641,8 @@ for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-dump.txt"; grep -q 'text="Music"' 
 check "MU-4: the custom drawer lists the music app (label Music) with no allow step" grep -q 'text="Music"' "$OUT/mu-drawer-dump.txt"
 check "MU-5: control: the drawer is open and a system app outside the allowed set (Calendar) is still hidden while an allowed one (Contacts) is listed" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-dump.txt && ! grep -q 'text=\"Calendar\"' $OUT/mu-drawer-dump.txt"
 muset allowed > "$OUT/mu-allowed-1.txt"; muset auto_done > "$OUT/mu-auto-done-1.txt"
-check "MU-6: the music app is in 'allowed' and in 'auto_done' (allowed once, by the rule, written down)" bash -c "grep -qx $MU $OUT/mu-allowed-1.txt && grep -qx $MU $OUT/mu-auto-done-1.txt"
+MUDONE="$(grep "^$MU@[0-9]" "$OUT/mu-auto-done-1.txt" | head -1)"   # the entry the app itself wrote: package@time of THIS install
+check "MU-6: the music app is in 'allowed' and in 'auto_done' as package@install time (allowed once per install, by the rule, written down)" bash -c "grep -qx $MU $OUT/mu-allowed-1.txt && [ -n '$MUDONE' ]"
 mutap "Music" 300 150; sleep 7
 resumed > "$OUT/mu-resumed-1.txt"; shot mua-01-first-launch
 check "MU-7: a tap on its drawer icon opens the music app" grep -q "$MU" "$OUT/mu-resumed-1.txt"
@@ -4709,25 +4710,35 @@ check "MU-11: the music app did not crash during the tour" bash -c "! grep -q 'P
 
 # ---- part 2b: Tj hides it by hand (not in 'allowed', still in 'auto_done'): it stays hidden. Part 2c: uninstall + reinstall allows it again
 adb shell am force-stop "$MU" >/dev/null 2>&1
-muprefs "$MU"; setmode custom; rebind; home; sleep 2
+muprefs "$MUDONE"; setmode custom; rebind; home; sleep 2
 mudrawer; shot mud-02-hidden-by-hand
 mudump > "$OUT/mu-drawer-hidden.txt"
 check "MU-12: hidden by hand it stays out of the drawer (the rule never undoes Tj's choice); the drawer was open (Contacts listed)" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-hidden.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-hidden.txt"
 muset allowed > "$OUT/mu-allowed-2.txt"; muset auto_done > "$OUT/mu-auto-done-2.txt"
-check "MU-13: ... and nothing was written behind his back (still 'handled', still not allowed)" bash -c "grep -qx $MU $OUT/mu-auto-done-2.txt && ! grep -qx $MU $OUT/mu-allowed-2.txt"
+check "MU-13: ... and nothing was written behind his back (still 'handled' for this install, still not allowed)" bash -c "grep -qx '$MUDONE' $OUT/mu-auto-done-2.txt && ! grep -qx $MU $OUT/mu-allowed-2.txt"
 # an UPDATE in place (the same package installed over itself, as a new Eleven build would be) is not a removal and not a new app: Tj's hand-hide must survive it (the removal hook is the only thing that forgets the mark)
 adb install -r "$MUAPK" > "$OUT/mu-update.txt" 2>&1; sleep 6
 muset auto_done > "$OUT/mu-auto-done-2b.txt"; muset allowed > "$OUT/mu-allowed-2b.txt"
 mudrawer; mudump > "$OUT/mu-drawer-updated.txt"
-check "MU-13b: an in-place UPDATE of the music app (installed over itself) keeps Tj's hand-hide: still 'handled', still not allowed, still out of the drawer (Contacts listed)" bash -c "grep -q Success $OUT/mu-update.txt && grep -qx $MU $OUT/mu-auto-done-2b.txt && ! grep -qx $MU $OUT/mu-allowed-2b.txt && grep -q 'text=\"Contacts\"' $OUT/mu-drawer-updated.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-updated.txt"
+check "MU-13b: an in-place UPDATE of the music app (installed over itself) keeps Tj's hand-hide: still 'handled', still not allowed, still out of the drawer (Contacts listed)" bash -c "grep -q Success $OUT/mu-update.txt && grep -qx '$MUDONE' $OUT/mu-auto-done-2b.txt && ! grep -qx $MU $OUT/mu-allowed-2b.txt && grep -q 'text=\"Contacts\"' $OUT/mu-drawer-updated.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-updated.txt"
 home
 adb uninstall "$MU" >/dev/null 2>&1; sleep 4
 muset auto_done > "$OUT/mu-auto-done-3.txt"
-check "MU-14: uninstalling it forgets the 'handled' mark" bash -c "! grep -qx $MU $OUT/mu-auto-done-3.txt"
+check "MU-14: uninstalling it (the launcher is running and sees the removal) forgets the 'handled' mark" bash -c "! grep -q '^$MU' $OUT/mu-auto-done-3.txt"
 adb install -r -g "$MUAPK" >/dev/null 2>&1; sleep 5
 mudrawer; shot mud-03-reinstalled
 for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-reinstalled.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-reinstalled.txt" && break; sleep 3; done
 check "MU-15: after a reinstall the music app is in the drawer again, by itself" grep -q 'text="Music"' "$OUT/mu-drawer-reinstalled.txt"
+# MU-14b (review M1): Tj hides it, the launcher process is NOT running while the app is uninstalled and installed again (nobody sees the removal event, the old mark stays): the NEW install time still makes it a new app
+muset auto_done > "$OUT/mu-auto-done-4.txt"; MUDONE2="$(grep "^$MU@[0-9]" "$OUT/mu-auto-done-4.txt" | head -1)"
+muprefs "$MUDONE2"                                   # hand-hide state of THIS install; stops the launcher process
+adb uninstall "$MU" >/dev/null 2>&1; sleep 3
+adb install -r -g "$MUAPK" > "$OUT/mu-reinstall-2.txt" 2>&1; sleep 4
+setmode custom; rebind; home; sleep 2
+mudrawer; shot mud-04-missed-removal
+for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-missed.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-missed.txt" && break; sleep 3; done
+muset auto_done > "$OUT/mu-auto-done-5.txt"
+check "MU-14b: hidden by hand, then uninstalled and installed again while the launcher was NOT running (removal never seen): it is a new install, so it is in the drawer again and 'auto_done' holds the NEW install time" bash -c "grep -q Success $OUT/mu-reinstall-2.txt && grep -q 'text=\"Music\"' $OUT/mu-drawer-missed.txt && grep -q '^$MU@[0-9]' $OUT/mu-auto-done-5.txt && ! grep -qx '$MUDONE2' $OUT/mu-auto-done-5.txt"
 
 # ---- leave nothing behind for the sections that follow
 adb uninstall "$MU" >/dev/null 2>&1
