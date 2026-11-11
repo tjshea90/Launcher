@@ -148,7 +148,7 @@ public class ControlActivity extends Activity {
             Features.set(ControlActivity.this, RadioIconHold.KEY, v);
             if (!v && Mode.isCustom(ControlActivity.this) && ProfileSession.radiosOff(ControlActivity.this)) {   // review of BS1: OFF means "like before", so the radio guard acts now, not only at the next lock or return; the symbols come back only AFTER the radios are off (one worker does both, in that order)
                 final android.content.Context app = getApplicationContext();
-                new Thread(new Runnable() { @Override public void run() { RadioIconHide.offThenSync(app, new Runnable() { @Override public void run() { ReturnReset.radiosOff(app); } }, "switched off in Launcher control"); } }, "tj-radios-off").start();
+                new Thread(new Runnable() { @Override public void run() { RadioIconHide.offThenSync(app, new Runnable() { @Override public void run() { ReturnReset.radiosOff(app); } }, "switched off in Launcher control", false); } }, "tj-radios-off").start();
             } else AnimationSpeedup.syncNow(ControlActivity.this, "switched in Launcher control");
             rebuild();
         } });   // BS1 + BS2

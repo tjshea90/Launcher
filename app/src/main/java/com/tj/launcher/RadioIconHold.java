@@ -61,11 +61,23 @@ public final class RadioIconHold {
      */
     public static boolean radiosGoOffWhenHoldEnds(String why, boolean darkOrLocked) { return darkOrLocked && NotifQuietPolicy.WHY_NO_HELPER.equals(why); }
 
+    /** What a trigger that would END the hold does (third review of BS2, finding 1): {@link #RELEASE} put the list back now, {@link #START_DEFERRAL} keep it and switch the radios off first, {@link #HOLD_BACK} keep it, a deferral is running. */
+    public static final int RELEASE = 0, START_DEFERRAL = 1, HOLD_BACK = 2;
+    /** The state of the deferral: nothing running, a worker is switching the radios off, that worker is doing its own final sync (which must release). */
+    public static final int DEFER_IDLE = 0, DEFER_RUNNING = 1, DEFER_FINISHING = 2;
+
     /**
-     * Pure (third review of BS2, finding 1): defer the RELEASE of the list (keep the symbols hidden) until the radios are off? When {@link #radiosGoOffWhenHoldEnds} says they must go off AND no deferral is running
-     * ({@code now} is past {@code deferUntil}): the worker's own final sync, and any sync inside the window, release at once, so the deferral can never repeat in a loop.
+     * Pure (third review of BS2, finding 1): the symbols must not come back BEFORE the radios are off. A trigger wants to end the hold with reason {@code why}; only the helper's absence ({@link #radiosGoOffWhenHoldEnds})
+     * leaves radios on that must go. The first such trigger STARTS a deferral; every further one while it runs (the helper's unbind is reported more than once within milliseconds, run #522: the second released the list
+     * 6 ms after the first) is HELD BACK, the worker releases; the worker's own final sync ({@code deferState} FINISHING) releases at once, so a deferral can never repeat in a loop. A deferral that never finished
+     * ({@code now} past {@code runningUntil}) blocks nothing for ever. Every other reason releases at once.
      */
-    public static boolean deferRelease(String why, boolean darkOrLocked, long now, long deferUntil) { return radiosGoOffWhenHoldEnds(why, darkOrLocked) && now >= deferUntil; }
+    public static int releaseDecision(String why, boolean darkOrLocked, int deferState, long now, long runningUntil) {
+        if (!NotifQuietPolicy.WHY_NO_HELPER.equals(why)) return RELEASE;
+        if (deferState == DEFER_FINISHING) return RELEASE;
+        if (deferState == DEFER_RUNNING && now < runningUntil) return HOLD_BACK;
+        return radiosGoOffWhenHoldEnds(why, darkOrLocked) ? START_DEFERRAL : RELEASE;
+    }
 
     // ---------------------------------------------------------------- the list, parsed exactly as SystemUI parses it (split at ',', empty entries dropped, no trimming, exact compare)
 

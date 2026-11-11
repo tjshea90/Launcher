@@ -110,24 +110,30 @@ public final class RadioIconHide {
         } catch (Throwable t) { Log.e(TAG, "sync failed", t); }
     }
 
-    /** How long the radios get to report off before the symbols come back (deadline checked first), and the window in which a hold that ends again is released at once (no loop). */
-    private static final long RADIOS_OFF_WAIT_MS = 4_000, DEFER_WINDOW_MS = 9_000;
-    private static volatile long deferUntil = 0;
+    /** How long the radios get to report off before the symbols come back (deadline checked first), and how long a deferral may run before it stops holding anything back (a worker that never finished). */
+    private static final long RADIOS_OFF_WAIT_MS = 4_000, DEFER_LIMIT_MS = 9_000;
+    private static volatile int deferState = RadioIconHold.DEFER_IDLE;
+    private static volatile long deferRunningUntil = 0;
 
     /**
      * Reviews of BS2 (findings 2 and 1): the hold is about to END because the accessibility helper went away while the screen is dark or the lock screen is up (a crash, a restart, a {@code uiautomator dump}). The
      * radios were being kept on and nothing else would switch them off (the radio receiver and the lock re-check live in the helper), but releasing the list first would show both symbols until the radios report
      * off. So the release is DEFERRED: the list stays as it is, a worker switches the radios off with the lock rule (it remembers them for a gesture unlock), waits until they report off, then syncs once more
-     * ({@link #offThenSync}). Returns true when the release was deferred; the caller then does nothing more. Called under the class lock: no binder work here except the two screen / lock reads, only when the reason matches.
+     * ({@link #offThenSync}). Further triggers while that runs are held back (the helper's unbind is reported more than once within milliseconds). Returns true when the release was deferred or held back; the
+     * caller then does nothing more. Called under the class lock: no binder work here, only pure reads of the look.
      */
     private static boolean deferRelease(final Context app, String why, AnimationSpeedup.Look look) {
-        if (look == null || !NotifQuietPolicy.WHY_NO_HELPER.equals(why)) return false;
         final long now = android.os.SystemClock.elapsedRealtime();
-        if (!RadioIconHold.deferRelease(why, !look.screenOn() || look.lockUp(), now, deferUntil)) return false;
-        deferUntil = now + DEFER_WINDOW_MS;
+        switch (RadioIconHold.releaseDecision(why, look != null && (!look.screenOn() || look.lockUp()), deferState, now, deferRunningUntil)) {
+            case RadioIconHold.HOLD_BACK: return true;
+            case RadioIconHold.START_DEFERRAL: break;
+            default: return false;
+        }
+        deferState = RadioIconHold.DEFER_RUNNING;
+        deferRunningUntil = now + DEFER_LIMIT_MS;
         LockLog.addAsync(app, "SYMBOLS", "the helper is gone on a dark or locked screen: the lock rule switches the radios off, the symbols stay hidden until they are off");
         new Thread(new Runnable() { @Override public void run() {
-            offThenSync(app, new Runnable() { @Override public void run() { if (darkOrLockedNow(app)) LockQuiet.onLock(app); } }, "radios off after the helper left");   // an unlock that happened meanwhile must not lose its radios
+            offThenSync(app, new Runnable() { @Override public void run() { if (darkOrLockedNow(app)) LockQuiet.onLock(app); } }, "radios off after the helper left", true);   // an unlock that happened meanwhile must not lose its radios
         } }, "tj-radio-defer").start();
         return true;
     }
@@ -142,9 +148,9 @@ public final class RadioIconHide {
 
     /**
      * Runs {@code switchOff} (blocking, on THIS worker thread), waits until neither radio is on (the deadline is checked first, {@link #RADIOS_OFF_WAIT_MS}), then syncs once, so the symbols come back only after
-     * the radios are gone (the Control switch uses it too). Never throws.
+     * the radios are gone (the Control switch uses it too). {@code endsDeferral}: this is the deferral's worker, its final sync must release (state FINISHING) and the state goes back to idle afterwards. Never throws.
      */
-    static void offThenSync(Context c, Runnable switchOff, String trigger) {
+    static void offThenSync(Context c, Runnable switchOff, String trigger, boolean endsDeferral) {
         final Context app = c.getApplicationContext();
         try { switchOff.run(); } catch (Throwable t) { Log.e(TAG, "radios off failed", t); }
         boolean left = false;
@@ -156,7 +162,11 @@ public final class RadioIconHide {
         } catch (Throwable t) { Log.e(TAG, "waiting for the radios failed", t); }
         // the order in the lock log (milliseconds) is what the emulator section wf reads: deferral, then this line, then "shown again"
         LockLog.addAsync(app, "SYMBOLS", left ? "a radio is STILL ON after " + (RADIOS_OFF_WAIT_MS / 1000) + " s: the symbols come back anyway (" + trigger + ")" : "no radio that must go is left on: the symbols may come back (" + trigger + ")");
-        try { AnimationSpeedup.syncNow(app, trigger); } catch (Throwable t) { Log.e(TAG, "sync after the radios went off failed", t); }
+        try {
+            if (endsDeferral) deferState = RadioIconHold.DEFER_FINISHING;
+            AnimationSpeedup.syncNow(app, trigger);
+        } catch (Throwable t) { Log.e(TAG, "sync after the radios went off failed", t);
+        } finally { if (endsDeferral) deferState = RadioIconHold.DEFER_IDLE; }
     }
 
     /** "Restore everything" and the crash breaker: put the list back now, whatever the switch says. Never throws. */

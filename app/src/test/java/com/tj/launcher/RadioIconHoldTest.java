@@ -142,16 +142,21 @@ public class RadioIconHoldTest {
      * Third review of BS2, finding 1: the symbols must not come back BEFORE the radios are off. The release of the list is deferred exactly when the radios have to go off, and never twice in a row (the worker's own
      * final sync, and any sync inside the window, release at once: a deferral can not loop).
      */
-    @Test public void theReleaseIsDeferredOnlyWhenTheRadiosMustGoOffAndNoDeferralIsRunning() {
+    @Test public void theReleaseIsDeferredWhenTheRadiosMustGoOffAndHeldBackWhileTheDeferralRuns() {
         final String gone = NotifQuietPolicy.WHY_NO_HELPER;
-        assertTrue("the helper left on a dark or locked screen, no deferral yet", RadioIconHold.deferRelease(gone, true, 1_000, 0));
-        assertTrue("the window of the last deferral is over", RadioIconHold.deferRelease(gone, true, 10_000, 10_000));
-        assertFalse("inside the window of a running deferral: release at once", RadioIconHold.deferRelease(gone, true, 4_000, 10_000));
-        assertFalse("a lit, unlocked screen: the symbols are meant to show", RadioIconHold.deferRelease(gone, false, 1_000, 0));
-        assertFalse("every other reason ends the hold at once", RadioIconHold.deferRelease("Quickstep session", true, 1_000, 0));
-        assertFalse(RadioIconHold.deferRelease("switch off", true, 1_000, 0));
-        assertFalse(RadioIconHold.deferRelease("", true, 1_000, 0));
-        assertFalse(RadioIconHold.deferRelease(null, true, 1_000, 0));
+        final int idle = RadioIconHold.DEFER_IDLE, running = RadioIconHold.DEFER_RUNNING, finishing = RadioIconHold.DEFER_FINISHING;
+        assertEquals("the helper left on a dark or locked screen, nothing running: start the deferral", RadioIconHold.START_DEFERRAL, RadioIconHold.releaseDecision(gone, true, idle, 1_000, 0));
+        assertEquals("run #522: a second trigger 6 ms later must NOT release", RadioIconHold.HOLD_BACK, RadioIconHold.releaseDecision(gone, true, running, 1_006, 10_000));
+        assertEquals("... whatever the screen looks like a moment later: the worker releases within seconds", RadioIconHold.HOLD_BACK, RadioIconHold.releaseDecision(gone, false, running, 1_006, 10_000));
+        assertEquals("the worker's own final sync releases (no loop)", RadioIconHold.RELEASE, RadioIconHold.releaseDecision(gone, true, finishing, 5_000, 10_000));
+        assertEquals("a deferral that never finished blocks nothing for ever", RadioIconHold.START_DEFERRAL, RadioIconHold.releaseDecision(gone, true, running, 10_000, 10_000));
+        assertEquals("a lit, unlocked screen: the symbols are meant to show", RadioIconHold.RELEASE, RadioIconHold.releaseDecision(gone, false, idle, 1_000, 0));
+        for (int st : new int[] { idle, running, finishing }) {
+            assertEquals("every other reason ends the hold at once", RadioIconHold.RELEASE, RadioIconHold.releaseDecision("Quickstep session", true, st, 1_000, 10_000));
+            assertEquals(RadioIconHold.RELEASE, RadioIconHold.releaseDecision("switch off", true, st, 1_000, 10_000));
+            assertEquals(RadioIconHold.RELEASE, RadioIconHold.releaseDecision("", true, st, 1_000, 10_000));
+            assertEquals(RadioIconHold.RELEASE, RadioIconHold.releaseDecision(null, true, st, 1_000, 10_000));
+        }
     }
 
     /** The words come from the policy itself: a changed text cannot silently disable the rule above. */
