@@ -4495,7 +4495,7 @@ check "BT0: premise: the stock menu's place was learned on the home screen" bash
 hpkey home_patch true
 setmode custom; btdefault; adb logcat -c; rebind; home
 BT_T1="$(hpwait 'HOMEPATCH calibration end' 70)"; BT_T2="$(hpwait 'PATCH rest on' 40)"; sleep 5
-info "BT0b log: $(hplog | grep -E 'HOMEPATCH|PATCH rest|PATCH window' | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): (HOMEPATCH|PATCH) /\1 /' | head -8 | cut -c1-40 | tr '\n' '|' | cut -c1-300)"
+info "BT0b log: $(hplog | grep -E 'HOMEPATCH|PATCH rest|PATCH window' | sed -E 's/^[0-9-]+ ([0-9:.]+) +[0-9]+ +[0-9]+ [A-Z] TjA11y *: (HOMEPATCH|PATCH) /\1 /' | head -8 | cut -c1-40 | tr '\n' '|' | cut -c1-300)"
 info "BT0b: calibration ended after $BT_T1 s, resting after $BT_T2 s"
 check "BT0b: premise: the home patch rests (calibrated by itself)" bash -c "[ '$BT_T2' != never ]"
 shot bt-02-rest
@@ -4504,7 +4504,7 @@ btround(){ # btround <label> <gap seconds between the shade being closed and the
   adb logcat -c
   if [ "$lab" != ctl ]; then adb shell cmd statusbar expand-notifications; sleep 2; shot "bt-03-$lab-shade"; adb shell cmd statusbar collapse; sleep "$gap"; fi
   adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; shot "bt-04-$lab-open"
-  hplog | grep -E "CARD area|PATCH fast|PATCH menu|PATCH hold|HOMEPATCH|HOMEPRESS|PATCH rest|PATCH window created|PATCH removed|PATCH patch visible" | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): /\1 /' > "$OUT/bt-$lab-log.txt"
+  hplog | grep -E "CARD area|PATCH fast|PATCH menu|PATCH hold|HOMEPATCH|HOMEPRESS|PATCH rest|PATCH window created|PATCH removed|PATCH patch visible" | sed -E 's/^[0-9-]+ ([0-9:.]+) +[0-9]+ +[0-9]+ [A-Z] TjA11y *: /\1 /' > "$OUT/bt-$lab-log.txt"
   python3 -I tools/pb_probe.py "bt-$lab" "$OUT/bt-02-rest.png" "$OUT/bt-04-$lab-open.png" --panel "$BT_PANEL" > "$OUT/bt-$lab-pb.txt" 2>&1
   cm="$(grep PBMETRIC "$OUT/bt-$lab-pb.txt" | grep -o 'core_mean=[-+0-9.]*' | head -1 | cut -d= -f2)"
   echo "$cm"; }
