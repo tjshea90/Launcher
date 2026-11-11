@@ -1921,3 +1921,11 @@
 > - **#534 (run 2): green.**
 > - **#533 (run 1): 95 PASS, 1 FAIL (`HP4`), plus one native-crash INFO** (SIGSEGV in jemalloc `free` via libz, the known flake signature).
 <!-- sha:bcdd6a71c5db -->
+
+## 2026-11-11T07:55:42Z
+> Theory confirmed in the code: `pb_probe` computes the "expected dimmed home" from the *fitted* stock scale (0.750 in the failing film), while the home patch draws the fixed 0.80, which matches Tj's tablet (measured 0.800). That gives the +7 levels, so this failure is an emulator-state artefact. I'm still letting the two confirmation runs decide it.
+>
+> - **`hp,hf` solo (#538) and the `v,ps,hp` chain (#539)** are running on the ship candidate itself; results around 08:06 UTC.
+> - If both are green, I ship v0.9.5.
+> - If only the chain fails with a 0.75 scrim again, I'll make that check tolerant of the emulator's scrim state, since the tablet's is always 0.80.
+<!-- sha:c89c28fa793d -->
