@@ -1,13 +1,13 @@
-# CHECKPOINT 1026 — read me first, then TASKS.md
+# CHECKPOINT 1030 — read me first, then TASKS.md
 
-**Written:** 2026-11-10T23:57:47Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `d1c4de3` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T00:02:24Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-5ef85f7a-ngtgj1` · **builds on:** `64b8fac` (this checkpoint is the commit after it)
 
 ## Just done
-BS1d wf run #519 (id 42926361302, job 130213726774, main@8babd57): 24 PASS 0 FAIL 15 INFO. Proven on the emulator: list rotate,headset,wifi + marker n in custom/lock, null+null in unlocked Quickstep, Wi-Fi stays ON in custom (guard on) and on the lock screen (0 lock-rule switch-offs), restored after switch off / Clear data, no grant = Wi-Fi off + list untouched. Node check inconclusive (0 SystemUI nodes in unlocked dumps); pictures next
+BS2: scenario wf v2 written (Bluetooth list, picture probe, lock control, phase N never-turn-on), research doc renamed RADIO_ICONS_HIDE + Bluetooth part; code NOT yet renamed (review agent aa893cfc6f9ffb41d still reading app/src/main)
 
 ## Do this next
-fetch ci-shots (git fetch origin ci-shots; git archive FETCH_HEAD | tar -x -C fresh scratchpad dir), crop the status bar of wf-1..wf-5 and compare the Wi-Fi icon; read the review agent findings; then BS2a rename + Bluetooth. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
+when the review agent returns: fix its real findings, THEN BS2a rename WifiIcon* -> RadioIcon* (git mv + sed: classes, tests, keys keep_radios_hide_icons / tj_radio_icons_original / prefs tj_radio_icons, javadoc doc path), slots wifi+bluetooth in RadioIconHold (restore removes only added slots), keepsRadiosOn in ReturnReset.radiosOff both radios / LockQuiet / receiver, LockQuiet.onUnlock never turns a radio on (shouldRestore overload + tests), Control text, gate-map regex names; then unit tests, dispatch wf. Heartbeat trig_013YUvG3qqKTpfyqZn9k2nmE
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ fetch ci-shots (git fetch origin ci-shots; git archive FETCH_HEAD | tar -x -C fr
 
 ## Last ten checkpoints
 ```
+  b2cfbb6 ckpt 1026: BS1d wf run #519 (id 42926361302, job 130213726774, main@8babd57): 24 PASS 0 
   d1c4de3 ckpt 1025: BS2 (Tj: also Bluetooth, only if already on, never turn on, never show) writt
   8e2f709 ckpt 1021: BS1: TASKS BS1c ticked, HANDOFF row added; wf emulator run dispatched on main
   8babd57 ckpt 1018: BS1d: emulator section 'wf' written (scenario + gate-map + emulator.yml names
@@ -25,5 +26,7 @@ fetch ci-shots (git fetch origin ci-shots; git archive FETCH_HEAD | tar -x -C fr
   d35f676 ckpt 1000: v0.9.3 RELEASED + recorded (android.yml run 44 id 42891423582, a542594, publi
   97e99eb ckpt 998: v0.9.3 (code 42) shipped a542594 = main; android.yml full_build DISPATCHED on 
   a542594 ckpt 997: gated v0.9.3 (code 42) and pushed it: the handoff self-test, the full unit sui
-  634ed77 ckpt 994: BR1 emu run #518 (id 42889694843, job 130087240598, main@5360869, sections=gea
 ```
+
+(3 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
