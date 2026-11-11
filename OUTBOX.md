@@ -1785,3 +1785,9 @@
 > - BH1c: where you saw a pop-up notification, and which app.
 > - BK1e: which unlock is slow, what is on screen, and how many seconds.
 <!-- sha:dce8891a2406 -->
+
+## 2026-11-11T02:02:06Z
+> The release gate is running on CI as three runs: #524, #525 and #526. The full unit suite and lint are running locally at the same time. The Wi-Fi/Bluetooth section is green (38 of 38), and the pictures show the Wi-Fi symbol gone on the lock screen and in the custom launcher. I'll read the short `rg` run at about 02:07 UTC and the two long ones at about 02:35 UTC.
+>
+> Still waiting on you, unchanged: BR1c (does the settings gear open the look-alike?), BN7a (start the shell helper, "Do everything that is missing"), BN8c / BN8d (tablet reports after the first side-key press, and before opening more Quickstep apps), BQ1b (tablet report after any lock-screen screenshot or white box), BH1c (where you saw a pop-up notification, and which app), BK1e (which unlock is slow, what is on screen, how many seconds).
+<!-- sha:5565cc62b57b -->
