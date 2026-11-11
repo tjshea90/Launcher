@@ -404,19 +404,20 @@ public class TjAccessibilityService extends AccessibilityService {
     private String patchShowCause = "";                // BN3: who asks patchShow() for a RETURN (touchBack, padBack, restRecheck), for the lock log line "patch visible again"
     private long lastReturnLogMs = 0;
     private long lastPadLeftMs = 0;                    // BT1b: uptime of the PIN pad's last disappearance
+    static final long PAD_LEFT_HOLD_MS = 1500;         // BT1b: long enough for the keyguard's exit (USER_PRESENT about 270 ms later, the layer refresh within 0.7 s of that), short enough that a cancelled pad gets the patch back quickly
     /**
      * BT1b (Tj, 2026-11-11: "the first time I unlock from the lock screen to the custom launcher the power menu sometimes flickers on and off even without me pressing the side key"). The PIN pad LEAVES about 270 ms before
      * USER_PRESENT (tablet report 2026-11-10-2); the keyguard is still exiting then (the lock screen content slides and brightens). Every pad sign pushes the resting patch's hold out by 2.5 s, but a long PIN entry lets
      * the hold run out, and the pad's disappearance itself called patchShow() with no hold at all: the lock patch (a block of the lock screen's wallpaper over the Screenshot slot) came back in front of the exit for the
-     * 0.3-0.7 s until the layer refresh removed it = a ghost of the power menu's shape. The disappearance counts as a sign of the pad: the patch stays away 2.5 s (a pad that was only CANCELLED gets it back then, as every
+     * 0.3-0.7 s until the layer refresh removed it = a ghost of the power menu's shape. The disappearance counts as a sign of the pad: the patch stays away {@link #PAD_LEFT_HOLD_MS} (a pad that was only CANCELLED gets it back then, as every
      * return since BE1 does; a power menu pressed meanwhile still shows it at the dialog's own event). Audit of the unlock path: research/BT1_ANALYSIS_2026-11-11.md.
      */
     private void padLeft() {
         long now = android.os.SystemClock.uptimeMillis();
         lastPadLeftMs = now;
-        pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + 2500);
-        handler.removeCallbacks(padBack); handler.postDelayed(padBack, 2600);
-        Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away 2.5 s");
+        pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + PAD_LEFT_HOLD_MS);
+        handler.removeCallbacks(padBack); handler.postDelayed(padBack, PAD_LEFT_HOLD_MS + 100);
+        Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away " + PAD_LEFT_HOLD_MS + " ms");
     }
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
     private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) showWithCause("settle"); } catch (Throwable ignored) { } } };
