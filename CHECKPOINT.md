@@ -1,22 +1,22 @@
-# CHECKPOINT 1112 — read me first, then TASKS.md
+# CHECKPOINT 1113 — read me first, then TASKS.md
 
-**Written:** 2026-11-11T05:49:38Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `5466ee9d` (this checkpoint is the commit after it)
+**Written:** 2026-11-11T05:53:05Z · **tests:** all 9 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `9776a7f7` (this checkpoint is the commit after it)
 
 ## Just done
-BT1e+BT1f code done, JVM green (KeyboardPolicyTest, AppLabelTest, BUILD SUCCESSFUL). Cause of BT1f proven from AOSP10 ActivityManagerWrapper.getBadgedContentDescription (appLabel+' '+activityLabel unless equal)
+section bt added to emulator_scenario.sh + gate-map (BT1f look-alike Recents card name; BT1c shade then side key at gaps 0.4/1.2/4 s + no-shade control); gate.sh --check ok
 
 ## Do this next
-Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: write emulator section 'bt' in tools/emulator_scenario.sh (+ tools/gate-map.txt line; helpers hpkey/hplog/hpwait/hpopen at scenario lines 118-129): BT1f = open look-alike, KEYCODE_APP_SWITCH, uiautomator dump, card text must equal Settings; BT1c repro = custom mode home_patch true, wait 'PATCH rest on', cmd statusbar expand-notifications, sleep 1.5, collapse, hold power at +0.3/+1/+2.5 s, shot + PATCH log (code facts: TAS homeRestable ~line 645 needs fresh composite + now>=homeForeignUntilMs + Launcher.hasWindowFocus; card path covers only 2 entries so a not-ready patch leaves the Screenshot entry visible)
+Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: dispatch emulator.yml sections=bt on main (mcp__github__actions_run_trigger run_workflow; load via ToolSearch select:mcp__github__actions_run_trigger,mcp__github__actions_list,mcp__github__get_job_logs), shots=true if the input exists; read RESULTS (get_job_logs tail_lines ~60); BT1c rounds tell which gap fails. Meanwhile read TAS home-patch code (homeForeignWindow 700-760, homeFocusChanged, homeDrew, buildHomePatchNow ~790-830)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  3c05741c ckpt 1112: BT1e+BT1f code done, JVM green (KeyboardPolicyTest, AppLabelTest, BUILD SUCC
   72acd019 ckpt 1111: BT1 first analysis written (research/BT1_ANALYSIS_2026-11-11.md): BT1c/d = B
   3b9848af ckpt 1110: BT1a-f written in TASKS from Tj 05:03Z msg; BS1/BS2/BS2g ticked (answer in O
   eec4700e ckpt 1109: v0.9.4 RELEASED+RECORDED (run #45 id 42948918455 on 9676905). HANDOFF 0r, TA
@@ -26,8 +26,7 @@ Heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc. NEXT: write emulator section 'bt' in to
   471266e9 ckpt 1099: BS2d GATE reruns dispatched 02:36Z on main@ccd1024 (app diff vs gated b44f03
   ccd1024c ckpt 1098: BS2d GATE raw: #524 (id 42942929350, job 130268804149, base,n6,o,x,uf,cs2,an
   67c16d80 ckpt 1095: BS2d GATE: #526 (id 42942938730, job 130268830144, rg solo, main@b44f033): 7
-  f550342c ckpt 1091: BS2d GATE dispatched 02:00Z on main@b44f033 (app diff vs gated wf head 9528d
 ```
 
-(5 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
