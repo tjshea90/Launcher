@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf. Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu (the full list with their cost: tools/gate-map.txt). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
@@ -4553,6 +4553,132 @@ if [ -n "$BT_PANEL" ]; then
   check "BT1c-lat: the patch rests again within 6 s of the shade being closed" bash -c "[ '$BT_BACK' != never ] && awk -v b='$BT_BACK' 'BEGIN{exit !(b<=6.0)}'"
 else check "BT1c: the slot geometry is known" false; fi
 fi # section bt
+if want mu; then # section mu
+ensurehome
+# ---- BV1 (Tj, 2026-11-11): the music app (Eleven, package org.lineageos.eleven, built from eleven/) is in the custom drawer BY ITSELF and shows NO album art anywhere (research/ELEVEN_PORT_2026-11-11.md).
+#      The test song carries a FLAT MAGENTA cover; every picture of the app (tabs, artist / album pages, the player, the notification, the lock screen) is searched for that colour.
+#      MU-2 is the CONTROL: Android itself serves that cover to any app that asks the usual way (content://media/external/audio/albumart/<id>), so "no magenta" means the app did not ask, not that the cover was missing.
+#      The placeholders (letter tiles / note tile) are judged by eye from the pictures (shots=true) and by the JVM guard (eleven/src/test .../NoAlbumArtGuardTest).
+#      Part 2 is the drawer rule: allowed once by itself (MU-4..6), launches from the drawer (MU-7); hidden by hand it stays hidden (MU-12/13); uninstall + reinstall allows it again (MU-14/15).
+beat "before MU"
+MU=org.lineageos.eleven
+MUAPK=eleven/build/outputs/apk/debug/eleven-debug.apk
+MUCOL=ff00ff
+MUTMP="$(mktemp -d)"
+mucnt(){ convert "$1" -fuzz 4% -transparent "#$MUCOL" -alpha extract -format '%[fx:round((1-mean)*w*h)]' info: 2>/dev/null; }   # pixels within 4 % of the cover colour (a shown cover is thousands of them)
+mudump(){ adb shell uiautomator dump /sdcard/mu.xml >/dev/null 2>&1; adb shell cat /sdcard/mu.xml 2>/dev/null | tr '>' '\n'; }
+mubounds(){ grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' '; }
+mutap(){ # mutap <text, any case> <fallback x> <fallback y>: tap the middle of the first node with that text, else the fallback place
+  local t="$1" fx="$2" fy="$3" b; b="$(mudump | grep -iF "text=\"$t\"" | mubounds)"; set -- $b
+  if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); else adb shell input tap "$fx" "$fy"; fi; }
+mutapid(){ # mutapid <resource id of the music app, e.g. bottom_action_bar> <fallback x> <fallback y>
+  local t="$1" fx="$2" fy="$3" b; b="$(mudump | grep -F "resource-id=\"$MU:id/$t\"" | mubounds)"; set -- $b
+  if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); else adb shell input tap "$fx" "$fy"; fi; }
+muset(){ # muset <set name>: the members of a string set in the Launcher's tj_apps.xml, one per line
+  adb shell "run-as $PKG cat shared_prefs/tj_apps.xml" 2>/dev/null | tr -d '\r' | python3 -I -c "import sys,xml.etree.ElementTree as E
+try: r=E.fromstring(sys.stdin.read())
+except Exception: sys.exit(0)
+for s in r.iter('set'):
+    if s.get('name')==sys.argv[1]: print('\n'.join(x.text or '' for x in s))" "$1"; }
+muprefs(){ # muprefs <package for auto_done, or empty>: tj_apps.xml = the baseline (a tablet's apps at the first start, NOT the music app) [+ auto_done]; the Launcher process is stopped first
+  local SETA="" DONE="" a
+  for a in com.android.contacts com.android.gallery3d com.android.camera2 com.android.deskclock com.android.documentsui com.android.messaging com.android.dialer com.android.quicksearchbox com.android.settings com.android.webview; do SETA="$SETA<string>$a</string>"; done
+  [ -n "$1" ] && DONE="<set name=\\\"auto_done\\\"><string>$1</string></set>"
+  adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"baseline_done\\\" value=\\\"true\\\" /><set name=\\\"allowed\\\">$SETA</set>$DONE</map>\" > shared_prefs/tj_apps.xml'"; }
+mudrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; }   # from the custom home
+
+# ---- the fixture and the CONTROL: a song with a flat magenta cover, scanned into MediaStore; Android serves that cover to whoever asks
+python3 -I tools/mu_make_mp3.py "$MUTMP/song.mp3" "Glass Harbor" "Marisol Vega" "Northern Lights" "$MUCOL"
+adb shell mkdir -p /sdcard/Music >/dev/null 2>&1
+adb push "$MUTMP/song.mp3" /sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
+adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
+for i in $(seq 1 20); do adb shell content query --uri content://media/external/audio/media --projection _id:album_id:title 2>/dev/null | tr -d '\r' | grep -q 'title=Glass Harbor' && break; [ "$i" = 6 ] && adb shell content call --uri content://media --method scan_volume --arg external_primary >/dev/null 2>&1; sleep 2; done
+adb shell content query --uri content://media/external/audio/media --projection _id:album_id:artist:album:title 2>/dev/null | tr -d '\r' | grep 'title=Glass Harbor' > "$OUT/mu-media-row.txt"
+MUALB="$(grep -o 'album_id=[0-9]*' "$OUT/mu-media-row.txt" | head -1 | cut -d= -f2)"
+adb exec-out content read --uri "content://media/external/audio/albumart/${MUALB:-0}" > "$MUTMP/cover.bin" 2>/dev/null
+convert "$MUTMP/cover.bin" "$MUTMP/cover.png" 2>/dev/null
+MUCTL="$(mucnt "$MUTMP/cover.png")"; MUCTL="${MUCTL:-0}"
+info "MU fixture: MediaStore row '$(cut -c1-120 "$OUT/mu-media-row.txt")'; the cover Android serves for album ${MUALB:-?} is $(identify -format '%wx%h' "$MUTMP/cover.png" 2>/dev/null || echo none) with $MUCTL magenta pixels"
+check "MU-1: the test song (flat magenta cover) is in MediaStore" test -n "$MUALB"
+check "MU-2: CONTROL: Android serves that magenta cover to any app that asks, so the picture probe CAN see an album cover" bash -c "[ ${MUCTL} -gt 1000 ]"
+
+# ---- part 2a: the music app is installed LATER than the Launcher's first start (so it is not in the baseline) and must be in the custom drawer without anyone allowing it
+adb uninstall "$MU" >/dev/null 2>&1
+muprefs ""; setfeat; setmode custom; rebind; home; sleep 2
+adb install -r -g "$MUAPK" > "$OUT/mu-install.txt" 2>&1
+check "MU-3: the music app installs next to the Launcher (debug build, runtime permissions granted)" grep -q Success "$OUT/mu-install.txt"
+sleep 4
+mudrawer; shot mud-01-drawer
+for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-dump.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-dump.txt" && break; sleep 3; done
+check "MU-4: the custom drawer lists the music app (label Music) with no allow step" grep -q 'text="Music"' "$OUT/mu-drawer-dump.txt"
+check "MU-5: control: the drawer is open and a system app outside the allowed set (Calendar) is still hidden while an allowed one (Contacts) is listed" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-dump.txt && ! grep -q 'text=\"Calendar\"' $OUT/mu-drawer-dump.txt"
+muset allowed > "$OUT/mu-allowed-1.txt"; muset auto_done > "$OUT/mu-auto-done-1.txt"
+check "MU-6: the music app is in 'allowed' and in 'auto_done' (allowed once, by the rule, written down)" bash -c "grep -qx $MU $OUT/mu-allowed-1.txt && grep -qx $MU $OUT/mu-auto-done-1.txt"
+mutap "Music" 300 150; sleep 7
+resumed > "$OUT/mu-resumed-1.txt"; shot mua-01-first-launch
+check "MU-7: a tap on its drawer icon opens the music app" grep -q "$MU" "$OUT/mu-resumed-1.txt"
+
+# ---- part 1: the tour. Every tab (swipe right to left and back), the artist page, the album page, the player, the notification shade, the lock screen
+: > "$OUT/mu-names.txt"
+mudump >> "$OUT/mu-names.txt"
+for i in 1 2 3 4 5 6; do adb shell input swipe 520 600 80 600 250; sleep 1.5; shot "mua-t$i"; mudump >> "$OUT/mu-names.txt"; done
+for i in 1 2 3 4 5 6; do adb shell input swipe 80 600 520 600 250; sleep 1.5; shot "mua-b$i"; mudump >> "$OUT/mu-names.txt"; done
+check "MU-8: the tabs listed real data: the artist, the album and the song of the test file were on screen" bash -c "grep -q 'Marisol Vega' $OUT/mu-names.txt && grep -q 'Northern Lights' $OUT/mu-names.txt && grep -q 'Glass Harbor' $OUT/mu-names.txt"
+mutap "Artists" 300 110; sleep 2; shot mua-a1-artists
+mutap "Marisol Vega" 300 300; sleep 3; shot mua-a2-artist-page; mudump >> "$OUT/mu-names.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 2
+mutap "Albums" 400 110; sleep 2; shot mua-c1-albums
+mutap "Northern Lights" 300 300; sleep 3; shot mua-c2-album-page; mudump >> "$OUT/mu-names.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 2
+mutap "Songs" 500 110; sleep 2; shot mua-s1-songs
+mutapid bottom_action_bar 300 940; sleep 5; shot mua-s2-bar-playing      # nothing plays yet: the bar starts "shuffle all" (SlidingPanelActivity.mOpenNowPlaying)
+mutapid bottom_action_bar 300 940; sleep 4; shot mua-p1-player           # something plays now: the bar opens the playing screen
+mudump >> "$OUT/mu-names.txt"
+adb shell dumpsys notification --noredact 2>/dev/null | grep -c "pkg=$MU" | tr -d ' \r\n' > "$OUT/mu-notif-count.txt"
+adb shell dumpsys notification --noredact 2>/dev/null | grep -A14 "pkg=$MU" | grep -iE 'largeIcon|smallIcon|android.picture' | head -4 | cut -c1-200 > "$OUT/mu-notif-icons.txt"
+info "MU notification: $(cat "$OUT/mu-notif-count.txt") record(s) of the music app; icons: $(tr -s ' \n' ' ' < "$OUT/mu-notif-icons.txt")"
+check "MU-9: playback started: the music app posted its media notification (so the shade and lock-screen pictures show it)" bash -c "[ \"$(cat $OUT/mu-notif-count.txt 2>/dev/null)\" -ge 1 ]"
+adb shell cmd statusbar expand-notifications; sleep 3; shot mua-n1-shade
+adb shell cmd statusbar collapse; sleep 1
+palock; shot mua-l1-lock
+b6unlock >/dev/null 2>&1 || { adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
+sleep 2; shot mua-l2-after-unlock
+resumed > "$OUT/mu-resumed-2.txt"
+info "MU after the tour: resumed = $(tr -s ' \n' ' ' < "$OUT/mu-resumed-2.txt" | cut -c1-140)"
+
+# ---- the probe: no picture of the app contains the cover colour; the app did not crash
+MUMAX=0; MUSUM=0; MUN=0; MUSEEN=""
+for f in "$OUT"/mua-*.png; do [ -f "$f" ] || continue; c="$(mucnt "$f")"; c="${c:-0}"; MUN=$((MUN+1)); MUSUM=$((MUSUM+c)); if [ "$c" -gt "$MUMAX" ]; then MUMAX=$c; fi; [ "$c" -gt 0 ] && MUSEEN="$MUSEEN $(basename "$f" .png)=$c"; done
+info "MU art probe: $MUN pictures of the music app searched for the cover colour; the most magenta pixels in one picture: $MUMAX; total $MUSUM;${MUSEEN:- none with any}"
+check "MU-10: NO album art anywhere: no picture of the music app (tabs, artist and album pages, player, shade, lock screen) shows the cover colour" bash -c "[ $MUN -ge 20 ] && [ $MUMAX -lt 200 ]"
+adb logcat -d -b crash 2>/dev/null | tr -d '\r' > "$OUT/mu-crash-log.txt"
+check "MU-11: the music app did not crash during the tour" bash -c "! grep -q 'Process: $MU' $OUT/mu-crash-log.txt"
+
+# ---- part 2b: Tj hides it by hand (not in 'allowed', still in 'auto_done'): it stays hidden. Part 2c: uninstall + reinstall allows it again
+adb shell am force-stop "$MU" >/dev/null 2>&1
+muprefs "$MU"; setmode custom; rebind; home; sleep 2
+mudrawer; shot mud-02-hidden-by-hand
+mudump > "$OUT/mu-drawer-hidden.txt"
+check "MU-12: hidden by hand it stays out of the drawer (the rule never undoes Tj's choice); the drawer was open (Contacts listed)" bash -c "grep -q 'text=\"Contacts\"' $OUT/mu-drawer-hidden.txt && ! grep -q 'text=\"Music\"' $OUT/mu-drawer-hidden.txt"
+muset allowed > "$OUT/mu-allowed-2.txt"; muset auto_done > "$OUT/mu-auto-done-2.txt"
+check "MU-13: ... and nothing was written behind his back (still 'handled', still not allowed)" bash -c "grep -qx $MU $OUT/mu-auto-done-2.txt && ! grep -qx $MU $OUT/mu-allowed-2.txt"
+home
+adb uninstall "$MU" >/dev/null 2>&1; sleep 4
+muset auto_done > "$OUT/mu-auto-done-3.txt"
+check "MU-14: uninstalling it forgets the 'handled' mark" bash -c "! grep -qx $MU $OUT/mu-auto-done-3.txt"
+adb install -r -g "$MUAPK" >/dev/null 2>&1; sleep 5
+mudrawer; shot mud-03-reinstalled
+for i in 1 2 3 4; do mudump > "$OUT/mu-drawer-reinstalled.txt"; grep -q 'text="Music"' "$OUT/mu-drawer-reinstalled.txt" && break; sleep 3; done
+check "MU-15: after a reinstall the music app is in the drawer again, by itself" grep -q 'text="Music"' "$OUT/mu-drawer-reinstalled.txt"
+
+# ---- leave nothing behind for the sections that follow
+adb uninstall "$MU" >/dev/null 2>&1
+adb shell rm -f /sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
+adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Music/mu-glass-harbor.mp3 >/dev/null 2>&1
+adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+setfeat; setmode custom; rebind; home; sleep 3
+fi # section mu
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
