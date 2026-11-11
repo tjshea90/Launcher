@@ -153,7 +153,10 @@ public class TjAccessibilityService extends AccessibilityService {
     private String fastDecline() {
         if (patchView == null) return "no patch window yet";
         if (!patchLockMode) return "not the lock screen";
-        if (!patchResting && (!patchRestable || lastBouncer || padSignFresh())) return "the patch is not resting (PIN pad up, or no valid crop)";   // BE1: a patch that is merely AWAY (touch / PIN guard) comes back at the dialog's own event
+        if (!patchResting && (!patchRestable || lastBouncer || padSignFresh())) {   // BE1: a patch that is merely AWAY (touch / PIN guard) comes back at the dialog's own event
+            // BT1c / BT1d: on the home screen a patch that is not fresh (a draw of the Launcher since it was built, a window guard) is shown as it is while the Launcher has the focus (HomePatchRules.openTreatment): never the short card with the Screenshot slot open
+            if (!(patchHomeMode && !lastBouncer && !padSignFresh() && homeOpenTreatment() == HomePatchRules.OPEN_STALE)) return "the patch is not resting (PIN pad up, or no valid crop)" + (patchHomeMode ? " " + homeNotFreshWhy() : "");
+        }
         if (overlayShown) return "already open";
         if (!Features.isCover(Features.powerMode(this)) || !coverWorld()) return "power menu mode " + Features.powerMode(this);
         if (cachedCard() == null) return "the menu geometry is not learned yet";
@@ -4315,6 +4318,7 @@ public class TjAccessibilityService extends AccessibilityService {
      */
     private Rect cardArea(Rect full) {
         if (patchView == null) return full;
+        if (patchHomeMode && !patchRestable) return full;   // BT1c: the home patch is not going to cover the Screenshot slot for this menu (not fresh and not adopted, see homeOpenDecide): the card covers the WHOLE panel
         return cardAreaGeom(full);
     }
 
@@ -4915,6 +4919,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void showOverlay(Rect full) {
+        homeOpenDecide();   // BT1c: once per opening on the home screen: fresh patch, a stale one shown as it is, or the card over the whole panel
         if (!cardWanted()) { showStock(full); return; }
         WindowManager wm = (WindowManager) getSystemService(WINDOW_SERVICE);
         if (overlay == null) {
