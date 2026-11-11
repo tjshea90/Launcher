@@ -3073,6 +3073,8 @@ HP_T2="$(hpwait 'PATCH rest on' 40)"
 sleep 3
 hplog | grep -E "HOMEPATCH|PATCH rest|PATCH window|PATCH removed" > "$OUT/hp-b-log.txt"
 info "HP B: calibration ended after $HP_T1 s, resting after $HP_T2 s; status: $(hpstatus | cut -c1-200); log: $(grep HOMEPATCH $OUT/hp-b-log.txt | cut -c25-130 | tr '\n' '|' | cut -c1-500)"
+# BT2c (run #541: the status said 'away: not on the plain home screen' for the whole section, 15 FAILs, no native crash): when the patch never rests say WHO is in front and what the service logged, so a rerun explains itself.
+[ "$HP_T2" = never ] && info "HP B DIAG (the patch never rested): in front: $(resumed | cut -c1-150) | focus: $(adb shell dumpsys window | grep -m1 mCurrentFocus | cut -c1-120) | app pid: $(adb shell pidof "$PKG" | tr -d '\r') | service log tail: $(hplog | tail -n 8 | cut -c25-150 | tr '\n' '|' | cut -c1-700)"
 check "HP1: the home calibration started BY ITSELF (the Launcher hidden, one system screenshot)" grep -q "HOMEPATCH calibration starts" "$OUT/hp-b-log.txt"
 check "HP1: ... and ended OK (the wallpaper-only crop was stored)" grep -q "HOMEPATCH calibration end: ok=true" "$OUT/hp-b-log.txt"
 check "HP1: ... one crop file for the wallpaper exists in the app's private files" bash -c "[ \"$(hpcrops)\" = 1 ]"
