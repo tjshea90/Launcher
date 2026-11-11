@@ -21,3 +21,18 @@ Android 10's `ActivityManagerWrapper.getBadgedContentDescription(info, userId, t
 
 ## Plan (order)
 1. BT1e fix + JVM test. 2. BT1f decision (see TASKS). 3. Emulator reproduction of BT1c (new section: shade down, close, long-press power at +0.5 / +1 / +2 s, picture + PATCH log) and the readiness timeline; 4. fix the not-ready windows (shade close, stale composite) and give the not-ready case a fallback that never shows the Screenshot entry; 5. BT1a: film the pull-up (frame analysis) and shorten / remove the hide latency; 6. BT1b: find the trigger with a quiet-home film after a plain unlock.
+
+## Findings after the first emulator runs (2026-11-11 06:00-06:35 UTC; section `bt`, runs #529 / #530 / #532, `hp` #531)
+
+### BT1c / BT1d: reproduced and explained
+- Run #529 (`bt` on d027fe8, before any fix): the stock Screenshot entry stayed visible at the control (shade closed, press at once), +0.4 s and +1.2 s. The picture showed the short card over Power off / Restart only.
+- Two mechanisms, both real:
+  1. **Not-ready patch + SHORT card.** `fastDecline` refuses when `patchRestable` is false and the slow path shows the short card (`cardWanted() = !homePatchReady()`); nothing covers `[547..642]`.
+  2. **The guard starts BEFORE the dialog.** In run #532's control round a SystemUI window event arrived ~190 ms BEFORE the dialog's own event. `homeForeignUntilMs` (2.5 s) is set by that event, so `homeRestable()` is false at the moment the menu opens although the composite is fresh. This is what "the first time, then fixed" looks like on the tablet: the guard of the shade's close is still running at the first press and has run out at the second.
+- Fix (HomePatchRules.openTreatment, TAS.homeOpenDecide): FRESH as before; STALE = the not-fresh composite is shown AS IT IS for that opening (the Launcher has the focus, plain home, composite for the current wallpaper step) and rebuilt in place 40 ms later; FULL_CARD = the card covers the whole panel (`cardArea` returns the full panel when the home patch is not restable). `guardEndsWithFocus` lifts the 2.5 s guard when the Launcher regains the focus (the shade is gone). Every opening writes one `HOMEPRESS ...` line (also into the tablet report via the persistent lock log).
+- Proof: `bt` #532 green (ctl / g04 / g12 / g4 core_mean 0.00 = the patch covers the slot at every gap; latency round: patch resting again 0.5 s after the shade closed); `hp` #531 green (the old home-patch sections unchanged).
+
+### BT1a / BT1b: reasoned, not seen
+- Audit of the unlock path (read-only subagent, ~232K tokens, 25 min): no code path opens the card or the stock power menu on unlock. Candidates ranked: (1) the lock patch returning when the PIN pad leaves (the pad leaves ~270 ms before USER_PRESENT, the keyguard is still animating out); (2) home patch hide/show pairs at the first home draws; (3) the home calibration flash (the Launcher hidden ~1 s for the camera); (4) the ScrimMeasure stage (can open the REAL stock menu; only on the lock screen and not on Tj's tablet because the measurement exists).
+- Changes made for (1): `padLeft` hold 1.5 s, hidden start of a new lock window, settle 1.2 s (`PatchRest.settled`), finger DOWN recorded even when the patch is not resting. Optional, not done: (2) home patch not visible within 3 s after USER_PRESENT; (3) calibration only >= 10 s after an unlock; (4) `scrimInterrupted` on `padSignFresh`. Do them only when the lock log of a tablet report names the path.
+- The emulator has NOT yet run the lock-side changes made after eae2cb4 (padLeft, hidden-start `addPatch`, settle clock across the pad): the gate is their first run.
