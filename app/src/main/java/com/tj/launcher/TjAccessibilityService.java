@@ -823,9 +823,7 @@ public class TjAccessibilityService extends AccessibilityService {
         f.restable = patchRestable;
         f.compositeKept = patchShotBmp != null && homeBuiltAtMs > 0;
         f.stepMatches = HomePatchRules.sameStep(homeBuiltStep, homeStepNow());
-        // the stock dialog takes the focus itself: whether its event or the Launcher's loss of the focus arrives first is not fixed, so a loss within 300 ms of the dialog's own event is the dialog's, not a shade's
-        long ref = dialogEventMs > 0 && now - dialogEventMs < 1000 ? dialogEventMs : now;
-        f.launcherFocus = l != null && (l.hasWindowFocus() || (homeFocusLostAtMs > 0 && homeFocusLostAtMs >= ref - 300));
+        f.launcherFocus = homeLauncherFocus();
         f.homeAtRest = TjHooks.homeScreenShowing() && !TjHooks.homeFloatingViewOpen() && !TjHooks.homeBusy();
         f.calibrating = homeCalRunning;
         return HomePatchRules.openTreatment(f);
