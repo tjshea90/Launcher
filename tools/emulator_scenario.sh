@@ -4500,12 +4500,19 @@ btround(){ # btround <label> <gap seconds between the shade being closed and the
   adb logcat -c
   if [ "$lab" != ctl ]; then adb shell cmd statusbar expand-notifications; sleep 2; shot "bt-03-$lab-shade"; adb shell cmd statusbar collapse; sleep "$gap"; fi
   adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; shot "bt-04-$lab-open"
-  hplog | grep -E "CARD area|PATCH fast|PATCH menu|PATCH hold|HOMEPATCH|PATCH rest|PATCH window created|PATCH removed|PATCH patch visible" | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): /\1 /' > "$OUT/bt-$lab-log.txt"
+  hplog | grep -E "CARD area|PATCH fast|PATCH menu|PATCH hold|HOMEPATCH|HOMEPRESS|PATCH rest|PATCH window created|PATCH removed|PATCH patch visible" | sed -E 's/^[0-9-]+ ([0-9:.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): /\1 /' > "$OUT/bt-$lab-log.txt"
   python3 -I tools/pb_probe.py "bt-$lab" "$OUT/bt-02-rest.png" "$OUT/bt-04-$lab-open.png" --panel "$BT_PANEL" > "$OUT/bt-$lab-pb.txt" 2>&1
   cm="$(grep PBMETRIC "$OUT/bt-$lab-pb.txt" | grep -o 'core_mean=[-+0-9.]*' | head -1 | cut -d= -f2)"
   echo "$cm"; }
-btnote(){ # btnote <label> <gap> <core_mean>: one compact INFO line (newest events first) + the full log stays in bt-<label>-log.txt
-  info "BT1c $1 (gap $2 s): core_mean=${3:-none}; newest first: $(tac "$OUT/bt-$1-log.txt" | head -7 | cut -c1-70 | tr '\n' '|' | cut -c1-250)"; }
+btnote(){ # btnote <label> <gap> <core_mean>: INFO lines (the press verdict with its reasons; the timeline, newest first); the full log stays in bt-<label>-log.txt
+  info "BT1c $1 (gap $2 s): core_mean=${3:-none}; press: $(grep HOMEPRESS "$OUT/bt-$1-log.txt" | tail -1 | sed -E 's/.*HOMEPRESS menu opened \(home\): //' | cut -c1-200)"
+  info "BT1c $1 timeline (newest first): $(grep -vE 'CARD area|HOMEPRESS' "$OUT/bt-$1-log.txt" | tac | head -9 | sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) (HOMEPATCH|PATCH) /\1 /' | cut -c1-44 | tr '\n' '|' | cut -c1-300)"; }
+btcard(){ # btcard <label>: "full" when the press covered the whole panel with the card (the CARD line's area equals its full), "short" for a short card, "" for no CARD line
+  local l; l="$(grep 'CARD area' "$OUT/bt-$1-log.txt" | tail -1)"; [ -n "$l" ] || return 0
+  [ "$(hpnums "$l" area)" = "$(hpnums "$l" full)" ] && echo full || echo short; }
+btnever(){ # btnever <label> <core_mean>: the stock Screenshot entry is never visible: the patch covers the slot (deviation within 2 levels) OR the card covers the WHOLE panel (the log says so)
+  awk -v c="${2:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}' && return 0
+  [ "$(btcard "$1")" = full ] && grep -q 'no usable patch, the card covers the whole panel' "$OUT/bt-$1-log.txt"; }
 if [ -n "$BT_PANEL" ]; then
   BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"
   check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM0:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
@@ -4513,9 +4520,16 @@ if [ -n "$BT_PANEL" ]; then
   for BT_GAP in 0.4 1.2 4; do
     BT_L="g$(echo "$BT_GAP" | tr -d .)"
     BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"
-    check "BT1c-$BT_L: the FIRST press $BT_GAP s after the shade was closed covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
+    check "BT1c-$BT_L-never: the FIRST press $BT_GAP s after the shade was closed never shows the stock Screenshot entry (patch over it, or the card over the whole panel)" btnever "$BT_L" "$BT_CM"
+    if [ "$BT_GAP" != 0.4 ]; then check "BT1c-$BT_L: ... and at $BT_GAP s it is the PATCH that covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'; fi
     hpclose; sleep 6
   done
+  # how long after the shade is closed is the patch fresh and resting again? (poll the log: "PATCH rest on" after the collapse)
+  adb logcat -c; adb shell cmd statusbar expand-notifications; sleep 2; adb shell cmd statusbar collapse; BT_N0=0; BT_BACK=never
+  for BT_I in $(seq 1 24); do sleep 0.5; if hplog | grep -q 'PATCH rest on'; then BT_BACK="$(awk -v i="$BT_I" 'BEGIN{printf "%.1f", i*0.5}')"; break; fi; done
+  info "BT1c latency: the patch rested again $BT_BACK s after the shade was closed (never = not within 12 s)"
+  info "BT1c latency timeline (newest first): $(hplog | grep -E 'HOMEPATCH|PATCH rest' | sed -E 's/^[0-9-]+ [0-9]+:[0-9]+:([0-9.]+) +[A-Z]\/TjA11y *\( *[0-9]+\): (HOMEPATCH|PATCH) /\1 /' | tac | head -9 | cut -c1-44 | tr '\n' '|' | cut -c1-300)"
+  check "BT1c-lat: the patch rests again within 6 s of the shade being closed" bash -c "[ '$BT_BACK' != never ] && awk -v b='$BT_BACK' 'BEGIN{exit !(b<=6.0)}'"
 else check "BT1c: the slot geometry is known" false; fi
 fi # section bt
 if want last; then # section last
