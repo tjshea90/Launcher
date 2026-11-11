@@ -60,6 +60,9 @@ jobs:
         run: sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends ffmpeg >/dev/null
       - name: Build the debug APK
         run: ./gradlew :app:assembleDebug :phoneguide:assembleDebug :testnotifier:assembleDebug --console=plain
+      - name: Build the music app (Eleven; only for section mu, TASKS BV1e)
+        if: contains(format(',{0},', inputs.sections), ',mu,')
+        run: ./gradlew :eleven:assembleDebug --console=plain
       - name: Boot Android 10, run the scenario
         uses: reactivecircus/android-emulator-runner@v2
         env:

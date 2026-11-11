@@ -115,13 +115,14 @@ jobs:
 
       - name: Build the release APK
         if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release == 'true'
-        run: ./gradlew :app:assembleRelease :phoneguide:assembleRelease --console=plain
+        run: ./gradlew :app:assembleRelease :phoneguide:assembleRelease :eleven:assembleRelease --console=plain
 
       - name: Verify the APK signature (the artifact, not just the input)
         if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release == 'true'
         run: |
           bash tools/verify-apk.sh app/build/outputs/apk/release/app-release.apk
           bash tools/verify-apk.sh phoneguide/build/outputs/apk/release/phoneguide-release.apk
+          bash tools/verify-apk.sh eleven/build/outputs/apk/release/eleven-release.apk
 
       - name: Build the preview APK (no keystore yet)
         if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release != 'true'
@@ -136,6 +137,7 @@ jobs:
           if [ "${{ steps.mode.outputs.release }}" = "true" ]; then
             cp app/build/outputs/apk/release/app-release.apk "Launcher-v${VNAME}.apk"
             cp phoneguide/build/outputs/apk/release/phoneguide-release.apk "PhoneGuide-v${VNAME}.apk"
+            cp eleven/build/outputs/apk/release/eleven-release.apk "Eleven-v${VNAME}.apk"
           else
             cp app/build/outputs/apk/debug/app-debug.apk "Launcher-v${VNAME}-preview.apk"
           fi
@@ -152,12 +154,13 @@ jobs:
           TAG: v${{ steps.v.outputs.vname }}
           APK: Launcher-v${{ steps.v.outputs.vname }}.apk
           GUIDE: PhoneGuide-v${{ steps.v.outputs.vname }}.apk
+          MUSIC: Eleven-v${{ steps.v.outputs.vname }}.apk   # the music app (TASKS BV1): a separate APK, package org.lineageos.eleven
         run: |
           NOTES="versionCode ${{ steps.v.outputs.vcode }}, built and signed by GitHub Actions. The certificate was verified on this APK, so it installs over an existing install as an in-place update."
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$APK" "$GUIDE" --clobber
+            gh release upload "$TAG" "$APK" "$GUIDE" "$MUSIC" --clobber
           else
-            gh release create "$TAG" "$APK" "$GUIDE" --target "$GITHUB_SHA" --title "Launcher $TAG" --notes "$NOTES"
+            gh release create "$TAG" "$APK" "$GUIDE" "$MUSIC" --target "$GITHUB_SHA" --title "Launcher $TAG" --notes "$NOTES"
           fi
           echo "Published $TAG -> $(gh release view "$TAG" --json url -q .url)" >> "$GITHUB_STEP_SUMMARY"
 

@@ -131,6 +131,31 @@ public class NoAlbumArtGuardTest {
         assertEquals(Arrays.asList("content://x/albumart"), l.literals);   // the self-test of the guard: a token inside a URL string is not hidden by a "//"
     }
 
+    /** One real-world example per code rule (same order of names): a rule with a typo that matches nothing would let the guard pass for ever. */
+    private static final String[][] EXAMPLES = {
+            {"MediaStore album-art column", "String c = MediaStore.Audio.AlbumColumns.ALBUM_ART;"},
+            {"embedded picture", "byte[] b = retriever.getEmbeddedPicture();"},
+            {"media metadata retriever", "MediaMetadataRetriever r = new MediaMetadataRetriever();"},
+            {"bitmap decoding", "Bitmap b = BitmapFactory.decodeStream(in);"},
+            {"thumbnails", "Bitmap b = ThumbnailUtils.createAudioThumbnail(f, size, null);"},
+            {"opening files / providers (artwork readers)", "ParcelFileDescriptor p = resolver.openFileDescriptor(uri, \"r\");"},
+            {"image cache / disk cache / workers", "DiskLruCache cache = DiskLruCache.open(dir, 1, 1, size);"},
+            {"blur (RenderScript) of a picture", "RenderScript rs = RenderScript.create(context);"},
+            {"choosing or fetching a picture", "Intent i = new Intent(Intent.ACTION_GET_CONTENT);"},
+            {"network", "HttpURLConnection c = (HttpURLConnection) url.openConnection();"},
+    };
+
+    @Test public void everyCodeRuleCatchesItsOwnExample() {
+        assertEquals("one example per rule", FORBIDDEN_CODE.length, EXAMPLES.length);
+        for (int i = 0; i < FORBIDDEN_CODE.length; i++) {
+            assertEquals(FORBIDDEN_CODE[i][0], EXAMPLES[i][0]);
+            Lexed l = lex(EXAMPLES[i][1]);
+            assertTrue("rule '" + FORBIDDEN_CODE[i][0] + "' does not catch: " + EXAMPLES[i][1], Pattern.compile(FORBIDDEN_CODE[i][1]).matcher(l.code).find());
+        }
+        // the same words inside a comment or a string are NOT code (the lexer empties them): a comment that explains the removal must not trip the guard
+        assertTrue(!Pattern.compile(FORBIDDEN_CODE[3][1]).matcher(lex("// BitmapFactory is gone\nString s = \"BitmapFactory\";").code).find());
+    }
+
     @Test public void theLiteralRuleCatchesTheRealUriAndColumnButNotAClassName() {
         Pattern p = Pattern.compile(ALBUM_ART_LITERAL);
         assertTrue(p.matcher("content://media/external/audio/albumart").find());
