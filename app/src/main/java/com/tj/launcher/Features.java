@@ -30,6 +30,12 @@ public final class Features {
     public static void setString(Context c, String key, String v) { p(c).edit().putString(key, v).commit(); }
     /** For diagnostics only: the in-memory value is updated at once, the disk write happens later on SharedPreferences' own thread (never fsync on the UI thread inside a time-critical path). */
     public static void setStringAsync(Context c, String key, String v) { p(c).edit().putString(key, v).apply(); }
+    /** BY1a C6/C7 (pure): would storing {@code v} change the stored value {@code stored} (null = nothing stored)? */
+    static boolean differs(String stored, String v) { return stored == null ? v != null : !stored.equals(v); }
+    /** BY1a C6/C7: a status / diagnostic string, written only when it changed and like {@link #setStringAsync} (no whole-file write + fsync on the caller's thread for a repeated line). */
+    public static void setStringAsyncIfChanged(Context c, String key, String v) { SharedPreferences s = p(c); if (differs(s.getString(key, null), v)) s.edit().putString(key, v).apply(); }
+    /** BY1a C6/C7: like {@link #setString} (commit) but only when the value changed: for bookkeeping a later decision reads back. */
+    public static void setStringIfChanged(Context c, String key, String v) { SharedPreferences s = p(c); if (differs(s.getString(key, null), v)) s.edit().putString(key, v).commit(); }
     /** Like {@link #set} but the disk write happens later on SharedPreferences' own thread (BA2: bookkeeping on the unlock path must not fsync on the UI thread). The in-memory value is visible at once. */
     public static void setAsync(Context c, String key, boolean on) { p(c).edit().putBoolean(key, on).apply(); }
     public static int getInt(Context c, String key, int def) { return p(c).getInt(key, def); }
