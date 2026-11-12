@@ -221,18 +221,18 @@ public class RadioIconHoldTest {
         events.clear();
         assertTrue(set(st, s, true, true));
         assertTrue(events.isEmpty());
-        assertEquals("nfc,wifi,bluetooth", s.value);
+        assertEquals("nfc,wifi,bluetooth,vpn", s.value);
     }
 
     @Test public void aHoldThatLostOneSlotAddsItBackAndKeepsItsOriginal() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         assertTrue(set(st, s, true, true));
-        s.value = "nfc,wifi";   // something removed the bluetooth entry
+        s.value = "nfc,wifi,vpn";   // something removed the bluetooth entry
         events.clear();
         assertTrue(set(st, s, true, true));
-        assertEquals("nfc,wifi,bluetooth", s.value);
+        assertEquals("nfc,wifi,vpn,bluetooth", s.value);
         assertEquals("nfc", st.original);   // NOT the list with our wifi entry in it: that would leave wifi hidden for good
-        assertEquals("[put(nfc,wifi,bluetooth)]", events.toString());
+        assertEquals("[put(nfc,wifi,vpn,bluetooth)]", events.toString());
         assertFalse(set(st, s, true, false));
         assertEquals("nfc", s.value);
     }
