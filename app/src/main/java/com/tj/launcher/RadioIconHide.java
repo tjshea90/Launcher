@@ -203,7 +203,7 @@ public final class RadioIconHide {
             StringBuilder b = new StringBuilder();
             b.append("switch ").append(switchOn(app) ? "on" : "off").append(", adb permission ").append(permitted(app) ? "granted" : "MISSING");
             b.append(", radios kept on by us: ").append(keepsRadiosOn(app) ? "yes" : "no").append(", Wi-Fi radio now: ").append(wifiState(app)).append(", Bluetooth radio now: ").append(bluetoothState()).append(" | now: ");
-            b.append(marker != null ? "Wi-Fi and Bluetooth symbols HIDDEN (held)" : "symbols as Android has them");
+            b.append(marker != null ? "Wi-Fi, Bluetooth and VPN symbols HIDDEN (held)" : "symbols as Android has them");
             b.append(" | ").append(RadioIconHold.SETTING).append(" = ").append(Settings.Secure.getString(cr, RadioIconHold.SETTING));
             if (marker != null) { String o = RadioIconHold.decodeMarker(marker); b.append(" | put back to: ").append(o == null ? "(system default)" : "\"" + o + "\""); }
             b.append(" | last change: ").append(p(app).getString("last", "(none yet)"));
