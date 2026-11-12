@@ -4787,7 +4787,7 @@ flnums(){ echo "$1" | grep -o "$2=[^ ]*" | head -1 | grep -o '[0-9]*' | tr '\n' 
 flstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
 fllock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }
 flunlock(){ local i; for i in 1 2 3; do [ "$(kg_state)" = "showing=false" ] && return 0; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.5; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input text 1234; sleep 0.5; adb shell input keyevent KEYCODE_ENTER; sleep 3; done; [ "$(kg_state)" = "showing=false" ]; }
-flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; FL_T0="$(adb shell cut -d' ' -f1 /proc/uptime | tr -d '\r\n')"; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
+flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; FL_T0="$(adb shell cat /proc/uptime | cut -d' ' -f1 | tr -d '\r\n')"; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
 flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull, analyse, keep the app's PATCH lines of the case
   local L="$1" M="$2" i T=""
   for i in $(seq 1 15); do adb shell pidof screenrecord >/dev/null 2>&1 || break; sleep 1; done
