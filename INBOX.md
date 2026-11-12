@@ -1490,3 +1490,8 @@ Do a full review of the launcher for optimizations in code and to make it load a
 ```
 This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
 ```
+
+## 2026-11-12T19:34:11Z
+```
+If you can continue the work on this project which was interrupted by the other Claude account without progress or data loss, do so. If you can't resume without data or progress loss, don't, I will continue on the other account later
+```
