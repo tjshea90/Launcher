@@ -92,6 +92,32 @@ public class KeyboardPolicyTest {
         assertEquals(0, KeyboardPolicy.visibleLabels(Arrays.asList("com.touchtype.swiftkey"), Arrays.asList("Microsoft SwiftKey keyboard")).size());
         assertEquals("", SsFormat.joinAnd(KeyboardPolicy.visibleLabels(Arrays.asList("com.touchtype.swiftkey"), Arrays.asList("Microsoft SwiftKey keyboard"))));
     }
+    // ---- BX1: Gboard is the Quickstep side's keyboard now, so the look-alike leaves it out like SwiftKey, by package, unless it is the only keyboard listed
+    @Test public void theLookAlikeNeverNamesGboardWhileAStockKeyboardIsListed() {
+        List<String> shown = KeyboardPolicy.visibleLabels(
+                Arrays.asList("com.android.inputmethod.latin", "com.google.android.inputmethod.latin", "com.touchtype.swiftkey"),
+                Arrays.asList("Android keyboard (AOSP)", "Gboard", "Microsoft SwiftKey keyboard"));
+        assertEquals(Arrays.asList("Android keyboard (AOSP)"), shown);
+        assertEquals("Android keyboard (AOSP)", SsFormat.joinAnd(shown));   // not "Android keyboard (AOSP) and Gboard"
+        assertEquals(Arrays.asList("Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(
+                Arrays.asList("com.google.android.inputmethod.latin", "com.android.inputmethod.latin"), Arrays.asList("Gboard", "Android keyboard (AOSP)")));   // the order of the list does not matter
+    }
+    @Test public void gboardIsStillNamedWhenItIsTheOnlyKeyboardSoTheRowNeverGoesBlank() {
+        assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(Arrays.asList("com.google.android.inputmethod.latin"), Arrays.asList("Gboard")));
+        assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(Arrays.asList("com.google.android.inputmethod.latin", "com.touchtype.swiftkey"), Arrays.asList("Gboard", "Microsoft SwiftKey keyboard")));
+    }
+    @Test public void aStockKeyboardThatMerelyCarriesTheLabelGboardIsNotHidden() {
+        // matched by package, never by label: the AOSP keyboard stays whatever it is called
+        assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(Arrays.asList("com.android.inputmethod.latin", "com.google.android.inputmethod.latin"), Arrays.asList("Gboard", "Gboard")));
+    }
+    @Test public void theQuickstepSideKeyboardsAreSwiftKeyAndGboardOnly() {
+        assertTrue(KeyboardPolicy.isQuickstepSide("com.google.android.inputmethod.latin", "Gboard"));
+        assertTrue(KeyboardPolicy.isQuickstepSide("com.touchtype.swiftkey", "Microsoft SwiftKey keyboard"));
+        assertTrue(KeyboardPolicy.isQuickstepSide("com.other", "SwiftKey"));
+        assertFalse(KeyboardPolicy.isQuickstepSide("com.android.inputmethod.latin", "Android keyboard (AOSP)"));
+        assertFalse(KeyboardPolicy.isQuickstepSide("com.android.inputmethod.latin", "Gboard"));
+        assertFalse(KeyboardPolicy.isQuickstepSide(null, null));
+    }
     @Test public void aMissingPackageListOrBlankLabelsAreHandled() {
         assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(null, Arrays.asList("Gboard", "Microsoft SwiftKey keyboard", " ", null)));
         assertEquals(0, KeyboardPolicy.visibleLabels(Arrays.asList("x"), null).size());
