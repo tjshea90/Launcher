@@ -176,4 +176,20 @@ public final class PatchRest {
         left = Math.max(left, touchUntilMs - nowMs);
         return Math.max(0, left);
     }
+
+    /**
+     * BY1c / F3 (Tj, 2026-11-12: "It should cover the screenshot button without flicker or delay ... after ... pulling up the pin pad"). Emulator film menuP1 of run #564: a power menu opened about a second after the
+     * PIN pad was dismissed showed the stock Screenshot entry for 167 ms: the resting patch was still away for the pad's hold (every pad sign holds it 2.5 s) and only the dialog's own window event, about two frames
+     * late, brought it back. A pad that LEFT while the screen stays LOCKED, with no USER_PRESENT since (an unlock's USER_PRESENT follows the pad's departure by about 270 ms on the tablet, BT1b), no new pad sign for
+     * {@link #PAD_SIGN_QUIET_MS} and no pad in a fresh look, was CANCELLED: the pad hold may end {@link #PAD_CANCEL_MS} after the departure instead of 2.5 s after the last sign. The finger hold and the settle
+     * time still apply (patchShow asks them as before).
+     */
+    public static final long PAD_CANCEL_MS = 700;
+    /** BY1c: the newest PIN-pad sign must be at least this old before a cancel is believed (a late sign of the pad's own exit would otherwise hide the patch again a moment after it came back). */
+    public static final long PAD_SIGN_QUIET_MS = 400;
+
+    /** BY1c: the PIN pad that left at {@code padLeftMs} was cancelled (see {@link #PAD_CANCEL_MS}); every time is uptime ms, 0 = never. */
+    public static boolean padCancelled(long nowMs, long padLeftMs, long lastPadSignMs, boolean padUpNow, boolean lockedNow, long userPresentMs) {
+        return padLeftMs > 0 && nowMs - padLeftMs >= PAD_CANCEL_MS && nowMs - lastPadSignMs >= PAD_SIGN_QUIET_MS && !padUpNow && lockedNow && userPresentMs < padLeftMs;
+    }
 }
