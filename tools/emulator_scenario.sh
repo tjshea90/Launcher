@@ -4344,7 +4344,7 @@ wfmark(){ adb shell settings get global tj_radio_icons_original | tr -d '\r\n'; 
 wfnet(){ adb shell dumpsys wifi 2>/dev/null | grep -m1 -oE 'mNetworkInfo[^]]*\]' | tr -d '\r' | cut -c1-120; }
 wfwhite(){ # wfwhite <png> <x> <y> <w> <h>: how many pure-white pixels are in that box of a screenshot (the status-bar icons are white); ImageMagick + python3, like the other pixel probes
   convert "$1" -crop "$4x$5+$2+$3" +repage rgb:- 2>/dev/null | python3 -c 'import sys; d=sys.stdin.buffer.read(); print(sum(1 for i in range(0,len(d)-2,3) if d[i]>235 and d[i+1]>235 and d[i+2]>235))' | tr -d '\r\n'; }
-WFHIDDEN="rotate,headset,wifi,bluetooth"
+WFHIDDEN="rotate,headset,wifi,bluetooth,vpn"
 adb shell settings delete secure icon_blacklist >/dev/null 2>&1; adb shell settings delete global tj_radio_icons_original >/dev/null 2>&1      # a KNOWN original: the setting is missing
 adb shell locksettings set-pin 1234 > "$OUT/wf-setpin.txt" 2>&1
 adb shell am force-stop "$PKG"; adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
