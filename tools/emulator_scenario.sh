@@ -4804,7 +4804,10 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   # BY1b: what SystemUI's panes said (window-state events: content-change type + text), in film seconds (the film starts about 0.4 s after flrec)
   info "FL $L panes: $(grep 'PATCHEV t=[0-9]* type=0x20 pkg=com.android.systemui' "$OUT/fl-log-$L.txt" 2>/dev/null | awk -v t0="${FL_T0:-0}" '{t=$2; sub("t=","",t); c="-"; x="-"; for(i=1;i<=NF;i++){ if($i ~ /^cct=/) c=$i; if($i ~ /^txt=/) x=$i }; printf "%.2f %s %s; ", (t - t0*1000 - 400)/1000, c, x}' | cut -c1-300)"
   # BY1c: the ORDER of the patch's own decisions in film seconds (which path hid / showed it when; a mid-menu Screenshot needs this, run #565 menuP2)
-  grep -v '^PATCHEV' "$OUT/fl-log-$L.txt" 2>/dev/null | grep -E ' t=[0-9]+' | awk -v t0="${FL_T0:-0}" '{ t=""; for(i=1;i<=NF;i++) if($i ~ /^t=[0-9]+/){ t=$i; sub("t=","",t); sub(/[^0-9].*$/,"",t) }; if (t=="") next; w=substr($2" "$3" "$4" "$5, 1, 38); printf "%.2f %s; ", (t - t0*1000 - 400)/1000, w }' | fold -w 290 | head -2 | while IFS= read -r ln; do info "FL $L seq:$ln"; done
+  # (#567: a seq shorter than one folded line has no newline and `read` dropped it: only the films with a LONG seq printed one; '|| [ -n "$ln" ]' keeps the last piece)
+  grep -v '^PATCHEV' "$OUT/fl-log-$L.txt" 2>/dev/null | grep -E ' t=[0-9]+' | sed "s/fast open: the dialog.s window event is /fast open age=/; s/ ms after the first window event of the burst/ ms in burst/" \
+    | awk -v t0="${FL_T0:-0}" '{ t=""; for(i=1;i<=NF;i++) if($i ~ /^t=[0-9]+/){ t=$i; sub("t=","",t); sub(/[^0-9].*$/,"",t) }; if (t=="") next; w=substr($2" "$3" "$4" "$5" "$6, 1, 40); printf "%.2f %s; ", (t - t0*1000 - 400)/1000, w } END { printf "\n" }' \
+    | fold -w 290 | head -3 | while IFS= read -r ln || [ -n "$ln" ]; do [ -n "${ln// /}" ] && info "FL $L seq:$ln"; done
   [ "$M" = flash ] && info "FL $L events (debug PATCHEV, count type pkg cls): $(grep -o 'PATCHEV t=[0-9]* type=0x[0-9a-f]* pkg=[^ ]* cls=[^ ]*' "$OUT/fl-log-$L.txt" 2>/dev/null | sed 's/t=[0-9]* //; s/com.android.systemui/SUI/; s/android.widget./w./' | sort | uniq -c | sort -rn | head -7 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
