@@ -4838,6 +4838,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   FL_CORE="$((FLX0+6)),$((FLCB+6)),$((FLX1-6)),$((FLY1-6))"
   FL_RING="$((FLX0-50)),$FLCB,$((FLX0-20)),$FLY1;$FLX0,$((FLY1+45)),$FLX1,$((FLY1+60))"
   FL_TOP="$((FLX0+10)),$((FLY0+10)),$((FLX1-10)),$((FLCB-10))"
+  FL_SHEET="$((FLX0-60)),$((FLY0-10)),$((FLX1+4)),$((FLY1+70))"   # contact sheet box (fl_analyze --sheet): the panel, the ring boxes and a margin
   info "FL geometry: panel [$FLX0,$FLY0][$FLX1,$FLY1] card bottom $FLCB; core $FL_CORE; ring $FL_RING; top $FL_TOP; animations before: ${FL_ANIM0:-?}"
   flanim 1
   rm -f "$OUT/fl-metrics.txt"
