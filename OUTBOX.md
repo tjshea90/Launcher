@@ -1755,3 +1755,14 @@
 ## 2026-11-12T20:52:02Z
 > The emulator run and the helper agent are both still working. I'll read the run as soon as its timer fires, around 20:52 UTC.
 <!-- sha:5cad91dda6ee -->
+
+## 2026-11-12T20:59:32Z
+> Both fixes are confirmed on the emulator, and run #566 turned up one more gap, which I've also fixed in code:
+>
+> - **Notification panel:** the flash went from 138 frames to 0, and a slow pull of the panel is clean too.
+> - **PIN pad:** opening the power menu right after dismissing the PIN pad no longer shows the Screenshot entry.
+> - **New gap:** an open quick-settings panel stays open through screen-off and wake, and the patch came back on top of it. It now keeps its state across screen-off and re-checks the panel while the screen is dark. This isn't on the emulator yet.
+> - **Still failing:** in one of the two menu-after-wake films, the stock dimming starts 3 frames before the patch dims. That fits Tj's "first lock screen" report; the next run logs the patch's own timing to find the cause.
+>
+> The performance fixes inside the lock-screen code (B1–B4, C2, D1) are written but not compiled yet: the helper agent is using the build tool for its batch, and only one build may run at a time. Once it reports, I'll review its changes, run the unit tests and lint, and start the next emulator run.
+<!-- sha:a0b1483e8e7b -->
