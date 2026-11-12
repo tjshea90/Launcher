@@ -1798,3 +1798,7 @@
 ## 2026-11-12T22:07:35Z
 > Hand-off notes updated with the run ids and the ship steps. Waiting for gate run `pt` (about 22:16 UTC), then the four long runs (about 22:35).
 <!-- sha:fbc2dae3b9d9 -->
+
+## 2026-11-12T22:16:09Z
+> Gate run `pt` is still going; checking again at 22:21 UTC.
+<!-- sha:9af43d8a8549 -->
