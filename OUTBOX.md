@@ -1802,3 +1802,7 @@
 ## 2026-11-12T22:16:09Z
 > Gate run `pt` is still going; checking again at 22:21 UTC.
 <!-- sha:9af43d8a8549 -->
+
+## 2026-11-12T22:22:38Z
+> Gate run `pt` is taking longer than expected (24 minutes against about 16). If it is still running at 22:30 UTC I'll cancel it; a cancelled run still prints its results block. The checkpoint already names every run id.
+<!-- sha:43dac212b140 -->
