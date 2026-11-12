@@ -85,5 +85,16 @@ public final class KeyboardPolicy {
         return pickStock(enabled);
     }
 
+    /**
+     * The status line (Launcher control, tablet report) when {@link #target} found nothing to switch to. BX1: for Quickstep it names Gboard AND the packages that ARE enabled, so the line alone shows why Gboard was
+     * not found (not installed, not turned on under Virtual keyboard > Manage keyboards, or another package) without anyone having to run adb.
+     */
+    public static String noTargetStatus(String mode, List<Ime> enabled) {
+        if (!Mode.QUICKSTEP.equals(mode)) return "no enabled stock keyboard found: left as is";
+        StringBuilder b = new StringBuilder();
+        if (enabled != null) for (Ime i : enabled) { if (b.length() > 0) b.append(", "); b.append(i.pkg); }
+        return "Gboard is not an enabled keyboard (enabled: " + (b.length() == 0 ? "none" : b.toString()) + "): left as is. Turn it on under Virtual keyboard > Manage keyboards.";
+    }
+
     private static boolean containsId(List<Ime> l, String id) { for (Ime i : l) if (id.equals(i.id)) return true; return false; }
 }
