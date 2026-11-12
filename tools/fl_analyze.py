@@ -87,7 +87,7 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
             if top_up[i] >= MENU_D:
                 first_menu = i
                 break
-    fa, fb, shot, menu, spans, worst = [], [], [], [], [], (0.0, -1)
+    fa, fb, shot, menu, spans, worst, raw = [], [], [], [], [], (0.0, -1), []
     for i in range(n):
         if first_menu is not None and i >= first_menu:
             if top_up[i] >= MENU_D:
