@@ -12,7 +12,7 @@ import android.util.Log;
 /**
  * BS1 + BS2 (Tj, 2026-11-10 23:27 UTC: "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher"; 23:55 UTC: "Make it
  * also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any time, show up
- * on the lock screen or in the custom launcher"). The Android side of the Wi-Fi and Bluetooth SYMBOL hold: {@code Settings.Secure icon_blacklist} gets the slots {@code wifi} and {@code bluetooth} added whenever
+ * on the lock screen or in the custom launcher"). The Android side of the Wi-Fi and Bluetooth SYMBOL hold: {@code Settings.Secure icon_blacklist} gets the slots {@code wifi}, {@code bluetooth} and {@code vpn} (the VPN key, BZ1) added whenever
  * {@link NotifQuietPolicy} says "quiet" (the custom launcher, a dark or locked screen in ANY launcher, a plain PIN still being decided) and is put back exactly as found for an unlocked Quickstep session. The
  * rules, with the proof from the AOSP 10 sources, are in {@link RadioIconHold}; THIS class reads the facts, adapts the two settings to its small interfaces and keeps the saved original. Needs
  * WRITE_SECURE_SETTINGS (the one-time adb grant the launcher already holds); without it nothing changes.
