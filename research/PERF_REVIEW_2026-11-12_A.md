@@ -69,8 +69,14 @@ Repeating either step buys nothing:
 - The description belongs to the activity instance (RecentsGuard.java:49-52).
 - New Launcher tasks are created already excluded (RouterActivity.java:77).
 - The other screens exclude their own tasks: ControlActivity.java:62-63, SetupActivity.java:108-109, HiddenAppsActivity.java:48, AdbGuideActivity.java:64.
+- Every activity of the app except the look-alike page already declares `excludeFromRecents` in the manifest (AndroidManifest.xml:201, :237, :252, :260, :273, :300, :308). The runtime call only repairs a task created before those flags existed ("W2", TjHooks.java:88).
 
 The first-time branch (RecentsGuard.java:56-71) also runs `targetPackage`, `getApplicationIcon` and a Canvas draw on the main thread, 300 ms after the first resume of a process.
+
+If no installed app matches the target label (`solitaire` by default, ReturnReset.java:25-26), that branch never fills its cache: RecentsGuard.java:59 returns before :68.
+- So EVERY resume posts the 300 ms runnable again.
+- The first one in each process runs the full label scan on the main thread. The stored answer is "" (ReturnReset.java:348), `isInstalled("")` fails (:328), and :333 scans on the calling thread (100+ ms per :313-315).
+- Whether the target app is installed on Tj's tablet is unverified; the tablet report does not say.
 
 **Change:**
 - Run both steps once per Launcher instance. Keep a WeakReference to the instance last handled in TjHooks. A recreated Launcher gets the description again, so the v0.3.2 bug named in the comment stays fixed.
