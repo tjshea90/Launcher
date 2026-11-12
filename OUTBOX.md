@@ -1806,3 +1806,7 @@
 ## 2026-11-12T22:22:38Z
 > Gate run `pt` is taking longer than expected (24 minutes against about 16). If it is still running at 22:30 UTC I'll cancel it; a cancelled run still prints its results block. The checkpoint already names every run id.
 <!-- sha:43dac212b140 -->
+
+## 2026-11-12T22:35:12Z
+> Waiting for the details of section `bt` and the hung `pt` run before choosing which sections to rerun alone.
+<!-- sha:d6cafec47b40 -->
