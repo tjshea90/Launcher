@@ -10,7 +10,7 @@
 # Fully removing it:  adb uninstall com.tj.launcher   (or Settings > Apps). Safe mode (hold power-off, long-press) also disables it.
 set -u
 PKG=com.tj.launcher
-IME_DEFAULT="${IME_DEFAULT:-com.touchtype.swiftkey/com.touchtype.KeyboardService}"   # Microsoft SwiftKey (Tj's usual); set "" to leave the keyboard alone
+IME_DEFAULT="${IME_DEFAULT:-com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME}"   # Gboard (Tj's usual since 2026-11-12, SwiftKey before); set "" to leave the keyboard alone
 TILES_DEFAULT="${TILES_DEFAULT:-rotation}"                                            # Tj's current quick settings: only Auto-rotate; set "" to leave alone
 adb get-state >/dev/null 2>&1 || { echo "No device. Plug the tablet in with USB debugging enabled."; exit 1; }
 adb shell pm disable-user --user 0 "$PKG" && echo "OK  launcher disabled -> stock launcher is Home again"
