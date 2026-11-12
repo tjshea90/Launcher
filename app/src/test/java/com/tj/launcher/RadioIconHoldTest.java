@@ -11,7 +11,7 @@ import java.util.List;
 import org.junit.Test;
 
 /**
- * BS1 + BS2: the Wi-Fi / Bluetooth symbol hold ({@link RadioIconHold}) over in-memory stores. Wrong, these cases hide the wrong icons on Tj's tablet for good, leave his symbols hidden in Quickstep, or overwrite a
+ * BS1 + BS2 + BZ1: the Wi-Fi / Bluetooth / VPN symbol hold ({@link RadioIconHold}) over in-memory stores. Wrong, these cases hide the wrong icons on Tj's tablet for good, leave his symbols hidden in Quickstep, or overwrite a
  * list he edited: each rule of the class comment is one test. {@code events} records the ORDER of disk and settings writes (the original must be on disk before the first change).
  */
 public class RadioIconHoldTest {
