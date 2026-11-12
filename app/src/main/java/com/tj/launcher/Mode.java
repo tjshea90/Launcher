@@ -15,16 +15,20 @@ public final class Mode {
 
     private Mode() {}
 
-    public static long lastHomePressMs(Context c) { return prefs(c).getLong("lastHome", 0); }
+    // BY1a A3: the last two Home presses live in memory, not in tj_mode.xml (that write, with its fsync at the router's stop, ran on the main thread at EVERY Home press).
+    // Only the router reads them, and a double Home (0.9 s) or the L10 triple press (0.8 s apart) happens inside one process. The old stored keys "lastHome" / "lastHome2" are no longer read.
+    private static volatile long lastHome = 0, lastHome2 = 0;
 
-    /** apply(): called on every Home press, must stay cheap. */
-    public static void recordHomePress(Context c, long now) {
-        SharedPreferences p = prefs(c);
-        p.edit().putLong("lastHome2", p.getLong("lastHome", 0)).putLong("lastHome", now).apply();
+    public static long lastHomePressMs(Context c) { return lastHome; }
+
+    /** Called on every Home press, must stay cheap: memory only (BY1a A3). */
+    public static synchronized void recordHomePress(Context c, long now) {
+        lastHome2 = lastHome;
+        lastHome = now;
     }
 
     /** The Home press before the last one (the L10 failsafe needs three in a row). */
-    public static long homePressBeforeLastMs(Context c) { return prefs(c).getLong("lastHome2", 0); }
+    public static long homePressBeforeLastMs(Context c) { return lastHome2; }
 
     /** AI1: when the current / last Quickstep session began and ended (ms; 0 = unknown, e.g. a session that began before this version). */
     public static long qsStartAt(Context c) { return prefs(c).getLong("qsStartAt", 0); }
