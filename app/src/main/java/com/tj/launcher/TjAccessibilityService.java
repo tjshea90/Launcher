@@ -345,6 +345,14 @@ public class TjAccessibilityService extends AccessibilityService {
     }
     private View patchView;
     private android.graphics.Bitmap wallpaperBmp;
+    private boolean wallpaperFromDrawable = false;   // BY1a D1: WallpaperManager.getDrawable() ran: the platform keeps that bitmap in a process-wide cache until forgetLoadedWallpaper
+
+    /** BY1a D1: drop our full-size wallpaper AND the platform's static copy of it (WallpaperManager.Globals keeps the bitmap until forgetLoadedWallpaper(); 1200 x 1024 x 4 = 4.9 MB, about 7 % of the tablet's PSS). The next model use decodes it again. */
+    private void dropWallpaper() {
+        boolean cached = wallpaperFromDrawable;
+        wallpaperBmp = null; wallpaperFromDrawable = false;
+        if (cached) { try { android.app.WallpaperManager.getInstance(this).forgetLoadedWallpaper(); } catch (Throwable ignored) { } }
+    }
     /** V1: the LOCK-screen wallpaper (may differ from the home wallpaper), only held while the lock screen is up. */
     private android.graphics.Bitmap lockBmp;
     private boolean patchLockMode, targetIsLock;
@@ -572,7 +580,7 @@ public class TjAccessibilityService extends AccessibilityService {
         }
     };
     private final android.content.BroadcastReceiver wallpaperReceiver = new android.content.BroadcastReceiver() {
-        @Override public void onReceive(android.content.Context c, android.content.Intent i) { wallpaperBmp = null; lockBmp = null; lockCalSig = ""; lockShot = null; lockShotFresh = false; homeWallId = -1; homeWallBmp = null; homeBuiltAtMs = 0; handler.post(new Runnable() { @Override public void run() { removeOverlay(); removePatch(); refreshLayers(); } }); }
+        @Override public void onReceive(android.content.Context c, android.content.Intent i) { dropWallpaper(); lockBmp = null; lockCalSig = ""; lockShot = null; lockShotFresh = false; homeWallId = -1; homeWallBmp = null; homeBuiltAtMs = 0; handler.post(new Runnable() { @Override public void run() { removeOverlay(); removePatch(); refreshLayers(); } }); }
     };
 
     /**
@@ -1405,6 +1413,7 @@ public class TjAccessibilityService extends AccessibilityService {
         }
         try {
             android.graphics.drawable.Drawable d = android.app.WallpaperManager.getInstance(this).getDrawable();
+            if (d != null) wallpaperFromDrawable = true;   // BY1a D1
             if (d instanceof android.graphics.drawable.BitmapDrawable) wallpaperBmp = ((android.graphics.drawable.BitmapDrawable) d).getBitmap();
             else if (d != null && d.getIntrinsicWidth() > 0) {
                 android.graphics.Bitmap b = android.graphics.Bitmap.createBitmap(d.getIntrinsicWidth(), d.getIntrinsicHeight(), android.graphics.Bitmap.Config.ARGB_8888);
@@ -1422,7 +1431,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (want == null) {
                 if (homeNeedsCal) { handler.removeCallbacks(homeCalTrigger); handler.postDelayed(homeCalTrigger, HomePatchRules.CAL_DRAW_QUIET_MS + 600); }   // BI1: the home patch has no wallpaper crop for this position yet: calibrate when everything is quiet
                 if (patchView != null) { removeOverlay(); removePatch(); }
-                if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) wallpaperBmp = null;
+                if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) dropWallpaper();   // BY1a D1: and the platform's copy
                 if (!keyguardLocked()) lockBmp = null;   // V1: not needed off the lock screen (memory)
                 if (Features.isCover(Features.powerMode(this)) && coverWorld()) warmUp();   // plain cover mode keeps its pre-built card
                 return;
@@ -3511,7 +3520,7 @@ public class TjAccessibilityService extends AccessibilityService {
             handler.post(new Runnable() { @Override public void run() {
                 launchableCache.clear();
                 HomeCurtain.dropCache();   // BL1: the in-memory curtain (about 2.4 MB) goes under real pressure; it is read back from its file the next time it is needed (a cover that shows it keeps its own reference)
-                if (patchView == null) { wallpaperBmp = null; lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }
+                if (patchView == null) { dropWallpaper(); lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }
             } });
         } catch (Throwable ignored) { }
     }
