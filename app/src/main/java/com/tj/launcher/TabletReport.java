@@ -87,7 +87,7 @@ public final class TabletReport {
                 b.append(f.name).append('\n');
         }
         b.append("\n===== the system apps this project depends on\n");
-        for (String p : new String[] { "com.android.settings", "com.android.systemui", "com.android.launcher3", "android", "com.android.browser", "com.android.inputmethod.latin", "com.touchtype.swiftkey", c.getPackageName() }) pkg(b, pm, p);
+        for (String p : new String[] { "com.android.settings", "com.android.systemui", "com.android.launcher3", "android", "com.android.browser", "com.android.inputmethod.latin", "com.google.android.inputmethod.latin", "com.touchtype.swiftkey", c.getPackageName() }) pkg(b, pm, p);
         b.append("\n===== which Settings pages answer the public 'android.settings.*' actions (the front-door targets)\n");
         for (String a : new String[] { "SETTINGS", "WIFI_SETTINGS", "BLUETOOTH_SETTINGS", "DISPLAY_SETTINGS", "SOUND_SETTINGS", "APPLICATION_SETTINGS", "MANAGE_ALL_APPLICATIONS_SETTINGS", "INTERNAL_STORAGE_SETTINGS", "BATTERY_SAVER_SETTINGS", "DATE_SETTINGS", "LOCALE_SETTINGS", "ACCESSIBILITY_SETTINGS", "SECURITY_SETTINGS", "PRIVACY_SETTINGS", "DEVICE_INFO_SETTINGS", "INPUT_METHOD_SETTINGS", "NOTIFICATION_SETTINGS", "ZEN_MODE_SETTINGS", "WIRELESS_SETTINGS", "AIRPLANE_MODE_SETTINGS", "NFC_SETTINGS", "ADD_ACCOUNT_SETTINGS", "SYNC_SETTINGS", "USER_SETTINGS", "HOME_SETTINGS", "VOICE_INPUT_SETTINGS", "CAPTIONING_SETTINGS", "HARD_KEYBOARD_SETTINGS", "MEMORY_CARD_SETTINGS" }) {
             List<ResolveInfo> ris = pm.queryIntentActivities(new Intent("android.settings." + a), 0);
