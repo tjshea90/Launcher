@@ -1,13 +1,13 @@
-# CHECKPOINT 1224 — read me first, then TASKS.md
+# CHECKPOINT 1225 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T20:49:13Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `0e9b1ae0` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T20:51:55Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `d08880bc` (this checkpoint is the commit after it)
 
 ## Just done
-BY1a D1 coded (NOT compiled yet): dropWallpaper() = our wallpaperBmp + WallpaperManager.forgetLoadedWallpaper() when getDrawable ran (the 3 drop sites: wallpaper change, refreshLayers off-patch, TRIM)
+BY1b: flend prints 'FL <film> seq:' = the patch's PATCH decisions in film seconds (for the menuP2 mid-menu Screenshot of #565); gate.sh v0.9.7 now = 3 runs (base,x1,e1,b6,v,ae,ps,fp,rb,fl / n,o,ac,ad,pa,an,hp,bt,last / pt), redo after the subagent's files land
 
 ## Do this next
-after subagent: compile + unit + lint; read #566. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+read #566 (id 43302204570) at 20:52Z; then subagent report -> diff review -> :app:testDebugUnitTest + lint. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ after subagent: compile + unit + lint; read #566. Heartbeat trig_01JYEUXs7JosHyg
 
 ## Last ten checkpoints
 ```
+  e2e2f237 ckpt 1224: BY1a D1 coded (NOT compiled yet): dropWallpaper() = our wallpaperBmp + Wallp
   866f0343 ckpt 1223: BY1a perf in TAS (NOT yet compiled; subagent owns Gradle): B1 EventNoise.may
   599db918 ckpt 1222: BY1a: perf-fix SUBAGENT launched 20:41Z (A4 RecentsPolicy early return, A3 h
   ebac9824 ckpt 1221: BY1c: run #566 id 43302204570 (fl, shots=true) dispatched 20:37:49Z on 6973c
@@ -25,8 +26,7 @@ after subagent: compile + unit + lint; read #566. Heartbeat trig_01JYEUXs7JosHyg
   7162ba3c ckpt 1217: BY1c F3: app compiles; PatchRestTest 39/39 green (5 new padCancelled). resea
   a9d7948b ckpt 1216: BY1c F3 coded: PatchRest.padCancelled (PAD_CANCEL_MS 700, PAD_SIGN_QUIET_MS 
   7d0f360c ckpt 1215: BY1b: probe run #565 id 43298041314 (fl, shots) dispatched 20:12Z on ef78ded
-  ef78dede ckpt 1214: BY1b: LOOKED at #564 sheets: shade = patch block over the open white QS pane
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(4 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
