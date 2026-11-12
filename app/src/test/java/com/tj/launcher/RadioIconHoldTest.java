@@ -325,7 +325,7 @@ public class RadioIconHoldTest {
         assertTrue(set(st, s, false, false));
         assertTrue(st.held);
         assertEquals("nfc", st.original);
-        assertEquals("nfc,wifi,bluetooth", s.value);
+        assertEquals("nfc,wifi,bluetooth,vpn", s.value);
         assertTrue(events.isEmpty());
     }
 
@@ -335,7 +335,7 @@ public class RadioIconHoldTest {
         s.failNextPut = true;
         assertTrue(set(st, s, true, false));
         assertTrue(st.held);
-        assertEquals("nfc,wifi,bluetooth", s.value);
+        assertEquals("nfc,wifi,bluetooth,vpn", s.value);
         assertFalse(set(st, s, true, false));   // the next trigger succeeds
         assertEquals("nfc", s.value);
         assertFalse(st.held);
