@@ -1,13 +1,13 @@
-# CHECKPOINT 1246 — read me first, then TASKS.md
+# CHECKPOINT 1247 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T22:05:31Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `ad7bdcee` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T22:07:10Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `8be69463` (this checkpoint is the commit after it)
 
 ## Just done
-gate #574 id 43315248372 (rg) GREEN (success, 21:57-22:01Z)
+HANDOFF 0v written (v0.9.8 gate state, run ids, ship steps)
 
 ## Do this next
-pt #573 id 43315242706 ~22:15Z; r1-r4 #569-#572 ~22:35Z; HANDOFF block meanwhile. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+pt #573 id 43315242706 ~22:16Z; r1-r4 #569-#572 ~22:35Z. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ pt #573 id 43315242706 ~22:15Z; r1-r4 #569-#572 ~22:35Z; HANDOFF block meanwhile
 
 ## Last ten checkpoints
 ```
+  cb9db1ab ckpt 1246: gate #574 id 43315248372 (rg) GREEN (success, 21:57-22:01Z)
   34ec2ea2 ckpt 1245: Tj answer drafted: research/V098_RELEASE_MESSAGE_DRAFT_2026-11-12.md (facts 
   cb28da0c ckpt 1244: GATE dispatched 21:57Z on 72f529a1 (branch): #569 id 43315221820 r1 b6..fl; 
   72f529a1 ckpt 1243: review fixes: suite 1036/0, lint OK; self-review of the delta OK (no showWhe
@@ -25,7 +26,6 @@ pt #573 id 43315242706 ~22:15Z; r1-r4 #569-#572 ~22:35Z; HANDOFF block meanwhile
   d05deb09 ckpt 1239: PERF_REVIEW status section written (fixes done + review verdicts). gate.sh v
   95dd29c0 ckpt 1238: suite+lint on 6381a278: 1035 tests 0 fail, lint OK. fl run #568 id 433109285
   13d4e526 ckpt 1237: dispatched emulator fl (shots) on main 6381a278 at 21:30Z to time menuW1 (fa
-  6381a278 ckpt 1236: BY1b seq fix: short seq lines were dropped by read (no newline; #567 menuW1 
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
