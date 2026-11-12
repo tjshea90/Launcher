@@ -1747,3 +1747,7 @@
 ## 2026-11-12T20:22:09Z
 > The unit tests are green and checkpointed. Run #565 should finish in about 3 minutes; I'll read its notification-panel announcements as soon as the timer fires.
 <!-- sha:8a0e7c3c2b90 -->
+
+## 2026-11-12T20:22:52Z
+> Reviewer D (memory) is done. It found no leaks and no unbounded growth; the main item is a 4.9 MB copy of the wallpaper kept in memory needlessly (about 7 % of the launcher's memory). Now reading probe run #565.
+<!-- sha:37aa77d188c2 -->
