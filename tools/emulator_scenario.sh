@@ -4363,7 +4363,7 @@ setmode custom; rebind; home; sleep 8
 adb shell svc wifi disable; sleep 3; adb shell svc wifi enable; sleep 8        # something turns Wi-Fi on in the custom launcher
 WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
 info "WF B (custom launcher): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW net=$(wfnet)"
-check "WF2: in the custom launcher the list hides Wi-Fi and Bluetooth and keeps the system default entries (rotate,headset)" test "$WFL" = "$WFHIDDEN"
+check "WF2: in the custom launcher the list hides Wi-Fi, Bluetooth and the VPN key and keeps the system default entries (rotate,headset)" test "$WFL" = "$WFHIDDEN"
 check "WF2b: the original (the setting was missing) is saved outside the app's files, in Settings.Global" test "$WFM" = n
 check "WF3: Wi-Fi is ON in the custom launcher although its radio guard is on" test "$WFW" = 1
 shot wf-2-custom; WFPC="$(wfwhite "$OUT/wf-2-custom.png" 543 3 20 17)"
