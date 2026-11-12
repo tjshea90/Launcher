@@ -66,7 +66,7 @@ public final class RadioIconHide {
         @Override public boolean held() { return Settings.Global.getString(cr, MARKER) != null; }
         @Override public String original() { return RadioIconHold.decodeMarker(Settings.Global.getString(cr, MARKER)); }
         @Override public void save(boolean held, String original) {
-            if (!Settings.Global.putString(cr, MARKER, held ? RadioIconHold.encodeMarker(original) : null)) throw new IllegalStateException("could not save the Wi-Fi / Bluetooth symbol state");
+            if (!Settings.Global.putString(cr, MARKER, held ? RadioIconHold.encodeMarker(original) : null)) throw new IllegalStateException("could not save the Wi-Fi / Bluetooth / VPN symbol state");
         }
     }
 
