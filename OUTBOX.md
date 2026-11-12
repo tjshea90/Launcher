@@ -1766,3 +1766,7 @@
 >
 > The performance fixes inside the lock-screen code (B1–B4, C2, D1) are written but not compiled yet: the helper agent is using the build tool for its batch, and only one build may run at a time. Once it reports, I'll review its changes, run the unit tests and lint, and start the next emulator run.
 <!-- sha:a0b1483e8e7b -->
+
+## 2026-11-12T21:07:22Z
+> Waiting for run #567 (due about 21:16 UTC) and the two reviewers.
+<!-- sha:92ac60a7c242 -->
