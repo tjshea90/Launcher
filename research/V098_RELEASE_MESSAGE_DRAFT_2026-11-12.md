@@ -18,8 +18,8 @@ Answers BY1 (Tj 17:26 UTC: flicker of the Screenshot cover + full speed / batter
 **Speed, battery, memory** (full review, nothing removed or slowed)
 - The biggest cause of lag: on many screen events the launcher searched the contents of other apps' windows and SystemUI's whole screen. It now
   skips every window that cannot hold the power menu or the panel.
-- Fewer system calls while nothing of the launcher is on screen, no disk write at every Home press, the Recents app-name list built in the
-  background, a 5 MB copy of the wallpaper released after use.
+- Fewer system calls on every screen event while the tablet is unlocked, no disk write at every Home press, the Recents app-name list built in
+  the background, a 5 MB copy of the wallpaper released after use.
 
 **VPN key**: hidden by the same rule as the Wi-Fi and Bluetooth symbols: hidden on every lock screen and in the custom launcher, shown only in
 unlocked Quickstep. The VPN itself is never switched on or off. Launcher control's switch now reads "Keep Wi-Fi and Bluetooth on, hide their
