@@ -174,9 +174,20 @@ final class RecentsFilter {
                 schedule(LOOK_DELAYS_MS[looks++]);        // the cards of a freshly opened Recents screen can arrive late (a busy tablet / emulator): a few more looks over about 4 s, then stop
             }
         } catch (Throwable t) { Log.e(TAG, "recents guard run failed", t); }
-    } };
+    }
 
-    /** The labels (app label and every launcher-activity label) of the apps that are NOT in the custom drawer, never a drawer app's own label. Cheap enough to be refreshed once a minute. */
+    /** BY1a C1: the one thread that builds the label set (a PackageManager query and labels for every app); it ends when idle. */
+    private static final class Labels {
+        static final java.util.concurrent.ThreadPoolExecutor EX = make();
+        private static java.util.concurrent.ThreadPoolExecutor make() {
+            java.util.concurrent.ThreadPoolExecutor e = new java.util.concurrent.ThreadPoolExecutor(1, 1, 10, java.util.concurrent.TimeUnit.SECONDS, new java.util.concurrent.LinkedBlockingQueue<Runnable>(),
+                    new java.util.concurrent.ThreadFactory() { @Override public Thread newThread(Runnable r) { Thread t = new Thread(r, "tj-recents-labels"); t.setDaemon(true); return t; } });
+            e.allowCoreThreadTimeOut(true);
+            return e;
+        }
+    }
+
+    /** The labels (app label and every launcher-activity label) of the apps that are NOT in the custom drawer, never a drawer app's own label. Built on the worker (BY1a C1), at most once a minute. */
     static Set<String> blockedNow(Context c) {
         Set<String> hidden = new HashSet<>(), drawer = new HashSet<>();
         try {
