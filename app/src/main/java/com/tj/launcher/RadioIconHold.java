@@ -8,12 +8,12 @@ import java.util.List;
  * also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any time, show up
  * on the lock screen or in the custom launcher"). The pure rules (JVM-tested, no Android classes) of the Wi-Fi and Bluetooth SYMBOL hold; {@link RadioIconHide} is the Android side and
  * {@link NotifQuietPolicy#why} decides WHEN (the same world as the pop-up banners: the custom launcher, a dark or locked screen in any launcher, a plain PIN still being decided; an unlocked, decided Quickstep
- * session shows the symbols as usual).
+ * session shows the symbols as usual). BZ1 (Tj, 2026-11-12): the same hold, by the same rule, hides the VPN key too ({@link #SLOT_VPN}); nothing here switches a VPN on or off.
  *
  * HOW (verified in the AOSP 10 sources, research/RADIO_ICONS_HIDE_2026-11-10.md): the secure setting {@link #SETTING} is a comma-separated list of status-bar slot names that SystemUI hides; one shared icon
  * controller feeds the status bar, the LOCK SCREEN's status bar and the notification panel's header, and a change is live. A MISSING setting means "rotate,headset" in SystemUI's code, so the value we write is
- * the original list (or that default) PLUS the slots {@link #SLOTS}, never just "wifi,bluetooth". The Wi-Fi slot goes through SystemUI's signal policy (hidden = not shown), the Bluetooth one through the generic
- * icon view (a blocked slot's view stays GONE however often the icon is updated).
+ * the original list (or that default) PLUS the slots {@link #SLOTS}, never just "wifi,bluetooth,vpn". The Wi-Fi slot goes through SystemUI's signal policy (hidden = not shown), the Bluetooth one and the VPN
+ * key (StatusBarSignalPolicy.updateVpn) through the generic icon view (a blocked slot's view stays GONE however often the icon is updated).
  *
  * The hold bookkeeping is {@link NotifQuietHold}'s, for a list instead of a zero: the original goes to disk BEFORE the first write (a missing setting is a real original: {@code null}); a list that already hides
  * every slot of ours (Tj's own, or ours still there) is left alone and nothing is held; a hold that is already on keeps its ORIGINAL and only re-adds what is missing; ending the hold puts the exact original back
