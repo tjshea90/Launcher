@@ -10,8 +10,8 @@ Answers BY1 (Tj 17:26 UTC: flicker of the Screenshot cover + full speed / batter
   entry for a few frames. Now the cover is back 0.7 s after the pad went away.
 - The first lock screen after waking: the launcher was busy searching the screen's contents at exactly that moment (your last tablet report: up
   to 1.3 s blocked at a time). Those searches are cut now (see below). On the emulator the launcher now reacts to the opening power menu within
-  2-3 ms; a lag of 2-4 frames (33-67 ms) at the very start of the fade remains on the FIRST menu after a wake, and it comes from how the stock menu
-  announces itself, not from the launcher.
+  2-3 ms; a lag of 2-4 frames (33-67 ms) at the very start of the fade remains on the FIRST menu after a wake. As far as the emulator shows, that
+  is the stock menu announcing itself late (the launcher reacts 2-3 ms after the announcement), not a busy launcher.
 - How it was tested: a new emulator test films the screen frame by frame (the first lock screen after waking, the panel pulled down slowly and
   fast, the PIN pad, taps, and the power menu after each of them) and measures the cover in every frame.
 
