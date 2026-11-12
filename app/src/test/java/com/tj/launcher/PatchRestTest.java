@@ -214,4 +214,30 @@ public class PatchRestTest {
                         assertTrue(at >= touch);
                     }
     }
+
+    // BY1c / F3: a PIN pad that left while the screen stays locked, with no USER_PRESENT and no new pad sign, was cancelled
+    @Test public void padCancelledAfterTheWaitWhenStillLockedAndNoUnlock() {
+        assertTrue(PatchRest.padCancelled(1700, 1000, 900, false, true, 0));
+        assertTrue(PatchRest.padCancelled(5000, 1000, 1200, false, true, 999));
+    }
+
+    @Test public void padNotCancelledTooEarly() {
+        assertFalse(PatchRest.padCancelled(1000 + PatchRest.PAD_CANCEL_MS - 1, 1000, 0, false, true, 0));
+        assertTrue(PatchRest.padCancelled(1000 + PatchRest.PAD_CANCEL_MS, 1000, 0, false, true, 0));
+    }
+
+    @Test public void anUnlockIsNeverACancel() {
+        assertFalse(PatchRest.padCancelled(1700, 1000, 900, false, true, 1270));   // USER_PRESENT after the pad left
+        assertFalse(PatchRest.padCancelled(1700, 1000, 900, false, false, 0));     // the keyguard is gone
+    }
+
+    @Test public void aPadThatIsUpOrStillSignallingIsNotCancelled() {
+        assertFalse(PatchRest.padCancelled(1700, 1000, 900, true, true, 0));                              // a fresh look found the pad
+        assertFalse(PatchRest.padCancelled(1700, 1000, 1700 - PatchRest.PAD_SIGN_QUIET_MS + 1, false, true, 0));   // a sign too recent
+        assertTrue(PatchRest.padCancelled(1700, 1000, 1700 - PatchRest.PAD_SIGN_QUIET_MS, false, true, 0));
+    }
+
+    @Test public void noDepartureNoCancel() {
+        assertFalse(PatchRest.padCancelled(99_000, 0, 0, false, true, 0));
+    }
 }
