@@ -182,7 +182,7 @@ public final class RadioIconHold {
                 s.put(with(cur));
                 return true;
             } catch (RuntimeException e) {
-                log.log("could not hide the Wi-Fi / Bluetooth symbols: " + e);
+                log.log("could not hide the Wi-Fi / Bluetooth / VPN symbols: " + e);
                 if (!held) { try { st.save(false, null); } catch (RuntimeException ignored) { } }
                 return held;
             }
