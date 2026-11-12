@@ -85,7 +85,10 @@ If no installed app matches the target label (`solitaire` by default, ReturnRese
 
 **Risk:** if something outside the app cleared a task's exclude flag between two resumes, it would not be set again. Nothing in the app clears it; the system side is unverified.
 
-**Verify:** emulator sections `legacy` (Recents flags, the HOME-type stack) and `hp` (it covers `onLauncherResumed`). In the next tablet report, check the UNLOCKSUM gap "Launcher resumed ... first frame".
+**Verify:**
+- Emulator sections `legacy` (Recents flags, the HOME-type stack) and `hp` (it covers `onLauncherResumed`).
+- In logcat, the "target app for ..." line (ReturnReset.java:349) comes from thread tj-target-scan, never from main.
+- In the next tablet report, check the UNLOCKSUM gap "Launcher resumed ... first frame".
 
 ## A3 MEDIUM: a synchronous preference write on the main thread at every Home press
 **Where:** RouterActivity.java:57-58 calls `Mode.recordHomePress`, which writes with `apply()` (Mode.java:21-24). The router finishes inside onCreate (RouterActivity.java:42-43) and is `noHistory` / `NoDisplay` (AndroidManifest.xml:232-247).
