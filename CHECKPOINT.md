@@ -1,13 +1,13 @@
-# CHECKPOINT 1259 — read me first, then TASKS.md
+# CHECKPOINT 1260 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T23:21:22Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `8e1f4930` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T23:23:09Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `d5017a2c` (this checkpoint is the commit after it)
 
 ## Just done
-SS7 diag INFO added (dump size, packages, texts when no Settings entry); dry-run OK
+dispatched 23:21Z se,ss on ref main + on branch (head d5017a2c, product == 17e10ad2)
 
 ## Do this next
-dispatch se,ss on ref main AND on the branch (two head samples side by side); ~23:40Z read both. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+~23:36Z read both runs (list_workflow_runs branch main / branch ccr-91599ec3-za40s7, perPage 1 -> jobs -> logs tail 60 + header); 2 green -> flaky, ship v0.9.8; red -> read the SE-C2 / SS7 diag INFO. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch se,ss on ref main AND on the branch (two head samples side by side); ~2
 
 ## Last ten checkpoints
 ```
+  d5017a2c ckpt 1259: SS7 diag INFO added (dump size, packages, texts when no Settings entry); dry
   1e7cce30 ckpt 1258: #580 tag v0.9.7 se,ss GREEN; #581 id 43325521656 head se GREEN (SE-C2 interm
   a2a371a0 ckpt 1257: SE-C2 diag INFO added to the scenario (mode, kg, battery, tj_crash, power br
   72b67893 ckpt 1256: tag run #580 id 43325361700 (se,ss on v0.9.7) started 23:02Z; head se rerun 
@@ -25,8 +26,4 @@ dispatch se,ss on ref main AND on the branch (two head samples side by side); ~2
   17e10ad2 ckpt 1252: BT1c scale guard added (bttol: fit 0.78-0.82 -> 2 levels, else 12 + INFO; of
   970ab845 ckpt 1251: triage: bt = ENVIRONMENT (core_mean +7.17 in ctl AND all gaps = the known ps
   207b3e84 ckpt 1250: GATE RAW: #569 109P/6F all bt (BT1c-ctl, g04-never, g12-never, g12, g4-never
-  b51fe2b4 ckpt 1249: gate: #569-#572 COMPLETED (verdicts being read by a haiku subagent); #573 pt
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
