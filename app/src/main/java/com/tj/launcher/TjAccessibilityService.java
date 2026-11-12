@@ -3558,7 +3558,6 @@ public class TjAccessibilityService extends AccessibilityService {
             if (dying) Log.i(TAG, "PATCH scan ignored: the stock dialog is still fading out (closed " + (android.os.SystemClock.uptimeMillis() - menuClosedAtMs) + " ms ago)");
             final boolean dialogUp = listed && !dying;
             dialogUpNow = dialogUp;
-            final boolean everyWindow = android.os.SystemClock.uptimeMillis() < fullScanUntilMs;
             if (menuSeenMs == 0 && dialogUp) menuSeenMs = android.os.SystemClock.uptimeMillis();
             if (dialogUp) menuUpAtMs = android.os.SystemClock.uptimeMillis();   // AN1: a menu is up: its content changes are followed
             if (dialogUp && overlayShown && fading && android.os.SystemClock.uptimeMillis() < scanNotBeforeMs) {   // AZ1: the stock menu is still fading in and the patch follows it: no node scan now (it would block the redraws); a closed menu (dialogUp false) is handled at once
