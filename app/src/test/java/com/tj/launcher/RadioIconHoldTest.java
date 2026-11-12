@@ -353,9 +353,27 @@ public class RadioIconHoldTest {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting(null);
         for (int i = 0; i < 3; i++) {
             assertTrue(set(st, s, true, true));
-            assertEquals("rotate,headset,wifi,bluetooth", s.value);
+            assertEquals("rotate,headset,wifi,bluetooth,vpn", s.value);
             assertFalse(set(st, s, true, false));
             assertNull(s.value);
         }
+    }
+
+    /**
+     * BZ1 (Tj, 2026-11-12: "Hide this key icon everywhere except for quickstep ... just like it already hides wifi and Bluetooth"): the VPN key is one more slot of the SAME hold, hidden and released with
+     * the Wi-Fi and Bluetooth symbols; a list that hides only those two is not "everything hidden" any more.
+     */
+    @Test public void theVpnKeyIsHiddenAndReleasedWithTheOthers() {
+        assertEquals("vpn", RadioIconHold.SLOT_VPN);
+        assertEquals(Arrays.asList("vpn"), RadioIconHold.missing("wifi,bluetooth"));
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting(null);
+        assertTrue(set(st, s, true, true));
+        assertEquals("rotate,headset,wifi,bluetooth,vpn", s.value);
+        assertTrue(RadioIconHold.hides(s.value, RadioIconHold.SLOT_VPN));
+        assertNull(st.original);
+        assertFalse(set(st, s, true, false));
+        assertNull(s.value);   // the missing setting is missing again: the VPN key shows as Android has it
+        assertFalse(st.held);
+        assertEquals("[save(true,null), put(rotate,headset,wifi,bluetooth,vpn), put(null), save(false,null)]", events.toString());
     }
 }
