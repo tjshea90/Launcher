@@ -1834,6 +1834,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // BE2 (Tj: "at no time ... an app that is hidden from the app drawer inside the recent apps"): while locked, in the custom launcher, every task of a non-drawer app is removed by id (helper running, invisible)
             if (locked && !paused && !cleanedNow && !armed && Mode.isCustom(app)) RecentsSweep.requestAsync(app, "lock", RecentsSweep.HIDDEN_ONLY, null, 4000);
             if (locked && !paused && ReturnReset.cleanStart(app) && (!Mode.isCustom(app) || ReturnReset.bootCleanPending(app))) AppOrigin.refreshUsedCacheAsync(app);   // BE3: what the unlock needs to know about Recents is read now, not on the unlock path
+            if (locked) noteShade(shadeLevel(), "look at " + why);   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
             if (locked) { try { refreshLayers(); } catch (Throwable t) { Log.e(TAG, "patch pre-creation failed", t); } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst
             if (ProfileSession.prearmCustomStackOnLockedWake(ProfileSession.prearm(app), locked, armed, preArmedThisLock, paused)) prearmCustom(why);
         } catch (Throwable t) { Log.e(TAG, "lock prepare failed", t); }
@@ -2861,7 +2862,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 lockShotFresh = false;     // a new lock session: photograph the lock screen again after the next wake (notifications may have changed)
                 qsAppAt = ResumeTarget.refreshedAt(qsApp, fgPkg, qsAppAt, t);   // review RV2: the app still in front when the screen goes off is the one Tj had open: its 6 h clock starts now
-                resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; lockShadeOpen = false; lockShadeClosedMs = 0; flurryChange(false, t); updateMotion();
+                resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; flurryChange(false, t); updateMotion();   // (BY1c F1: the panel's state is KEPT: an open quick-settings panel survives the screen-off, run #566 picture fl-shadeoff-wake; lockPrepare looks again while dark)
                 try { patchShow(overlayShown); } catch (Throwable ignored) { }   // v0.7.6 (review of v0.7.5): lastBouncer is reset here, so a resting patch that was hidden for the PIN pad must come back now; the next wake sees bouncer == lastBouncer and would never re-show it
                 handler.removeCallbacks(lockPrepareLater);
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark

@@ -23,12 +23,15 @@ final class RecentsFilter {
     private static final String TAG = "TjRecentsFilter";
     static final String KEY = "recents_drawer_only";        // switch, default ON
     static final String STATUS_KEY = "recents_guard_status"; // what the guard did last (Launcher control and the tablet report)
-    private static final long LABELS_TTL_MS = 60_000;
+    static final long LABELS_TTL_MS = 60_000;
 
     private final TjAccessibilityService svc;
     private final android.os.Handler handler;
-    private Set<String> blocked = new HashSet<>();
-    private long blockedAt = -LABELS_TTL_MS;
+    // BY1a C1: the label set is built on a background thread (it was built on the main thread when Recents opened); these fields are touched on the main thread only, the worker posts its result
+    private Set<String> blocked = null;   // null = never built
+    private long blockedAt = 0;           // uptime when the build that made it started
+    private boolean building = false;     // a build runs
+    private boolean lookWaits = false;    // a look waits for that build (it counts as pending)
     private boolean pending = false;
     private int rounds = 0, looks = 0;
     /** BE2: the first look comes 60 ms after the Recents window opened (it was 150 ms); the cards are closed in ONE pass (it was one card per 70 ms), so a hidden app's card is on screen for as short a time as the tree allows. */
