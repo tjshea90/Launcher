@@ -91,6 +91,15 @@ final class RecentsFilter {
         return "com.android.systemui".equals(pkg) && className != null && className.toString().toLowerCase(Locale.ROOT).contains("recents");
     }
 
+    /** BY1a C1 (pure): may a look use the set built at {@code builtAtMs}? Never built = no; older than the TTL = no (the same 60 s rule as before). */
+    static boolean labelsFresh(boolean built, long builtAtMs, long nowMs) { return built && nowMs - builtAtMs <= LABELS_TTL_MS; }
+
+    /** BY1a C1 (pure): start a background build? Only for a set that is not fresh, and never a second one at a time. */
+    static boolean buildNeeded(boolean fresh, boolean building) { return !fresh && !building; }
+
+    /** BY1a C1 (pure): the end of a build runs the look that waited for it, unless the build failed (that look ends, as a failed scan ended it before; the next Recents open tries again). */
+    static boolean lookAfterBuild(boolean lookWaited, boolean built) { return lookWaited && built; }
+
     // ---------------------------------------------------------------- Android side
 
     /** Called for every accessibility event; cheap (a few comparisons) unless a window of the stock launcher / SystemUI changed. Never throws. */
