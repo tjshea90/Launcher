@@ -175,7 +175,7 @@ The same flush happens at the Launcher's own onStop when an app opens. It then w
 
 ## A8 LOW: notification-dot machinery that cannot work on this Go device
 **Where:**
-- res/values-v26/bools.xml:20 sets `notification_dots_enabled` to true.
+- launcher3/res/values-v26/bools.xml:20 sets `notification_dots_enabled` to true. The base value in launcher3/res/values/bools.xml:20 is false.
 - With it, LauncherAppState.java:105-113 registers a secure-settings observer and asks for a listener rebind when the model is created.
 - The manifest enables NotificationListener through the same bool (AndroidManifest.xml:124-132), and Launcher.java:923 does listener bookkeeping on every resume.
 - launcher3/go/res/values-v26/bools.xml only sets the obsolete `notification_badging_enabled`.
