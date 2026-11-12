@@ -295,9 +295,9 @@ public class RadioIconHoldTest {
     @Test public void aListEditedMeanwhileLosesOnlyOurEntries() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         set(st, s, true, true);
-        s.value = "nfc,wifi,vpn,bluetooth";   // Tj (or a tool) added vpn while we held
+        s.value = "nfc,wifi,cast,bluetooth,vpn";   // Tj (or a tool) added cast while we held
         assertFalse(set(st, s, true, false));
-        assertEquals("nfc,vpn", s.value);
+        assertEquals("nfc,cast", s.value);
         assertFalse(st.held);
     }
 
