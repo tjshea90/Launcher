@@ -85,8 +85,8 @@ public final class TjHooks {
         try { TjAccessibilityService s0 = TjAccessibilityService.get(); if (launcherHidden && (s0 == null || !s0.homeCalRunning())) setLauncherHidden(false); } catch (Throwable ignored) { }   // BI1: a hidden Launcher without a running calibration is a leftover
         try { if (c instanceof com.android.launcher3.Launcher) launcherNormal = ((com.android.launcher3.Launcher) c).isInState(com.android.launcher3.LauncherState.NORMAL); } catch (Throwable ignored) { }
         try { TjAccessibilityService s = TjAccessibilityService.get(); if (s != null) { s.sumNoteResume(); s.refreshLayersSoon(); } } catch (Throwable ignored) { }   // BK1c: when the Launcher resumed after the keyguard went away
-        RecentsGuard.excludeOurTasks(c);                       // W2: also fixes a Launcher task created before the exclude flags existed
-        if (c instanceof android.app.Activity) RecentsGuard.describeAsTarget((android.app.Activity) c);
+        if (!RecentsGuard.sameInstance(recentsFlaggedFor, c) && RecentsGuard.excludeOurTasks(c, true)) recentsFlaggedFor = new java.lang.ref.WeakReference<>(c);   // W2: also fixes a Launcher task created before the exclude flags existed; BY1a A2/C13: once per Launcher instance, task ids already flagged skipped (it was 1 + 2 binder calls per task at EVERY resume)
+        if (c instanceof android.app.Activity) RecentsGuard.describeAsTarget((android.app.Activity) c);   // BY1a A2: returns at once for the instance that already carries the description
         try {
             if (!startedOnce) {
                 startedOnce = true;
