@@ -235,9 +235,7 @@ D1 and D2 together are about 10 % of the PSS. D4 to D8 are LOW.
 
 **Look-alike Settings pages (Ss\*)**
 - Live items start in onStart and stop in onStop, and dialogs are dismissed in onDestroy: SsPageActivity.java:57-83.
-- Observers are paired (SsWatcher.java:28-35), as are the battery receivers (SsPagesBattery.java:119/126, SsHomeSummary.java:46/54).
-- The sound threads quit: SsPagesSound.java:175-177, 205-208, 520-529, 619-629.
-- The static snapshots are tiny: SsPagesStorage.java:72-73, SsBatteryStats.java:122-140.
+- Observers and battery receivers are paired (SsWatcher.java:28-35, SsPagesBattery.java:119/126, SsHomeSummary.java:46/54); the sound threads quit (SsPagesSound.java:175-177, 205-208, 520-529, 619-629); the static snapshots are tiny (SsPagesStorage.java:72-73, SsBatteryStats.java:122-140).
 
 **Launcher3 and memory pressure**
 - AppFilter filters apps before Launcher3 loads their icons: AppFilter.java:18-21 (the AOSP AllAppsList order is unverified).
