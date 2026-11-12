@@ -419,8 +419,30 @@ public class TjAccessibilityService extends AccessibilityService {
         lastPadLeftMs = now;
         pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + PAD_LEFT_HOLD_MS);
         handler.removeCallbacks(padBack); handler.postDelayed(padBack, Math.max(PAD_LEFT_HOLD_MS, pinHiddenUntilMs - now) + 100);   // review B #1: never BEFORE the hold ends (a pad seen for under 0.9 s still holds from its last sign for 2.5 s)
+        handler.removeCallbacks(padCancelCheck); handler.postDelayed(padCancelCheck, PatchRest.PAD_CANCEL_MS + 20);   // BY1c / F3: a CANCELLED pad ends the hold early (PatchRest.padCancelled)
         Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away " + (pinHiddenUntilMs - now) + " ms");
     }
+    private volatile long lastUserPresentMs = 0;   // BY1c: uptime of the last USER_PRESENT (an unlock), for PatchRest.padCancelled
+    /**
+     * BY1c / F3 (emulator film menuP1, run #564): the PIN pad left, the screen is still locked and no unlock followed: the pad was cancelled, so its hold (2.5 s from the last sign) ends now and the resting patch is
+     * back in front of the Screenshot slot before a power menu can open (a menu opened while the patch is away shows the stock entry until the dialog's own event, about two frames late). Re-looks while a pad sign
+     * is too recent, gives up once the normal padBack would run anyway. A fresh look at the pad first, as padBack does.
+     */
+    private final Runnable padCancelCheck = new Runnable() { @Override public void run() {
+        try {
+            if (patchView == null || !patchLockMode || patchHomeMode || overlayShown || lastPadLeftMs == 0) return;
+            long now = android.os.SystemClock.uptimeMillis();
+            if (now - lastPadLeftMs > PAD_LEFT_HOLD_MS + 1000) return;   // the normal padBack has it by now
+            long quiet = PatchRest.PAD_SIGN_QUIET_MS - (now - lastPadSignMs);
+            if (quiet > 0) { handler.postDelayed(this, quiet + 20); return; }
+            updateLockNumber();   // a FRESH look at the pad (a pad that is up again calls pinPadCameUp and keeps the patch away)
+            now = android.os.SystemClock.uptimeMillis();
+            if (!PatchRest.padCancelled(now, lastPadLeftMs, lastPadSignMs, lastBouncer, keyguardLocked(), lastUserPresentMs)) return;
+            if (pinHiddenUntilMs > now) pinHiddenUntilMs = now;
+            Log.i(TAG, "PATCH pin pad cancelled t=" + now + ": " + (now - lastPadLeftMs) + " ms after the pad left, still locked, no unlock: the pad hold ends now");
+            showWithCause("padCancel");
+        } catch (Throwable ignored) { }
+    } };
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
     private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) { updateLockNumber(); showWithCause("settle"); } } catch (Throwable ignored) { } } };   // review B #1: a FRESH look at the PIN pad first (as touchBack and padBack do: lastBouncer is a scan result and can lag), then decide
     private final Runnable touchBack = new Runnable() { @Override public void run() {
