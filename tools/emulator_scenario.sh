@@ -4796,6 +4796,7 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   python3 -I tools/fl_analyze.py "$OUT/fl-$L.mp4" "$L" --disp 600x1024 --core "$FL_CORE" --ring "$FL_RING" $T --mode "$M" --ref last 2>&1 | tail -1 >> "$OUT/fl-metrics.txt"
   adb logcat -d -s TjA11y:I 2>/dev/null | grep -E 'PATCH' | sed 's/^.*TjA11y *: //' > "$OUT/fl-log-$L.txt"
   info "FL $L: $(grep "label=$L " "$OUT/fl-metrics.txt" | tail -1 | cut -c10-330)"
+  [ "$M" = flash ] && info "FL $L events (debug PATCHEV, count type pkg cls): $(grep -o 'PATCHEV t=[0-9]* type=0x[0-9a-f]* pkg=[^ ]* cls=[^ ]*' "$OUT/fl-log-$L.txt" 2>/dev/null | sed 's/t=[0-9]* //; s/com.android.systemui/SUI/; s/android.widget./w./' | sort | uniq -c | sort -rn | head -7 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
 flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
