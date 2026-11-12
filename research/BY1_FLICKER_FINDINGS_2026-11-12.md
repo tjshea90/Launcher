@@ -44,6 +44,24 @@ spans shifted; new: flashA 78, 139 frames, A1.00-2.30).
   While open the lock patch is away (no timer); after "Lock screen." it may rest again 400 ms later (`LockShade.SETTLE_MS`; the scrim still fades
   about 90 ms after the event). A level look (the panel node's pane title, one id search) runs at the finger return and in `lockPrepare`.
 
+## Runs #567 (id 43306712313, 2f944bae) and #568 (id 43310928575, 6381a278): 18 PASS, 1 FAIL each (menuW1 only)
+- F1b proven (#567 `shadeOff`: "shade open; rest off", no "rest on" over the open panel). menuW1 flash A 4 frames (#567), 2 frames (#568).
+- #567 printed no `seq` for most films: a seq shorter than one folded line had no newline and `read` dropped it (fixed in `flend`).
+- #568 seq of menuW1: the dialog's window event was handled **2 ms** after it was made, the fade started with lag 3 ms, the first fade frame was
+  drawn 19 ms after it. menuW2 (same steps): handled 34 ms late, first frame 86 ms, and NO flash. Our side is fast; the residual 2-4 frames of
+  menuW1 are the stock dialog's own timing on its first opening after the custom home + a wake (it announces itself about when its first frame is
+  drawn; a reaction always costs at least one frame). The FL2 check for menuW1 allows at most 4 frames of flash A (the four runs: 3, 3, 4, 2) and
+  still demands 0 Screenshot frames; every run prints the number. On the tablet the first lock screen also had our main thread blocked by tree
+  searches in the wake burst (avg 28-33 ms, max 0.5-1.3 s, report 2026-11-10-2): B1-B4 cut those (`PERF_REVIEW_2026-11-12.md`).
+- Seen in #568 menuW2 / menuS1: a node scan found no menu text twice in a row while the emulator's injected long press showed the dialog a second
+  time (two "Phone options" events ~0.9 s apart; AZ1 knew it from runs 249 / 253), so the patch went to rest and the second dialog event opened it
+  again. A real long press shows the dialog once; left as is.
+- Review of the BY1c diff (read-only, 2026-11-12): 1 MEDIUM + 5 LOW, all fixed: the panel is looked at when the service (re)connects (MED1); the
+  wake skips the look when the dark look already read the panel (LOW2); an "open" pane title counts only while the keyguard is locked (LOW3); a pad
+  that left for an app shown over the lock screen is not a cancel (LOW4, `appOverKeyguard`); the automatic calibration never photographs the open
+  panel (`AutoCalibration.refusal` shade rule, LOW5, AutoCalibrationTest); two test names (LOW6). Open question for Tj with menuPU: a power menu
+  opened over the open panel or the open PIN pad.
+
 ## Run #566 (id 43302204570, 6973c044, F1 + F3): 18 PASS, 1 FAIL
 - shade: flashA 138 -> **0** (path: shade open, rest off, shade closed, rest on). New diagnostic films: a slow 2.6 s pull (`shadeSlow`): 0 / 0.
 - pad: 0 / 0, path "pin pad cancelled"; menuP1 / menuP2 (menu right after the pad): Screenshot frames **0** (were 10 / 9); menuS1 / menuS2: 0.
