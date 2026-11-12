@@ -72,7 +72,8 @@ public class TjAccessibilityService extends AccessibilityService {
         }
         try { diagEvent(event); } catch (Throwable ignored) { }
         try { if (event != null && EventNoise.windowsJustChanged(event.getEventType())) { noteWindowEvent(event.getEventTime()); fastMenuOpen(event); } } catch (Throwable t) { Log.e(TAG, "fast menu check failed", t); }   // AZ1: FIRST, before any other work of this event
-        try { if (event != null) fastMenuClose(event); } catch (Throwable t) { Log.e(TAG, "fast menu close check failed", t); }   // BC2: a click in the stock dialog starts the fade-out, the removal of its window ends it
+        try { if (event != null) fastMenuClose(event); } catch (Throwable t) { Log.e(TAG, "fast menu close check failed", t); }
+        try { if (event != null && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) lockShadeEvent(event); } catch (Throwable t) { Log.e(TAG, "shade check failed", t); }   // BY1c F1: the panel opened / closed on the lock screen   // BC2: a click in the stock dialog starts the fade-out, the removal of its window ends it
         try { if (event != null && patchHomeMode) homeForeignWindow(event); } catch (Throwable t) { Log.e(TAG, "home foreign window check failed", t); }   // BI1: the shade, the volume panel ... must not get the home patch painted over them
         try { trackForeground(event); } catch (Throwable t) { Log.e(TAG, "foreground tracking failed", t); }
         try { AnimationSpeedup.tick(this); } catch (Throwable t) { Log.e(TAG, "animation heartbeat failed", t); }   // BF1: self-heal (a lock screen that came up after the wake, a missed broadcast); a volatile read and a time compare in all but two events a second, nothing at all in the custom launcher
@@ -423,6 +424,10 @@ public class TjAccessibilityService extends AccessibilityService {
         Log.i(TAG, "PATCH pin pad left t=" + now + ": the resting patch stays away " + (pinHiddenUntilMs - now) + " ms");
     }
     private volatile long lastUserPresentMs = 0;   // BY1c: uptime of the last USER_PRESENT (an unlock), for PatchRest.padCancelled
+    private volatile boolean lockShadeOpen = false;   // BY1c F1: SystemUI's notification panel / quick settings are open on the lock screen (its pane title, LockShade); the lock patch stays away meanwhile
+    private long lockShadeClosedMs = 0;                // BY1c F1: uptime of the last "Lock screen." pane title (the panel closed); LockShade.SETTLE_MS later the patch may rest again
+    private String shadeClosedTitle = null;            // BY1c F1: SystemUI's own pane titles in the device's language (read once; LockShade has the English ones)
+    private String[] shadeOpenTitles = null;
     /**
      * BY1c / F3 (emulator film menuP1, run #564): the PIN pad left, the screen is still locked and no unlock followed: the pad was cancelled, so its hold (2.5 s from the last sign) ends now and the resting patch is
      * back in front of the Screenshot slot before a power menu can open (a menu opened while the patch is away shows the stock entry until the dialog's own event, about two frames late). Re-looks while a pad sign
@@ -449,6 +454,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try {
             if (android.os.SystemClock.uptimeMillis() < touchAwayUntilMs) return;
             if (!patchHomeMode) updateLockNumber();   // BN3: a FRESH look at the PIN pad first (as padBack does): a pad that is up, or being pulled up, calls pinPadCameUp and keeps the patch away
+            if (!patchHomeMode && patchLockMode && patchView != null && patchView.getAlpha() < 0.5f) noteShade(shadeLevel(), "look");   // BY1c F1: a finger may have opened or closed the panel without an event we saw
             showWithCause("touchBack");
         } catch (Throwable ignored) { }
     } };
@@ -2846,14 +2852,14 @@ public class TjAccessibilityService extends AccessibilityService {
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 lockShotFresh = false;     // a new lock session: photograph the lock screen again after the next wake (notifications may have changed)
                 qsAppAt = ResumeTarget.refreshedAt(qsApp, fgPkg, qsAppAt, t);   // review RV2: the app still in front when the screen goes off is the one Tj had open: its 6 h clock starts now
-                resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; flurryChange(false, t); updateMotion();
+                resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; lockShadeOpen = false; lockShadeClosedMs = 0; flurryChange(false, t); updateMotion();
                 try { patchShow(overlayShown); } catch (Throwable ignored) { }   // v0.7.6 (review of v0.7.5): lastBouncer is reset here, so a resting patch that was hidden for the PIN pad must come back now; the next wake sees bouncer == lastBouncer and would never re-show it
                 handler.removeCallbacks(lockPrepareLater);
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
                 handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
             }
             if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
-            if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
                 try { if (keyguardLocked()) unlock.onPower(android.content.Intent.ACTION_POWER_CONNECTED.equals(act), t); } catch (Throwable e) { Log.e(TAG, "power event failed", e); }
                 BatterySaverGuard.onPowerEvent(getApplicationContext(), android.content.Intent.ACTION_POWER_CONNECTED.equals(act));   // BA2: a plug-in resets Android's own saver state: the guard never switches the saver back on from outside after one
@@ -4294,6 +4300,65 @@ public class TjAccessibilityService extends AccessibilityService {
      * BC2: the signs of the stock dismissal. A click in the stock dialog's window (the empty area's click listener, an entry) starts the fade-out at the click's own time (the stock calls dismiss() in the same
      * call); the removal of the dialog's window ends it. Both are window-id checks on the event itself: no binder call, nothing that can block the thread that draws the fade.
      */
+    /** BY1c F1: SystemUI's pane titles in the device's language (read once; the English ones in LockShade are the fallback). */
+    private void loadShadeTitles() {
+        if (shadeOpenTitles != null) return;
+        String closed = null;
+        String[] open = new String[LockShade.OPEN_RES.length];
+        try {
+            android.content.res.Resources r = getPackageManager().getResourcesForApplication("com.android.systemui");
+            int id = r.getIdentifier(LockShade.CLOSED_RES, "string", "com.android.systemui");
+            if (id != 0) closed = r.getString(id);
+            for (int i = 0; i < open.length; i++) { int oi = r.getIdentifier(LockShade.OPEN_RES[i], "string", "com.android.systemui"); if (oi != 0) open[i] = r.getString(oi); }
+        } catch (Throwable t) { Log.i(TAG, "PATCH shade titles: SystemUI's own strings not readable (" + t + "), the English ones are used"); }
+        shadeClosedTitle = closed;
+        shadeOpenTitles = open;
+    }
+
+    /** BY1c F1: a pane-title event of SystemUI's notification panel (LockShade). Cheap first test: almost every event stops at the change-type bit. */
+    private void lockShadeEvent(AccessibilityEvent e) {
+        if ((e.getContentChangeTypes() & LockShade.PANE_TITLE) == 0) return;
+        CharSequence pk = e.getPackageName();
+        if (pk == null || !"com.android.systemui".contentEquals(pk)) return;
+        loadShadeTitles();
+        CharSequence title = e.getText() == null || e.getText().isEmpty() ? null : e.getText().get(0);
+        noteShade(LockShade.kind(true, e.getContentChangeTypes(), title, shadeClosedTitle, shadeOpenTitles), "event");
+    }
+
+    /** BY1c F1: a LEVEL look at the panel's pane title (one id search in SystemUI's windows), for a return path that may have missed an event (the service was re-bound, a dump). */
+    private int shadeLevel() {
+        try {
+            List<AccessibilityWindowInfo> windows = getWindows();
+            if (windows == null) return LockShade.UNKNOWN;
+            loadShadeTitles();
+            for (AccessibilityWindowInfo w : windows) {
+                AccessibilityNodeInfo root = w.getRoot();
+                if (root == null) continue;
+                try {
+                    CharSequence pkg = root.getPackageName();
+                    if (pkg == null || !"com.android.systemui".contentEquals(pkg)) continue;
+                    List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByViewId("com.android.systemui:id/notification_panel");
+                    if (hit != null) for (AccessibilityNodeInfo n : hit) { int k = LockShade.kind(true, LockShade.PANE_TITLE, n.getPaneTitle(), shadeClosedTitle, shadeOpenTitles); if (k != LockShade.UNKNOWN) return k; }
+                } finally { root.recycle(); }
+            }
+        } catch (Throwable t) { Log.e(TAG, "shade look failed", t); }
+        return LockShade.UNKNOWN;
+    }
+
+    /** BY1c F1: the panel is now open (the lock patch goes away in the next frame and stays away, no timer) or closed (it may rest again LockShade.SETTLE_MS later). The home flavour has its own rule (homeForeignWindow). */
+    private void noteShade(int kind, String how) {
+        if (kind == LockShade.UNKNOWN) return;
+        boolean open = kind == LockShade.OPEN;
+        if (open == lockShadeOpen) return;
+        long now = android.os.SystemClock.uptimeMillis();
+        lockShadeOpen = open;
+        if (!open) lockShadeClosedMs = now;
+        Log.i(TAG, "PATCH shade " + (open ? "open" : "closed") + " (" + how + ") t=" + now);
+        if (patchView == null || !patchLockMode || patchHomeMode || overlayShown) return;   // an open menu follows its own close; its patchShow(false) asks the books again
+        if (open) patchView.setAlpha(0f);   // gone in the next frame, before anything else
+        patchShow(false);                   // re-derives the rest from the books
+    }
+
     /**
      * BC5 (Tj, 2026-11-07, twice: "For the pull up for the pin, the patch should disappear immediately, as fast as possible" / "the power menu doesn't need to be opened. Any time I pull up to type the pin number
      * the wallpaper patch should disappear immediately"): the PIN pad came up. A patch that is visible - open (the stock menu is up) or RESTING (invisible over the lock screen, but a window) - goes at once: alpha 0 in the
@@ -4436,9 +4501,10 @@ public class TjAccessibilityService extends AccessibilityService {
             long nowMs = android.os.SystemClock.uptimeMillis();
             if (can) { if (restableSinceMs == 0) restableSinceMs = nowMs; } else if (!lastBouncer) restableSinceMs = 0;   // BT1a: since when it has been restable (a PIN pad does not reset it: its own return rule, padBack, waits already)
             boolean settled = PatchRest.settled(nowMs, restableSinceMs);
-            vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs && settled;       // BE1: away for a PIN pad or a finger = not visible, but still restable; BT1a: and not for the first PatchRest.SETTLE_MS after it became restable
-            if (can && !vis) { handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.returnInMs(nowMs, restableSinceMs, pinHiddenUntilMs, touchAwayUntilMs) + 20); }   // review B #1: restable but not visible = look again when the LONGEST of settle / PIN-pad hold / finger hold is over (never a timer that can run out of order and leave the patch away)
-            else if (vis) handler.removeCallbacks(settleRun);
+            long shadeUntil = LockShade.holdUntil(lockShadeOpen, lockShadeClosedMs);              // BY1c F1: away while the notification panel is open, back LockShade.SETTLE_MS after it closed
+            vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs && settled && nowMs >= shadeUntil;       // BE1: away for a PIN pad or a finger = not visible, but still restable; BT1a: and not for the first PatchRest.SETTLE_MS after it became restable
+            if (can && !vis && !lockShadeOpen) { handler.removeCallbacks(settleRun); handler.postDelayed(settleRun, PatchRest.returnInMs(nowMs, restableSinceMs, pinHiddenUntilMs, Math.max(touchAwayUntilMs, shadeUntil)) + 20); }   // review B #1: restable but not visible = look again when the LONGEST of settle / PIN-pad hold / finger hold is over (never a timer that can run out of order and leave the patch away)
+            else if (vis || lockShadeOpen) handler.removeCallbacks(settleRun);   // BY1c F1: no timer while the panel is open: its close event brings the patch back
         }
         boolean rest = vis && !on;
         boolean changed = rest != patchResting;

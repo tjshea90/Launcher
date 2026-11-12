@@ -4805,7 +4805,7 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   [ "$M" = flash ] && info "FL $L events (debug PATCHEV, count type pkg cls): $(grep -o 'PATCHEV t=[0-9]* type=0x[0-9a-f]* pkg=[^ ]* cls=[^ ]*' "$OUT/fl-log-$L.txt" 2>/dev/null | sed 's/t=[0-9]* //; s/com.android.systemui/SUI/; s/android.widget./w./' | sort | uniq -c | sort -rn | head -7 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
-flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left|pin pad cancelled)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
+flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left|pin pad cancelled|shade open|shade closed)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
 FL_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
 adb shell settings put secure lock_screen_show_notifications 0            # no notification card next to the slot (see section ps, AZ4)
 adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
