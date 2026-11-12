@@ -4286,7 +4286,7 @@ ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); s
 SS7_T=0; for i in 1 2 3 4 5 6 7 8 9 10; do sleep 2; SS7_T=$((SS7_T+2)); resumed > "$OUT/ss-resumed2.txt"; grep -q "com.android.settings" "$OUT/ss-resumed2.txt" && break; done
 shot ss-03-real-settings
 info "SS7: the real Settings was in front after $SS7_T s (drawer entry bounds: ${SB:-none}; resumed = $(tr -s ' \n' ' ' < "$OUT/ss-resumed2.txt" | cut -c1-120))"
-[ -z "$SB" ] && info "SS7 diag (no Settings entry in the drawer dump; #576 on the head, tag #580 found it): dump $(wc -c < "$OUT/ss-drawer2.xml" 2>/dev/null || echo 0) bytes, pkgs [$(grep -o 'package=\"[^\"]*\"' "$OUT/ss-drawer2.xml" 2>/dev/null | sort -u | tr '\n' ' ' | cut -c1-120)], texts [$(grep -o 'text=\"[^\"]\+\"' "$OUT/ss-drawer2.xml" 2>/dev/null | head -14 | tr '\n' ' ' | cut -c1-200)]"
+[ -z "$SB" ] && info "SS7 diag (no Settings entry in the drawer dump; #576 on the head, tag #580 found it): dump $(wc -c < "$OUT/ss-drawer2.xml" 2>/dev/null || echo 0) bytes, pkgs [$(grep -o 'package="[^"]*"' "$OUT/ss-drawer2.xml" 2>/dev/null | sort -u | tr '\n' ' ' | cut -c1-120)], texts [$(grep -o 'text="[^"][^"]*"' "$OUT/ss-drawer2.xml" 2>/dev/null | head -14 | tr '\n' ' ' | cut -c1-200)]"
 check "SS7: switch off: the drawer's Settings is the real one" grep -q "com.android.settings" "$OUT/ss-resumed2.txt"
 setfeat; setmode custom; rebind; home; sleep 6
 fi # section ss
