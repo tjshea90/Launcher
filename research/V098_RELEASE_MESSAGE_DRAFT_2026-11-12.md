@@ -16,8 +16,8 @@ Answers BY1 (Tj 17:26 UTC: flicker of the Screenshot cover + full speed / batter
   fast, the PIN pad, taps, and the power menu after each of them) and measures the cover in every frame.
 
 **Speed, battery, memory** (full review, nothing removed or slowed)
-- The biggest cause of lag: on many screen events the launcher searched the contents of other apps' windows and SystemUI's whole screen. It now
-  skips every window that cannot hold the power menu or the panel.
+- The biggest cause of lag: on many screen events the launcher searched the contents of every window on screen, other apps' windows and its own
+  covers included. It now looks only at the system windows that can hold the power menu, the panel or the PIN pad.
 - Fewer system calls on every screen event while the tablet is unlocked, no disk write at every Home press, the Recents app-name list built in
   the background, a 5 MB copy of the wallpaper released after use.
 
