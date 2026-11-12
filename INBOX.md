@@ -1495,3 +1495,8 @@ This session's worker process was restarted. If your previous turn was already c
 ```
 If you can continue the work on this project which was interrupted by the other Claude account without progress or data loss, do so. If you can't resume without data or progress loss, don't, I will continue on the other account later
 ```
+
+## 2026-11-12T21:11:39Z
+```
+There is a VPN key icon in the notification panel next to wifi and Bluetooth. Hide this key icon everywhere except for quickstep. The key icon should never show at any time except for inside the unlocked quickstep launcher. Hide it on every lock screen and inside the custom launcher, just like it already hides wifi and Bluetooth
+```
