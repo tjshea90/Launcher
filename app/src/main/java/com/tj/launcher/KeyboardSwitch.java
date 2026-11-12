@@ -56,10 +56,7 @@ public final class KeyboardSwitch {
             }
             String target = KeyboardPolicy.target(mode, enabledImes, original);
             if (target == null) {
-                // BX1: name what IS enabled, so one look at this line (or the tablet report) shows why Gboard was not found
-                say(c, Mode.QUICKSTEP.equals(mode)
-                        ? "Gboard is not an enabled keyboard (enabled: " + packagesOf(enabledImes) + "): left as is. Turn it on under Virtual keyboard > Manage keyboards."
-                        : "no enabled stock keyboard found: left as is");
+                say(c, KeyboardPolicy.noTargetStatus(mode, enabledImes));   // BX1: names what IS enabled, so the line alone shows why Gboard was not found
                 return;
             }
             if (target.equals(current)) { say(c, mode + ": already " + target); return; }
