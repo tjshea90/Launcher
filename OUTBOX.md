@@ -1817,3 +1817,7 @@
 > - **`pt`** was the hung run; its two failures need a solo rerun.
 > - **Recents and the lock-screen gesture failures** could be real effects of my speed changes. Checking those next.
 <!-- sha:f92c6459967b -->
+
+## 2026-11-12T22:41:49Z
+> Waiting for the reruns. The checkpoint holds all five run ids, so a fresh session could pick this up exactly.
+<!-- sha:5f6ffec08877 -->
