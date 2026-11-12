@@ -234,11 +234,11 @@ public class RadioIconHoldTest {
     @Test public void aHoldWhoseValueWasResetIsTakenAgainAndStillEndsCleanly() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         assertTrue(set(st, s, true, true));
-        s.value = "nfc,vpn";   // something rewrote the list without our entries
+        s.value = "nfc,cast";   // something rewrote the list without our entries
         assertTrue(set(st, s, true, true));
-        assertEquals("nfc,vpn,wifi,bluetooth", s.value);
+        assertEquals("nfc,cast,wifi,bluetooth,vpn", s.value);
         assertFalse(set(st, s, true, false));
-        assertEquals("nfc,vpn", s.value);   // his newer list, minus only what we added
+        assertEquals("nfc,cast", s.value);   // his newer list, minus only what we added
         assertFalse(st.held);
     }
 
