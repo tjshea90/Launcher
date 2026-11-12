@@ -28,7 +28,7 @@ No HIGH finding in this slice. The heavier costs sit downstream of the hooks, in
 
 Each flip already reaches Launcher3 incrementally. The system sends PACKAGE_CHANGED, which becomes `LauncherModel.onPackageChanged` and then `PackageUpdatedTask` OP_UPDATE (LauncherModel.java:208-212, PackageUpdatedTask.java:114-120). That path adds or removes the alias through `AllAppsList.updatePackage` (AllAppsList.java:178-207), filtered at :77. The comment at SettingsSpoof.java:99-100 says the author knew this; the reload was added as "certain".
 
-After that, `forceReload()` stops the loader and runs a complete LoaderTask (LauncherModel.java:318-333, :344-397; LoaderTask.java:169-237).
+After that, `forceReload()` stops the loader and runs a complete LoaderTask (LauncherModel.java:309-333, :344-397; LoaderTask.java:169-237).
 
 **Cost:** the whole first load again:
 - a query of the favorites database
