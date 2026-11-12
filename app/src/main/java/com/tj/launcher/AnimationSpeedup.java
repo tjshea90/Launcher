@@ -201,7 +201,7 @@ public final class AnimationSpeedup {
         // BH1: the pop-up banners follow the same triggers and the same "which session is this" facts (their rule is the complement of the animation rule); first, so nothing below can keep them from being decided
         try { NotifQuiet.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "banner quiet sync failed", t); }
         // BS1: the Wi-Fi symbol hold is decided in exactly the same world (custom launcher, dark or locked screen, undecided PIN), from the same triggers and the same look
-        try { RadioIconHide.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "Wi-Fi and Bluetooth symbol sync failed", t); }
+        try { RadioIconHide.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "Wi-Fi, Bluetooth and VPN symbol sync failed", t); }
         try {
             final int before = holds(app);
             final boolean holding = AnimationPolicy.has(before, AnimationPolicy.HOLD_QUICKSTEP);
