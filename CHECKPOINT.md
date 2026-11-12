@@ -1,13 +1,13 @@
-# CHECKPOINT 1221 — read me first, then TASKS.md
+# CHECKPOINT 1222 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T20:39:16Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `6973c044` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T20:42:04Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `ebac9824` (this checkpoint is the commit after it)
 
 ## Just done
-BY1c: run #566 id 43302204570 (fl, shots=true) dispatched 20:37:49Z on 6973c044 (F1 shade hold + F3 pad cancel + shadeSlow/shadeOff films)
+BY1a: perf-fix SUBAGENT launched 20:41Z (A4 RecentsPolicy early return, A3 home-press times static, C1 Recents label set off main thread, A2/C13 RecentsGuard once per instance + empty target cached, C6/C7 status writes async+on change); it may NOT touch TjAccessibilityService/PatchRest/LockShade/tools; it owns Gradle until it reports
 
 ## Do this next
-read #566 at ~20:52Z (job log tail 120: FL1 shade/pad, FL2 menuS/menuP, shadeSlow, shadeOff INFO, paths); meanwhile merge perf reviews into research/PERF_REVIEW_2026-11-12.md with verdicts. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+wait for #566 (20:52Z) + subagent report; do NOT run Gradle meanwhile; write research/PERF_REVIEW_2026-11-12.md (merged A-D + verdicts). If cut off: git diff shows the subagent's half-done edits; finish or revert them, run :app:testDebugUnitTest. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read #566 at ~20:52Z (job log tail 120: FL1 shade/pad, FL2 menuS/menuP, shadeSlo
 
 ## Last ten checkpoints
 ```
+  ebac9824 ckpt 1221: BY1c: run #566 id 43302204570 (fl, shots=true) dispatched 20:37:49Z on 6973c
   6973c044 ckpt 1220: BY1c F1 coded: LockShade (pane titles: SUI cct 0x8 'Quick settings.'/'Notifi
   1842365c ckpt 1219: BY1a: all 4 perf reviews DONE: research/PERF_REVIEW_2026-11-12_{A,B,C,D}.md.
   959a2388 ckpt 1218: probe #565 id 43298041314: 16 PASS 3 FAIL. PANE TITLES CONFIRMED: shade film
@@ -25,5 +26,4 @@ read #566 at ~20:52Z (job log tail 120: FL1 shade/pad, FL2 menuS/menuP, shadeSlo
   ef78dede ckpt 1214: BY1b: LOOKED at #564 sheets: shade = patch block over the open white QS pane
   c25a9ce5 ckpt 1213: #564 id 43294929647 (fl, fixed analyzer, b3b0c4d7): 17 PASS 2 FAIL. FAIL FL1
   9577dc4d ckpt 1212: BY1a: 4 read-only perf reviewers launched 20:00Z (A startup+drawer, B a11y s
-  3f825827 ckpt 1211: BY1b: run #564 id 43294929647 (fl, shots=true) dispatched 19:54Z on b3b0c4d7
 ```
