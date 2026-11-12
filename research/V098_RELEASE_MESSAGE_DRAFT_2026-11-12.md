@@ -22,7 +22,8 @@ Answers BY1 (Tj 17:26 UTC: flicker of the Screenshot cover + full speed / batter
   the background, a 5 MB copy of the wallpaper released after use.
 
 **VPN key**: hidden by the same rule as the Wi-Fi and Bluetooth symbols: hidden on every lock screen and in the custom launcher, shown only in
-unlocked Quickstep. The VPN itself is never switched on or off. Launcher control's switch now reads "Keep Wi-Fi and Bluetooth on, hide their
+unlocked Quickstep. The VPN itself is never switched on or off. The emulator has no VPN, so the key itself has only been checked through the
+setting that hides it and the tests; only your tablet can show it. Launcher control's switch now reads "Keep Wi-Fi and Bluetooth on, hide their
 symbols and the VPN key".
 
 **Questions**
