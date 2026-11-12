@@ -101,7 +101,8 @@ The same flush happens at the Launcher's own onStop when an app opens. It then w
 
 **Change:** keep lastHome and lastHome2 in static volatile fields, and drop the per-press write.
 - RouterActivity.java:57 is the only reader.
-- Double-Home and the L10 failsafe need presses less than 0.8 s apart (ProfileSession.java:103-106), and the process is alive for that.
+- Double-Home needs two presses within 0.9 s (HomeDoublePress.java:5, :8-9). The L10 failsafe needs three presses, each within 0.8 s of the one before (ProfileSession.java:103-105). The process is alive across such a burst.
+- The emulator's `setmode` rewrites tj_mode.xml without these keys and force-stops the app (tools/emulator_scenario.sh:31), so tests start from the same empty state either way.
 
 **Risk:** a sequence of presses that spans a process death is not recognised; Tj presses again.
 
