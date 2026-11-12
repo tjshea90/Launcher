@@ -34,8 +34,10 @@ public final class RadioIconHold {
     /** The slot names of the Wi-Fi and Bluetooth symbols (framework strings status_bar_wifi / status_bar_bluetooth). */
     public static final String SLOT_WIFI = "wifi";
     public static final String SLOT_BLUETOOTH = "bluetooth";
+    /** The slot name of the VPN key (framework string status_bar_vpn; BZ1). Only its symbol is hidden: nothing switches a VPN on or off. */
+    public static final String SLOT_VPN = "vpn";
     /** Every slot the hold hides, in the order missing ones are appended. */
-    public static final String[] SLOTS = { SLOT_WIFI, SLOT_BLUETOOTH };
+    public static final String[] SLOTS = { SLOT_WIFI, SLOT_BLUETOOTH, SLOT_VPN };
     /** What SystemUI hides when the setting is missing (StatusBarIconController.getIconBlacklist(null) in Android 10). */
     public static final String SYSTEM_DEFAULT = "rotate,headset";
 
