@@ -27,14 +27,10 @@ D1 and D2 together are about 10 % of the PSS. D4 to D8 are LOW.
 
 | Fact | Source |
 | :- | :- |
-| display 600 x 1024; system wallpaper bitmap 1200 x 1024, cover scale 1.0 | report:714 |
-| power mode `hide_screenshot` | report:691 |
-| real-pixel lock crop calibrated, 150 x 163 | report:689 |
-| lock-fit model in use ("the wallpaper model is used meanwhile") | report:677 |
-| patch window [474,538][600,674], i.e. 126 x 136 | report:852 |
-| curtain picture 600 x 1024 saved and shown | report:669-670 |
-| shell helper not reachable | report:620 |
-| 2 process starts in 24 h | report:630 |
+| display 600 x 1024; system wallpaper bitmap 1200 x 1024, cover scale 1.0; power mode `hide_screenshot` | report:714, 691 |
+| real-pixel lock crop calibrated, 150 x 163; lock-fit model in use ("the wallpaper model is used meanwhile") | report:689, 677 |
+| patch window [474,538][600,674], i.e. 126 x 136; curtain picture 600 x 1024 saved and shown | report:852, 669-670 |
+| shell helper not reachable; 2 process starts in 24 h | report:620, 630 |
 
 **Arithmetic:** ARGB_8888 uses 4 B per pixel, ALPHA_8 uses 1 B per pixel. Since Android 8, bitmap pixels live in the native heap, which counts in PSS.
 
