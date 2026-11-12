@@ -42,10 +42,21 @@ def video_size(video):
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
+# screenrecord writes a frame only when the screen CHANGES (variable frame rate): a film ends at its LAST change, not at its time limit
+# (run #563: 10 s films were 3-5 s long and "the last 400 ms" was the middle of the last animation, so REF was wrong and 6 of 7 menu
+# films found no menu at all). PAD = the last frame repeated for 1 s: it IS the settled screen (nothing changed after it), so
+# --ref last compares every frame with the settled end state. setpts makes frame index n sit at exactly n / fps seconds.
+PAD = "tpad=stop_mode=clone:stop_duration=1"
+
+
+def chain(fps):
+    return "fps=%d,setpts=N/(%d*TB),%s" % (fps, fps, PAD)
+
+
 def frames(video, box, fps):
-    """Grey pixels of one box per frame (resampled to a constant fps): a list of bytes objects. box = (x, y, w, h) in VIDEO px."""
+    """Grey pixels of one box per frame (resampled to a constant fps, end padded): a list of bytes objects. box = (x, y, w, h) in VIDEO px."""
     x, y, w, h = box
-    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "fps=%d,crop=%d:%d:%d:%d,format=gray" % (fps, w, h, x, y), "-f", "rawvideo", "-"]
+    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "%s,crop=%d:%d:%d:%d,format=gray" % (chain(fps), w, h, x, y), "-f", "rawvideo", "-"]
     data = subprocess.run(cmd, capture_output=True).stdout
     n = w * h
     return [data[i:i + n] for i in range(0, len(data) - n + 1, n)]
