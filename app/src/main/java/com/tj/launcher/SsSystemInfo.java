@@ -67,8 +67,8 @@ final class SsSystemInfo {
                 InputMethodInfo found = exact != null ? exact : samePackage;   // a package with two input methods: the first one only when the exact one is not listed
                 if (found != null) {
                     String label = String.valueOf(found.loadLabel(c.getPackageManager()));
-                    if (!KeyboardPolicy.isSwiftKey(found.getPackageName(), label)) return label;
-                    List<String> others = visibleKeyboardLabels(c);   // BT1e
+                    if (!KeyboardPolicy.isQuickstepSide(found.getPackageName(), label)) return label;
+                    List<String> others = visibleKeyboardLabels(c);   // BT1e, BX1
                     return others.isEmpty() ? "" : others.get(0);
                 }
             }
