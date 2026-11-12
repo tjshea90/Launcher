@@ -102,7 +102,7 @@ public final class RadioIconHide {
             if (before && !want && deferRelease(app, why, look)) return;   // the symbols stay hidden until the radios are off (reviews of BS2)
             final boolean after = RadioIconHold.set(new MarkerState(cr), new ListSetting(cr), f.grant, want, SINK);
             if (before != after) {
-                String msg = after ? "Wi-Fi and Bluetooth symbols HIDDEN (" + NotifQuietPolicy.quietFor(f) + ", " + trigger + ")" : "Wi-Fi and Bluetooth symbols shown again: " + (why.isEmpty() ? "hold ended" : why) + " (" + trigger + ")";
+                String msg = after ? "Wi-Fi, Bluetooth and VPN symbols HIDDEN (" + NotifQuietPolicy.quietFor(f) + ", " + trigger + ")" : "Wi-Fi, Bluetooth and VPN symbols shown again: " + (why.isEmpty() ? "hold ended" : why) + " (" + trigger + ")";
                 Log.i(TAG, msg);
                 LockLog.addAsync(app, "SYMBOLS", msg);
                 p(app).edit().putString("last", new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + msg).apply();
