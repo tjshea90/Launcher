@@ -1810,3 +1810,10 @@
 ## 2026-11-12T22:35:12Z
 > Waiting for the details of section `bt` and the hung `pt` run before choosing which sections to rerun alone.
 <!-- sha:d6cafec47b40 -->
+
+## 2026-11-12T22:37:17Z
+> Findings so far:
+> - **`bt` is not a product bug.** All four of its measurements show the same +7.17-level offset, the control included. That is the known emulator state where section `ps` (run just before `bt` in the same chain) shifts the stock menu's dimming from 0.80 to 0.75. Section `hp` already skips its own check in that state (BT2), but `bt` never got that guard. I'll add it.
+> - **`pt`** was the hung run; its two failures need a solo rerun.
+> - **Recents and the lock-screen gesture failures** could be real effects of my speed changes. Checking those next.
+<!-- sha:f92c6459967b -->
