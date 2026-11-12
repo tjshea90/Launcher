@@ -94,7 +94,7 @@ public class RadioIconHoldTest {
         assertNull(RadioIconHold.decodeMarker(RadioIconHold.encodeMarker(null)));
         assertEquals("", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("")));
         assertEquals("rotate,headset", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("rotate,headset")));
-        assertEquals("nfc,vpn", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("nfc,vpn")));
+        assertEquals("nfc,cast", RadioIconHold.decodeMarker(RadioIconHold.encodeMarker("nfc,cast")));
         assertTrue(RadioIconHold.encodeMarker(null).length() > 0);   // a marker is never empty: "present" is what means "held"
     }
 
