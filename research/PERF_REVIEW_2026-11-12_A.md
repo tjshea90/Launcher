@@ -141,7 +141,7 @@ The same flush happens at the Launcher's own onStop when an app opens. It then w
 
 ## A6 LOW: the drawer filter copies the whole allowed set for every app
 **Where:** AllAppsList.java:77 calls AppFilter.java:18-21, which calls `HiddenApps.isShown` (HiddenApps.java:63-71). That calls `allowed()` (:32-40), which copies the set at :39.
-- The preferences handle at :22 is not cached. Each call takes ContextImpl's process-wide lock, unlike Features.java:19-25 and Mode.java:47-53.
+- The preferences handle at :22 is not cached. Each call takes ContextImpl's process-wide class lock (AOSP, from memory), unlike Features.java:19-25 and Mode.java:47-53.
 - For the auto-allowed music app, every call also makes one `getPackageInfo` binder call (HiddenApps.java:46, :55-57).
 
 **How often:** once per app on every `loadAllApps` (LoaderTask.java:818-822) and every package update. Each `isPackageShown` call pays the same; those come from the Recents sweep, which is slice C.
