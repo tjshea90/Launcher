@@ -1,13 +1,13 @@
-# CHECKPOINT 1212 — read me first, then TASKS.md
+# CHECKPOINT 1213 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T19:58:34Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `3f825827` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T20:07:24Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `82fcc76d` (this checkpoint is the commit after it)
 
 ## Just done
-BY1a: 4 read-only perf reviewers launched 20:00Z (A startup+drawer, B a11y service, C background+battery, D memory); each writes research/PERF_REVIEW_2026-11-12_<X>.md
+#564 id 43294929647 (fl, fixed analyzer, b3b0c4d7): 17 PASS 2 FAIL. FAIL FL1 shade flashA=140 (2.33 s, A3.03-5.37: patch back over the OPEN shade = F1 proven). FAIL FL2 menuP1 shot=10 (167 ms, S0.72-0.88: menu 1.5 s after the PIN pad left = F3; menuP2 shot 0). Diag menuPU (menu over the OPEN pad): shot=172 = Screenshot visible the whole menu (pin hide after fast open). wake films flashA 0 (F2 not seen on emu), tap/pad/menuL/W/S all 0. shadeX too-few-frames
 
 ## Do this next
-BY1b: read #564 id 43294929647 (FL + tl lines), git fetch ci-shots, LOOK at fl-sheet-*.png; when reviewers finish merge their files into research/PERF_REVIEW_2026-11-12.md (verdicts). If cut off: reviewer files may be missing -> relaunch only the missing slices. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+BY1b/c: git fetch origin ci-shots, LOOK at fl-sheet-shade/menuP1/menuPU.png; design fixes: F1 shade-open hold (events: SUI 0x800 FrameLayout x10 in shade film), F3 fastDecline after pad, menuPU pin hide. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ BY1b: read #564 id 43294929647 (FL + tl lines), git fetch ci-shots, LOOK at fl-s
 
 ## Last ten checkpoints
 ```
+  9577dc4d ckpt 1212: BY1a: 4 read-only perf reviewers launched 20:00Z (A startup+drawer, B a11y s
   3f825827 ckpt 1211: BY1b: run #564 id 43294929647 (fl, shots=true) dispatched 19:54Z on b3b0c4d7
   b3b0c4d7 ckpt 1210: BY1b: fl_analyze fixed (2 test bugs that made #563 unreadable): (1) VFR film
   ca1a23e2 ckpt 1209: acct-2 heartbeat ARMED trig_01JYEUXs7JosHyg85f2T1oCK (cron 44 */2, bound to 
@@ -25,5 +26,7 @@ BY1b: read #564 id 43294929647 (FL + tl lines), git fetch ci-shots, LOOK at fl-s
   59478275 ckpt 1205: BY1b: tools/fl_analyze.py (selftest OK) + section fl design in research/BY1_
   4c088a33 ckpt 1204: BY1-F: 4 code findings (lock patch over open shade, dark-rest at wake, fastD
   b83f8177 ckpt 1203: BY1 written into TASKS (Tj 17:26Z: perf review + lock/home patch flicker fil
-  44afb137 ckpt 1202: BX1 DONE: v0.9.7 (code 46) RELEASED+RECORDED (android.yml #48 id 43139795817
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
