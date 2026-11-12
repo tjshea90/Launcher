@@ -4874,6 +4874,12 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     flrec 8 0.3; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
     flend "menuP$k" menu
   done
+  # (10) diagnostic: the power menu opened WHILE the PIN pad is still up (BC5: the patch stays away over the pad; the reference is the pad screen itself)
+  sleep 2; adb logcat -c; adb shell input swipe 300 900 300 300 300; sleep 1.5
+  flrec 8 0.3; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
+  flend menuPU menu
+  adb shell input keyevent KEYCODE_BACK; sleep 1.5
+  info "FL2 menuPU (menu over the open PIN pad, diagnostic): menu=$(flget menuPU menu) shot=$(flget menuPU shot) $(flget menuPU spans); path: $(flpath menuPU)"
   for L in wakeH1 wakeH2 wakeL shade pad tap; do
     a="$(flget $L flashA)"; b="$(flget $L flashB)"
     check "FL1 $L: the patch never flashes (frames flashA=${a:-?} flashB=${b:-?}; $(flget $L spans))" awk -v a="$a" -v b="$b" 'BEGIN{exit !(a!="" && b!="" && a+0<=1 && b+0<=1)}'
