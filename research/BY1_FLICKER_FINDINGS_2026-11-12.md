@@ -38,4 +38,19 @@ spans shifted; new: flashA 78, 139 frames, A1.00-2.30).
   locked, with no USER_PRESENT since, no new pad sign for 400 ms and no pad in a fresh look, was CANCELLED: the pad hold ends 700 ms after the
   departure (not 2.5 s after the last sign). An unlock's USER_PRESENT follows the departure by about 270 ms on the tablet (BT1b), so 700 ms
   keeps the BT1b protection. Log line `PATCH pin pad cancelled`.
-- F1 (shade): in progress; probe run #565 logs the pane titles SystemUI announces when the panel opens / closes.
+- F1 (shade): `LockShade` (pure, 5 JVM tests) + `lockShadeEvent` / `noteShade` / `shadeLevel` in the service. Probe run #565 proved the signal:
+  SystemUI's notification panel is an accessibility pane; TYPE_WINDOW_STATE_CHANGED with CONTENT_CHANGE_TYPE_PANE_TITLE (0x8) says
+  "Quick settings." when the panel is open and "Lock screen." at the END of the collapse (also "Notification shade." / "Quick settings editor.").
+  While open the lock patch is away (no timer); after "Lock screen." it may rest again 400 ms later (`LockShade.SETTLE_MS`; the scrim still fades
+  about 90 ms after the event). A level look (the panel node's pane title, one id search) runs at the finger return and in `lockPrepare`.
+
+## Run #566 (id 43302204570, 6973c044, F1 + F3): 18 PASS, 1 FAIL
+- shade: flashA 138 -> **0** (path: shade open, rest off, shade closed, rest on). New diagnostic films: a slow 2.6 s pull (`shadeSlow`): 0 / 0.
+- pad: 0 / 0, path "pin pad cancelled"; menuP1 / menuP2 (menu right after the pad): Screenshot frames **0** (were 10 / 9); menuS1 / menuS2: 0.
+- menuPU (menu over the OPEN pad, diagnostic): the Screenshot entry shows for the whole menu (the patch stays away over the pad, BC5). Question for Tj.
+- **FAIL menuW1** (the first menu after a wake, as in #565): flash A for 3 frames (50 ms, 14.6 levels) just before the menu is detected: the stock
+  scrim darkens around the slot before the patch dims (a lag). menuW2 (same sequence) is clean. This fits Tj's "first lock screen". Next run prints
+  the patch's own timeline per film (`FL <film> seq:`, including "fade end lock first=N ms").
+- **New gap found by the `shadeOff` picture**: the quick-settings panel stays OPEN across a screen-off; the first F1 version reset its state at
+  SCREEN_OFF and the patch rested over the open panel at the wake. Fixed (F1b): the state is kept across the screen-off and `lockPrepare` (while
+  dark) reads the panel's real state before the patch is shown again.
