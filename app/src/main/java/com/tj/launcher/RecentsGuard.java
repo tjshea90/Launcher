@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * W2 (Tj, 2026-11-03): "Launcher still shows in the recent apps menu. I want it to only show solitaire."
  * Manifest and launch flags only apply when a task is CREATED, so a task that already existed (made by an earlier version, or by Android itself) kept showing.
- * This sets the flag on our tasks at runtime (AppTask.setExcludeFromRecents works on an existing task), every time one of our screens is resumed.
+ * This sets the flag on our tasks at runtime (AppTask.setExcludeFromRecents works on an existing task), every time one of our screens is resumed (the Launcher: once per instance, BY1a A2/C13).
  * Hedge (Tj's own fallback): should a card ever still appear, it carries the target app's name and icon instead of "Launcher".
  */
 public final class RecentsGuard {
