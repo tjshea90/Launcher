@@ -1,13 +1,13 @@
-# CHECKPOINT 1222 — read me first, then TASKS.md
+# CHECKPOINT 1223 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T20:42:04Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `ebac9824` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T20:47:02Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `63d5dbd0` (this checkpoint is the commit after it)
 
 ## Just done
-BY1a: perf-fix SUBAGENT launched 20:41Z (A4 RecentsPolicy early return, A3 home-press times static, C1 Recents label set off main thread, A2/C13 RecentsGuard once per instance + empty target cached, C6/C7 status writes async+on change); it may NOT touch TjAccessibilityService/PatchRest/LockShade/tools; it owns Gradle until it reports
+BY1a perf in TAS (NOT yet compiled; subagent owns Gradle): B1 EventNoise.mayHoldPowerMenu only system windows (no type 4) even after a window change, clicks scan only from systemui/android; B2 pencil + B3 PIN-pad + shadeLevel skip short/non-system/overlay windows BEFORE getRoot (tallSystemWindow, EventNoise.tallEnoughForPanel); B3 counter in perfLine; B4 scheduleLockUpdate early return without the number switch; C2 AnimationSpeedup.tick only on window events. EventNoiseTest updated (+4 tests)
 
 ## Do this next
-wait for #566 (20:52Z) + subagent report; do NOT run Gradle meanwhile; write research/PERF_REVIEW_2026-11-12.md (merged A-D + verdicts). If cut off: git diff shows the subagent's half-done edits; finish or revert them, run :app:testDebugUnitTest. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+after the subagent reports: :app:testDebugUnitTest + lintDebug; read #566 (20:52Z). Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ wait for #566 (20:52Z) + subagent report; do NOT run Gradle meanwhile; write res
 
 ## Last ten checkpoints
 ```
+  599db918 ckpt 1222: BY1a: perf-fix SUBAGENT launched 20:41Z (A4 RecentsPolicy early return, A3 h
   ebac9824 ckpt 1221: BY1c: run #566 id 43302204570 (fl, shots=true) dispatched 20:37:49Z on 6973c
   6973c044 ckpt 1220: BY1c F1 coded: LockShade (pane titles: SUI cct 0x8 'Quick settings.'/'Notifi
   1842365c ckpt 1219: BY1a: all 4 perf reviews DONE: research/PERF_REVIEW_2026-11-12_{A,B,C,D}.md.
@@ -25,5 +26,7 @@ wait for #566 (20:52Z) + subagent report; do NOT run Gradle meanwhile; write res
   7d0f360c ckpt 1215: BY1b: probe run #565 id 43298041314 (fl, shots) dispatched 20:12Z on ef78ded
   ef78dede ckpt 1214: BY1b: LOOKED at #564 sheets: shade = patch block over the open white QS pane
   c25a9ce5 ckpt 1213: #564 id 43294929647 (fl, fixed analyzer, b3b0c4d7): 17 PASS 2 FAIL. FAIL FL1
-  9577dc4d ckpt 1212: BY1a: 4 read-only perf reviewers launched 20:00Z (A startup+drawer, B a11y s
 ```
+
+(5 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
