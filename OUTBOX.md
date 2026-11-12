@@ -1845,3 +1845,63 @@
 ## 2026-11-12T23:42:58Z
 > The draft answer is checked and corrected. The timer brings me back at 23:45:30 UTC to confirm the v0.9.8 Release.
 <!-- sha:f72dfe036388 -->
+
+## 2026-11-12T23:51:17Z
+> Tj, v0.9.8 is out:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.8
+>
+> Install `Launcher-v0.9.8.apk` over the old one; it updates in place. Your other account's interrupted work was taken over with nothing lost.
+>
+> **The Screenshot cover (flicker)**
+> - **Notification panel on the lock screen:** the cover used to come back 1.5–2 s after your finger, on top of the still-open panel. That put a block of lock-screen wallpaper over the panel. Now it stays away while the panel is open and comes back 0.4 s after the panel closes. This also works when the panel was left open and the screen went off.
+> - **PIN pad:** after you put the pad away with Back without unlocking, the cover waited 2.5 s. A power menu opened in that time showed the Screenshot entry for a few frames. Now the cover is back 0.7 s after the pad goes away.
+> - **First lock screen after waking:**
+>   - Your last tablet report showed the launcher busy searching the screen at exactly that moment, blocked for up to 1.3 s at a time. Those searches are cut now (see below).
+>   - On the emulator the launcher now reacts to the opening power menu within 2–3 ms.
+>   - On the first menu after a wake, the cover is still 2–4 frames (33–67 ms) late at the very start of the fade. As far as the emulator shows, that's the stock menu announcing itself late, not a busy launcher.
+> - **How it was tested:** a new emulator test films the screen frame by frame and measures the cover in every frame. It covers:
+>   - the first lock screen after waking
+>   - the panel pulled down slowly and fast
+>   - the PIN pad
+>   - taps
+>   - the power menu after each of these
+>
+>   Every lock-screen and home-screen test group passed on this exact code. Two checks in parts this release didn't touch failed once, then passed on reruns; they now print a diagnosis if they fail again.
+>
+> **Speed, battery, memory** (full review; nothing removed or slowed)
+> - **Biggest cause of lag:** on many screen events the launcher searched every window on screen, including other apps' windows and its own covers. It now looks only at the system windows that can hold the power menu, the panel or the PIN pad.
+> - **Also changed:**
+>   - fewer system calls on every screen event while the tablet is unlocked
+>   - no disk write at every Home press
+>   - the Recents app-name list is built in the background
+>   - a 5 MB copy of the wallpaper is released after use
+>
+> **VPN key**
+> - It's hidden by the same rule as the Wi-Fi and Bluetooth symbols: on every lock screen and in the custom launcher, and shown only in unlocked Quickstep.
+> - The VPN itself is never switched on or off.
+> - The emulator has no VPN, so I could only check the setting that hides the key, plus the tests. Only your tablet can show the key itself.
+> - In Launcher control the switch now reads "Keep Wi-Fi and Bluetooth on, hide their symbols and the VPN key".
+>
+> **Questions**
+> 1. Do you ever open the power menu while the PIN pad or the notification panel is still open? Then the cover can't match the screen behind it; today the Scre
+> [... 1714 characters omitted ...]
+> –#583. Heartbeat `trig_01JYEUXs7JosHyg85f2T1oCK`.
+>
+> **Done so far:** reviews and fixes, flicker films, gate and triage, ship, release, BUILDLOG, TASKS and HANDOFF.md.
+>
+> **Open / next steps:**
+> 1. You: tablet checks and the two questions (BY1g, BZ1d).
+> 2. The heartbeat deletes itself at its next run.
+> 3. Low priority: if SE-C2 or SS7 fail again, read their diagnosis lines (BY1e).
+>
+> **Rules to remember:**
+> - No secrets or your photos in the repo.
+> - Checkpoint after every step; new requests go into TASKS.md first.
+> - No push triggers on workflows.
+> - Release link on its own line.
+>
+> ⚠️ **Health:** Red by length (35+ exchanges, one compaction), but nothing depends on this chat's memory: CHECKPOINT.md, TASKS.md and HANDOFF.md hold every run id and the next step.
+>
+> 💡 The code word is off in this chat. Type `/amcodeword` and I'll start every reply with "Yes Boss!", so you'll notice if I start losing track.
+<!-- sha:198cedc64fec -->
