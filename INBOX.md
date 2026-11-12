@@ -1475,3 +1475,8 @@ For the custom launcher, include a music app which is org.lineageos.eleven from 
 ```
 Find the music app in the attached screenshots. The icon for the app is the speaker. The music app you are building must be called "Music" with that exact icon. See if you can find the icon file properly online, if not, use the one from my screenshots
 ```
+
+## 2026-11-12T01:41:16Z
+```
+I no longer use Microsoft Swiftkey. I use Google Gboard. Make the custom launcher open the same default keyboard it already opens, no changes needed, but make quickstep open Gboard as the default keyboard. This is a small change that shouldn't require lengthy testing
+```
