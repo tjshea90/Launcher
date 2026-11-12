@@ -18,7 +18,7 @@ No HIGH finding in this slice. The heavier costs sit downstream of the hooks, in
 | A5 | LOW | TjApplication.java:16-34 | every process start (about 2 a day; also at boot) |
 | A6 | LOW | HiddenApps.java:22, :39 | per app on every drawer load |
 | A7 | LOW (to B) | TjHooks.java:87, :163-172, :183 | every resume, pause, drawer open and drawer close |
-| A8 | LOW | res/values-v26/bools.xml:20 | at model creation, plus a permanent observer |
+| A8 | LOW | launcher3/res/values-v26/bools.xml:20 | at model creation, plus a permanent observer |
 | A9 | LOW (idea) | AllAppsList.java:83 | the first drawer open after a cold start |
 
 ## A1 MEDIUM: a full Launcher3 reload on every mode change (Settings look-alike alias)
