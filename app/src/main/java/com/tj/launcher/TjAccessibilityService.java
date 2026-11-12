@@ -434,6 +434,8 @@ public class TjAccessibilityService extends AccessibilityService {
     }
     private volatile long lastUserPresentMs = 0;   // BY1c: uptime of the last USER_PRESENT (an unlock), for PatchRest.padCancelled
     private volatile boolean lockShadeOpen = false;   // BY1c F1: SystemUI's notification panel / quick settings are open on the lock screen (its pane title, LockShade); the lock patch stays away meanwhile
+    private boolean shadeLookedDark = false;            // BY1 review LOW2: a look while the screen was dark read the panel since the last SCREEN_OFF
+    private long lastShadeSeenMs = 0;                   // BY1 review LOW5: uptime the panel was last known open (a calibration screenshot around it is refused)
     private long lockShadeClosedMs = 0;                // BY1c F1: uptime of the last "Lock screen." pane title (the panel closed); LockShade.SETTLE_MS later the patch may rest again
     private String shadeClosedTitle = null;            // BY1c F1: SystemUI's own pane titles in the device's language (read once; LockShade has the English ones)
     private String[] shadeOpenTitles = null;
@@ -452,11 +454,20 @@ public class TjAccessibilityService extends AccessibilityService {
             updateLockNumber();   // a FRESH look at the pad (a pad that is up again calls pinPadCameUp and keeps the patch away)
             now = android.os.SystemClock.uptimeMillis();
             if (!PatchRest.padCancelled(now, lastPadLeftMs, lastPadSignMs, lastBouncer, keyguardLocked(), lastUserPresentMs)) return;
+            if (appOverKeyguard()) { Log.i(TAG, "PATCH pin pad left for an app shown over the lock screen t=" + now + ": not a cancel, the pad hold stays"); return; }   // BY1 review LOW4
             if (pinHiddenUntilMs > now) pinHiddenUntilMs = now;
             Log.i(TAG, "PATCH pin pad cancelled t=" + now + ": " + (now - lastPadLeftMs) + " ms after the pad left, still locked, no unlock: the pad hold ends now");
             showWithCause("padCancel");
         } catch (Throwable ignored) { }
     } };
+    /** BY1 review LOW4 (2026-11-12): an app shown OVER the lock screen (the emergency dialer from the PIN pad, the lock-screen camera) leaves the keyguard "locked" but hides it. One window list, only when a pad cancel is about to be declared. */
+    private boolean appOverKeyguard() {
+        try {
+            List<AccessibilityWindowInfo> ws = getWindows();
+            if (ws != null) for (AccessibilityWindowInfo w : ws) if (w.getType() == AccessibilityWindowInfo.TYPE_APPLICATION && (w.isActive() || w.isFocused())) return true;
+        } catch (Throwable ignored) { }
+        return false;
+    }
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
     private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) { updateLockNumber(); showWithCause("settle"); } } catch (Throwable ignored) { } } };   // review B #1: a FRESH look at the PIN pad first (as touchBack and padBack do: lastBouncer is a scan result and can lag), then decide
     private final Runnable touchBack = new Runnable() { @Override public void run() {
@@ -4380,8 +4391,10 @@ public class TjAccessibilityService extends AccessibilityService {
     private void noteShade(int kind, String how) {
         if (kind == LockShade.UNKNOWN) return;
         boolean open = kind == LockShade.OPEN;
-        if (open == lockShadeOpen) return;
         long now = android.os.SystemClock.uptimeMillis();
+        if (open && !keyguardLocked()) return;   // BY1 review LOW3: a panel opened while UNLOCKED (Quickstep, the custom launcher) is not a lock-screen panel; its "open" must not leak into the next lock
+        if (open) lastShadeSeenMs = now;          // BY1 review LOW5: a calibration screenshot around an open panel is refused
+        if (open == lockShadeOpen) return;
         lockShadeOpen = open;
         if (!open) lockShadeClosedMs = now;
         Log.i(TAG, "PATCH shade " + (open ? "open" : "closed") + " (" + how + ") t=" + now);
@@ -5025,7 +5038,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (!calibrating() || autoShotDone) return;
             if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 && Features.get(TjAccessibilityService.this, "patch_auto_shot_off", false)) return;   // debug builds only: the emulator takes its own screenshot (section pa, AU2)
             android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE);
-            boolean ready = pm != null && pm.isInteractive() && keyguardLockedFast() && !lastBouncer && !overlayShown && patchView != null;
+            boolean ready = pm != null && pm.isInteractive() && keyguardLockedFast() && !lastBouncer && !overlayShown && !lockShadeOpen && patchView != null;   // BY1 review LOW5: never with the notification panel open
             if (!ready) { if (++autoShotTries < 12) handler.postDelayed(this, 2000); return; }   // wait for the lock screen to be up, the menu closed, no PIN pad
             autoShotDone = true; autoShotAsked = android.os.SystemClock.uptimeMillis();
             Log.i(TAG, "PATCHSHOT asking the system for a screenshot of the lock screen");
@@ -5072,6 +5085,7 @@ public class TjAccessibilityService extends AccessibilityService {
         final boolean locked = keyguardLockedFast();
         final long menuSeen = menuUpAtMs, padSeen = lastPadSeenMs, unlockAt = lastUnlockUptime;   // AU2: what was going on around the capture
         final boolean menuNow = overlayShown, padNow = lastBouncer;
+        final long shadeSeen = lockShadeOpen ? android.os.SystemClock.uptimeMillis() : lastShadeSeenMs; final boolean shadeNow = lockShadeOpen;   // BY1 review LOW5
         final Rect win = patchView != null && patchLockMode ? new Rect(patchAt) : null;
         final int rot = rotation(); final String sig = shotSig();
         final android.util.DisplayMetrics dm = new android.util.DisplayMetrics();
@@ -5086,7 +5100,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 lastShotId = id;
                 if (!AutoCalibration.ownerOk(shotRow.owner) && !isSystemPackage(shotRow.owner)) { shotStatus(now() + "  ignored a screenshot written by another app (" + shotRow.owner + "): only screenshots made by the system itself count"); return; }   // AU2
                 long shotUptime = android.os.SystemClock.uptimeMillis() - Math.max(0L, System.currentTimeMillis() - shotRow.addedSec * 1000L);
-                String refused = AutoCalibration.refusal(shotUptime, menuSeen, menuNow, padSeen, padNow, unlockAt);   // AU2: the power menu / the PIN pad around the capture, an unlock right after it
+                String refused = AutoCalibration.refusal(shotUptime, menuSeen, menuNow, padSeen, padNow, unlockAt, shadeSeen, shadeNow);   // AU2: the power menu / the PIN pad around the capture, an unlock right after it
                 if (!refused.isEmpty()) { shotStatus(now() + "  refused a screenshot: " + refused); autoCalNote("refused a screenshot (" + refused + ")"); return; }
                 if (!locked) { shotStatus(now() + "  that screenshot was NOT taken on the lock screen: lock the tablet, wake it and take it there"); return; }
                 if (win == null) { shotStatus(now() + "  the power menu rectangle is not learned yet: hold the side key once on the lock screen, then calibrate again"); return; }

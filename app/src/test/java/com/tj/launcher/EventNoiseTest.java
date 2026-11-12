@@ -63,7 +63,7 @@ public class EventNoiseTest {
         assertFalse(EventNoise.mayHoldPowerMenu(true, false, AccessibilityWindowInfo.TYPE_APPLICATION));
     }
 
-    @Test public void onlySystemWindowsAreSearchedEvenRightAfterAWindowChange() {   // BY1a B1
+    @Test public void onlySystemWindowsAreSearched() {   // BY1a B1
         assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_APPLICATION));
         assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_INPUT_METHOD));
         assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_SYSTEM));

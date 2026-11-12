@@ -226,7 +226,7 @@ public class PatchRestTest {
         assertTrue(PatchRest.padCancelled(1000 + PatchRest.PAD_CANCEL_MS, 1000, 0, false, true, 0));
     }
 
-    @Test public void anUnlockIsNeverACancel() {
+    @Test public void anUnlockSeenByTheCheckIsNeverACancel() {
         assertFalse(PatchRest.padCancelled(1700, 1000, 900, false, true, 1270));   // USER_PRESENT after the pad left
         assertFalse(PatchRest.padCancelled(1700, 1000, 900, false, false, 0));     // the keyguard is gone
     }
