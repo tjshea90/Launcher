@@ -46,6 +46,13 @@ public class KeyboardPolicyTest {
         assertEquals(OTHER.id, KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(LATIN, OTHER), OTHER.id));
         assertNull("nothing usable: leave the keyboard alone", KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(LATIN), "gone/.Ime"));
     }
+    @Test public void theStatusLineWhenNothingCanBeChosenNamesGboardAndWhatIsEnabled() {
+        assertEquals("Gboard is not an enabled keyboard (enabled: com.android.inputmethod.latin, com.touchtype.swiftkey): left as is. Turn it on under Virtual keyboard > Manage keyboards.",
+                KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.asList(LATIN, SWIFT)));
+        assertEquals("Gboard is not an enabled keyboard (enabled: none): left as is. Turn it on under Virtual keyboard > Manage keyboards.", KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.<KeyboardPolicy.Ime>asList()));
+        assertTrue(KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, null).contains("enabled: none"));
+        assertEquals("no enabled stock keyboard found: left as is", KeyboardPolicy.noTargetStatus(Mode.CUSTOM, Arrays.asList(OTHER)));   // the custom launcher's line is unchanged
+    }
     @Test public void gboardIsRecognisedByItsPackageOnly() {
         assertTrue(KeyboardPolicy.isGboard("com.google.android.inputmethod.latin"));
         assertFalse(KeyboardPolicy.isGboard("com.android.inputmethod.latin"));          // the stock AOSP keyboard
