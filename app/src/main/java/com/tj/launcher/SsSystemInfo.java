@@ -49,7 +49,8 @@ final class SsSystemInfo {
 
     /**
      * The label of the DEFAULT input method (the System page's summary for "Languages & input"). BT1e: never SwiftKey's name; when SwiftKey is the default (the keyboard switch is off, or the custom launcher has not
-     * switched yet) the first other enabled keyboard is named instead, as the real page would after SwiftKey was removed from the list.
+     * switched yet) the first other enabled keyboard is named instead, as the real page would after SwiftKey was removed from the list. BX1: the same for Gboard (the Quickstep side's keyboard); if it is the only
+     * enabled keyboard it is named, as {@link KeyboardPolicy#visibleLabels} does.
      */
     static String defaultKeyboardLabel(Context c) {
         try {
