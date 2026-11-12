@@ -56,7 +56,9 @@ def chain(fps):
 def frames(video, box, fps):
     """Grey pixels of one box per frame (resampled to a constant fps, end padded): a list of bytes objects. box = (x, y, w, h) in VIDEO px."""
     x, y, w, h = box
-    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "%s,crop=%d:%d:%d:%d,format=gray" % (chain(fps), w, h, x, y), "-f", "rawvideo", "-"]
+    # format=gray BEFORE crop: a crop of the yuv420p video rounds an odd width / height / offset to the chroma grid, so the raw frames
+    # were NOT w * h bytes and the stream was cut at the wrong places (run #563: the 99 x 83 core box read 194 frames of shifted pixels).
+    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "%s,format=gray,crop=%d:%d:%d:%d" % (chain(fps), w, h, x, y), "-f", "rawvideo", "-"]
     data = subprocess.run(cmd, capture_output=True).stdout
     n = w * h
     return [data[i:i + n] for i in range(0, len(data) - n + 1, n)]
