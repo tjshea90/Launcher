@@ -2888,7 +2888,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** Called on every accessibility event: leading edge at once (the number must go the moment the PIN pad appears), plus one trailing check. */
     private void scheduleLockUpdate() {
-        if (!LockNumber.enabled(this) && lockView == null && !keyguardLockedFast()) return;   // number off, nothing on screen and not on the lock screen: zero cost
+        if (lockView == null && !lastBouncer && !keyguardLockedFast()) return;   // BY1a B4: nothing on screen, no PIN pad and not on the lock screen: zero cost, the number on or off (LockNumber.shouldShow needs the keyguard; was: two binder calls per event while unlocked with the number on)
         long now = android.os.SystemClock.uptimeMillis();
         if (now - lastLockEvalMs >= 60) { lastLockEvalMs = now; updateLockNumber(); }
         if (!lockEvalPending) { lockEvalPending = true; handler.postDelayed(lockEval, 120); }
