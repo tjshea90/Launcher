@@ -233,6 +233,11 @@ def main(argv):
         top_up = [mean(ft[i]) - mrt for i in range(n)]
         core_up = [mean(fc[i]) - mrc for i in range(n)]
     r = classify(core_d, ring_d, top_up, core_up, opt["--mode"], fps, float(opt["--t1"]), float(opt["--t2"]))
+    if opt["--sheet"] and sbox:
+        sheet(video, opt["--sheet"], sbox, fps, n, r["raw"])
+    real = max(0, n - fps)  # without the 1 s PAD
+    print("FLTL label=%s every 0.2 s core/ring%s: %s" % (label, "/top" if top_up is not None else "", timeline(core_d, ring_d, top_up, real, fps)))
+    r["frames"] = real
     print("FLMETRIC label=%s mode=%s ref=%s " % (label, opt["--mode"], opt["--ref"]) + " ".join("%s=%s" % (k, r[k]) for k in
           ("frames", "flashA", "flashA_ms", "flashB", "flashB_ms", "menu", "shot", "shot_ms", "first_menu", "worst", "spans")))
     return 0
