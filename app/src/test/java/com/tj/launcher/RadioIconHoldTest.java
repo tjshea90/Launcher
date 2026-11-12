@@ -174,12 +174,12 @@ public class RadioIconHoldTest {
     // ---------------------------------------------------------------- taking the hold
 
     @Test public void theOriginalIsOnDiskBeforeTheFirstWrite() {
-        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc,vpn");
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc,cast");
         assertTrue(set(st, s, true, true));
-        assertEquals("nfc,vpn,wifi,bluetooth", s.value);
+        assertEquals("nfc,cast,wifi,bluetooth,vpn", s.value);
         assertTrue(st.held);
-        assertEquals("nfc,vpn", st.original);
-        assertEquals("[save(true,nfc,vpn), put(nfc,vpn,wifi,bluetooth)]", events.toString());
+        assertEquals("nfc,cast", st.original);
+        assertEquals("[save(true,nfc,cast), put(nfc,cast,wifi,bluetooth,vpn)]", events.toString());
     }
 
     @Test public void aMissingSettingIsARealOriginalAndTheDefaultListIsKept() {
