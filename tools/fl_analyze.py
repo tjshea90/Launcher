@@ -193,7 +193,8 @@ def main(argv):
         print(__doc__)
         return 2
     video, label = argv[1], argv[2]
-    opt = {"--disp": "600x1024", "--mode": "flash", "--ref": "first", "--refms": "400", "--fps": "60", "--t1": str(T1), "--t2": str(T2), "--top": "", "--core": "", "--ring": ""}
+    opt = {"--disp": "600x1024", "--mode": "flash", "--ref": "first", "--refms": "400", "--fps": "60", "--t1": str(T1), "--t2": str(T2), "--top": "", "--core": "", "--ring": "",
+           "--sheet": "", "--sheetbox": ""}
     a = argv[3:]
     for i in range(0, len(a) - 1, 2):
         opt[a[i]] = a[i + 1]
