@@ -29,6 +29,13 @@ public final class KeyboardSwitch {
 
     private static void say(Context c, String s) { Features.setString(c, STATUS_KEY, s); Log.i(TAG, s); }
 
+    /** The packages of the enabled keyboards, comma separated ("none" for an empty list), for the status line. */
+    static String packagesOf(List<KeyboardPolicy.Ime> l) {
+        StringBuilder b = new StringBuilder();
+        for (KeyboardPolicy.Ime i : l) { if (b.length() > 0) b.append(", "); b.append(i.pkg); }
+        return b.length() == 0 ? "none" : b.toString();
+    }
+
     public static void apply(Context c, String mode) {
         try {
             if (!enabled(c)) return;
