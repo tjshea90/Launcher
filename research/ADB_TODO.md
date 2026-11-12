@@ -78,9 +78,9 @@ Changes nothing. Prints no accounts, serial number or Wi-Fi names.
 ## G. If Android ever shows "Choose a Home app" (after a launcher crash)
 - [ ] `adb shell cmd package set-home-activity com.tj.launcher/com.tj.launcher.RouterActivity`
 
-## H. Keyboard switch (SwiftKey in Quickstep, stock keyboard in custom) — check once
-- [ ] `adb shell ime list -s` — shows the installed keyboards. Both the stock one and SwiftKey must be listed (the launcher only switches between keyboards that are already enabled).
-- [ ] If SwiftKey is installed but missing: `adb shell ime enable com.touchtype.swiftkey/com.touchtype.KeyboardService`
+## H. Keyboard switch (Gboard in Quickstep, stock keyboard in custom; SwiftKey until 2026-11-12) — check once
+- [ ] `adb shell ime list -s` — shows the enabled keyboards. Both the stock one and Gboard must be listed (the launcher only switches between keyboards that are already enabled).
+- [ ] If Gboard is installed but missing: `adb shell ime enable com.google.android.inputmethod.latin/com.android.inputmethod.latin.LatinIME` (or Settings > System > Languages & input > Virtual keyboard > Manage keyboards)
 
 ## I. Experiments I may ask you to run later (do NOT run these yet)
 - Power-menu and pencil tests that need the tablet (see research/IDEAS_2026-11-04.md); I will give you the exact lines when they are proven safe on the emulator.
