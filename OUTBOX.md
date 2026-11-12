@@ -1833,3 +1833,7 @@
 ## 2026-11-12T23:08:26Z
 > I've added a diagnostic line to the charger check. Two comparison runs are still going: `se,ss` on the old release v0.9.7 and `se` on the current code. They finish around 23:16 UTC, and the background timer will bring me back to read them.
 <!-- sha:9cf5e76b70fb -->
+
+## 2026-11-12T23:25:07Z
+> The two current-code `se,ss` runs are due about 23:36 UTC; the timer will bring me back to read them. HANDOFF.md and the checkpoint now hold the full gate triage and every run id.
+<!-- sha:b8426408c26e -->
