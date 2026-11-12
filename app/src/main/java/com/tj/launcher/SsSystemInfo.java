@@ -33,7 +33,7 @@ final class SsSystemInfo {
 
     /**
      * The labels of the ENABLED input methods, joined (VirtualKeyboardPreferenceController). BT1e (Tj, 2026-11-11: "remove the text 'and Microsoft SwiftKey keyboard' even if that keyboard is installed"):
-     * the look-alike never names SwiftKey, whether or not it is installed and enabled ({@link KeyboardPolicy#visibleLabels}).
+     * the look-alike never names SwiftKey, whether or not it is installed and enabled ({@link KeyboardPolicy#visibleLabels}). BX1 (2026-11-12): nor Gboard, the Quickstep side's keyboard now, unless it is the only one.
      */
     static String enabledKeyboards(Context c) {
         try { return SsFormat.joinAnd(visibleKeyboardLabels(c)); } catch (Throwable t) { return ""; }
