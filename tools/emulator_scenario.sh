@@ -4327,7 +4327,8 @@ ensurehome
 # ---- BS1 + BS2 (Tj, 2026-11-10 23:27 and 23:55 UTC): "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher" and
 #      "Make it also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any
 #      time, show up on the lock screen or in the custom launcher".
-#      Switch keep_radios_hide_icons (the debug default is OFF, so it is set explicitly here). The hold = Settings.Secure icon_blacklist gets "wifi,bluetooth" (a MISSING setting means rotate,headset: those entries
+#      BZ1 (Tj, 2026-11-12): the VPN key (slot "vpn") is hidden by the same hold; the emulator has no VPN, so only the list (WFHIDDEN) and the JVM tests prove it.
+#      Switch keep_radios_hide_icons (the debug default is OFF, so it is set explicitly here). The hold = Settings.Secure icon_blacklist gets "wifi,bluetooth,vpn" (a MISSING setting means rotate,headset: those entries
 #      stay) in the custom launcher and on any lock screen; the original is saved in Settings.Global tj_radio_icons_original and put back in an unlocked Quickstep session. Neither radio is switched off by the lock-screen
 #      rule (AK1) nor by the custom launcher's radio guard while the hold can work (adb grant), and NOTHING turns one on. The emulator has NO Bluetooth hardware: Bluetooth is proven by the list and the JVM tests only.
 #      The Wi-Fi symbol itself is measured in the pictures (white pixels in the status bar; the emulator is fixed at 600x1024). The PIN is ALWAYS cleared again at the end.
