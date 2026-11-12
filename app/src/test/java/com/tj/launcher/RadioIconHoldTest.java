@@ -44,32 +44,38 @@ public class RadioIconHoldTest {
     // ---------------------------------------------------------------- the list helpers
 
     @Test public void aMissingSettingStartsFromTheSystemDefaultNotFromNothing() {
-        assertEquals("rotate,headset,wifi,bluetooth", RadioIconHold.with(null));
+        assertEquals("rotate,headset,wifi,bluetooth,vpn", RadioIconHold.with(null));
         assertTrue(RadioIconHold.hides(null, "rotate"));
         assertTrue(RadioIconHold.hides(null, "headset"));
         assertFalse(RadioIconHold.hides(null, "wifi"));
         assertFalse(RadioIconHold.hides(null, "bluetooth"));
+        assertFalse(RadioIconHold.hides(null, "vpn"));
     }
 
-    @Test public void anExistingListKeepsEveryEntryAndGetsBothOfOurs() {
-        assertEquals("a,b,wifi,bluetooth", RadioIconHold.with("a,b"));
-        assertEquals("wifi,bluetooth", RadioIconHold.with(""));
-        assertEquals("a,wifi,bluetooth", RadioIconHold.with("a,,"));            // empty entries are no-ops for SystemUI and are dropped
-        assertEquals("a,wifi,bluetooth", RadioIconHold.with("a,wifi,bluetooth")); // already there: not twice
+    @Test public void anExistingListKeepsEveryEntryAndGetsAllOfOurs() {
+        assertEquals("a,b,wifi,bluetooth,vpn", RadioIconHold.with("a,b"));
+        assertEquals("wifi,bluetooth,vpn", RadioIconHold.with(""));
+        assertEquals("a,wifi,bluetooth,vpn", RadioIconHold.with("a,,"));                // empty entries are no-ops for SystemUI and are dropped
+        assertEquals("a,wifi,bluetooth,vpn", RadioIconHold.with("a,wifi,bluetooth,vpn")); // already there: not twice
+        assertEquals("a,wifi,bluetooth,vpn", RadioIconHold.with("a,wifi,bluetooth"));     // two already there: not twice, only the third is added
     }
 
-    @Test public void onlyTheMissingSlotIsAddedWhenTheOtherIsHiddenAlready() {
-        assertEquals("bluetooth,x,wifi", RadioIconHold.with("bluetooth,x"));
-        assertEquals("wifi,x,bluetooth", RadioIconHold.with("wifi,x"));
-        assertEquals(Arrays.asList("wifi"), RadioIconHold.missing("bluetooth"));
-        assertEquals(Arrays.asList("wifi", "bluetooth"), RadioIconHold.missing(null));
-        assertTrue(RadioIconHold.missing("wifi,bluetooth").isEmpty());
+    @Test public void onlyTheMissingSlotsAreAddedWhenOthersAreHiddenAlready() {
+        assertEquals("bluetooth,x,wifi,vpn", RadioIconHold.with("bluetooth,x"));
+        assertEquals("wifi,x,bluetooth,vpn", RadioIconHold.with("wifi,x"));
+        assertEquals("vpn,x,wifi,bluetooth", RadioIconHold.with("vpn,x"));               // a VPN key Tj hides himself is not added twice
+        assertEquals("vpn,bluetooth,x,wifi", RadioIconHold.with("vpn,bluetooth,x"));     // the others hidden already: only the one missing slot is added
+        assertEquals(Arrays.asList("wifi", "vpn"), RadioIconHold.missing("bluetooth"));
+        assertEquals(Arrays.asList("wifi", "bluetooth", "vpn"), RadioIconHold.missing(null));
+        assertTrue(RadioIconHold.missing("wifi,bluetooth,vpn").isEmpty());
     }
 
-    @Test public void hidesAllNeedsBothSlots() {
-        assertTrue(RadioIconHold.hidesAll("rotate,wifi,bluetooth"));
+    @Test public void hidesAllNeedsEverySlot() {
+        assertTrue(RadioIconHold.hidesAll("rotate,wifi,bluetooth,vpn"));
+        assertFalse(RadioIconHold.hidesAll("rotate,wifi,bluetooth"));   // the VPN key would still show
         assertFalse(RadioIconHold.hidesAll("wifi"));
         assertFalse(RadioIconHold.hidesAll("bluetooth"));
+        assertFalse(RadioIconHold.hidesAll("vpn"));
         assertFalse(RadioIconHold.hidesAll(null));
     }
 
