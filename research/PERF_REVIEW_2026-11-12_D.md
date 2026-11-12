@@ -171,11 +171,7 @@ D1 and D2 together are about 10 % of the PSS. D4 to D8 are LOW.
 - **Verify:** emulator section `o` (O2 picture) and `mu` (MU-12) still pass.
 
 ### D6 LOW: four idle background threads live for the whole process
-- **Where:**
-  - LockLog.java:51 (executor);
-  - NotifSightings.java:113 (executor);
-  - AnimationSpeedup.java:157 (HandlerThread `tj-anim`);
-  - SettingsSpoof.java:83 (HandlerThread `TjSsSync`, started at every process start through TjApplication.java:24).
+- **Where:** LockLog.java:51 (executor), NotifSightings.java:113 (executor), AnimationSpeedup.java:157 (HandlerThread `tj-anim`), SettingsSpoof.java:83 (HandlerThread `TjSsSync`, started at every process start through TjApplication.java:24).
 - **Cost:** each idle thread keeps its touched stack pages and its native thread state, tens of KB each (unverified). The 53 `new Thread(` sites in 23 files (grep) end with their job, so they cost start-up time, not memory.
 - **Change:** let LockLog and NotifSightings share ONE single-thread executor; both only append to files, and each keeps its own order. Leave `tj-anim` and `TjSsSync` alone: `TjSsSync` makes package-manager calls, and `tj-anim` must not wait behind them.
 - **Risk:** a NotifSightings write can delay a LockLog append (both are short).
