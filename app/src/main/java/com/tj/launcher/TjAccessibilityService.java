@@ -59,7 +59,9 @@ public class TjAccessibilityService extends AccessibilityService {
         if (type == AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED && (pk == null || !"com.android.systemui".contentEquals(pk))) return;
         if (diagLines >= 200) return;   // BC2: the opening alone logs ~70 lines; the close follows ~2 s later in the same count
         diagLines++; diagLastMs = now;
-        Log.i(TAG, "PATCHEV t=" + now + " type=0x" + Integer.toHexString(type) + " pkg=" + pk + " cls=" + e.getClassName() + " age=" + Math.max(-1, now - e.getEventTime()) + " rest=" + (patchResting ? 1 : 0) + " open=" + (overlayShown ? 1 : 0) + " wid=" + e.getWindowId() + " dlg=" + dialogWindowId + " wc=" + e.getWindowChanges() + (closing ? " closing=1" : ""));   // BC2: wid / wc show which window an event is about (the dialog's removal ends the fade-out)
+        String pane = "";   // BY1b: what a SystemUI pane says about itself (the notification panel's pane title on the lock screen: "Lock screen" / "Notification shade" / "Quick settings"?)
+        if (type == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || type == AccessibilityEvent.TYPE_ANNOUNCEMENT) { CharSequence tx = e.getText() == null || e.getText().isEmpty() ? null : e.getText().get(0); pane = " cct=0x" + Integer.toHexString(e.getContentChangeTypes()) + " txt=" + (tx == null ? "-" : tx.toString().replace(' ', '_').substring(0, Math.min(32, tx.length()))); }
+        Log.i(TAG, "PATCHEV t=" + now + " type=0x" + Integer.toHexString(type) + " pkg=" + pk + " cls=" + e.getClassName() + " age=" + Math.max(-1, now - e.getEventTime()) + " rest=" + (patchResting ? 1 : 0) + " open=" + (overlayShown ? 1 : 0) + " wid=" + e.getWindowId() + " dlg=" + dialogWindowId + " wc=" + e.getWindowChanges() + (closing ? " closing=1" : "") + pane);   // BC2: wid / wc show which window an event is about (the dialog's removal ends the fade-out)
     }
 
     @Override public void onAccessibilityEvent(AccessibilityEvent event) {
