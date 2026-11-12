@@ -131,10 +131,14 @@ final class RecentsFilter {
         try {
             Labels.EX.execute(new Runnable() { @Override public void run() {
                 Set<String> s = null;
-                try { s = blockedNow(svc); } catch (Throwable t) { Log.e(TAG, "could not build the labels", t); }
-                if (s != null) Log.i(TAG, "labels built in " + (android.os.SystemClock.uptimeMillis() - startedAt) + " ms on " + Thread.currentThread().getName() + ", " + s.size() + " blocked");
-                final Set<String> result = s;
-                handler.post(new Runnable() { @Override public void run() { built(result, startedAt); } });
+                try {
+                    s = blockedNow(svc);
+                    Log.i(TAG, "labels built in " + (android.os.SystemClock.uptimeMillis() - startedAt) + " ms on " + Thread.currentThread().getName() + ", " + s.size() + " blocked");
+                } catch (Throwable t) { Log.e(TAG, "could not build the labels", t); }
+                finally {
+                    final Set<String> result = s;   // always handed back: a build that never ends would leave the guard waiting
+                    handler.post(new Runnable() { @Override public void run() { built(result, startedAt); } });
+                }
             } });
         } catch (Throwable t) { Log.e(TAG, "could not start the label build", t); built(null, startedAt); }
     }
