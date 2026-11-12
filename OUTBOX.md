@@ -2223,3 +2223,21 @@
 >
 > This timer and the other account's still wake a session every 2 hours for nothing. I can't delete mine without your approval in the app, so you can delete both "Launcher auto-resume heartbeat" tasks there.
 <!-- sha:2cd2fb81165e -->
+
+## 2026-11-12T02:19:43Z
+> Tj, v0.9.7 is out. Quickstep now switches the keyboard to Gboard instead of SwiftKey. The custom launcher is untouched: it still gets the same stock keyboard as before.
+>
+> Install it over the old one:
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.7
+>
+> Two things to know:
+> 1. **Turn Gboard on in the tablet's keyboard list.** Go to Settings > System > Languages & input > Virtual keyboard > Manage keyboards. The switch only picks a keyboard that is already enabled. It applies the next time you go into Quickstep. To apply it right away, flip "Stock keyboard in custom, Gboard in Quickstep" off and on in Launcher control.
+> 2. **One small call I made.** The custom launcher's Settings look-alike now leaves Gboard out of the "Virtual keyboard" line, the same way it already leaves SwiftKey out. Otherwise it would read "Android keyboard (AOSP) and Gboard". Tell me if you'd rather it listed Gboard.
+>
+> I kept testing light, as you asked.
+> - **Passed:** the full unit-test suite and lint, plus one short emulator run (74 checks, 0 failed). That run showed the custom launcher still gets exactly the stock keyboard it got before.
+> - **Not seen:** the emulator has no Gboard, so the switch to Gboard itself is only proven by unit tests. The real check is on your tablet.
+> - **Skipped:** the long lock-screen test set, because nothing in that area changed.
+>
+> If Gboard doesn't open, the status line under that switch in Launcher control now says why and lists which keyboards are enabled. Send me that line.
+<!-- sha:ca33f028e0ad -->
