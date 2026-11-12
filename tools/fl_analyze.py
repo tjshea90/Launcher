@@ -101,7 +101,7 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
                 worst = (ring_d[i] - core_d[i], i)
         elif core_d[i] >= t2 and ring_d[i] <= t1:
             fb.append(i)
-    for name, lst in (("A", fa), ("B", fb), ("S", shot)):
+    for name, lst in (("A", fa), ("B", fb), ("S", shot), ("M", menu)):
         if not lst:
             continue
         s = p = lst[0]
@@ -109,7 +109,9 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
             if i is not None and i == p + 1:
                 p = i
                 continue
-            spans.append("%s%.2f-%.2f" % (name, s / fps, (p + 1) / fps))
+            raw.append((name, s / fps, (p + 1) / fps))
+            if name != "M":
+                spans.append("%s%.2f-%.2f" % (name, s / fps, (p + 1) / fps))
             if i is not None:
                 s = p = i
     ms = lambda k: int(round(len(k) * 1000.0 / fps))
