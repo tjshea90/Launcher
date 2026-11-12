@@ -1776,3 +1776,7 @@
 >
 > Still running: emulator run #567, the two code reviewers, and the VPN change.
 <!-- sha:ce093d8c08e6 -->
+
+## 2026-11-12T21:36:27Z
+> Waiting for run #568 and the lock-patch reviewer. I'll pick up when either one reports.
+<!-- sha:7b65aa613fdd -->
