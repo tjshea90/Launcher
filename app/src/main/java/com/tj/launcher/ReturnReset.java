@@ -325,13 +325,23 @@ public final class ReturnReset {
             return known;
         }
         String saved = Features.getString(app, "target_pkg_for_" + label.toLowerCase(java.util.Locale.ROOT), null);
-        if (saved != null && isInstalled(app, saved)) {
+        int kind = savedKind(saved);
+        if (kind == SAVED_NO_APP) {                     // BY1a A2: the last full scan found no app for this label: a known "none", re-checked off the calling thread (it was a full label scan on the calling thread, often main, in every new process)
+            cachedPkg = null; cachedAt = now; cachedLabel = label;
+            refreshTargetAsync(app, label);
+            return null;
+        }
+        if (kind == SAVED_PACKAGE && isInstalled(app, saved)) {
             cachedLabel = label; cachedPkg = saved; cachedAt = now;
             refreshTargetAsync(app, label);            // is there a better match now? (off the calling thread)
             return saved;
         }
         return scanTarget(app, label);                  // the first time ever for this label
     }
+
+    /** BY1a A2 (pure): what a stored answer of {@link #scanTarget} means: nothing stored (never scanned for this label), "" (the scan found no app), or a package (still to be checked as installed). */
+    static final int SAVED_NOTHING = 0, SAVED_NO_APP = 1, SAVED_PACKAGE = 2;
+    static int savedKind(String saved) { return saved == null ? SAVED_NOTHING : saved.isEmpty() ? SAVED_NO_APP : SAVED_PACKAGE; }
 
     private static boolean isInstalled(Context c, String pkg) {
         try { c.getPackageManager().getApplicationInfo(pkg, 0); return true; } catch (PackageManager.NameNotFoundException e) { return false; }
