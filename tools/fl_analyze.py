@@ -117,7 +117,34 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
     ms = lambda k: int(round(len(k) * 1000.0 / fps))
     return {"frames": n, "flashA": len(fa), "flashA_ms": ms(fa), "flashB": len(fb), "flashB_ms": ms(fb), "menu": len(menu), "shot": len(shot),
             "shot_ms": ms(shot), "first_menu": ("%.2f" % (first_menu / fps)) if first_menu is not None else "none",
-            "worst": ("%.1f@%.2f" % (worst[0], worst[1] / fps)) if worst[1] >= 0 else "0", "spans": ",".join(spans[:8]) or "none"}
+            "worst": ("%.1f@%.2f" % (worst[0], worst[1] / fps)) if worst[1] >= 0 else "0", "spans": ",".join(spans[:8]) or "none",
+            "raw": raw}
+
+
+COLORS = {"A": "red", "B": "blue", "S": "yellow", "M": "green"}
+
+
+def sheet(video, out, box, fps, n, raw, step=6, cols=10):
+    """A contact sheet PNG of one box: a thumbnail every `step` frames (0.1 s at 60 fps), left to right, `cols` per row, so thumbnail k
+    (row r, column c, k = r * cols + c) is at k * step / fps seconds. A thick frame marks a flash (A red, B blue), a visible Screenshot
+    entry (S yellow) or an open menu (M green, thin). Published to the branch ci-shots by a shots=true run: LOOK at it before theorising."""
+    x, y, w, h = box
+    marks = "".join(",drawbox=x=0:y=0:w=iw:h=ih:color=%s:t=%d:enable='between(t,%.3f,%.3f)'" % (COLORS[k], 3 if k == "M" else 8, a, b - 0.001)
+                    for k, a, b in raw[:24])
+    rows = max(1, -(-((n + step - 1) // step) // cols))
+    vf = "%s,crop=%d:%d:%d:%d%s,select='not(mod(n\\,%d))',scale=iw/2:-2,tile=%dx%d:padding=2:color=white" % (chain(fps), w, h, x, y, marks, step, cols, rows)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-vf", vf, "-frames:v", "1", out], capture_output=True)
+
+
+def timeline(core_d, ring_d, top_up, n, fps, every=12):
+    """core_d/ring_d[/top_up] every `every` frames (0.2 s at 60 fps), whole grey levels: what the counts were made of."""
+    v = []
+    for i in range(0, n, every):
+        s = "%.1f:%d/%d" % (i / fps, round(core_d[i]), round(ring_d[i]))
+        if top_up is not None:
+            s += "/%d" % round(top_up[i])
+        v.append(s)
+    return " ".join(v)
 
 
 def box_of(s, sx, sy, vw, vh):
