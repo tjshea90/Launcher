@@ -1480,3 +1480,8 @@ Find the music app in the attached screenshots. The icon for the app is the spea
 ```
 I no longer use Microsoft Swiftkey. I use Google Gboard. Make the custom launcher open the same default keyboard it already opens, no changes needed, but make quickstep open Gboard as the default keyboard. This is a small change that shouldn't require lengthy testing
 ```
+
+## 2026-11-12T17:26:37Z
+```
+Do a full review of the launcher for optimizations in code and to make it load and run as smoothly and fast as possible with minimal lag and battery waste and minimal ram usage without sacrificing any speed or function. Do emulated test runs of the lock screen and home screen and try different screen presses and open and close the notification panel and pull up the pin keyboard and test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the first lock screen or after pulling down the notification panel or pulling up the pin pad. It should not flicker or flash either the screenshot button or the wallpaper patch at any time, and this seems to happen on the first lock screen and after moving things like the notification panel and pin pad
+```
