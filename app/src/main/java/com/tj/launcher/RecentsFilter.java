@@ -113,6 +113,7 @@ final class RecentsFilter {
             if (!wanted(Mode.isCustom(svc), Features.get(svc, KEY, true), svc.keyguardLockedNow(), CrashGuard.automationOff(svc), svc.resetDrivesRecents())) return;
             schedule(FIRST_LOOK_MS);
             rounds = 0; looks = 0;
+            if (buildNeeded(labelsFresh(blocked != null, blockedAt, android.os.SystemClock.uptimeMillis()), building)) build();   // BY1a C1: start at the event; the first look finds the set ready or waits for it
         } catch (Throwable t) { Log.e(TAG, "recents guard event failed", t); }
     }
 
@@ -121,14 +122,47 @@ final class RecentsFilter {
         handler.postDelayed(run, delayMs);
     }
 
-    private final Runnable run = new Runnable() { @Override public void run() {
+    private final Runnable run = new Runnable() { @Override public void run() { look(false); } };
+
+    /** BY1a C1: builds the label set on the worker; the main thread gets it with {@link #built}. Never throws. */
+    private void build() {
+        building = true;
+        final long startedAt = android.os.SystemClock.uptimeMillis();
+        try {
+            Labels.EX.execute(new Runnable() { @Override public void run() {
+                Set<String> s = null;
+                try { s = blockedNow(svc); } catch (Throwable t) { Log.e(TAG, "could not build the labels", t); }
+                if (s != null) Log.i(TAG, "labels built in " + (android.os.SystemClock.uptimeMillis() - startedAt) + " ms on " + Thread.currentThread().getName() + ", " + s.size() + " blocked");
+                final Set<String> result = s;
+                handler.post(new Runnable() { @Override public void run() { built(result, startedAt); } });
+            } });
+        } catch (Throwable t) { Log.e(TAG, "could not start the label build", t); built(null, startedAt); }
+    }
+
+    /** BY1a C1: the end of a build (main thread). */
+    private void built(Set<String> s, long startedAt) {
+        building = false;
+        if (s != null) { blocked = s; blockedAt = startedAt; }
+        boolean waited = lookWaits;
+        lookWaits = false;
+        if (lookAfterBuild(waited, s != null)) look(true);
+        else if (waited) pending = false;
+    }
+
+    /** One look at the Recents cards (main thread). {@code justBuilt}: the set was built for this look and is used whatever its age. */
+    private void look(boolean justBuilt) {
         pending = false;
         try {
             if (!wanted(Mode.isCustom(svc), Features.get(svc, KEY, true), svc.keyguardLockedNow(), CrashGuard.automationOff(svc), svc.resetDrivesRecents())) return;
-            long now = android.os.SystemClock.uptimeMillis();
-            if (now - blockedAt > LABELS_TTL_MS) { blocked = blockedNow(svc); blockedAt = now; }
-            if (blocked.isEmpty()) return;
-            java.util.List<String> closedNow = svc.closeRecentsCards(blocked);
+            boolean fresh = labelsFresh(blocked != null, blockedAt, android.os.SystemClock.uptimeMillis());
+            if (!justBuilt && !fresh) {   // BY1a C1: missing or older than the TTL: never used; the worker builds it and this look runs again with it (the set the scan here gave before)
+                pending = true; lookWaits = true;
+                if (buildNeeded(false, building)) build();
+                return;
+            }
+            Set<String> b = blocked;
+            if (b == null || b.isEmpty()) return;
+            java.util.List<String> closedNow = svc.closeRecentsCards(b);
             if (!closedNow.isEmpty()) {
                 closedTotal += closedNow.size();
                 String what = closedNow.size() == 1 ? "closed a Recents card of '" + closedNow.get(0) + "'" : "closed " + closedNow.size() + " Recents cards, '" + closedNow.get(0) + "' and " + (closedNow.size() - 1) + " more";
