@@ -274,13 +274,14 @@ public class RadioIconHoldTest {
     // ---------------------------------------------------------------- ending the hold
 
     @Test public void endingTheHoldPutsTheExactOriginalBack() {
-        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc,vpn");
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc,cast");
         set(st, s, true, true);
+        assertEquals("nfc,cast,wifi,bluetooth,vpn", s.value);   // premise: the hold really changed the list
         events.clear();
         assertFalse(set(st, s, true, false));
-        assertEquals("nfc,vpn", s.value);
+        assertEquals("nfc,cast", s.value);
         assertFalse(st.held);
-        assertEquals("[put(nfc,vpn), save(false,null)]", events.toString());   // the hold is cleared only AFTER the write
+        assertEquals("[put(nfc,cast), save(false,null)]", events.toString());   // the hold is cleared only AFTER the write
     }
 
     @Test public void aMissingOriginalIsRestoredByDeletingTheSetting() {
