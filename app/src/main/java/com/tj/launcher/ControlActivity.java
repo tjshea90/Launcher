@@ -334,7 +334,7 @@ public class ControlActivity extends Activity {
             tileChooser("Tiles in the custom launcher", TileProfile.CUSTOM_KEY, TileProfile.DEFAULT_CUSTOM);
             tileChooser("Tiles in Quickstep", TileProfile.QUICKSTEP_KEY, TileProfile.DEFAULT_QUICKSTEP);
         } else note("Per-launcher tiles are OFF: both launchers keep whatever quick-settings tiles Android has.");
-        toggle("Stock keyboard in custom, SwiftKey in Quickstep", KeyboardSwitch.status(this), KeyboardSwitch.enabled(this), new Chg() { public void on(boolean v) {
+        toggle("Stock keyboard in custom, Gboard in Quickstep", KeyboardSwitch.status(this), KeyboardSwitch.enabled(this), new Chg() { public void on(boolean v) {
             Features.set(ControlActivity.this, KeyboardSwitch.KEY, v);
             KeyboardSwitch.apply(ControlActivity.this, Mode.get(ControlActivity.this));
         } });
