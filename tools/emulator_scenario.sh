@@ -1889,6 +1889,10 @@ sefeat true true true; sefresh
 adb shell dumpsys battery unplug >/dev/null 2>&1; sleep 1
 adb shell "dumpsys battery set ac 1; dumpsys battery set ac 0; dumpsys battery set ac 1" >/dev/null 2>&1; sleep 3; getmode > "$OUT/se-chg-on.txt"
 check "SE-C2: with the charger flick ON, in / out / in takes Tj to Quickstep" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/se-chg-on.txt)\" = quickstep ]"
+if [ "$(tr -d ' \r\n' < "$OUT/se-chg-on.txt")" != quickstep ]; then   # BY1d (#570, #576: SE-C2 red twice on the head): say WHY in the results block (the charger code is unchanged since v0.9.7)
+  info "SE-C2 diag: mode=$(tr -d ' \r\n' < "$OUT/se-chg-on.txt") $(kg_state) battery=[$(adb shell dumpsys battery 2>/dev/null | grep -E 'AC powered|USB powered|status:' | tr -s ' \r\n' ' ')] crash=[$(adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" 2>/dev/null | tr -d '\r\n' | grep -o '<boolean[^>]*>' | tr '\n' ' ' | cut -c1-160)] power-broadcasts-in-history=$(adb shell dumpsys activity broadcasts history 2>/dev/null | grep -c 'ACTION_POWER_')"
+  info "SE-C2 diag log: $(adb logcat -d -s TjEntrance:V 2>/dev/null | grep -v 'ENTRANCE ' | tail -4 | tr -s ' \r\n' ' ' | cut -c1-280)"
+fi
 adb shell dumpsys battery reset >/dev/null 2>&1
 adb logcat -d -s TjEntrance:I > "$OUT/se-log.txt" 2>&1
 info "SE entrance log: $(grep -c 'ENTRANCE' $OUT/se-log.txt) entrance(s): $(grep 'ENTRANCE' $OUT/se-log.txt | sed 's/.*ENTRANCE //' | tr '\n' ',' | cut -c1-120)"
