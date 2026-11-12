@@ -1794,3 +1794,7 @@
 >   - One residual stays: a 2–4 frame lag on the first power menu after a wake. It comes from the stock menu's timing, not ours, and is documented.
 > - **Resume from:** `CHECKPOINT.md` "Do this next" (it has the run ids). Heartbeat `trig_01JYEUXs7JosHyg85f2T1oCK`.
 <!-- sha:5bbf7a83445e -->
+
+## 2026-11-12T22:07:35Z
+> Hand-off notes updated with the run ids and the ship steps. Waiting for gate run `pt` (about 22:16 UTC), then the four long runs (about 22:35).
+<!-- sha:fbc2dae3b9d9 -->
