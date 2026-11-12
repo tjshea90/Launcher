@@ -152,7 +152,7 @@ public class ControlActivity extends Activity {
             } else AnimationSpeedup.syncNow(ControlActivity.this, "switched in Launcher control");
             rebuild();
         } });   // BS1 + BS2
-        note("Wi-Fi and Bluetooth symbols: " + RadioIconHide.describe(this));
+        note("Wi-Fi, Bluetooth and VPN symbols: " + RadioIconHide.describe(this));
 
         group("lock", "Lock screen", false);
         toggle("Show my number at the bottom", "Disappears when you pull up the PIN pad.", LockNumber.enabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, LockNumber.KEY, v); } });
