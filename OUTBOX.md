@@ -1841,3 +1841,7 @@
 ## 2026-11-12T23:40:18Z
 > `ship.sh` is in its last steps. Once it reports success I'll start the GitHub release build.
 <!-- sha:1d3763d85b77 -->
+
+## 2026-11-12T23:42:58Z
+> The draft answer is checked and corrected. The timer brings me back at 23:45:30 UTC to confirm the v0.9.8 Release.
+<!-- sha:f72dfe036388 -->
