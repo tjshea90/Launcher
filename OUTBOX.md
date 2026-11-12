@@ -1780,3 +1780,17 @@
 ## 2026-11-12T21:36:27Z
 > Waiting for run #568 and the lock-patch reviewer. I'll pick up when either one reports.
 <!-- sha:7b65aa613fdd -->
+
+## 2026-11-12T22:00:59Z
+> Gate status: six emulator runs started at 21:57 UTC. The quick one (`rg`) finishes around 22:04, `pt` around 22:15, and the four long ones around 22:35. The draft answer to Tj is saved in `research/V098_RELEASE_MESSAGE_DRAFT_2026-11-12.md`.
+>
+> **Checkpoint** (health: yellow; the gate is in flight)
+> - **Done:**
+>   - Flicker fixes for the notification panel, the panel left open across screen-off, and the PIN pad. Each was filmed and proven on the emulator.
+>   - The speed/battery/memory fixes and the VPN key change.
+>   - Both code reviews, with their findings fixed. Unit tests: 1036, 0 failures.
+> - **Open:**
+>   - Read the six gate runs (#569–#574), then ship v0.9.8 and answer Tj with the Release link.
+>   - One residual stays: a 2–4 frame lag on the first power menu after a wake. It comes from the stock menu's timing, not ours, and is documented.
+> - **Resume from:** `CHECKPOINT.md` "Do this next" (it has the run ids). Heartbeat `trig_01JYEUXs7JosHyg85f2T1oCK`.
+<!-- sha:5bbf7a83445e -->
