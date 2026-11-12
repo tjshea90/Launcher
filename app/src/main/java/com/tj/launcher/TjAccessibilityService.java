@@ -313,6 +313,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { updateMotion(); } catch (Throwable t) { Log.e(TAG, "motion failed", t); }
         try { startTileGuard(); } catch (Throwable t) { Log.e(TAG, "tile guard failed", t); }
         try { startRadioGuard(); } catch (Throwable t) { Log.e(TAG, "radio guard failed", t); }
+        try { if (keyguardLocked()) noteShade(shadeLevel(), "look at connect"); } catch (Throwable t) { Log.e(TAG, "shade look failed", t); }   // BY1 review MED1: a re-bound service starts with "closed"; the panel may be open (a dump, an update, a restart)
         try { startPatchWatch(); } catch (Throwable t) { Log.e(TAG, "patch watch failed", t); }
         try { DemoModeProfile.cleanupOnce(this); } catch (Throwable t) { Log.e(TAG, "demo cleanup failed", t); }   // AB1: the retired retail-demo option never stays switched on
         try { KeepAliveService.ensure(this); } catch (Throwable t) { Log.e(TAG, "keep-alive failed", t); }   // AA2: after a restart / update the helper reconnects first: bring the service back
@@ -1834,7 +1835,8 @@ public class TjAccessibilityService extends AccessibilityService {
             // BE2 (Tj: "at no time ... an app that is hidden from the app drawer inside the recent apps"): while locked, in the custom launcher, every task of a non-drawer app is removed by id (helper running, invisible)
             if (locked && !paused && !cleanedNow && !armed && Mode.isCustom(app)) RecentsSweep.requestAsync(app, "lock", RecentsSweep.HIDDEN_ONLY, null, 4000);
             if (locked && !paused && ReturnReset.cleanStart(app) && (!Mode.isCustom(app) || ReturnReset.bootCleanPending(app))) AppOrigin.refreshUsedCacheAsync(app);   // BE3: what the unlock needs to know about Recents is read now, not on the unlock path
-            if (locked) noteShade(shadeLevel(), "look at " + why);   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
+            boolean dark = !isScreenOn();
+            if (locked && !(shadeLookedDark && !dark)) { noteShade(shadeLevel(), "look at " + why); if (dark) shadeLookedDark = true; }   // review LOW2: the wake (SystemUI busy) skips it when the dark look already read the panel   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
             if (locked) { try { refreshLayers(); } catch (Throwable t) { Log.e(TAG, "patch pre-creation failed", t); } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst
             if (ProfileSession.prearmCustomStackOnLockedWake(ProfileSession.prearm(app), locked, armed, preArmedThisLock, paused)) prearmCustom(why);
         } catch (Throwable t) { Log.e(TAG, "lock prepare failed", t); }
@@ -2860,6 +2862,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
+                shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
                 lockShotFresh = false;     // a new lock session: photograph the lock screen again after the next wake (notifications may have changed)
                 qsAppAt = ResumeTarget.refreshedAt(qsApp, fgPkg, qsAppAt, t);   // review RV2: the app still in front when the screen goes off is the one Tj had open: its 6 h clock starts now
                 resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; flurryChange(false, t); updateMotion();   // (BY1c F1: the panel's state is KEPT: an open quick-settings panel survives the screen-off, run #566 picture fl-shadeoff-wake; lockPrepare looks again while dark)
