@@ -1730,3 +1730,16 @@
 >
 > **One cause is already clear in the code and in the numbers:** after a finger touches the lock screen, the wallpaper patch comes back 1.5 s later even if the notification panel is still open. It then sits on top of the panel; the film shows that for about 2 seconds. A second likely cause is the patch being fully visible the moment the screen turns on, while the lock screen is still fading in from black. Run #564 will show whether that one is real. I'll fix both once the run confirms them.
 <!-- sha:ec1b9cd79546 -->
+
+## 2026-11-12T20:20:23Z
+> I'm waiting on two things running in the background: the probe film run (#565, done in about 3 minutes) and a local compile and unit test of the PIN-pad fix. Reviewers A, C and D are still reading the code.
+>
+> Progress since my last update:
+> - **Run #564 (fixed analyzer): 17 checks pass, 2 fail.** I looked at both failures in the thumbnails.
+>   - **Notification panel (F1):** after a finger opens the panel, a block of lock-screen wallpaper (the patch) appears on top of the open panel about 2 s later and stays for 2.3 s. That is the flash you described.
+>   - **Power menu right after the PIN pad is closed:** the stock "Screenshot" entry shows for about 2 frames (167 ms) before the patch covers it. The patch was still away, because each PIN-pad signal keeps it away for 2.5 s.
+>   - **First lock screen after the screen comes on:** no flash on the emulator, and a menu opened half a second after waking was covered from the first frame. The tablet may still behave differently.
+>   - **Power menu opened while the PIN pad is still up (extra check):** "Screenshot" shows for 2 frames, then the patch shows the bright lock wallpaper on the dark PIN-pad background. That is the wrong picture.
+> - **PIN-pad fix written:** if the pad closes and the screen stays locked with no unlock, the patch comes back after 0.7 s instead of about 2.5 s. It has 5 unit tests, which are compiling now.
+> - **Reviewer B (accessibility service) finished:** it found whole-screen searches of other windows that ran on the launcher's main thread for about 55 s in 121 minutes on your tablet. Those are the biggest performance item so far.
+<!-- sha:ca9ac2b2aee1 -->
