@@ -39,7 +39,7 @@ final class SsSystemInfo {
         try { return SsFormat.joinAnd(visibleKeyboardLabels(c)); } catch (Throwable t) { return ""; }
     }
 
-    /** BT1e: the labels of the enabled input methods the look-alike may show (SwiftKey's left out). */
+    /** BT1e: the labels of the enabled input methods the look-alike may show (SwiftKey's left out; BX1: Gboard's too while another keyboard is listed). */
     private static List<String> visibleKeyboardLabels(Context c) {
         InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
         List<String> pkgs = new ArrayList<>(), labels = new ArrayList<>();
