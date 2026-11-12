@@ -81,6 +81,7 @@ If no installed app matches the target label (`solitaire` by default, ReturnRese
 **Change:**
 - Run both steps once per Launcher instance. Keep a WeakReference to the instance last handled in TjHooks. A recreated Launcher gets the description again, so the v0.3.2 bug named in the comment stays fixed.
 - Do the label and icon work of the first call on a worker thread, and post only `setTaskDescription` back to the main thread.
+- In `ReturnReset.targetPackage`, treat a stored "" as a known "none". Fill the memory cache and refresh in the background, as :329-330 already do for a stored package, instead of scanning on the calling thread at :333. The background refresh still finds a target that is installed later.
 
 **Risk:** if something outside the app cleared a task's exclude flag between two resumes, it would not be set again. Nothing in the app clears it; the system side is unverified.
 
