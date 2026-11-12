@@ -4536,18 +4536,23 @@ btnote(){ # btnote <label> <gap> <core_mean>: INFO lines (the press verdict with
 btcard(){ # btcard <label>: "full" when the press covered the whole panel with the card (the CARD line's area equals its full), "short" for a short card, "" for no CARD line
   local l; l="$(grep 'CARD area' "$OUT/bt-$1-log.txt" | tail -1)"; [ -n "$l" ] || return 0
   [ "$(hpnums "$l" area)" = "$(hpnums "$l" full)" ] && echo full || echo short; }
-btnever(){ # btnever <label> <core_mean>: the stock Screenshot entry is never visible: the patch covers the slot (deviation within 2 levels) OR the card covers the WHOLE panel (the log says so)
-  awk -v c="${2:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}' && return 0
+# BY1 gate (#569, 2026-11-12): after section ps in the same run the emulator's stock scrim fits 0.75 while the patch draws the tablet's 0.80 (BT2, as HP4):
+# every round read core_mean=+7.17, the control too, with a fresh patch and the fast path. Where the fit is not 0.80 the slot may deviate by that difference
+# (below 12 levels; a visible stock Screenshot entry is tens of levels off), and an INFO line says so (never silent).
+btscale(){ grep PBMETRIC "$OUT/bt-$1-pb.txt" 2>/dev/null | grep -o ' scale=[0-9.]*' | head -1 | cut -d= -f2; }
+bttol(){ local sc; sc="$(btscale "$1")"; if awk -v s="${sc:-0.8}" 'BEGIN{exit !(s>=0.78&&s<=0.82)}'; then echo 2.0; else echo 12.0; info "BT1c $1: the stock scrim fits ${sc:-?} here (the patch draws 0.80, BT2): the slot checks allow 12 levels instead of 2"; fi; }
+btnever(){ # btnever <label> <core_mean> [tolerance]: the stock Screenshot entry is never visible: the patch covers the slot (deviation within the tolerance, 2 levels) OR the card covers the WHOLE panel (the log says so)
+  awk -v c="${2:-99}" -v t="${3:-2.0}" 'BEGIN{exit !((c<0?-c:c) < t+0)}' && return 0
   [ "$(btcard "$1")" = full ] && grep -q 'no usable patch, the card covers the whole panel' "$OUT/bt-$1-log.txt"; }
 if [ -n "$BT_PANEL" ]; then
-  BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"
-  check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM0:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
+  BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"; BT_TOL="$(bttol ctl)"
+  check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within $BT_TOL levels)" awk -v c="${BT_CM0:-99}" -v t="$BT_TOL" 'BEGIN{exit !((c<0?-c:c) < t+0)}'
   hpclose; sleep 6
   for BT_GAP in 0.4 1.2 4; do
     BT_L="g$(echo "$BT_GAP" | tr -d .)"
-    BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"
-    check "BT1c-$BT_L-never: the FIRST press $BT_GAP s after the shade was closed never shows the stock Screenshot entry (patch over it, or the card over the whole panel)" btnever "$BT_L" "$BT_CM"
-    if [ "$BT_GAP" != 0.4 ]; then check "BT1c-$BT_L: ... and at $BT_GAP s it is the PATCH that covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'; fi
+    BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"; BT_TOL="$(bttol "$BT_L")"
+    check "BT1c-$BT_L-never: the FIRST press $BT_GAP s after the shade was closed never shows the stock Screenshot entry (patch over it, or the card over the whole panel)" btnever "$BT_L" "$BT_CM" "$BT_TOL"
+    if [ "$BT_GAP" != 0.4 ]; then check "BT1c-$BT_L: ... and at $BT_GAP s it is the PATCH that covers the Screenshot spot (slot deviation within $BT_TOL levels)" awk -v c="${BT_CM:-99}" -v t="$BT_TOL" 'BEGIN{exit !((c<0?-c:c) < t+0)}'; fi
     hpclose; sleep 6
   done
   # how long after the shade is closed is the patch fresh and resting again? (poll the log: "PATCH rest on" after the collapse)
