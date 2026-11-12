@@ -1,13 +1,13 @@
-# CHECKPOINT 1240 — read me first, then TASKS.md
+# CHECKPOINT 1241 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T21:45:36Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `8f0b2f49` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T21:49:52Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `ea8d0d3b` (this checkpoint is the commit after it)
 
 ## Just done
-lock reviewer DONE (BY1c diff): 1 MED + 5 LOW. MED1 onServiceConnected never looks at the panel (rebind with QS open -> patch rests over it): fix noteShade(shadeLevel) before startPatchWatch. LOW2 SCREEN_ON look blocks every wake (skip if dark look done since off). LOW3 unlocked pane titles leak OPEN into next lock (drop OPEN unless keyguardLocked). LOW4 occlusion (dialer/camera over keyguard) pre-existing, F3 sooner: padCancel needs no app window. LOW5 autoShot can photograph open panel (ready && !lockShadeOpen). LOW6 test names. Q for Tj: menu over open QS panel
+#568 id 43310928575 (fl, 6381a278): 18 PASS 1 FAIL (FL2 menuW1 flashA 2 = 33 ms). seq: W1 fast open age=2 ms, fade lag 3 ms, first draw 19 ms = OUR side fast (W2: lag 35, first 86, no flash) -> residual W1 lag is stock-side timing. NEW: W2 + menuS1 seq 'menu closed' from a 163-174 ms node scan WHILE the menu was open, re-opened by the 2nd Phone_options event 0.2 s later (patch at bright rest look over the dimmed menu = a flash the FL2 check does not count)
 
 ## Do this next
-fix MED1+LOW2-6 in TAS; read #568 id 43310928575 menuW1 seq. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+find the scan's close rule (evaluateScan -> patchShow(false)); close only when the dialog WINDOW is gone; then reviewer fixes MED1/LOW2-6. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ fix MED1+LOW2-6 in TAS; read #568 id 43310928575 menuW1 seq. Heartbeat trig_01JY
 
 ## Last ten checkpoints
 ```
+  ea8d0d3b ckpt 1240: lock reviewer DONE (BY1c diff): 1 MED + 5 LOW. MED1 onServiceConnected never
   d05deb09 ckpt 1239: PERF_REVIEW status section written (fixes done + review verdicts). gate.sh v
   95dd29c0 ckpt 1238: suite+lint on 6381a278: 1035 tests 0 fail, lint OK. fl run #568 id 433109285
   13d4e526 ckpt 1237: dispatched emulator fl (shots) on main 6381a278 at 21:30Z to time menuW1 (fa
@@ -25,8 +26,4 @@ fix MED1+LOW2-6 in TAS; read #568 id 43310928575 menuW1 seq. Heartbeat trig_01JY
   c131378e ckpt 1233: #567 id 43306712313 (fl, 2f944bae: F1b+B1-B4+C2+D1+subagent batch): 18 PASS 
   b3161105 ckpt 1232: BZ1a/b delegated 21:15Z to a subagent: RadioIconHold.SLOT_VPN='vpn' in SLOTS
   78b5914b ckpt 1231: BZ1 (Tj 21:10Z, new request): hide the VPN key icon everywhere except unlock
-  9c3350bd ckpt 1230: full suite on combined tree: 1034 tests 0 fail, lint clean. Run #567 id 4330
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
