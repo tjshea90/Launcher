@@ -137,7 +137,7 @@ public class TjAccessibilityService extends AccessibilityService {
         dialogWindowId = event.getWindowId();   // BC2: the removal of THIS window ends the fade-out (dialogGone)
         String why = fastDecline();
         if (why != null) {
-            Log.i(TAG, "PATCH fast skip: " + why + " (the normal path follows)");
+            Log.i(TAG, "PATCH fast skip: " + why + " (the normal path follows) t=" + now);
             // BJ1: the burst's first event may have started a wait for a FAST open on the home screen (quietBurst); the dialog's own event says it is not going to happen (the patch went stale in between): the card path must not sit behind that wait
             if (patchHomeMode && !overlayShown && quietUntilMs != 0) { quietUntilMs = 0; handler.removeCallbacks(quietWork); }
             return;
