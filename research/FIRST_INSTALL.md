@@ -53,7 +53,7 @@ Before installing: have a PC with `adb` ready if you can (not required): `bash t
 - **Solitaire in front whenever the custom launcher starts** (boot, or if Android restarts it) and on return from Quickstep. Switch: Launcher control > "Open the launcher at start". Normal Home presses stay stock.
 - **Our launcher never appears in Recents** (it lost its home status when the router took over; fixed with an exclude flag).
 - **Faster reset:** polls every 40 ms for the real "Clear all" buttons instead of waiting; an empty shade/Recents ends instantly; "Last reset" shows how many ms it took.
-- **Keyboard switch (needs one adb command):** `adb shell pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS`, then Launcher control > "Keyboard: stock in custom launcher, SwiftKey in Quickstep: ON". It only switches to a keyboard that is already enabled, and "Restore everything" puts your original back.
+- **Keyboard switch (needs one adb command):** `adb shell pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS`, then Launcher control > "Stock keyboard in custom, Gboard in Quickstep" ON (Gboard, not SwiftKey, since 2026-11-12). It only switches to a keyboard that is already enabled, and "Restore everything" puts your original back.
 
 ## v0.3.2 (2026-11-03)
 - **After installing, turn the helper off and on once** (Settings > Accessibility > "Launcher power-menu helper"): it now also asks to see the side (power) key, and Android re-reads that when the service restarts.
