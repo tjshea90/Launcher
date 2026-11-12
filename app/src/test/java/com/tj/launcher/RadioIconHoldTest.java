@@ -304,10 +304,10 @@ public class RadioIconHoldTest {
     @Test public void aListThatNoLongerHidesAnySymbolIsNotTouchedWhenTheHoldEnds() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("nfc");
         set(st, s, true, true);
-        s.value = "vpn";   // somebody replaced the list: nothing of ours is left in it
+        s.value = "cast";   // somebody replaced the list: nothing of ours is left in it
         events.clear();
         assertFalse(set(st, s, true, false));
-        assertEquals("vpn", s.value);
+        assertEquals("cast", s.value);
         assertFalse(st.held);
         assertEquals("[save(false,null)]", events.toString());
     }
