@@ -4771,6 +4771,130 @@ adb shell locksettings clear --old 1234 >/dev/null 2>&1
 adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
 setfeat; setmode custom; rebind; home; sleep 3
 fi # section mu
+if want fl; then # section fl
+ensurehome
+# ---- BY1 (Tj, 2026-11-12 17:26 UTC): "test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the
+#      first lock screen or after pulling down the notification panel or pulling up the pin pad. It should not flicker or flash either the screenshot button or the wallpaper patch at any time".
+#      FILMS (screenrecord, animations ON as on Tj's tablet; the CI emulator runs them OFF, which hides every fade) each case on a calibrated lock patch and measures EVERY frame with tools/fl_analyze.py (boxes from the
+#      learned panel): flashA = the slot shows the resting look while the screen around it changed (the patch over an open panel, a darkening PIN-pad scrim, a screen still fading in at the wake-up); flashB = only the
+#      slot changed (a patch with a wrong look); shot = a frame of an open stock menu with the Screenshot entry visible. Design: research/BY1_FLICKER_TEST_PLAN_2026-11-12.md. Setup like section ps.
+beat "before FL"
+adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
+flfeat(){ # flfeat <calibration window end, epoch ms; 0 = none>: the stored crop wiped, stock menu (no power_card key), lock patch on, the resting patch on (default), no test skew
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs files; rm -f files/patchshot_r0.png files/patchshot_r1.png; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"profile_radios_off\\\" value=\\\"false\\\" /><boolean name=\\\"lock_quiet\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"false\\\" /><string name=\\\"patch_cal_until\\\">$1</string><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
+flanim(){ for n in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $n "$1"; done; }
+flnums(){ echo "$1" | grep -o "$2=[^ ]*" | head -1 | grep -o '[0-9]*' | tr '\n' ' '; }
+flstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
+fllock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }
+flunlock(){ local i; for i in 1 2 3; do [ "$(kg_state)" = "showing=false" ] && return 0; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.5; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input text 1234; sleep 0.5; adb shell input keyevent KEYCODE_ENTER; sleep 3; done; [ "$(kg_state)" = "showing=false" ]; }
+flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
+flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull, analyse, keep the app's PATCH lines of the case
+  local L="$1" M="$2" i T=""
+  for i in $(seq 1 15); do adb shell pidof screenrecord >/dev/null 2>&1 || break; sleep 1; done
+  adb pull /sdcard/fl.mp4 "$OUT/fl-$L.mp4" >/dev/null 2>&1
+  [ "$M" = menu ] && T="--top $FL_TOP"
+  python3 -I tools/fl_analyze.py "$OUT/fl-$L.mp4" "$L" --disp 600x1024 --core "$FL_CORE" --ring "$FL_RING" $T --mode "$M" --ref last 2>&1 | tail -1 >> "$OUT/fl-metrics.txt"
+  adb logcat -d -s TjA11y:I 2>/dev/null | grep -E 'PATCH' | sed 's/^.*TjA11y *: //' > "$OUT/fl-log-$L.txt"
+  info "FL $L: $(grep "label=$L " "$OUT/fl-metrics.txt" | tail -1 | cut -c10-330)"
+  grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
+flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
+flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
+FL_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
+adb shell settings put secure lock_screen_show_notifications 0            # no notification card next to the slot (see section ps, AZ4)
+adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1     # no helper: the stored real pixels are the only source (as in ps)
+flfeat 0; adb shell am force-stop "$PKG"; sleep 1
+setmode quickstep; rebind; home
+adb shell am start -n "$PKG/.SetupActivity" --ez test_lock_wallpaper true >/dev/null 2>&1; sleep 6
+setmode custom; rebind; home
+adb shell locksettings set-pin 1234 > "$OUT/fl-setpin.txt" 2>&1
+fllock; adb logcat -c
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3        # the first menu on this lock screen: the app learns where the panel sits
+adb shell input keyevent KEYCODE_BACK; sleep 3
+FLCL="$(adb logcat -d -s TjA11y:I | grep 'CARD area' | tail -1)"
+set -- $(flnums "$FLCL" full); FLX0=${1:-}; FLY0=${2:-}; FLX1=${3:-}; FLY1=${4:-}
+set -- $(flnums "$FLCL" area); FLCB=${4:-}
+if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -gt 20 ]; then
+  UNTIL=$(( $(adb shell date +%s | tr -d '\r\n') * 1000 + 240000 ))
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"patch_cal_until\">[0-9]*<#name=\"patch_cal_until\">$UNTIL<#' shared_prefs/tj_features.xml"
+  setmode custom; rebind; home
+  fllock; sleep 3
+  for i in 1 2 3 4 5 6 7 8; do flstatus | grep -q CALIBRATED && break; sleep 2; done
+  if ! flstatus | grep -q CALIBRATED; then
+    adb shell "mkdir -p /sdcard/Pictures/Screenshots; screencap -p /sdcard/Pictures/Screenshots/Screenshot_fl.png"
+    adb shell am broadcast -a android.intent.action.MEDIA_SCANNER_SCAN_FILE -d file:///sdcard/Pictures/Screenshots/Screenshot_fl.png >/dev/null 2>&1
+    for i in 1 2 3 4 5 6 7 8 9 10; do flstatus | grep -q CALIBRATED && break; sleep 2; done
+  fi
+  check "FL0: the lock patch was calibrated from a real screenshot (status: $(flstatus | cut -c1-60))" bash -c "adb shell \"run-as $PKG cat shared_prefs/tj_features.xml\" | grep -q 'patch_shot_status\">[^<]*CALIBRATED'"
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"patch_cal_until\">[0-9]*<#name=\"patch_cal_until\">0<#' shared_prefs/tj_features.xml"
+  setmode custom; rebind
+  FL_CORE="$((FLX0+6)),$((FLCB+6)),$((FLX1-6)),$((FLY1-6))"
+  FL_RING="$((FLX0-50)),$FLCB,$((FLX0-20)),$FLY1;$FLX0,$((FLY1+45)),$FLX1,$((FLY1+60))"
+  FL_TOP="$((FLX0+10)),$((FLY0+10)),$((FLX1-10)),$((FLCB-10))"
+  info "FL geometry: panel [$FLX0,$FLY0][$FLX1,$FLY1] card bottom $FLCB; core $FL_CORE; ring $FL_RING; top $FL_TOP; animations before: ${FL_ANIM0:-?}"
+  flanim 1
+  rm -f "$OUT/fl-metrics.txt"
+  # (1) the FIRST lock screen after the custom home (the window is prepared in the dark), twice; (2) woken again from the lock screen
+  for k in 1 2; do
+    flunlock || info "FL wakeH$k: unlock failed ($(kg_state))"; home; adb logcat -c
+    flrec 10; adb shell input keyevent KEYCODE_POWER; sleep 3.5; adb shell input keyevent KEYCODE_WAKEUP; sleep 5
+    flend "wakeH$k" flash
+  done
+  adb logcat -c; flrec 10; adb shell input keyevent KEYCODE_POWER; sleep 3.5; adb shell input keyevent KEYCODE_WAKEUP; sleep 5
+  flend wakeL flash
+  # (3) the notification panel pulled down by a finger, left open 3 s (F1: does the patch come back OVER it?), closed with BACK; (3b) the same without a finger (diagnostic)
+  sleep 2; adb logcat -c; flrec 10; adb shell input swipe 300 2 300 700 300; sleep 3.2; adb shell input keyevent KEYCODE_BACK; sleep 4.5
+  flend shade flash
+  sleep 2; adb logcat -c; flrec 9; adb shell cmd statusbar expand-notifications; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 4
+  flend shadeX flash
+  # (4) the PIN pad pulled up, left 2.5 s, dismissed with BACK; (5) two taps on the empty lock screen
+  sleep 2; adb logcat -c; flrec 10; adb shell input swipe 300 900 300 300 300; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 5
+  flend pad flash
+  sleep 2; adb logcat -c; flrec 9; adb shell input tap 150 700; sleep 3; adb shell input tap 150 700; sleep 4
+  flend tap flash
+  # (6) the power menu on a settled lock screen (baseline); (7) right after the FIRST lock screen came up; (8) right after the panel was closed; (9) right after the PIN pad was dismissed
+  sleep 2; adb logcat -c; flrec 8; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
+  flend menuL menu
+  for k in 1 2; do
+    flunlock || info "FL menuW$k: unlock failed ($(kg_state))"; home; adb logcat -c
+    adb shell input keyevent KEYCODE_POWER; sleep 3.5; adb shell input keyevent KEYCODE_WAKEUP
+    flrec 8 0.3; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
+    flend "menuW$k" menu
+  done
+  for k in 1 2; do
+    sleep 2; adb logcat -c; adb shell input swipe 300 2 300 700 300; sleep 1.5; adb shell input keyevent KEYCODE_BACK
+    flrec 8 0.3; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
+    flend "menuS$k" menu
+  done
+  for k in 1 2; do
+    sleep 2; adb logcat -c; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input keyevent KEYCODE_BACK
+    flrec 8 0.3; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3
+    flend "menuP$k" menu
+  done
+  for L in wakeH1 wakeH2 wakeL shade pad tap; do
+    a="$(flget $L flashA)"; b="$(flget $L flashB)"
+    check "FL1 $L: the patch never flashes (frames flashA=${a:-?} flashB=${b:-?}; $(flget $L spans))" awk -v a="$a" -v b="$b" 'BEGIN{exit !(a!="" && b!="" && a+0<=1 && b+0<=1)}'
+    info "FL1 $L path: $(flpath $L)"
+  done
+  info "FL1 shadeX (panel opened WITHOUT a finger, diagnostic): flashA=$(flget shadeX flashA) flashB=$(flget shadeX flashB) $(flget shadeX spans); path: $(flpath shadeX)"
+  for L in menuL menuW1 menuW2 menuS1 menuS2 menuP1 menuP2; do
+    m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"
+    check "FL2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?}; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a+0<=1)}'
+    info "FL2 $L path: $(flpath $L)"
+  done
+else
+  info "FL: the panel geometry was not learned: ${FLCL:-no CARD area line}"; check "FL: the menu rectangle was learned" false
+fi
+flanim "${FL_ANIM0:-0}"
+adb shell input keyevent KEYCODE_BACK; sleep 1
+if b6unlock; then FLUN=ok; else FLUN="failed ($(kg_state))"; adb shell locksettings clear --old 1234 >/dev/null 2>&1; fi
+check "FL: unlocked at the end and the test PIN cleared ($FLUN)" [ "$FLUN" = ok ]
+adb shell settings put secure lock_screen_show_notifications 1
+adb logcat -c
+setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
+fi # section fl
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
