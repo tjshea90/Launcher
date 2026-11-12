@@ -78,6 +78,8 @@ public final class TjHooks {
     /** Called by Launcher.onResume. The FIRST resume of each launcher process (boot, or after Android restarted it) puts the target app (Solitaire) in front. */
     /** BK1c: uptime of the Launcher's last onResume (the unlock summary looks at it when the Launcher resumed before the keyguard's broadcast). */
     public static volatile long lastResumeMs = 0;
+    /** BY1a A2/C13: the Launcher instance whose tasks are flagged already (main thread). A recreated Launcher is a new instance and flags again. */
+    private static java.lang.ref.WeakReference<Context> recentsFlaggedFor;
 
     public static void onLauncherResumed(final Context c) {
         launcherResumed = true; lastResumeMs = android.os.SystemClock.uptimeMillis();
