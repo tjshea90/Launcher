@@ -49,8 +49,6 @@ public final class RecentsGuard {
     }
 
     /** BN1: true for the task whose root is the Settings look-alike (entered through the alias, or its page activity). Never throws. */
-    static boolean isSettingsLookAlikeTask(ActivityManager.AppTask t) { return isSettingsLookAlike(taskInfo(t)); }
-
     private static boolean isSettingsLookAlike(ActivityManager.RecentTaskInfo info) {
         try {
             android.content.ComponentName cn = info == null ? null : (info.baseIntent != null && info.baseIntent.getComponent() != null ? info.baseIntent.getComponent() : info.baseActivity);
