@@ -1743,3 +1743,7 @@
 > - **PIN-pad fix written:** if the pad closes and the screen stays locked with no unlock, the patch comes back after 0.7 s instead of about 2.5 s. It has 5 unit tests, which are compiling now.
 > - **Reviewer B (accessibility service) finished:** it found whole-screen searches of other windows that ran on the launcher's main thread for about 55 s in 121 minutes on your tablet. Those are the biggest performance item so far.
 <!-- sha:ca9ac2b2aee1 -->
+
+## 2026-11-12T20:22:09Z
+> The unit tests are green and checkpointed. Run #565 should finish in about 3 minutes; I'll read its notification-panel announcements as soon as the timer fires.
+<!-- sha:8a0e7c3c2b90 -->
