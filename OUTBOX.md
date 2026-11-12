@@ -1770,3 +1770,9 @@
 ## 2026-11-12T21:07:22Z
 > Waiting for run #567 (due about 21:16 UTC) and the two reviewers.
 <!-- sha:92ac60a7c242 -->
+
+## 2026-11-12T21:16:27Z
+> I've added Tj's VPN request as BZ1. The VPN key will be hidden by the same mechanism and the same rule as the Wi-Fi and Bluetooth symbols: hidden in the custom launcher and on every lock screen, shown only inside unlocked Quickstep. A helper agent is making that change now, and it goes into the same release as the flicker work.
+>
+> Still running: emulator run #567, the two code reviewers, and the VPN change.
+<!-- sha:ce093d8c08e6 -->
