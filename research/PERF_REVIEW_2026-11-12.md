@@ -52,4 +52,22 @@ FIX = in v0.9.8 (BY1); NEXT = worth doing, needs its own emulator proof or table
 - Flicker fixes (BY1c), proven by emulator films (section `fl`): F1 the patch stays away while the notification panel is open on the lock screen
   (pane titles, `LockShade`); F3 a cancelled PIN pad ends its hold 700 ms after it left (`PatchRest.padCancelled`). Details and numbers:
   `BY1_FLICKER_FINDINGS_2026-11-12.md`.
-- Perf fixes: in progress (this file is updated with each one's test and run).
+- Perf fixes DONE (2026-11-12, all in the BY1 diff against v0.9.7; full unit suite 1035 tests 0 failures, lint clean):
+  - B1: the power-menu scan walks only system windows (never our own overlays, never the foreground app's); a click starts a scan only from the
+    system or while the menu is up (`EventNoise.mayHoldPowerMenu`, `EventNoise.needsPowerMenuScan` 4-arg; EventNoiseTest).
+  - B2: the pencil search and B3: the PIN-pad check skip windows less than a third of the screen tall (`EventNoise.tallEnoughForPanel`); the PIN-pad
+    checks are counted in the report line ("PIN-pad checks: N (avg, max)") so the tablet can say whether more is needed.
+  - B4: no power / keyguard binder calls on an event when nothing of ours is on screen and the screen is not locked (`scheduleLockUpdate`).
+  - C2: only window-change events drive the 2 Hz policy heartbeat (`EventNoise.windowsJustChanged`), not the content-change noise.
+  - C1: the Recents label set is built on a background thread (`tj-recents-labels`); a look waits for the rebuild, never uses a set older than 60 s.
+  - A4 / C8 (part): `RecentsPolicy.needsTarget` returns early when the switch is off (no package-manager call per app launch).
+  - A3: the Home-press times are kept in memory (no prefs write + fsync per Home press).
+  - A2 / C13: the Recents exclusion and the task description run once per Launcher instance (task-id set), not at every resume.
+  - C6 / C7 / B6 (status strings): `Features.setStringAsyncIfChanged` / `setStringIfChanged`; `KeyboardSwitch.say` async and only on change;
+    `TileProfile` commits its applied mode only on change.
+  - D1: after the crop is stored, the 4.9 MB wallpaper copy is dropped together with WallpaperManager's static cache
+    (`dropWallpaper()` -> `forgetLoadedWallpaper()`).
+- Read-only review of the perf batch (2026-11-12): no HIGH, no MEDIUM. LOW1 (the Home-press history does not survive a process death inside a
+  0.9 s double press) = the accepted A3 risk, no fix. LOW2 (a stored "no app" in a new process answered null while its background re-check ran: with
+  clean start OFF and Solitaire reinstalled the startup could go Home) FIXED: `ReturnReset.targetForAction` checks such an answer once, synchronously,
+  on the two paths that act on it.
