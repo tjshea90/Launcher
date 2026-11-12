@@ -191,24 +191,24 @@ public class RadioIconHoldTest {
     @Test public void aMissingSettingIsARealOriginalAndTheDefaultListIsKept() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting(null);
         assertTrue(set(st, s, true, true));
-        assertEquals("rotate,headset,wifi,bluetooth", s.value);
+        assertEquals("rotate,headset,wifi,bluetooth,vpn", s.value);
         assertTrue(st.held);
         assertNull(st.original);
-        assertEquals("[save(true,null), put(rotate,headset,wifi,bluetooth)]", events.toString());
+        assertEquals("[save(true,null), put(rotate,headset,wifi,bluetooth,vpn)]", events.toString());
     }
 
-    @Test public void aListThatAlreadyHidesBothSymbolsIsLeftAloneAndNothingIsHeld() {
-        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,bluetooth,wifi");
+    @Test public void aListThatAlreadyHidesEverySymbolIsLeftAloneAndNothingIsHeld() {
+        FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,bluetooth,vpn,wifi");
         assertFalse(set(st, s, true, true));
         assertFalse(st.held);
-        assertEquals("rotate,bluetooth,wifi", s.value);
+        assertEquals("rotate,bluetooth,vpn,wifi", s.value);
         assertTrue(events.isEmpty());
     }
 
-    @Test public void aListThatHidesOnlyOneSymbolGetsTheOtherAndItsOriginalKeepsTheFirst() {
+    @Test public void aListThatHidesOnlyOneSymbolGetsTheOthersAndItsOriginalKeepsTheFirst() {
         FakeState st = new FakeState(); FakeSetting s = new FakeSetting("rotate,wifi");
         assertTrue(set(st, s, true, true));
-        assertEquals("rotate,wifi,bluetooth", s.value);
+        assertEquals("rotate,wifi,bluetooth,vpn", s.value);
         assertEquals("rotate,wifi", st.original);
         assertFalse(set(st, s, true, false));
         assertEquals("rotate,wifi", s.value);   // the wifi entry was Tj's own: it stays
