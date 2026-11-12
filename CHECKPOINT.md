@@ -1,13 +1,13 @@
-# CHECKPOINT 1255 — read me first, then TASKS.md
+# CHECKPOINT 1256 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T23:02:26Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `9e4ba92f` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T23:05:02Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `99256c2d` (this checkpoint is the commit after it)
 
 ## Just done
-#576 se,ss RED on 17e10ad2 (solo, no native crash): 81P/3F SE-C2 (charger flick in/out/in), SE-L (entrance log lacks charger), SS7 (drawer Settings entry bounds none)
+tag run #580 id 43325361700 (se,ss on v0.9.7) started 23:02Z; head se rerun dispatched on ref main ~23:05Z (id not listed yet)
 
 ## Do this next
-dispatch se,ss on tag v0.9.7 to compare; meanwhile read the gate's se/ss FAILs (ckpt 1250/1251) + diff v0.9.7..HEAD for charger / drawer. Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
+~23:16Z read #580 + head se run; tag also red -> env/flaky, fix test; tag green + head red -> regression in diff (EntranceWatcher untouched: check armed/CrashGuard/Mode). Heartbeat trig_01JYEUXs7JosHyg85f2T1oCK
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch se,ss on tag v0.9.7 to compare; meanwhile read the gate's se/ss FAILs (
 
 ## Last ten checkpoints
 ```
+  99256c2d ckpt 1255: #576 se,ss RED on 17e10ad2 (solo, no native crash): 81P/3F SE-C2 (charger fl
   9e4ba92f ckpt 1254: reruns GREEN on 17e10ad2: #575 ps,bt 27P/0F (BT1c guard: scale 0.750, 12-lev
   ee2378fd ckpt 1253: solo reruns dispatched 22:40Z on 17e10ad2: #575 id 43322012415 ps,bt; #576 i
   17e10ad2 ckpt 1252: BT1c scale guard added (bttol: fit 0.78-0.82 -> 2 levels, else 12 + INFO; of
@@ -25,5 +26,4 @@ dispatch se,ss on tag v0.9.7 to compare; meanwhile read the gate's se/ss FAILs (
   aa965083 ckpt 1248: gate: #574 rg GREEN; #573 pt (id 43315242706, job 131521431600) still in_pro
   f9e64bea ckpt 1247: HANDOFF 0v written (v0.9.8 gate state, run ids, ship steps)
   cb9db1ab ckpt 1246: gate #574 id 43315248372 (rg) GREEN (success, 21:57-22:01Z)
-  34ec2ea2 ckpt 1245: Tj answer drafted: research/V098_RELEASE_MESSAGE_DRAFT_2026-11-12.md (facts 
 ```
