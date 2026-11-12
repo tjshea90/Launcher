@@ -1,13 +1,13 @@
-# CHECKPOINT 1205 — read me first, then TASKS.md
+# CHECKPOINT 1206 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T17:44:12Z · **tests:** all 10 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `f2e4d808` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T17:47:51Z · **tests:** all 10 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `1703eb7d` (this checkpoint is the commit after it)
 
 ## Just done
-BY1b: tools/fl_analyze.py (selftest OK) + section fl design in research/BY1_FLICKER_TEST_PLAN_2026-11-12.md; 3 perf reviewers running (read-only)
+BY1b: section fl written (films: wakeH1/2 wakeL shade shadeX pad tap + menuL/W1/W2/S1/S2/P1/P2), gate-map + emulator.yml (ffmpeg); analyzer proven on synthetic mp4s
 
 ## Do this next
-BY1b: write section fl per research/BY1_FLICKER_TEST_PLAN_2026-11-12.md into tools/emulator_scenario.sh before 'if want last', gate-map + emulator.yml (ffmpeg if, description), test_handoff, dispatch fl on main; heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc
+BY1b: dispatch emulator.yml sections=fl on main (BEFORE numbers, FAILs expected); read RESULTS (FL lines); heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ BY1b: write section fl per research/BY1_FLICKER_TEST_PLAN_2026-11-12.md into too
 
 ## Last ten checkpoints
 ```
+  59478275 ckpt 1205: BY1b: tools/fl_analyze.py (selftest OK) + section fl design in research/BY1_
   4c088a33 ckpt 1204: BY1-F: 4 code findings (lock patch over open shade, dark-rest at wake, fastD
   b83f8177 ckpt 1203: BY1 written into TASKS (Tj 17:26Z: perf review + lock/home patch flicker fil
   44afb137 ckpt 1202: BX1 DONE: v0.9.7 (code 46) RELEASED+RECORDED (android.yml #48 id 43139795817
@@ -25,7 +26,6 @@ BY1b: write section fl per research/BY1_FLICKER_TEST_PLAN_2026-11-12.md into too
   16b47b65 ckpt 1198: BX1 code done: Quickstep -> Gboard (KeyboardPolicy.pickGboard/noTargetStatus
   89ac6020 ckpt 1197: BX1 written into TASKS (Tj: Quickstep keyboard Gboard instead of SwiftKey, c
   c4d6429b ckpt 1196: heartbeat 20:13Z: no other session working (newest main commit = own OUTBOX 
-  ff35152f ckpt 1195: HANDOFF 0t rewritten as v0.9.6 RELEASED (run #47, BUILDLOG 09546785); answer
 ```
 
 (2 automatic checkpoint(s) since the last deliberate one — the
