@@ -109,7 +109,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long now = android.os.SystemClock.uptimeMillis();
         // AN1 (Tj: the battery saver tile in the shade is slow / unresponsive): a content change of the shade or the status bar (a tile redrawing, the clock) cannot OPEN the power menu, so it starts no scan unless a menu is
         // already up or a window just changed. Every scan is a pair of whole-tree searches run by SystemUI's own UI thread, the thread that handles the tap on the tile (EventNoise.needsPowerMenuScan).
-        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs)) { evSkipped++; return; }
+        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()))) { evSkipped++; return; }
         if (now - lastEvalMs >= 40) {
             lastEvalMs = now;
             try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
@@ -2495,7 +2495,7 @@ public class TjAccessibilityService extends AccessibilityService {
         List<AccessibilityWindowInfo> windows = getWindows();
         if (windows == null) return null;
         for (AccessibilityWindowInfo w : windows) {
-            if (!EventNoise.isSystemWindow(w.getType())) continue;   // AB2: the pencil is in SystemUI's shade window; never wake an app (or the keyboard) just to read its package name
+            if (!tallSystemWindow(w)) continue;   // AB2: the pencil is in SystemUI's shade window; never wake an app (or the keyboard) just to read its package name; BY1a B2: nor a short system window (the collapsed bar, the navigation bar) or our overlays
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null) continue;
             try {
@@ -2913,9 +2913,17 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** True when the PIN / password / pattern pad of the lock screen is visible (read-only look at SystemUI's windows). */
     private boolean bouncerShown() {
+        long t0 = android.os.SystemClock.uptimeMillis();
+        try { return bouncerShownScan(); }
+        finally { long d = android.os.SystemClock.uptimeMillis() - t0; padChecks++; padChecksMs += d; if (d > padChecksMax) padChecksMax = d; }   // BY1a B3: counted for perfLine
+    }
+    private long padChecks = 0, padChecksMs = 0, padChecksMax = 0;
+
+    private boolean bouncerShownScan() {
         List<AccessibilityWindowInfo> windows = getWindows();
         if (windows == null) return false;
         for (AccessibilityWindowInfo w : windows) {
+            if (!tallSystemWindow(w)) continue;   // BY1a B3: the pad lives in the keyguard's full-height window; never the navigation bar (11 searches each), an app, the keyboard or our overlays
             AccessibilityNodeInfo root = w.getRoot();
             if (root == null) continue;
             try {
@@ -3519,7 +3527,8 @@ public class TjAccessibilityService extends AccessibilityService {
     String perfLine() {
         long up = connectedAtMs == 0 ? 0 : (android.os.SystemClock.elapsedRealtime() - connectedAtMs) / 60_000;
         long n = scanCount;
-        String pen = "; pencil cover: " + penFull + " tree searches" + (penFull == 0 ? "" : " (avg " + (penFullMs / penFull) + " ms, max " + penFullMax + " ms)") + ", " + penFast + " one-node refreshes";   // AN1
+        String pen = "; pencil cover: " + penFull + " tree searches" + (penFull == 0 ? "" : " (avg " + (penFullMs / penFull) + " ms, max " + penFullMax + " ms)") + ", " + penFast + " one-node refreshes"   // AN1
+                + "; PIN-pad checks: " + padChecks + (padChecks == 0 ? "" : " (avg " + (padChecksMs / padChecks) + " ms, max " + padChecksMax + " ms)");   // BY1a B3
         String fade = "; patch fade (AZ1): " + (patchFadeOn() ? "on" : "off") + ", the last menu opening was noticed " + (fadeLagLast < 0 ? "(no opening yet)" : fadeLagLast + " ms after the stock fade began (" + (fadeLagLast >= PatchFade.OPEN_MS ? "no fade needed" : "the patch followed it") + ")") + "; last fade seen from the patch (BJ1): " + (fadeSummary.isEmpty() ? "(none yet)" : fadeSummary) + "; FIRST fade since this process started (BK1a): " + (fadeFirstSummary.isEmpty() ? "(none yet)" : fadeFirstSummary);
         return "connected " + up + " min, " + evSeen + " events (" + evNoise + " dropped as noise, " + evSkipped + " shade redraws without a scan), " + n + " power-menu scans" + (n == 0 ? "" : ", avg " + (scanTotalMs / n) + " ms, max " + scanMaxMs + " ms") + pen + fade;
     }
@@ -3567,7 +3576,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (windows != null && !dying) {
                 for (AccessibilityWindowInfo w : windows) {
                     CharSequence wt = w.getTitle();
-                    if (!EventNoise.mayHoldPowerMenu(dialogUp, wt != null && wt.toString().contains("ActionsDialog"), w.getType(), everyWindow)) continue;   // AB2: never fetch + search the foreground app's own tree
+                    if (!EventNoise.mayHoldPowerMenu(dialogUp, wt != null && wt.toString().contains("ActionsDialog"), w.getType())) continue;   // AB2 / BY1a B1: never fetch + search the foreground app's own tree, the keyboard or our overlays
                     AccessibilityNodeInfo root = w.getRoot();
                     if (root == null) continue;
                     if (getPackageName().contentEquals(root.getPackageName() == null ? "" : root.getPackageName())) { root.recycle(); continue; }
@@ -4325,6 +4334,15 @@ public class TjAccessibilityService extends AccessibilityService {
         noteShade(LockShade.kind(true, e.getContentChangeTypes(), title, shadeClosedTitle, shadeOpenTitles), "event");
     }
 
+    private final Rect winBounds = new Rect();
+    /** BY1a B2 / B3: a system window (not an app, not the keyboard, not one of our overlays) tall enough to hold the keyguard, the PIN pad or the open panel; asked BEFORE getRoot. Main thread. */
+    private boolean tallSystemWindow(AccessibilityWindowInfo w) {
+        int t = w.getType();
+        if (!EventNoise.isSystemWindow(t) || t == EventNoise.WINDOW_TYPE_ACCESSIBILITY_OVERLAY) return false;
+        w.getBoundsInScreen(winBounds);
+        return EventNoise.tallEnoughForPanel(winBounds.height(), getResources().getDisplayMetrics().heightPixels);
+    }
+
     /** BY1c F1: a LEVEL look at the panel's pane title (one id search in SystemUI's windows), for a return path that may have missed an event (the service was re-bound, a dump). */
     private int shadeLevel() {
         try {
@@ -4332,6 +4350,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (windows == null) return LockShade.UNKNOWN;
             loadShadeTitles();
             for (AccessibilityWindowInfo w : windows) {
+                if (!tallSystemWindow(w)) continue;
                 AccessibilityNodeInfo root = w.getRoot();
                 if (root == null) continue;
                 try {
