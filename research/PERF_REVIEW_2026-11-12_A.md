@@ -112,8 +112,8 @@ The same flush happens at the Launcher's own onStop when an app opens. It then w
 **Where:** BaseDraggingActivity.java:152 calls RecentsPolicy.java:25-36. Line :30 evaluates `ReturnReset.targetPackage` (ReturnReset.java:317-338).
 
 **What it does today:** `startActivitySafely` runs `RecentsPolicy.apply` before every `startActivity`. That evaluates `ReturnReset.targetPackage(c)` as an argument even though `recents_only_target` defaults to OFF (RecentsPolicy.java:13, :22), and the result is then thrown away.
-- Each call costs one `getApplicationInfo` binder call on the main thread (ReturnReset.java:323, :336-338).
-- When the 10-minute TTL has expired (ReturnReset.java:309, :324), the call also starts the thread "tj-target-scan", which loads the label of every launchable app. The comment at ReturnReset.java:313-315 puts that at over 100 ms on the MT8168. It runs exactly while the tapped app is starting cold.
+- When a target app is known, each call costs one `getApplicationInfo` binder call on the main thread (ReturnReset.java:323, :336-338).
+- When the 10-minute TTL has expired (ReturnReset.java:309, :324; 30 s when no target app is installed, :310), the call also starts the thread "tj-target-scan", which loads the label of every launchable app. The comment at ReturnReset.java:313-315 puts that at over 100 ms on the MT8168. It runs exactly while the tapped app is starting cold.
 
 **Change:** after `markCustom` (RecentsPolicy.java:29), return early when the switch is off. In effect: `if (!enabled(c)) return;`.
 
