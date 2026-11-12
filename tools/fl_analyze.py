@@ -209,6 +209,7 @@ def main(argv):
         core = box_of(opt["--core"], sx, sy, vs[0], vs[1])
         rings = [box_of(s, sx, sy, vs[0], vs[1]) for s in opt["--ring"].split(";") if s.strip()]
         top = box_of(opt["--top"], sx, sy, vs[0], vs[1]) if opt["--top"] else None
+        sbox = box_of(opt["--sheetbox"], sx, sy, vs[0], vs[1]) if opt["--sheetbox"] else None
     except Exception as e:  # noqa: BLE001 - one line for the results block, never a traceback
         print("FLMETRIC label=%s error=boxes:%s" % (label, e))
         return 1
