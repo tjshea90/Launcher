@@ -1837,3 +1837,7 @@
 ## 2026-11-12T23:25:07Z
 > The two current-code `se,ss` runs are due about 23:36 UTC; the timer will bring me back to read them. HANDOFF.md and the checkpoint now hold the full gate triage and every run id.
 <!-- sha:b8426408c26e -->
+
+## 2026-11-12T23:40:18Z
+> `ship.sh` is in its last steps. Once it reports success I'll start the GitHub release build.
+<!-- sha:1d3763d85b77 -->
