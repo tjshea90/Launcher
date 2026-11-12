@@ -4857,6 +4857,13 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   flend shade flash
   sleep 2; adb logcat -c; flrec 9; adb shell cmd statusbar expand-notifications; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 4
   flend shadeX flash
+  # (3c) diagnostic: a SLOW pull (2.6 s: the finger hold of 1.5 s ends mid-pull, before the panel names itself 'Quick settings.'); (3d) diagnostic: the panel open, screen off, wake: is it still open at the wake?
+  sleep 2; adb logcat -c; flrec 12; adb shell input swipe 300 2 300 700 2600; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 4.5
+  flend shadeSlow flash
+  sleep 2; adb logcat -c; adb shell input swipe 300 2 300 700 300; sleep 1.5; adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 2.5
+  info "FL shadeOff (panel open, screen off, wake; diagnostic): $(adb shell dumpsys activity service com.android.systemui/.SystemUIService 2>/dev/null | grep -iE 'mQsExpanded|mQsFullyExpanded|mBarState|mPanelExpanded' | head -4 | tr -s ' ' | tr '\n' '|' | cut -c1-220); log: $(adb logcat -d -s TjA11y:I | grep -oE 'PATCH (shade open|shade closed|rest on|rest off|visible again \([a-zA-Z]*\))' | tr '\n' ';' | cut -c1-260)"
+  shot fl-shadeoff-wake
+  adb shell input keyevent KEYCODE_BACK; sleep 1.5
   # (4) the PIN pad pulled up, left 2.5 s, dismissed with BACK; (5) two taps on the empty lock screen
   sleep 2; adb logcat -c; flrec 10; adb shell input swipe 300 900 300 300 300; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 5
   flend pad flash
@@ -4893,6 +4900,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     info "FL1 $L path: $(flpath $L)"
   done
   info "FL1 shadeX (panel opened WITHOUT a finger, diagnostic): flashA=$(flget shadeX flashA) flashB=$(flget shadeX flashB) $(flget shadeX spans); path: $(flpath shadeX)"
+  info "FL1 shadeSlow (a 2.6 s pull, diagnostic): flashA=$(flget shadeSlow flashA) flashB=$(flget shadeSlow flashB) $(flget shadeSlow spans); path: $(flpath shadeSlow)"
   for L in menuL menuW1 menuW2 menuS1 menuS2 menuP1 menuP2; do
     m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"
     check "FL2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?}; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a+0<=1)}'
