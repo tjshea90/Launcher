@@ -88,6 +88,7 @@ public final class RecentsGuard {
             if (cachedLabel != null && cachedIcon != null) { a.setTaskDescription(new ActivityManager.TaskDescription(cachedLabel, cachedIcon)); describedFor = new java.lang.ref.WeakReference<>(a); return; }
             new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() { @Override public void run() {
                 try {
+                    if (sameInstance(describedFor, a)) return;   // BY1a A2: an earlier post (a resume less than 300 ms before) did it
                     String pkg = ReturnReset.targetPackage(a);
                     if (pkg == null) return;
                     PackageManager pm = a.getPackageManager();
