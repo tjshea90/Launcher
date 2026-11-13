@@ -1,13 +1,13 @@
-# CHECKPOINT 1278 — read me first, then TASKS.md
+# CHECKPOINT 1279 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T02:13:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `fe2b73a3` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T02:15:13Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `c2bb6338` (this checkpoint is the commit after it)
 
 ## Just done
-CA1b batch1 coded + unit suite 1040/0 green (before M1); + S3 pencil watch paused while dark, M1 curtain in memory only where a cover can show it (HomeCurtainRules.keepInMemory, test 21/21)
+CA1b: read-only review subagent running on git diff 4ce6f0f0 -- app/src; gate plan (tools/gate.sh 4ce6f0f0) = 5 runs ~33 min, 138 runner min
 
 ## Do this next
-next: full suite again, then /code-review high on git diff v0.9.8 (base = v0.9.8 target_commitish 4ce6f0f0), fix, then tools/gate.sh 4ce6f0f0. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
+after the review: fix findings, full unit suite, then dispatch the 5 gate runs from tools/gate.sh output on ref ccr-6e656bc6-wl2rhu. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ next: full suite again, then /code-review high on git diff v0.9.8 (base = v0.9.8
 
 ## Last ten checkpoints
 ```
+  c2bb6338 ckpt 1278: CA1b batch1 coded + unit suite 1040/0 green (before M1); + S3 pencil watch p
   7900bf97 ckpt 1277: CA1b batch1: + M2 lock bitmaps dropped on home target / trim, M9 TimeFmt (+T
   4aaee9ca ckpt 1276: CA1b batch1 in progress: U1 (EventNoiseTest 16/16 green), S12 status async, 
   e8789bb3 ckpt 1275: CA1a DONE: all 3 reviewers in PERF_AUDIT_2026-11-13.md (U1-U12, S1-S12, M1-M
@@ -25,8 +26,4 @@ next: full suite again, then /code-review high on git diff v0.9.8 (base = v0.9.8
   7ba25697 ckpt 1271: CA1a slice 4 notes: R8 off kept by AD8 decision (research/EFFICIENCY_2026-11
   0ac9f715 ckpt 1270: CA1a: heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv armed (every 2h at :40); 3 rea
   fa9ce612 ckpt 1269: CA1 written into TASKS (Tj perf/RAM/battery review request)
-  4edd1601 ckpt 1268: heartbeat 00:32Z stood down (rule 2: ckpt 1267 of the other account 44 min o
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
