@@ -176,7 +176,7 @@ public class ControlActivity extends Activity {
                 VpnOff.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, VpnOffRules.KEY, v); } });   // CB2 (Tj, 2026-11-13)
         if (!VpnOff.allowed(this)) action("Allow the launcher to turn the VPN off", "Opens Android's own \"Connection request\" question once: tap OK. The launcher never sets up a VPN of its own; Android words the question for any app that uses the VPN service. Tapping OK also disconnects a VPN that is connected right now (connect again in your VPN app).", new Runnable() { public void run() {
             try { Intent ask = android.net.VpnService.prepare(ControlActivity.this); if (ask != null) startActivityForResult(ask, REQ_VPN); else rebuild(); }   // only reached while NOT allowed: then prepare() changes nothing and returns Android's question
-            catch (Throwable t) { Log.w("TjControl", "VPN question failed: " + t); }
+            catch (Throwable t) { android.util.Log.w("TjControl", "VPN question failed: " + t); }
         }});
         note("VPN off when locked: " + VpnOff.describe(this));
         toggle("Prepare the custom launcher behind the lock screen", "On waking to the lock screen the custom home screen is put in front behind it, so the unlock opens it at once with no delay (Solitaire too, only if \"Open Solitaire automatically\" is on). A handshake puts Quickstep there instead, at once.", ProfileSession.prearm(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ProfileSession.PREARM_KEY, v); } });
