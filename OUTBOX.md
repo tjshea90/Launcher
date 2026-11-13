@@ -2156,3 +2156,17 @@
 >
 > Send me what it prints.
 <!-- sha:44d5ebe5af6a -->
+
+## 2026-11-13T16:57:39Z
+> The connection works and the launcher is installed.
+>
+> **Step 2**
+>
+> Copy this whole line into the adb app and press Enter:
+>
+> ```
+> pm grant com.tj.launcher android.permission.WRITE_SECURE_SETTINGS; pm grant com.tj.launcher android.permission.DUMP; pm grant com.tj.launcher android.permission.CHANGE_CONFIGURATION; pm grant com.tj.launcher android.permission.READ_EXTERNAL_STORAGE; pm grant com.tj.launcher android.permission.PACKAGE_USAGE_STATS; cmd appops set com.tj.launcher GET_USAGE_STATS allow; cmd appops set com.tj.launcher WRITE_SETTINGS allow; cmd appops set com.tj.launcher RUN_IN_BACKGROUND allow; cmd appops set com.tj.launcher RUN_ANY_IN_BACKGROUND allow; cmd appops set com.tj.launcher ACTIVATE_VPN allow; dumpsys deviceidle whitelist +com.tj.launcher; echo DONE
+> ```
+>
+> Send me what it prints.
+<!-- sha:588fb4e7fc7a -->
