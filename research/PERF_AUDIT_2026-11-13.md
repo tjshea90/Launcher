@@ -57,7 +57,26 @@ Quickstep->custom (TR:729); plain custom unlock otherwise 249 ms (TR:761); Quick
 
 Checked and fine (U): LockLog writes on its own thread; plain custom unlock prepared behind the keyguard, light after USER_PRESENT; resume hooks once per
 instance; curtain copy async; wake run ~18 ms; cold start rare and 48 ms.
-## S: steady CPU / battery (reviewer S) - pending
+## S: steady CPU / battery (reviewer S)
+No wake lock / alarm / job / WorkManager anywhere; KeepAliveService runs nothing; ~6 events/s, 85 % dropped as noise (~10 us each).
+| id | what | verdict |
+| :- | :- | :- |
+| S1 (=U1) | every PIN tap: power-menu scan now + 80 ms later, full pencil search + penEval retry, PIN-pad check, `refreshLayers` (~9 binder calls); est. 100-150 ms per digit | FIX (U1) |
+| S2 (=C5/U8) | two full Launcher3 reloads per Quickstep round trip (`SettingsSpoof:102-120` -> `HiddenApps:102-105` -> `LauncherModel:318-333`); the one at Quickstep start is invisible | candidate: when the alias goes OFF (Quickstep) skip `forceReload`, set a pending flag; the next custom sync does the one reload |
+| S3 | screen dark but CPU awake (music, charging): each SystemUI content change runs pencil search, `refreshLayers` x2, `calTrigger` (`lockCalSigFor` 4 binder calls), `updateLockNumber` x2; `penWatch` polls 150 / 25 ms with no screen check if QS was open at screen-off (TAS:2465-2472, 2615) | candidate: `screenDark` memo set by the screen broadcasts; early return in schedulePencil / penWatch / scheduleLayerRefresh / scheduleLockUpdate; lockPrepare's dark preparation stays |
+| S4 (=B3 rest) | lit idle lock screen: `bouncerShownScan` 6 id + 5 text searches per SystemUI event, twice (TAS:2946-2966) | NEXT (medium risk: lock number) |
+| S5 | `lockPrepare` 6.5 s rerun repeats `shadeLevel` while dark (TAS:2882-2883, 1850) | candidate: `if (locked && !shadeLookedDark)` |
+| S6 (=C2 rest/U10) | each sync tick ~6 binder calls, 4 of them `checkSelfPermission(WRITE_SECURE_SETTINGS)` (`AnimationSpeedup:198-233`, `NotifQuiet:33, 72-87`, `RadioIconHide:42`) | candidate: one read per `syncNow` |
+| S7 (=C8 rest) | Solitaire lookup per window-state event in Quickstep (TAS:2043, 3233; `ReturnReset:319-327`); if Solitaire is uninstalled the label scan reruns every 30 s | candidate: cheap checks first |
+| S8 (=C3) | shell-helper pings never back off (`ShellHelper:64-70, 109-114`; TAS:1327 no cache, joins up to 700 ms) | candidate: shared back-off 4 s -> 60 s |
+| S9 (=B5) | ~9 binder calls per `refreshLayers` (rotation, getRealMetrics, wallpaper ids) | NEXT |
+| S10 | narrowing event types at runtime: gains ~nothing on Android 10 (cache consistency, apps send anyway) | NO |
+| S11 (=D3/M3) | curtain full-window copy after every home visit (<= 1 / 15 s) | NEXT |
+| S12 (=C7 rest/U7) | `patchStatus` / `calStatus` / `shotStatus` whole-file commits on the main thread (TAS:656-658, 1255, 1559, 1311, 4654) | candidate: `setStringAsyncIfChanged` |
+| S-BA2 | battery saver is forced OFF while locked (`BatterySaverGuard:199-223`), losing its standby savings, and flips the dark theme twice per lock after a Quickstep session with saver on | a decision for Tj, not a fix |
+Checked and fine (S): noise events cheap; heartbeat window events only; receivers rare; notification work on a worker; LockLog async; retry loops
+bounded; key filter only when used; motion sensor off by default (if ever on: 50 Hz on the main thread for the whole Quickstep session); Launcher3
+idle draws nothing.
 
 ## Design notes for the fixes (Claude, while waiting for reviewer S)
 - U1 design: (a) `EventNoise.needsPowerMenuScan` gets a `padUp` input: a CLICK starts a scan only when the menu is known up, or it comes from the
