@@ -1686,11 +1686,12 @@ public class TjAccessibilityService extends AccessibilityService {
             lastPadKeyAt = now;
             if (k == UnlockPick.Key.ENTER) {
                 String lead = unlock.padLead();   // read BEFORE onEnter clears the pad: the first two key KINDS only (never a digit, never the length)
-                lastEnterAt = now;
+                long tapLag = Math.max(0, android.os.SystemClock.uptimeMillis() - e.getEventTime());
+                lastEnterAt = now - tapLag;   // CA1 U1: the TAP's time, not the time this event was handled (the tablet's Enter lag reached 2164 ms and the summaries did not show it)
                 UnlockMethods.Method m = unlock.onEnter(now);
                 Log.i(TAG, "UNLOCKPICK enter tapped, handshake=" + (m == null ? "none" : m.id));
                 LockLog.add(getApplicationContext(), "ENTER", "lag=" + Math.max(0, android.os.SystemClock.uptimeMillis() - e.getEventTime()) + "ms lead=" + (lead.isEmpty() ? "-" : lead) + " handshake=" + (m == null ? "none" : m.id) + (m == null && unlock.armedMethod() != null ? " (earlier gesture kept for this retry: " + unlock.armedMethod().id + ")" : ""));
-                if (m == null) { sumNoteEnter(); coverAtEnter(); }
+                if (m == null) { sumNoteEnter(e.getEventTime()); coverAtEnter(); }
             } else unlock.onKey(k, now);
         } catch (Throwable t) { Log.e(TAG, "unlock key tracking failed", t); }
     }
@@ -3101,7 +3102,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private final Runnable sumTimeout = new Runnable() { @Override public void run() { try { sumEmit(true); } catch (Throwable t) { Log.e(TAG, "unlock summary failed", t); } } };
 
     /** A plain Enter tap (the PIN is about to be judged). */
-    private void sumNoteEnter() { sumEnterAt = android.os.SystemClock.uptimeMillis(); }
+    private void sumNoteEnter(long tapUptimeMs) { sumEnterAt = tapUptimeMs > 0 ? tapUptimeMs : android.os.SystemClock.uptimeMillis(); }   // CA1 U1: from the tap (the event's own time, uptime base)
 
     /** USER_PRESENT: the keyguard is gone. */
     private void sumNotePresent() {
