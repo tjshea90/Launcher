@@ -2075,3 +2075,7 @@
 ## 2026-11-13T06:01:02Z
 > `ship.sh` is running the release checks: the handoff self-test, the full unit suite, lint and the version check. When it passes, GitHub builds and signs v0.9.10.
 <!-- sha:0e170e58484b -->
+
+## 2026-11-13T06:05:59Z
+> GitHub is building v0.9.10 now, which takes about 3 minutes. I'll confirm the Release when it's done.
+<!-- sha:93ef029ed328 -->
