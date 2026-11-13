@@ -306,6 +306,7 @@ public class TjAccessibilityService extends AccessibilityService {
     @Override protected void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
+        try { screenDarkNow = !((android.os.PowerManager) getSystemService(POWER_SERVICE)).isInteractive(); } catch (Throwable ignored) { }   // review of CB2 LOW5: a new instance connected in the dark knows it is dark (was false until the next SCREEN_OFF)
         connectedAtMs = android.os.SystemClock.elapsedRealtime(); evSeen = 0; evNoise = 0; scanCount = 0; scanTotalMs = 0; scanMaxMs = 0; evSkipped = 0; penFull = 0; penFullMs = 0; penFullMax = 0; penFast = 0;   // AD8: the report's load numbers count from this connect
         try { warmUp(); } catch (Throwable t) { Log.e(TAG, "warm failed", t); }
         try { startLockNumber(); } catch (Throwable t) { Log.e(TAG, "lock number failed", t); }
@@ -315,7 +316,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { startRadioGuard(); } catch (Throwable t) { Log.e(TAG, "radio guard failed", t); }
         try {   // CB2 (Tj, 2026-11-13: "turn off my VPN any time the screen turns off or the lock screen is on"): hear a VPN that connects while dark / locked, and look once now (a helper that connects on the lock screen)
             VpnOff.watch(this, handler, new VpnOff.Look() { @Override public boolean dark() { return screenDarkNow; } @Override public boolean lockUp() { return keyguardLocked(); } });
-            if (VpnOff.switchOn(this)) { boolean dark = !((android.os.PowerManager) getSystemService(POWER_SERVICE)).isInteractive(), lk = keyguardLocked(); if (dark || lk) VpnOff.check(this, dark, lk, "the helper connected while locked"); }
+            if (VpnOff.switchOn(this)) { boolean dark = screenDarkNow, lk = keyguardLocked(); if (dark || lk) { VpnOff.check(this, dark, lk, "the helper connected while locked"); VpnOff.onLockedWorld(this); } }
         } catch (Throwable t) { Log.e(TAG, "VPN watch failed", t); }
         try { if (keyguardLocked()) noteShade(shadeLevel(), "look at connect"); } catch (Throwable t) { Log.e(TAG, "shade look failed", t); }   // BY1 review MED1: a re-bound service starts with "closed"; the panel may be open (a dump, an update, a restart)
         try { startPatchWatch(); } catch (Throwable t) { Log.e(TAG, "patch watch failed", t); }
@@ -2910,7 +2911,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 LockLog.add(getApplicationContext(), android.content.Intent.ACTION_SCREEN_OFF.equals(act) ? "SCREEN_OFF" : android.content.Intent.ACTION_SCREEN_ON.equals(act) ? "SCREEN_ON" : "USER_PRESENT", "locked=" + keyguardLocked() + " mode=" + Mode.get(getApplicationContext()));
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
                 screenDarkNow = true; AnimationSpeedup.forgetGrant();   // CA1 S3; S6 review MED2: the lock decisions read the grant fresh
-                VpnOff.check(getApplicationContext(), true, false, "the screen went off");   // CB2: posts to its own worker thread (nothing here waits for it); a preference read when the switch is off
+                VpnOff.check(getApplicationContext(), true, false, "the screen went off"); VpnOff.onLockedWorld(getApplicationContext());   // CB2 / CB2e (any launcher): posts to its own worker thread (nothing here waits for it); a preference read when the switch is off
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
@@ -2925,7 +2926,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) VpnOff.onUnlocked();   // CB2: a new lock counts its VPN stops from zero (nothing turns the VPN back on)
             if (android.content.Intent.ACTION_SCREEN_ON.equals(act) && VpnOff.switchOn(getApplicationContext()))   // CB2: a VPN that came back while dark and was not heard (it may not route the launcher's traffic): look once, after the wake work
-                handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked()) VpnOff.check(getApplicationContext(), false, true, "woke to the lock screen"); } catch (Throwable e) { Log.e(TAG, "VPN look failed", e); } } }, 500);
+                handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked()) { VpnOff.check(getApplicationContext(), false, true, "woke to the lock screen"); VpnOff.onLockedWorld(getApplicationContext()); } else VpnOff.onUnlocked(); } catch (Throwable e) { Log.e(TAG, "VPN look failed", e); } } }, 500);   // review of CB2 MED1: a wake inside the "lock after" delay sends no USER_PRESENT: no lock screen = the lock is over
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
                 try { if (keyguardLocked()) unlock.onPower(android.content.Intent.ACTION_POWER_CONNECTED.equals(act), t); } catch (Throwable e) { Log.e(TAG, "power event failed", e); }
