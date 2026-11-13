@@ -1530,3 +1530,8 @@ The launcher is running well, but I just got a VPN. The VPN key symbol disappear
 ```
 If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on
 ```
+
+## 2026-11-13T04:58:34Z
+```
+And any time I lock the screen from quickstep 
+```
