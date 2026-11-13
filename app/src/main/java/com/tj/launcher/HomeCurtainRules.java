@@ -107,6 +107,13 @@ public final class HomeCurtainRules {
     /** A layer with no visible sample at all is a failed copy (a window that has not drawn yet), never "the home screen". */
     public static boolean blank(int[] opaque) { return opaque[0] == 0; }
 
+    /**
+     * CA1 M1: is the in-memory curtain (600x1024 ARGB = 2.4 MB) worth keeping? Only where a cover can show it: the Enter tap that ENDS a Quickstep session (stored mode Quickstep) and the first unlock
+     * after a boot (the boot clean-up, also in the custom mode). In a plain custom session nothing shows it, so it is dropped and read back from its file when the mode turns Quickstep (long before
+     * the Enter tap that ends that session). The picture on disk is kept and refreshed exactly as before.
+     */
+    public static boolean keepInMemory(boolean switchOn, boolean customMode, boolean bootCleanPending) { return switchOn && (!customMode || bootCleanPending); }
+
     /** Must the stored picture be re-made? Different layer content, or a different page / wallpaper / size, or none stored. */
     public static boolean changed(boolean hadStored, String storedSig, int storedStep, int storedHash, String sig, int step, int hash) {
         if (!hadStored) return true;

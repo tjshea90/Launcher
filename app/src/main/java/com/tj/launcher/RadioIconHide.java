@@ -39,7 +39,7 @@ public final class RadioIconHide {
 
     private RadioIconHide() {}
 
-    public static boolean permitted(Context c) { return c.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED; }
+    public static boolean permitted(Context c) { return AnimationSpeedup.secureSettingsGranted(c); }   // CA1 S6: one memo for the three holds
 
     /** The switch (shipped default ON, debug builds OFF: {@link RadioIconHold#defaultOn}). */
     public static boolean switchOn(Context c) { return Features.get(c, RadioIconHold.KEY, RadioIconHold.defaultOn(ReturnReset.isDebuggable(c))); }

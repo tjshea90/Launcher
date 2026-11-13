@@ -109,7 +109,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long now = android.os.SystemClock.uptimeMillis();
         // AN1 (Tj: the battery saver tile in the shade is slow / unresponsive): a content change of the shade or the status bar (a tile redrawing, the clock) cannot OPEN the power menu, so it starts no scan unless a menu is
         // already up or a window just changed. Every scan is a pair of whole-tree searches run by SystemUI's own UI thread, the thread that handles the tap on the tile (EventNoise.needsPowerMenuScan).
-        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()))) { evSkipped++; return; }
+        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()), lastBouncer)) { evSkipped++; return; }   // CA1 U1: lastBouncer = a PIN key starts no scan
         if (now - lastEvalMs >= 40) {
             lastEvalMs = now;
             try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
@@ -306,6 +306,7 @@ public class TjAccessibilityService extends AccessibilityService {
     @Override protected void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
+        try { screenDarkNow = !((android.os.PowerManager) getSystemService(POWER_SERVICE)).isInteractive(); } catch (Throwable ignored) { }   // review of CB2 LOW5: a new instance connected in the dark knows it is dark (was false until the next SCREEN_OFF)
         connectedAtMs = android.os.SystemClock.elapsedRealtime(); evSeen = 0; evNoise = 0; scanCount = 0; scanTotalMs = 0; scanMaxMs = 0; evSkipped = 0; penFull = 0; penFullMs = 0; penFullMax = 0; penFast = 0;   // AD8: the report's load numbers count from this connect
         try { warmUp(); } catch (Throwable t) { Log.e(TAG, "warm failed", t); }
         try { startLockNumber(); } catch (Throwable t) { Log.e(TAG, "lock number failed", t); }
@@ -313,12 +314,17 @@ public class TjAccessibilityService extends AccessibilityService {
         try { updateMotion(); } catch (Throwable t) { Log.e(TAG, "motion failed", t); }
         try { startTileGuard(); } catch (Throwable t) { Log.e(TAG, "tile guard failed", t); }
         try { startRadioGuard(); } catch (Throwable t) { Log.e(TAG, "radio guard failed", t); }
+        try {   // CB2 (Tj, 2026-11-13: "turn off my VPN any time the screen turns off or the lock screen is on"): hear a VPN that connects while dark / locked, and look once now (a helper that connects on the lock screen)
+            VpnOff.watch(this, handler, new VpnOff.Look() { @Override public boolean dark() { return screenDarkNow; } @Override public boolean lockUp() { return keyguardLocked(); } });
+            if (VpnOff.switchOn(this)) { boolean dark = screenDarkNow, lk = keyguardLocked(); if (dark || lk) { VpnOff.check(this, dark, lk, "the helper connected while locked"); VpnOff.onLockedWorld(this); } }
+        } catch (Throwable t) { Log.e(TAG, "VPN watch failed", t); }
         try { if (keyguardLocked()) noteShade(shadeLevel(), "look at connect"); } catch (Throwable t) { Log.e(TAG, "shade look failed", t); }   // BY1 review MED1: a re-bound service starts with "closed"; the panel may be open (a dump, an update, a restart)
         try { startPatchWatch(); } catch (Throwable t) { Log.e(TAG, "patch watch failed", t); }
         try { DemoModeProfile.cleanupOnce(this); } catch (Throwable t) { Log.e(TAG, "demo cleanup failed", t); }   // AB1: the retired retail-demo option never stays switched on
         try { KeepAliveService.ensure(this); } catch (Throwable t) { Log.e(TAG, "keep-alive failed", t); }   // AA2: after a restart / update the helper reconnects first: bring the service back
         Log.i(TAG, "connected; power mode=" + Features.powerMode(this) + " custom=" + Mode.isCustom(this));
         LockLog.add(this, "SERVICE", "connected, mode " + Mode.get(this) + (CrashGuard.automationOff(this) ? " PAUSED" : ""));
+        AnimationSpeedup.forgetGrant();   // CA1 S6 review MED2: a (re)connect reads the adb grant fresh
         curtainPreloadAsync();   // BL1: the stored home curtain is read into memory now (a worker thread), so the cover at the next Enter tap never waits for a disk read
         handler.postDelayed(new Runnable() { @Override public void run() { reconcileAfterGap("the helper (re)connected"); } }, 1500);   // AC1: was the helper away at an unlock? (after the connect has settled)
         handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked() && !CrashGuard.automationOff(getApplicationContext())) lockQuietNow("the helper connected on the lock screen"); } catch (Throwable t) { Log.e(TAG, "connect lock rules failed", t); } } }, 2000);   // AW2 / AW3: the first lock screen after a restart (or after the helper was away) gets the same rules
@@ -543,7 +549,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** AM1: the inputs of the resting decision, newest only, kept in a preference (Launcher control / tablet report / emulator INFO): why does the patch rest, or not? */
     private void restInfo(String what) {
         try {
-            String v = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + what + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + "]";
+            String v = TimeFmt.hms(System.currentTimeMillis()) + "  " + what + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + "]";
             String key = v.substring(10);
             if (!key.equals(lastRestInfo)) { lastRestInfo = key; Features.setStringAsync(this, "patch_rest_info", v); }
         } catch (Throwable ignored) { }
@@ -586,10 +592,15 @@ public class TjAccessibilityService extends AccessibilityService {
             if (LockQuiet.KEY.equals(key)) { try { LockQuiet.applyNotificationsAsync(getApplicationContext()); } catch (Throwable ignored) { } }   // AK1: the switch changed: hide / put back the lock-screen notification setting now
             if (PatchRest.KEY.equals(key) || LOCK_PATCH_KEY.equals(key) || PATCH_DIM_KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { layerRefresh.run(); patchShow(overlayShown); } });   // AE3: the always-on switch / dim nudge changed: apply it now
             if ("mode".equals(key)) handler.post(new Runnable() { @Override public void run() { updateHotspot(); } });
+            if ("mode".equals(key) || ReturnReset.BOOT_CLEAN_KEY.equals(key) || HomeCurtainRules.KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { curtainMemoryFollow(); } });   // CA1 M1
             if (key != null && (key.startsWith("unlock_m_") || key.startsWith("return_m_") || "mode".equals(key))) handler.post(new Runnable() { @Override public void run() { updateMotion(); } });
             if (key != null && (key.startsWith("unlock_m_") || key.startsWith("return_m_") || "mode".equals(key) || FailsafeKeys.KONAMI_KEY.equals(key))) handler.post(new Runnable() { @Override public void run() { updateKeyFilter(); } });
             if (FailsafeKeys.HOTSPOT_KEY.equals(key) || FailsafeKeys.CORNER_KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { removeHotspot(); updateHotspot(); } });
         }
+    };
+    /** CA1 S7 review LOW7: an installed app may be the Solitaire target that was "not installed": look again now, not after the 5-minute re-check. */
+    private final android.content.BroadcastReceiver packageAddedReceiver = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(android.content.Context c, android.content.Intent i) { try { ReturnReset.forgetMissingTarget(); } catch (Throwable ignored) { } }
     };
     private final android.content.BroadcastReceiver wallpaperReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(android.content.Context c, android.content.Intent i) { dropWallpaper(); lockBmp = null; lockCalSig = ""; lockShot = null; lockShotFresh = false; homeWallId = -1; homeWallBmp = null; homeBuiltAtMs = 0; handler.post(new Runnable() { @Override public void run() { removeOverlay(); removePatch(); refreshLayers(); } }); }
@@ -615,6 +626,7 @@ public class TjAccessibilityService extends AccessibilityService {
         getSharedPreferences("tj_mode", MODE_PRIVATE).registerOnSharedPreferenceChangeListener(prefWatch);
         getSharedPreferences("tj_features", MODE_PRIVATE).registerOnSharedPreferenceChangeListener(prefWatch);
         registerReceiver(wallpaperReceiver, new android.content.IntentFilter(android.content.Intent.ACTION_WALLPAPER_CHANGED));
+        try { android.content.IntentFilter pf = new android.content.IntentFilter(android.content.Intent.ACTION_PACKAGE_ADDED); pf.addDataScheme("package"); registerReceiver(packageAddedReceiver, pf); } catch (Throwable t) { Log.e(TAG, "package receiver failed", t); }   // CA1 S7 review LOW7
         try { registerReceiver(closeDialogsReceiver, new android.content.IntentFilter(android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS)); } catch (Throwable t) { Log.e(TAG, "close dialogs receiver not registered", t); }   // BC2
         patchWatching = true;
         refreshLayers();
@@ -625,6 +637,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { getSharedPreferences("tj_mode", MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(prefWatch); } catch (Throwable ignored) { }
         try { getSharedPreferences("tj_features", MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(prefWatch); } catch (Throwable ignored) { }
         try { unregisterReceiver(wallpaperReceiver); } catch (Throwable ignored) { }
+        try { unregisterReceiver(packageAddedReceiver); } catch (Throwable ignored) { }   // CA1 S7
         try { unregisterReceiver(closeDialogsReceiver); } catch (Throwable ignored) { }   // BC2
         patchWatching = false;
     }
@@ -654,7 +667,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private boolean coverWorld() { return PowerMenuRule.coverWorld(Mode.isCustom(this), keyguardLockedFast()); }
 
     private void patchStatus(String s) {
-        if (!s.equals(Features.getString(this, PATCH_STATUS_KEY, ""))) Features.setString(this, PATCH_STATUS_KEY, s);
+        Features.setStringAsyncIfChanged(this, PATCH_STATUS_KEY, s);   // CA1 S12: a status line for Launcher control and the report: no whole-file write + fsync on the main thread (one lands in the unlock -> home moment)
     }
 
     /** All the reasons NOT to cover the system menu with a wallpaper patch; null = go. Each reason is shown in Launcher control. */
@@ -1308,7 +1321,7 @@ public class TjAccessibilityService extends AccessibilityService {
         return id + "|r" + rotation() + "|" + dm.widthPixels + "x" + dm.heightPixels + "|" + r.toShortString() + "|k" + Features.getInt(this, "patch_test_skew", 0);
     }
 
-    private void calStatus(String s) { if (!s.equals(Features.getString(this, CAL_STATUS_KEY, ""))) Features.setString(this, CAL_STATUS_KEY, s); }
+    private void calStatus(String s) { Features.setStringAsyncIfChanged(this, CAL_STATUS_KEY, s); }   // CA1 S12: async, only on change
 
     /** Runs once per wallpaper / rotation / rectangle: a real screenshot (shell helper) of the lock screen with the menu closed is compared with the wallpaper picture. */
     private void maybeCalibrateLock() {
@@ -1447,6 +1460,10 @@ public class TjAccessibilityService extends AccessibilityService {
                 if (!keyguardLocked()) lockBmp = null;   // V1: not needed off the lock screen (memory)
                 if (Features.isCover(Features.powerMode(this)) && coverWorld()) warmUp();   // plain cover mode keeps its pre-built card
                 return;
+            }
+            if (targetIsHome) {   // CA1 M2: the home flavour draws its own crop (patchShotBmp), never these: the lock-model wallpaper (4.9 MB on the tablet, up to 12 MB for a separate lock photo) and the platform's copy were kept for the whole home session
+                lockBmp = null;
+                if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) dropWallpaper();
             }
             if (patchView != null && (!PatchRest.sameWindow(rectArr(patchAt), rectArr(want), 2) || patchRot != rotation() || patchLockMode != targetIsLock || patchHomeMode != targetIsHome)) { removeOverlay(); removePatch(); }   // AH3: the slot window follows the card's bottom edge, measured on every scan: a 1-2 px wobble must not rebuild the patch
             if (patchView == null) { removeOverlay(); addPatch(want); warmUp(); }
@@ -1675,7 +1692,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // The Enter tap unlocks the tablet, and its click event can be delivered AFTER the keyguard already reports "unlocked" (race seen in emulator runs 63/64: ten pad taps
             // reached us, the final Enter did not, so the handshake was never completed). A click of the PIN pad within 3 s of the previous pad tap still counts.
             long nowMs = System.currentTimeMillis();
-            if (!keyguardLocked() && nowMs - lastPadKeyAt > 3000) return;
+            if (!keyguardLockedFast() && !keyguardLocked() && nowMs - lastPadKeyAt > 3000) return;   // CA1 U1: the 250 ms memo answers "locked" during PIN entry without a binder call per key; "unlocked" is asked again for real (same decision as before)
             ensureUnlockListener();
             AccessibilityNodeInfo n = e.getSource();
             UnlockPick.Key k = null;
@@ -1686,11 +1703,12 @@ public class TjAccessibilityService extends AccessibilityService {
             lastPadKeyAt = now;
             if (k == UnlockPick.Key.ENTER) {
                 String lead = unlock.padLead();   // read BEFORE onEnter clears the pad: the first two key KINDS only (never a digit, never the length)
-                lastEnterAt = now;
+                long tapLag = Math.max(0, android.os.SystemClock.uptimeMillis() - e.getEventTime());
+                lastEnterAt = now - tapLag;   // CA1 U1: the TAP's time, not the time this event was handled (the tablet's Enter lag reached 2164 ms and the summaries did not show it)
                 UnlockMethods.Method m = unlock.onEnter(now);
                 Log.i(TAG, "UNLOCKPICK enter tapped, handshake=" + (m == null ? "none" : m.id));
                 LockLog.add(getApplicationContext(), "ENTER", "lag=" + Math.max(0, android.os.SystemClock.uptimeMillis() - e.getEventTime()) + "ms lead=" + (lead.isEmpty() ? "-" : lead) + " handshake=" + (m == null ? "none" : m.id) + (m == null && unlock.armedMethod() != null ? " (earlier gesture kept for this retry: " + unlock.armedMethod().id + ")" : ""));
-                if (m == null) { sumNoteEnter(); coverAtEnter(); }
+                if (m == null) { sumNoteEnter(e.getEventTime()); coverAtEnter(); }
             } else unlock.onKey(k, now);
         } catch (Throwable t) { Log.e(TAG, "unlock key tracking failed", t); }
     }
@@ -1764,7 +1782,7 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
     }
 
-    private String now() { return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()); }
+    private String now() { return TimeFmt.hms(System.currentTimeMillis()); }   // CA1 M9: one formatter per thread
 
     private void profileNote(String s) {
         Features.setString(this, ProfileSession.PREARM_REPORT_KEY, now() + "  " + s);
@@ -1847,7 +1865,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (locked && !paused && !cleanedNow && !armed && Mode.isCustom(app)) RecentsSweep.requestAsync(app, "lock", RecentsSweep.HIDDEN_ONLY, null, 4000);
             if (locked && !paused && ReturnReset.cleanStart(app) && (!Mode.isCustom(app) || ReturnReset.bootCleanPending(app))) AppOrigin.refreshUsedCacheAsync(app);   // BE3: what the unlock needs to know about Recents is read now, not on the unlock path
             boolean dark = !isScreenOn();
-            if (locked && !(shadeLookedDark && !dark)) { noteShade(shadeLevel(), "look at " + why); if (dark) shadeLookedDark = true; }   // review LOW2: the wake (SystemUI busy) skips it when the dark look already read the panel   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
+            if (locked && !shadeLookedDark) { noteShade(shadeLevel(), "look at " + why); if (dark) shadeLookedDark = true; }   // CA1 S5: a SECOND dark run (6.5 s later) does not look again either: the panel cannot change while dark   // review LOW2: the wake (SystemUI busy) skips it when the dark look already read the panel   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
             if (locked) { try { refreshLayers(); } catch (Throwable t) { Log.e(TAG, "patch pre-creation failed", t); } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst
             if (ProfileSession.prearmCustomStackOnLockedWake(ProfileSession.prearm(app), locked, armed, preArmedThisLock, paused)) prearmCustom(why);
         } catch (Throwable t) { Log.e(TAG, "lock prepare failed", t); }
@@ -2040,7 +2058,8 @@ public class TjAccessibilityService extends AccessibilityService {
             String cur = android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
             if (cur != null && cur.contains("/")) ime = cur.substring(0, cur.indexOf('/'));
             ComponentName stock = stockCached();   // AD8: cached (one lookup a minute), not a package-manager call per window change
-            if (RecentsDirty.shouldMark(e.getPackageName().toString(), getPackageName(), stock == null ? null : stock.getPackageName(), ime, ReturnReset.targetPackage(this), true)) {
+            String wpkg = e.getPackageName().toString();
+            if (RecentsDirty.shouldMark(wpkg, getPackageName(), stock == null ? null : stock.getPackageName(), ime, null, true) && !wpkg.equals(ReturnReset.targetPackage(this))) {   // CA1 S7: the cheap exclusions first (SystemUI, ours, the stock launcher, the keyboard: most window events); the target lookup (a binder call, a background label scan when it is stale) only for a real app window
                 // AC2 follow-up: the app that was in front BEHIND the lock screen shows for a moment while the gesture's unlock goes away. Tj did not open it in Quickstep: it stays the custom account's.
                 if (ProfileSession.windowIsLockLeftover(keyguardLockedFast(), unlock.armedMethod() != null, System.currentTimeMillis(), lastUnlockAt)) {
                     LockLog.add(getApplicationContext(), "WINDOW", e.getPackageName() + " appeared under the lock screen / during the unlock: NOT counted as opened in Quickstep (window " + e.getClassName() + ")");
@@ -2086,21 +2105,36 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     /** Reads the stored curtain into memory (worker thread, one at a time): at service start, after a trim, and whenever a cover found it stored but not in memory. */
+    /** CA1 M1: see {@link HomeCurtainRules#keepInMemory}. */
+    private boolean curtainKeep() { return HomeCurtainRules.keepInMemory(curtainSwitchOn(), Mode.isCustom(this), ReturnReset.bootCleanPending(this)); }
+
+    /** CA1 M1: the mode, the boot flag or the switch changed: read the curtain into memory where a cover can show it, drop it (2.4 MB) where none can. */
+    private void curtainMemoryFollow() {
+        try {
+            handler.removeCallbacks(curtainPreloadLater);
+            if (curtainKeep()) handler.postDelayed(curtainPreloadLater, 4000);   // review LOW3: not while Quickstep's home is starting (a 600x1024 PNG decode on the 4-core MT8168); the Enter tap that ends that session comes after a lock, long after this
+            else HomeCurtain.dropCache();
+        } catch (Throwable t) { Log.e(TAG, "curtain memory follow failed", t); }
+    }
+    private final Runnable curtainPreloadLater = new Runnable() { @Override public void run() { curtainPreloadAsync(); } };
+    /** CA1 M1 review LOW5: a worker that read "keep" before the mode flipped may fill the cache after the drop: look again on the main thread when it is done. */
+    private final Runnable curtainRecheck = new Runnable() { @Override public void run() { try { if (!curtainKeep()) HomeCurtain.dropCache(); } catch (Throwable ignored) { } } };
+
     private void curtainPreloadAsync() {
-        if (curtainPreloading || !curtainSwitchOn()) return;
+        if (curtainPreloading || !curtainKeep()) return;   // CA1 M1: was curtainSwitchOn() (the picture was kept in memory for the whole custom session)
         curtainPreloading = true;
         final android.content.Context app = getApplicationContext();
         new Thread(new Runnable() { @Override public void run() {
             try { android.util.DisplayMetrics dm = realMetrics(); HomeCurtain.preload(app, rotation(), homeSig(), dm.widthPixels, dm.heightPixels); }
             catch (Throwable t) { Log.e(TAG, "curtain preload failed", t); }
-            finally { curtainPreloading = false; }
+            finally { curtainPreloading = false; handler.post(curtainRecheck); }   // CA1 M1 review LOW5
         } }, "tj-curtain-load").start();
     }
 
     /** What the cover did, for Launcher control, the tablet report and the lock log (written off the main thread). */
     private void curtainNoteUse(boolean curtain, String why, boolean touchable) {
         try {
-            String line = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  "
+            String line = TimeFmt.hms(System.currentTimeMillis()) + "  "
                     + (curtain ? "the curtain was shown (touches " + (touchable ? "swallowed" : "pass through until the unlock is confirmed") + ")" : "black cover: " + why);
             Features.setStringAsync(this, CURTAIN_STATE_KEY, line);
             LockLog.add(getApplicationContext(), "COVER", line);
@@ -2182,8 +2216,9 @@ public class TjAccessibilityService extends AccessibilityService {
             else {
                 HomeCurtainRules.Meta m = HomeCurtain.meta(app, rot);
                 boolean changed = HomeCurtainRules.changed(m != null, m == null ? "" : m.sig, m == null ? 0 : m.step, m == null ? 0 : m.hash, sig, step, h);
+                final boolean keep = curtainKeep();   // CA1 M1
                 if (!changed) {
-                    HomeCurtain.preload(app, rot, sig, dispW, dispH);
+                    if (keep) HomeCurtain.preload(app, rot, sig, dispW, dispH);
                     if (m != null && HomeCurtainRules.stampDue(System.currentTimeMillis() - m.savedAtMs)) { HomeCurtain.refreshStamp(app, rot); result = "unchanged: the picture's time stamp was renewed"; }   // a still-correct picture must never expire just because the home was not rearranged
                     else result = "unchanged since the last picture";
                     noteIt = false;
@@ -2197,7 +2232,7 @@ public class TjAccessibilityService extends AccessibilityService {
                         if (comp == null) result = "could not compose the picture";
                         else {
                             long now = System.currentTimeMillis();
-                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
+                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { if (keep) { HomeCurtain.setCache(rot, sig, now, comp); handler.post(curtainRecheck); } result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
                             else { comp.recycle(); result = "the picture could not be written"; }
                         }
                     }
@@ -2209,7 +2244,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.post(new Runnable() { @Override public void run() {
             curtainBuilding = false; curtainCaptureNote = res;
             Log.i(TAG, "CURTAIN " + res);
-            if (note) Features.setStringAsync(TjAccessibilityService.this, CURTAIN_CAPTURE_KEY, new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + res);
+            if (note) Features.setStringAsync(TjAccessibilityService.this, CURTAIN_CAPTURE_KEY, TimeFmt.hms(System.currentTimeMillis()) + "  " + res);
         } });
     }
 
@@ -2400,6 +2435,7 @@ public class TjAccessibilityService extends AccessibilityService {
         int type = e == null ? 0 : e.getEventType();
         if (sysui) penFinger.systemUiEvent(now);   // BQ1b: SystemUI is redrawing: the wait after a finger is not over yet
         if (sysui) penQuicken("SystemUI is redrawing");   // BN8b: a shown cover is watched closely while the panel may be moving (does nothing when no cover is up)
+        if (!EventNoise.pencilSearchOnEvent(type, lastBouncer, penShown)) return;   // CA1 U1: a PIN key cannot open the quick settings: no whole-tree search (now or 90 ms later) per key while the pad is up and no cover is shown
         if (now - lastPenMs >= 40) {
             lastPenMs = now; updatePencil(now - lastPenFullMs >= EventNoise.minPencilSearchGapMs(type));   // AN1: following a known pencil every 40 ms is cheap; a full tree search is spaced out in a burst of redraws
             if (debuggable()) { long end = android.os.SystemClock.uptimeMillis(); if (end - now >= 15) Log.i(TAG, "PATCH pencil took " + (end - now) + " ms t=" + end); }   // BJ1 diagnostic (debug builds only), see the scan line in leadingEdge
@@ -2465,12 +2501,15 @@ public class TjAccessibilityService extends AccessibilityService {
     private final Runnable penWatch = new Runnable() { @Override public void run() {
         try {
             if (penView == null || !penShown) return;
+            if (screenDarkNow) return;   // CA1 S3: the panel cannot move while the screen is dark (an open quick-settings panel survives the screen-off, BY1c F1b): no look every 150 ms while the CPU is awake for music or charging; the cover stays, SCREEN_ON starts the watch again
             if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
             updatePencil(false);
             if (penView != null && penShown) startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
 
+    /** CA1 S3: set by the SCREEN_OFF / SCREEN_ON broadcasts only (false until the first SCREEN_OFF = the old behaviour). */
+    private volatile boolean screenDarkNow = false;
     private long penFastUntil = 0;   // BN8b: until this uptime the shown cover is looked at every PencilRules.FAST_WATCH_MS
 
     /** BN8b: something may be about to move the panel ({@code why}: a finger went down somewhere, SystemUI is redrawing, the pencil was just found at a new place): look at the covered pencil every FAST_WATCH_MS for a while. Main thread. */
@@ -2670,7 +2709,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void gearStatus(String what) {
-        try { Features.setStringAsync(this, GearRules.STATUS_KEY, GearRules.statusLine(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), what)); } catch (Throwable ignored) { }
+        try { Features.setStringAsync(this, GearRules.STATUS_KEY, GearRules.statusLine(TimeFmt.hms(System.currentTimeMillis()), what)); } catch (Throwable ignored) { }
     }
 
     /** The cover was hidden or removed: a new panel visit starts (the learn tries count again) and the overlay goes with it. */
@@ -2871,6 +2910,8 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act) || android.content.Intent.ACTION_SCREEN_ON.equals(act) || android.content.Intent.ACTION_USER_PRESENT.equals(act))
                 LockLog.add(getApplicationContext(), android.content.Intent.ACTION_SCREEN_OFF.equals(act) ? "SCREEN_OFF" : android.content.Intent.ACTION_SCREEN_ON.equals(act) ? "SCREEN_ON" : "USER_PRESENT", "locked=" + keyguardLocked() + " mode=" + Mode.get(getApplicationContext()));
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
+                screenDarkNow = true; AnimationSpeedup.forgetGrant();   // CA1 S3; S6 review MED2: the lock decisions read the grant fresh
+                VpnOff.check(getApplicationContext(), true, false, "the screen went off"); VpnOff.onLockedWorld(getApplicationContext());   // CB2 / CB2e (any launcher): posts to its own worker thread (nothing here waits for it); a preference read when the switch is off
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
@@ -2882,7 +2923,10 @@ public class TjAccessibilityService extends AccessibilityService {
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
                 handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
             }
-            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) VpnOff.onUnlocked();   // CB2: a new lock counts its VPN stops from zero (nothing turns the VPN back on)
+            if (android.content.Intent.ACTION_SCREEN_ON.equals(act) && VpnOff.switchOn(getApplicationContext()))   // CB2: a VPN that came back while dark and was not heard (it may not route the launcher's traffic): look once, after the wake work
+                handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked()) { VpnOff.check(getApplicationContext(), false, true, "woke to the lock screen"); VpnOff.onLockedWorld(getApplicationContext()); } else VpnOff.onUnlocked(); } catch (Throwable e) { Log.e(TAG, "VPN look failed", e); } } }, 500);   // review of CB2 MED1: a wake inside the "lock after" delay sends no USER_PRESENT: no lock screen = the lock is over
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
                 try { if (keyguardLocked()) unlock.onPower(android.content.Intent.ACTION_POWER_CONNECTED.equals(act), t); } catch (Throwable e) { Log.e(TAG, "power event failed", e); }
@@ -3100,14 +3144,14 @@ public class TjAccessibilityService extends AccessibilityService {
     private final Runnable sumTimeout = new Runnable() { @Override public void run() { try { sumEmit(true); } catch (Throwable t) { Log.e(TAG, "unlock summary failed", t); } } };
 
     /** A plain Enter tap (the PIN is about to be judged). */
-    private void sumNoteEnter() { sumEnterAt = android.os.SystemClock.uptimeMillis(); }
+    private void sumNoteEnter(long tapUptimeMs) { sumEnterAt = tapUptimeMs > 0 ? tapUptimeMs : android.os.SystemClock.uptimeMillis(); }   // CA1 U1: from the tap (the event's own time, uptime base)
 
     /** USER_PRESENT: the keyguard is gone. */
     private void sumNotePresent() {
         long n = android.os.SystemClock.uptimeMillis();
         sumPresentAt = n; sumResumedAt = 0; sumFirstDrawAt = 0; sumCoverGoneAt = 0; sumMode = Mode.isCustom(this) ? "custom" : "quickstep"; sumArmed = true;
         if (resetCover == null) sumCoverUpAt = 0;                       // a cover from an earlier, unrelated unlock is gone; one raised at THIS Enter stays counted
-        if (sumEnterAt != 0 && n - sumEnterAt > 6000) sumEnterAt = 0;   // an Enter long ago (a wrong PIN) is not this unlock's
+        if (sumEnterAt != 0 && n - sumEnterAt > 10_000) sumEnterAt = 0;   // an Enter long ago (a wrong PIN) is not this unlock's (CA1 review LOW6: 10 s, was 6 s: the Enter time is now the TAP's time, which includes the event lag, up to 2.2 s measured)
         // review 2026-11-08: a Launcher that was already behind the keyguard (the custom-after-custom case) can resume and draw during the keyguard's exit animation, BEFORE this broadcast arrives, and a static home draws no more: look at the
         // last times the Launcher reported, so such an unlock is not mistaken for "no custom-Launcher frame"
         long ld = TjHooks.lastHomeDrawMs, lr = TjHooks.lastResumeMs;
@@ -3230,8 +3274,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private void updateHotspot() {
         try {
             android.content.Context app = getApplicationContext();
-            String target = ReturnReset.targetPackage(app);
-            boolean want = FailsafeKeys.hotspot(app) && Mode.isCustom(app) && target != null && target.equals(fgPkg) && !keyguardLocked();
+            boolean want = FailsafeKeys.hotspot(app) && Mode.isCustom(app) && fgPkg != null && fgPkg.equals(ReturnReset.targetPackage(app)) && !keyguardLocked();   // CA1 S7: the target lookup only when the hotspot switch is on, in the custom mode
             if (want && hotView == null) showHotspot(); else if (!want && hotView != null) removeHotspot();
         } catch (Throwable t) { Log.e(TAG, "hotspot update failed", t); removeHotspot(); }
     }
@@ -3517,7 +3560,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     @Override public void onInterrupt() { scrimTeardown(); removeHotspot(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); removeLockNumber(); picker().remove("interrupted"); try { stopShotWatch(); handler.removeCallbacks(shotIngest); handler.removeCallbacks(autoShot); handler.removeCallbacks(shotEnd); Features.setString(this, PatchShot.CAL_UNTIL_KEY, "0"); } catch (Throwable ignored) { } }
 
-    @Override public boolean onUnbind(android.content.Intent i) { instance = null; LockLog.add(this, "SERVICE", "unbound"); try { AnimationSpeedup.syncNow(this, "helper unbound"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: the helper is what hears the screen go off: without it the animations are real again
+    @Override public boolean onUnbind(android.content.Intent i) { instance = null; LockLog.add(this, "SERVICE", "unbound"); VpnOff.unwatch(this); AnimationSpeedup.forgetGrant(); try { AnimationSpeedup.syncNow(this, "helper unbound"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: the helper is what hears the screen go off: without it the animations are real again
         cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("unbound"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); try { ((android.hardware.SensorManager) getSystemService(SENSOR_SERVICE)).unregisterListener(sensorListener); motionOn = false; } catch (Throwable ignored) { } return super.onUnbind(i); }
 
     /**
@@ -3535,12 +3578,12 @@ public class TjAccessibilityService extends AccessibilityService {
             handler.post(new Runnable() { @Override public void run() {
                 launchableCache.clear();
                 HomeCurtain.dropCache();   // BL1: the in-memory curtain (about 2.4 MB) goes under real pressure; it is read back from its file the next time it is needed (a cover that shows it keeps its own reference)
-                if (patchView == null) { dropWallpaper(); lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }
+                if (patchView == null || patchHomeMode) { dropWallpaper(); lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }   // CA1 M2: the home patch window does not use them
             } });
         } catch (Throwable ignored) { }
     }
 
-    @Override public void onDestroy() { instance = null; try { AnimationSpeedup.syncNow(this, "helper destroyed"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); } cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("destroyed"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); super.onDestroy(); }
+    @Override public void onDestroy() { instance = null; VpnOff.unwatch(this); try { AnimationSpeedup.syncNow(this, "helper destroyed"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); } cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("destroyed"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); super.onDestroy(); }
 
     // ---------------------------------------------------------------- AD8: what the helper costs on THIS tablet (plain counters on the main thread; read by the report)
     private long connectedAtMs = 0, evSeen = 0, evNoise = 0, scanCount = 0, scanTotalMs = 0, scanMaxMs = 0;
@@ -4651,7 +4694,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** What a stored crop is valid for: this wallpaper picture, this rotation, this display size. */
     private String shotSig() { return PatchShot.currentSig(this); }
 
-    private void shotStatus(String s) { try { Features.setString(this, PatchShot.STATUS_KEY, s); } catch (Throwable ignored) { } }
+    private void shotStatus(String s) { try { Features.setStringAsyncIfChanged(this, PatchShot.STATUS_KEY, s); } catch (Throwable ignored) { } }   // CA1 S12: async, only on change
 
     private long calibrationUntilMs() { try { return Long.parseLong(Features.getString(this, PatchShot.CAL_UNTIL_KEY, "0").trim()); } catch (NumberFormatException e) { return 0; } }
     /** AW5: when the current calibration window opened (an automatic one is short, a manual one lasts {@link PatchShot#WINDOW_MS}); older windows recorded no start, so the old length is the fallback. */

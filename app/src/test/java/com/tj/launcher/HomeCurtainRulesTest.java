@@ -187,4 +187,12 @@ public class HomeCurtainRulesTest {
         assertNull("three parts are not a curtain meta", HomeCurtainRules.parseMeta("sig#1#2"));
         assertNull("an empty signature is not one", HomeCurtainRules.parseMeta("#1#2#3"));
     }
+
+    @Test public void theMemoryCopyIsKeptOnlyWhereACoverCanShowIt() {   // CA1 M1
+        assertTrue(HomeCurtainRules.keepInMemory(true, false, false));    // Quickstep: the Enter tap that ends it shows the curtain
+        assertFalse(HomeCurtainRules.keepInMemory(true, true, false));    // a plain custom session: nothing shows it
+        assertTrue(HomeCurtainRules.keepInMemory(true, true, true));      // the first unlock after a boot cleans up behind the curtain
+        assertFalse(HomeCurtainRules.keepInMemory(false, false, false));  // the switch is off
+        assertFalse(HomeCurtainRules.keepInMemory(false, true, true));
+    }
 }

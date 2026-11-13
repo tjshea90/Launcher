@@ -1,32 +1,30 @@
-# CHECKPOINT 1271 — read me first, then TASKS.md
+# CHECKPOINT 1319 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T06:34:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `fe6e64d2` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T06:17:36Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `2360d985` (this checkpoint is the commit after it)
 
 ## Just done
-stand-down note only, no work: heartbeat 06:33Z rule 2 (other branch ckpt 1319 at 06:17Z: v0.9.10 released+recorded, answer sent); main untouched
+heartbeat trig_01MRTg3yGjbXMnzqNtcrbLWg DELETED; TASKS CB1/CB2/BZ1 boxes tidied; answer sent as the last message
 
 ## Do this next
-heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc: next firing ~08:32Z; if no newer real work, rule 6 = delete it
+nothing Claude-owned left; wait for Tj (CB2g Allow + lock test, CA1d, BY1g ...); LOW CA1e
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M TASKS.md
 
 ## Last ten checkpoints
 ```
-  e0a387af ckpt 1270: stand-down note only, no work: heartbeat 04:33Z rule 2 (ccr-6e656bc6-wl2rhu 
-  e405026a ckpt 1269: stand-down note only, no work: heartbeat 02:32Z rule 2 (ccr-6e656bc6-wl2rhu 
-  4edd1601 ckpt 1268: heartbeat 00:32Z stood down (rule 2: ckpt 1267 of the other account 44 min o
-  8f725348 ckpt 1267: BY1d ticked (BY1 open only for BY1g tablet checks + BY1e LOW flake note), HA
-  d61fa73f ckpt 1266: v0.9.8 RELEASED + RECORDED: android.yml #49 id 43330901250 green on 4ce6f0f0
-  79ad60d1 ckpt 1265: ship.sh v0.9.8 green (SHIP_EXIT=0, 4ce6f0f0, main==tip); android.yml full_bu
-  4ce6f0f0 ckpt 1264: gated v0.9.8 (code 47) and pushed it: the handoff self-test, the full unit s
-  4ad1f461 ckpt 1263: version bumped to 47 / 0.9.8; ship.sh running in background (log scratchpad/
-  925f34f8 ckpt 1262: #582 id 43328172010 (se,ss ref main) GREEN + #583 id 43328175947 (se,ss bran
-  8ba3cfc7 ckpt 1261: HANDOFF 0v: gate triage + rerun state written
+  2360d985 ckpt 1318: v0.9.10 RELEASED 06:05Z + RECORDED (f666bb65); TASKS CB1/CB2b-f ticked, CB2g
+  59fba8eb ckpt 1317: ship.sh v0.9.10 green (SHIP_EXIT=0, f666bb65, main==tip); android.yml full_b
+  f666bb65 ckpt 1316: gated v0.9.10 (code 49) and pushed it: the handoff self-test, the full unit 
+  3db81d27 ckpt 1315: version bumped to 49 / 0.9.10; ship.sh starting (scratchpad/ship-cb2.txt, SH
+  498e4b60 ckpt 1314: GATE GREEN: solo reruns #599 b6 head GREEN, #600 b6 TAG GREEN, #601 43374384
+  e7f4655b ckpt 1313: gate FAILs: #597 AC8 (custom home still prepared behind lock) in e1,x,ac,an;
+  8f2fa31e ckpt 1312: gate read 05:47Z: #596 43371490476 base,n,o,wf GREEN; #597 job 131708055674 
+  7b37b884 ckpt 1311: full unit suite 1051 tests 0 fail + lint green on the gated product code
+  969155e7 ckpt 1310: GATE dispatched 05:21Z on 7d98cc10: #596 43371490476 base,n,o,wf; #597 43371
+  7d98cc10 ckpt 1309: run #595 43370382236 vo GREEN 24 PASS 0 FAIL on 32a96ffd (VO0-VO8b incl. Qui
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)

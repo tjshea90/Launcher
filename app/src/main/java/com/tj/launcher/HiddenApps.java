@@ -39,6 +39,17 @@ public final class HiddenApps {
         return new HashSet<>(sp.getStringSet(ALLOWED, new HashSet<String>()));
     }
 
+    /**
+     * CA1 M10: the same set for READING only (never modify it, never hand it out): {@link #isShown} / {@link #isPackageShown} are asked for every app at every Launcher3 load, by the Recents sweep
+     * and for notifications; a copy of the whole set per question was garbage only. Call inside LOCK.
+     */
+    private static Set<String> allowedReadOnly(Context c) {
+        SharedPreferences sp = p(c);
+        if (!sp.getBoolean(BASELINE, false)) return allowed(c);   // the first ever ask writes the baseline (as before)
+        Set<String> s = sp.getStringSet(ALLOWED, null);
+        return s == null ? java.util.Collections.<String>emptySet() : s;
+    }
+
     private static Set<String> done(Context c) { return new HashSet<>(p(c).getStringSet(AUTO_DONE, new HashSet<String>())); }
 
     /** The time this install of {@code pkg} began ({@code PackageInfo.firstInstallTime}: kept by an update in place, new after an uninstall + reinstall); 0 when it cannot be read, e.g. the app is not installed. */
@@ -63,7 +74,7 @@ public final class HiddenApps {
     public static boolean isShown(Context c, ComponentName app) {
         try {
             if (SettingsSpoof.hidesRealSettings(c, app.getPackageName())) return false;   // BN1: the look-alike is the Settings entry of the custom drawer; the real one stays out while it is
-            synchronized (LOCK) { autoAllowIfDue(c, app.getPackageName()); return AppVisibility.isShown(allowed(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
+            synchronized (LOCK) { autoAllowIfDue(c, app.getPackageName()); return AppVisibility.isShown(allowedReadOnly(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
         } catch (Throwable t) {
             android.util.Log.e("TjHidden", "isShown failed, showing the app", t);
             return true;
@@ -73,7 +84,7 @@ public final class HiddenApps {
     public static boolean isPackageShown(Context c, String pkg) {
         try {
             if (SettingsSpoof.hidesRealSettings(c, pkg)) return false;   // BN1: same rule as isShown (the Recents sweep asks by package)
-            synchronized (LOCK) { autoAllowIfDue(c, pkg); return AppVisibility.isShown(allowed(c), pkg, null, c.getPackageName()); }
+            synchronized (LOCK) { autoAllowIfDue(c, pkg); return AppVisibility.isShown(allowedReadOnly(c), pkg, null, c.getPackageName()); }
         } catch (Throwable t) { return true; }
     }
 

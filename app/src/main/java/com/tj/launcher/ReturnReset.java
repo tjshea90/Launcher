@@ -309,13 +309,16 @@ public final class ReturnReset {
     /** Review LOW2 (2026-11-12): a stored "no app" ("") was taken on trust in this process and its background re-check has not landed yet ({@link #targetForAction}). */
     private static volatile boolean noneUnchecked = false;
     private static final long TARGET_TTL_MS = 10 * 60_000;
-    private static final long NO_TARGET_TTL_MS = 30_000;       // "no such app installed" is re-checked soon: it may be installed a minute later
+    private static final long NO_TARGET_TTL_MS = 5 * 60_000;   // "no such app installed" is re-checked off the calling thread after 5 min (CA1 S7: was 30 s = a label scan of every app, ~350 ms on the tablet, every 30 s in Quickstep once Solitaire is gone)
 
     /**
      * Package of the app we open / keep in Recents (e.g. Solitaire), or null. AB2 (efficiency): finding it means asking Android for the label of EVERY launchable app (a resource lookup in each APK: on
      * the MT8168 that is 100+ ms and it ran on the main thread every 30 s, on every return to the custom launcher and on every app launch). Now the answer is kept for 10 minutes, REMEMBERED in
      * the preferences across process restarts (checked to still be installed), and re-checked on a background thread; only the very first lookup for a label scans on the calling thread.
      */
+    /** CA1 S7 review LOW7: an app was installed: a remembered "no such app" is re-checked at the next ask (off the calling thread), not 5 minutes later. */
+    public static void forgetMissingTarget() { if (cachedPkg == null) cachedAt = -NO_TARGET_TTL_MS - 1; }   // older than any TTL even right after a boot (elapsedRealtime small)
+
     public static String targetPackage(Context c) {
         final Context app = c.getApplicationContext();
         final String label = appLabel(app);

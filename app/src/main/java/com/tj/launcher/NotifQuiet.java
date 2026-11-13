@@ -30,7 +30,7 @@ public final class NotifQuiet {
 
     private NotifQuiet() {}
 
-    public static boolean permitted(Context c) { return c.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED; }
+    public static boolean permitted(Context c) { return AnimationSpeedup.secureSettingsGranted(c); }   // CA1 S6: one memo for the three holds
 
     /** The switch (shipped default ON, debug builds OFF: {@link NotifQuietPolicy#defaultOn}). */
     public static boolean switchOn(Context c) { return Features.get(c, NotifQuietPolicy.KEY, NotifQuietPolicy.defaultOn(ReturnReset.isDebuggable(c))); }

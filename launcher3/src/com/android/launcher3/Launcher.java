@@ -322,6 +322,7 @@ public class Launcher extends BaseDraggingActivity implements LauncherExterns,
         mAllAppsController = new AllAppsTransitionController(this);
         mStateManager = new LauncherStateManager(this);
         com.tj.launcher.TjHooks.watchState(mStateManager);   // Tj (D0): the wallpaper patch only exists while the plain home screen is showing
+        com.tj.launcher.TjHooks.onLauncherCreated(this);   // Tj (CA1 U12): a lock-log line per Launcher creation (is it re-created during the wake / PIN entry?)
         UiFactory.onCreate(this);
 
         mAppWidgetManager = AppWidgetManagerCompat.getInstance(this);

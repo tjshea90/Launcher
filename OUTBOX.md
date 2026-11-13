@@ -1922,26 +1922,197 @@
 > - **Older tablet checks:** BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1.
 <!-- sha:dc1fe9fab435 -->
 
-## 2026-11-13T02:35:46Z
-> I didn't start any work. Another Claude session, on branch `ccr-6e656bc6-wl2rhu`, is working on your new request (CA1) right now. It checkpointed at 02:34 UTC and has emulator test runs going.
+## 2026-11-13T01:47:31Z
+> I'm still waiting on the three reviewers. So far:
 >
-> I left `main` alone and saved only a one-line note on this branch.
+> - **Build setup:** code shrinking (R8) stays off, as decided in the earlier 2026-11-05 efficiency review. The app has no Kotlin code of its own, but the Kotlin library comes in through the AndroidX libraries anyway, so removing the Kotlin plugin would save nothing. I'm writing these into the audit file rather than changing anything.
+> - **Your tablet's last report:** 69 MB total memory and 5 MB Java heap, which is fine. In 2 hours it ran about 1,800 tree searches (984 for the power menu, 834 for the pencil cover). Each took about 30 ms on average, but single ones took up to 1.3 s. Those block the thread that also draws the home screen, so they are my main suspect for stutter.
 >
-> This corrects my last message: the heartbeat did not delete itself at 02:32 UTC, because there is now a job in progress. It stays on as a backup and checks again at about 04:32 UTC.
-<!-- sha:2e2671fa2914 -->
+> When the reviews are in, I'll write the findings to `research/PERF_AUDIT_2026-11-13.md` and fix only what keeps every function and the look.
+<!-- sha:3b916744536f -->
 
-## 2026-11-13T04:34:29Z
-> I didn't start any work. Another Claude session (branch `ccr-6e656bc6-wl2rhu`) is working right now. It saved a checkpoint at 04:32 UTC and is on CB1, your request to remove the VPN "Device connected to" row from the notification panel.
+## 2026-11-13T02:18:44Z
+> Status:
 >
-> I left `main` alone and saved a one-line note on this branch only. The heartbeat stays on as a backup and checks again at about 06:32 UTC.
-<!-- sha:d490cde46238 -->
+> - **Fixed and unit-tested (1041 tests, 0 failures):** nine changes, plus one diagnostic.
+>   - The PIN-key scans.
+>   - The 4.9–12 MB wallpaper copy and the 2.4 MB curtain kept in memory where nothing can show them.
+>   - The Launcher reload when switching to Quickstep.
+>   - Status-line disk writes.
+>   - Repeated permission checks.
+>   - The Solitaire lookups.
+>   - The pencil watch that kept polling with the screen dark.
+>   - Formatter garbage.
+> - **Rejected:** one idea, because it could have picked the wrong mode after an unlock handshake.
+> - **Now:** an independent reviewer is checking the change for bugs. After its fixes, the emulator gate runs: 5 parallel runs, about 35 minutes.
+<!-- sha:1fe848505eaf -->
 
-## 2026-11-13T06:34:35Z
-> I didn't start any work. Your other Claude session released v0.9.10 at 06:05 UTC, recorded it and sent you its answer at 06:17 UTC:
+## 2026-11-13T02:36:35Z
+> The gate is running: 5 emulator runs, results due at about 03:09 UTC. Everything so far is committed and pushed, and the answer to you is drafted in `research/CA1_RELEASE_MESSAGE_DRAFT_2026-11-13.md`. When the results land I'll read them, then build and release v0.9.9 if they're green.
+<!-- sha:1d08cc7e1ee7 -->
+
+## 2026-11-13T02:40:14Z
+> The auto-resume timer fired while this session was still active, so there is nothing to resume. The gate runs (#584–#588) are still in progress and I'll read them when the 03:09 UTC wait ends. Nothing else to do until then.
+<!-- sha:94b6cb9a0020 -->
+
+## 2026-11-13T03:15:46Z
+> Reruns are going: `fl` on both the head and the v0.9.8 tag (to see whether the FL2 frames are new), plus `ss`, `base` and `mu` solo. Results due at about 03:30 UTC.
+<!-- sha:ee59d857edce -->
+
+## 2026-11-13T03:33:05Z
+> `ship.sh` is running the release checks: the full unit suite, lint, the handoff self-test and the versionCode check. When it passes, GitHub builds and signs v0.9.9.
+<!-- sha:b19a5d129998 -->
+
+## 2026-11-13T03:38:57Z
+> The answer draft is updated. Waiting on the build (about 3 minutes).
+<!-- sha:309cb918b027 -->
+
+## 2026-11-13T03:48:16Z
+> Tj, v0.9.9 is out. It is the second performance pass; yesterday's v0.9.8 was the first.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.9
+>
+> **What I looked at:** three separate reviews covered unlocking from the lock screen into the custom launcher, steady battery and CPU use, and memory. I used the numbers from your last tablet report:
+> - 69 MB of memory in total;
+> - about 1,800 searches of the whole screen in 2 hours, on the thread that draws the launcher;
+> - your Enter tap reached the launcher 224 ms late on a plain unlock, and 2.2 s late on a Quickstep → custom unlock.
+>
+> A fourth review checked my changes for bugs and found 2 medium and 6 small problems. All are fixed except one rare case, which keeps today's plain black cover.
+>
+> **What changed (nothing removed, no change to the look):**
+> 1. **Typing the PIN:** each key press used to start two searches of the whole screen, on the same thread that draws the launcher. A PIN key can't open what they look for, so they no longer run while the PIN pad is up. If the power menu opens over the PIN pad, it is still caught. This is the main fix for slow loading from the lock screen.
+> 2. **Memory:** two copies stayed in memory on the custom home screen where nothing uses them:
+>    - a 4.9 MB copy of the wallpaper (up to 12 MB with a separate lock-screen photo);
+>    - a 2.4 MB copy of the home screen.
+>
+>    Both are now dropped there and loaded again only when needed.
+> 3. **Switching to Quickstep** no longer rebuilds the whole custom app drawer while Quickstep is starting. The drawer is rebuilt when you come back, as before.
+> 4. **Battery and CPU:**
+>    - A permission check that ran 4 times per tick now runs once every 3 s.
+>    - Status lines are saved in the background instead of the launcher waiting on the disk.
+>    - The Solitaire lookup runs only when it matters.
+>    - The pencil cover's 150 ms watch pauses while the screen is off.
+>    - Each lock does one panel check instead of two.
+>    - Each log line creates less garbage in memory.
+> 5. **The unlock timing in the report** now starts at your actual Enter tap, not when the launcher got round to it. The next report's numbers may look bigger; they are the honest ones.
+> 6. **A new "LAUNCHER created" line** in the lock log shows whether the custom home is rebuilt while the tablet wakes. That tells me whether the slow Quickstep → custom unlock needs the next fix.
+>
+> **What was tested:**
+> - All 1041 unit tests and lint passed.
+> - The emulator ran 35 test sections in 5 runs. Six checks failed. Some failed right after the emulator's known crashes inside Android's own libraries. The others were the film check of the power menu, which also fails sometimes on the released v0.9.8.
+> - Every section with a failure passed when run alone on the same code. The film run showed 0 Screenshot frames.
+>
+> **What only your tablet can show:** whether typing the PIN and the Quickstep → custom unlock feel faster, and the memory number ("total PSS" in Launcher control or the tablet report).
+>
+> **Not done yet** (each needs its own test first; details in `research/PERF_AUDIT_2026-11-13.md`):
+> - the Recents clean-up loop on the Quickstep → custom unlock;
+> - closing background apps after the black cover goes, not while it is up;
+> - moving the mode-switch settings changes off the thread that draws the screen.
+>
+> **One question (your rule, not a bug):** the lock screen always turns battery saver off. That also loses the battery saver's savings while the tablet sits locked. Do you want to keep that rule?
+>
+> The 2-hour auto-resume timer for this job is deleted, so nothing will wake a session for no reason.
+>
+> **Still waiting on you:**
+> - the v0.9.9 tablet check above (CA1d);
+> - the flicker checks and two questions from v0.9.8 (BY1g);
+> - the VPN key on the tablet (BZ1d);
+> - the Gboard check (BX1e);
+> - the Eleven questions and tablet check (BV1i/j/k);
+> - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
+<!-- sha:877e2b93e976 -->
+
+## 2026-11-13T04:29:48Z
+> Progress is saved. I'm waiting for the Android 10 source results; the answer depends on them.
+<!-- sha:93f30c04a934 -->
+
+## 2026-11-13T04:32:45Z
+> The source settles it: the row is Android's own quick-settings "security footer", and a sideloaded app cannot remove it, only cover it. I'm saving the findings, then I'll ask you how you want it handled.
+<!-- sha:9adf7576f62b -->
+
+## 2026-11-13T04:58:31Z
+> I'll read the emulator result after 05:03 UTC.
+<!-- sha:332859845776 -->
+
+## 2026-11-13T04:59:12Z
+> Tj, locking from Quickstep is already covered: the rule fires on every screen-off in either launcher, with no mode check. I'm adding it to the task list in your words and a Quickstep step to the emulator test, so it's proven rather than assumed.
+<!-- sha:9c4edfa8e1a8 -->
+
+## 2026-11-13T05:00:32Z
+> Tj, locking the screen from Quickstep turns the VPN off too. It always did in the new code, because the rule acts on every screen-off in either launcher; I've added a Quickstep step to the emulator test so that's proven, not assumed.
+>
+> Where things stand:
+> - **Your first question:** the "Device connected to …" row can't be removed. It is Android's own quick-settings row, shown whenever any VPN is connected, and Android 10 gives an app no way to take it out.
+> - **What I built instead:** the launcher turns the VPN off the moment the screen goes off, whenever the lock screen is showing, and whenever you lock from Quickstep. With the VPN off, the row is gone too.
+>   - It needs Android's OK once: a new "Allow" row in Launcher control opens Android's own VPN question; tap OK.
+>   - Nothing turns the VPN back on: after unlocking, reconnect in your VPN app.
+>   - While the tablet is locked, its traffic goes without the VPN.
+>   - If your VPN is set as "Always-on VPN" in Android's settings, Android won't let another app turn it off.
+> - **Testing:** the first emulator run with a real test VPN is on GitHub now, and a separate review of the code runs alongside it. Its result is due at about 05:03 UTC. After that I fix whatever the review finds, rerun the test with the Quickstep step, run the full gate and ship.
+>
+> **Still waiting on you:**
+> - the v0.9.9 tablet check and the battery-saver question (CA1d);
+> - the v0.9.8 flicker checks and two questions (BY1g);
+> - the Gboard check (BX1e);
+> - the Eleven questions and tablet check (BV1i/j/k);
+> - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
+>
+> **Checkpoint (health: yellow, work in flight):** done so far is the research, the rule with 7 passing unit tests, the code, and the emulator section including the Quickstep step. Next is reading run 43367976336, the review findings, a rerun, the gate, then release. Saved as `ckpt` on GitHub; the 2-hour auto-resume timer is armed.
+<!-- sha:450a8657cc57 -->
+
+## 2026-11-13T05:13:20Z
+> The answer draft is saved. The emulator rerun's result is due at about 05:19 UTC; I'll read it then.
+<!-- sha:fc1cea762375 -->
+
+## 2026-11-13T05:24:40Z
+> I'm waiting on the gate. Its 3 emulator runs finish at about 05:45 UTC; if they're green, the next step is building and publishing v0.9.10.
+<!-- sha:3a4fbd8412ee -->
+
+## 2026-11-13T05:49:48Z
+> The 4 solo reruns are going: the pencil-cover section and the AC section, each on the new code and on the released v0.9.9. If the new code passes alone, or v0.9.9 fails the same way, the failures aren't from the VPN change and I ship v0.9.10. Results due at about 05:58 UTC.
+<!-- sha:da30dc6a2734 -->
+
+## 2026-11-13T06:01:02Z
+> `ship.sh` is running the release checks: the handoff self-test, the full unit suite, lint and the version check. When it passes, GitHub builds and signs v0.9.10.
+<!-- sha:0e170e58484b -->
+
+## 2026-11-13T06:05:59Z
+> GitHub is building v0.9.10 now, which takes about 3 minutes. I'll confirm the Release when it's done.
+<!-- sha:93ef029ed328 -->
+
+## 2026-11-13T06:17:55Z
+> Tj, v0.9.10 is out. The launcher now turns your VPN off whenever the screen goes off or the lock screen is showing, in both the custom launcher and Quickstep.
 >
 > https://github.com/tjshea90/Launcher/releases/tag/v0.9.10
 >
-> That finished work is under an hour old, so the heartbeat rules said stand down. I left `main` alone and saved a one-line note on this branch only.
+> **Why the message itself couldn't be removed:** "Device connected to …" is Android's own quick-settings row, and it appears whenever any VPN is connected. Android 10 has no setting to hide it. The only way to change that part of the panel is an add-on that would have to be signed by the tablet's maker. Painting over it would leave an empty strip, and the row would flash while the panel moves.
 >
-> The heartbeat fires again at about 08:32 UTC. If nothing new has started by then, it deletes itself; that may need your approval in the app.
-<!-- sha:447cdbf8ca67 -->
+> **What happens now:**
+> 1. **Screen off or lock screen up:** when the screen goes off, or whenever the lock screen is showing, a connected VPN is turned off. That covers locking from Quickstep too. With no VPN connected, the row and the key are gone from the panel.
+> 2. **Reconnects:** if your VPN app reconnects by itself while the tablet is dark or locked, it's turned off again. That happens at most 3 times in 10 minutes, so the two apps can't fight all night.
+> 3. **Turning it back on is up to you:** after unlocking, connect again in your VPN app. While the tablet is locked, its traffic goes without the VPN.
+> 4. **Unlocked, the launcher never touches the VPN.**
+>
+> **One step for you, once:** Launcher control → Lock screen → "Allow the launcher to turn the VPN off". Android then asks its own "Connection request" question; tap OK.
+> - Android words that question the same way for any app that uses its VPN feature. The launcher never sets up a VPN of its own.
+> - Tapping OK disconnects your VPN once.
+> - The switch above that row is on by default.
+>
+> **One case where it can't work:** if your VPN is set as "Always-on VPN" in Android's settings (Settings → Network & internet → Advanced → VPN → the gear next to your VPN), Android won't let any other app turn it off. Launcher control will say so if that happens.
+>
+> **What was tested:**
+> - 1051 unit tests and lint pass.
+> - The new emulator test with a real VPN passed all 24 of its checks, twice. On it, the "Device connected to" row appeared, and turning the screen off turned the VPN off, in both launchers.
+> - The release gate ran 14 sections in 3 runs. 4 checks failed inside two long runs; each failed section passed when run alone, both on v0.9.10 and on v0.9.9.
+> - I skipped 4 gate sections the change can't reach (they were flagged only by a shared line or the manifest), and recorded why in the task list.
+>
+> **What only your tablet can show:** how your own VPN app reacts when the launcher takes the VPN over. Some apps reconnect on their own or show a warning. Launcher control's "VPN off when locked" line says what happened each time.
+>
+> **Still waiting on you:**
+> - the Allow step, then a lock test with your VPN on (CB2g);
+> - the v0.9.9 tablet check and the battery-saver question (CA1d);
+> - the v0.9.8 flicker checks (BY1g);
+> - the Gboard check (BX1e);
+> - the Eleven questions and tablet check (BV1i/j/k);
+> - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
+<!-- sha:d61e5f2d5d88 -->

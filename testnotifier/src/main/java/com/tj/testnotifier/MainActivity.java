@@ -15,6 +15,13 @@ public class MainActivity extends Activity {
         t.setText("Notifier test app " + getPackageName());
         t.setTextSize(20);
         setContentView(t);
+        if (getIntent().getBooleanExtra("vpn", false)) {   // CB2 (section vo): start the test VPN (prepare() is null once the scenario allowed ACTIVATE_VPN for this app) and post nothing
+            android.content.Intent need = android.net.VpnService.prepare(this);
+            android.util.Log.i("TJVPN", need == null ? "prepared, starting" : "NOT prepared (appops ACTIVATE_VPN missing)");
+            if (need == null) startService(new android.content.Intent(this, TestVpnService.class));
+            finish();
+            return;
+        }
         if (getIntent().getBooleanExtra("quiet", false)) return;   // the task-clean-up test (section rt) needs a shared app that opens WITHOUT a notification
         NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         boolean high = getIntent().getBooleanExtra("high", false);   // section nq (BH1): only a HIGH-importance notification pops up as a banner; every other section keeps the default channel

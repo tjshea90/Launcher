@@ -39,6 +39,7 @@
     <!-- N6: INTERNET is declared ONLY because Android refuses an app any socket without it, and the optional adb shell helper (research/PROFILES_2026-11-04.md) is reached over loopback TCP
          (127.0.0.1, ports 47631-47635; SELinux forbids apps the shell user's abstract unix socket). No code opens any other address; the helper is off unless Tj starts it with adb. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />   <!-- CB2: is a VPN connected (ConnectivityManager.getAllNetworks / a VPN network callback); a normal permission, granted at install -->
     <uses-permission android:name="android.permission.VIBRATE" />   <!-- N2: a 40 ms buzz when an unlock handshake is accepted -->
     <!-- AA2: a normal permission (granted at install, no adb): lets the keep-alive foreground service run, so the launcher process stays in memory for a faster unlock. -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
