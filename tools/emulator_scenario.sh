@@ -4949,7 +4949,9 @@ VOT=com.tj.testnotifier
 adb install -r -g testnotifier/build/outputs/apk/quick/debug/testnotifier-quick-debug.apk > "$OUT/vo-install.txt" 2>&1
 adb shell appops set "$VOT" ACTIVATE_VPN allow > "$OUT/vo-appops.txt" 2>&1
 adb shell appops set "$PKG" ACTIVATE_VPN ignore >> "$OUT/vo-appops.txt" 2>&1
-voup(){ adb shell "ip addr show tun0 2>/dev/null; ifconfig tun0 2>/dev/null" | grep -q '10.111.0.2' && echo 1 || echo 0; }   # 1 = the test VPN's interface is up, 0 = gone (ip, else ifconfig)
+vodump(){ adb shell dumpsys connectivity 2>/dev/null | tr -d '\r' | grep -c 'type: VPN\[[^]]*\], state: CONNECTED'; }   # VPN networks Android reports CONNECTED (NetworkInfo of every network agent)
+voip(){ adb shell "ip addr 2>/dev/null; ifconfig 2>/dev/null" | grep -c '10.111.0.2'; }                                     # the test VPN's address on any interface (run #594: ip/ifconfig on tun0 saw nothing although the VPN was up)
+voup(){ { [ "$(vodump)" -gt 0 ] 2>/dev/null || [ "$(voip)" -gt 0 ] 2>/dev/null; } && echo 1 || echo 0; }   # 1 = a VPN is up (either probe), 0 = gone
 vowait(){ local want="$1" i; for i in $(seq 1 "${2:-10}"); do [ "$(voup)" = "$want" ] && return 0; sleep 1; done; [ "$(voup)" = "$want" ]; }   # vowait <1|0> [seconds]
 vostart(){ adb shell am start -n "$VOT/.MainActivity" --ez vpn true >/dev/null 2>&1; vowait 1 10; }
 vofeat(){ adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"vpn_off_when_locked\\\" value=\\\"$1\\\" /></map>\" > shared_prefs/tj_features.xml'"; }
@@ -4962,7 +4964,9 @@ vofeat false; setmode custom; rebind; home; sleep 3
 # ---- premise: the VPN comes up and SystemUI shows its row (the thing Tj wants gone, CB1)
 adb logcat -c
 vostart; VO_UP="$(voup)"; volog 0
-info "VO premise: tun0 up=$VO_UP; test app says: $(grep -m3 TJVPN "$OUT/vo-log-0.txt" | cut -c1-120 | tr '\n' '|')"
+adb shell dumpsys connectivity 2>/dev/null | tr -d '\r' | grep -i 'vpn' | cut -c1-200 | head -8 > "$OUT/vo-0-connectivity.txt"
+info "VO premise probes: dumpsys VPN CONNECTED=$(vodump) ip=$(voip); connectivity lines: $(head -3 "$OUT/vo-0-connectivity.txt" | cut -c1-140 | tr '\n' '|')"
+info "VO premise: up=$VO_UP; test app says: $(grep -m3 TJVPN "$OUT/vo-log-0.txt" | cut -c1-120 | tr '\n' '|')"
 check "VO0: the test VPN is connected (tun0 has 10.111.0.2)" test "$VO_UP" = 1
 adb shell cmd statusbar expand-settings; sleep 3; shot vo-0-panel-with-vpn
 adb shell uiautomator dump /sdcard/vo0.xml >/dev/null 2>&1; adb shell cat /sdcard/vo0.xml > "$OUT/vo-0-panel.xml" 2>/dev/null
