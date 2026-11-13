@@ -81,6 +81,11 @@ public class EventNoiseTest {
         assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, false, false, true));     // a click in SystemUI
         assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, true, false, false));     // the menu is up: follow it
         assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, false, false, false));   // window changes still always scan
+        assertTrue(EventNoise.systemPackage("com.android.systemui"));
+        assertTrue(EventNoise.systemPackage("android"));
+        assertFalse(EventNoise.systemPackage("com.android.chrome"));
+        assertFalse(EventNoise.systemPackage(null));
+        assertEquals(AccessibilityEvent.TYPE_VIEW_CLICKED, EventNoise.TYPE_VIEW_CLICKED);
     }
 
     @Test public void aPinPadKeyStartsNoPowerMenuScan() {   // CA1 U1
@@ -103,11 +108,6 @@ public class EventNoiseTest {
         assertTrue(EventNoise.pencilSearchOnEvent(AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED, true, false));   // the panel coming down is a content burst / window change: still searched
         assertTrue(EventNoise.pencilSearchOnEvent(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, true, false));
         assertTrue(EventNoise.pencilSearchOnEvent(0, true, false));   // an event-less follow-up
-        assertTrue(EventNoise.systemPackage("com.android.systemui"));
-        assertTrue(EventNoise.systemPackage("android"));
-        assertFalse(EventNoise.systemPackage("com.android.chrome"));
-        assertFalse(EventNoise.systemPackage(null));
-        assertEquals(AccessibilityEvent.TYPE_VIEW_CLICKED, EventNoise.TYPE_VIEW_CLICKED);
     }
 
     @Test public void onlyTallWindowsCanHoldTheKeyguardOrThePanel() {   // BY1a B2 / B3
