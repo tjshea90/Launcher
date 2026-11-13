@@ -4937,6 +4937,87 @@ adb shell settings put secure lock_screen_show_notifications 1
 adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section fl
+if want vo; then # section vo
+ensurehome
+# ---- CB2 (Tj, 2026-11-13): "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on".
+#      The VPN is the CI test app's REAL VpnService (testnotifier TestVpnService: routes only 10.111.0.0/24, logs with the tag TJVPN; consent by appops). The launcher turns it off with VpnService.prepare
+#      once Android allowed it (appops ACTIVATE_VPN for the launcher = what Android's own "Connection request" OK sets); research/VPN_FOOTER_2026-11-13.md. Switch vpn_off_when_locked (debug default OFF: set here).
+#      Phases: premise (the VPN is up, the quick-settings row "Device connected to" shows), A switch off = it stays, B switch on but not allowed = it stays + says why, C allowed = screen off turns it off,
+#      D a VPN that reconnects while dark is turned off again, E the cap (3 per lock) leaves a 4th alone, F unlocked = nothing happens, G the lock screen's panel has no VPN row after a stop.
+beat "before VO"
+VOT=com.tj.testnotifier
+adb install -r -g testnotifier/build/outputs/apk/quick/debug/testnotifier-quick-debug.apk > "$OUT/vo-install.txt" 2>&1
+adb shell appops set "$VOT" ACTIVATE_VPN allow > "$OUT/vo-appops.txt" 2>&1
+adb shell appops set "$PKG" ACTIVATE_VPN ignore >> "$OUT/vo-appops.txt" 2>&1
+voup(){ adb shell ip addr show tun0 2>/dev/null | grep -c '10.111.0.2' | tr -d '\r\n'; }   # 1 = the test VPN's interface is up, 0 = gone
+vowait(){ local want="$1" i; for i in $(seq 1 "${2:-10}"); do [ "$(voup)" = "$want" ] && return 0; sleep 1; done; [ "$(voup)" = "$want" ]; }   # vowait <1|0> [seconds]
+vostart(){ adb shell am start -n "$VOT/.MainActivity" --ez vpn true >/dev/null 2>&1; vowait 1 10; }
+vofeat(){ adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"vpn_off_when_locked\\\" value=\\\"$1\\\" /></map>\" > shared_prefs/tj_features.xml'"; }
+volog(){ adb logcat -d -s TJVPN:I TjVpnOff:I 2>/dev/null | tr -d '\r' > "$OUT/vo-log-$1.txt"; }
+vosleep(){ adb shell input keyevent KEYCODE_SLEEP; sleep "${1:-4}"; }
+vowake(){ adb shell input keyevent KEYCODE_WAKEUP; sleep 2; }
+vounlock(){ vowake; adb shell input swipe 300 900 300 300 300; sleep 2; [ "$(kg_state)" = "showing=false" ] || { adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2; }; }
+adb shell locksettings clear --old 1234 >/dev/null 2>&1   # a swipe lock: every wake shows the lock screen, no PIN to type
+vofeat false; setmode custom; rebind; home; sleep 3
+# ---- premise: the VPN comes up and SystemUI shows its row (the thing Tj wants gone, CB1)
+adb logcat -c
+vostart; VO_UP="$(voup)"; volog 0
+info "VO premise: tun0 up=$VO_UP; test app says: $(grep -m3 TJVPN "$OUT/vo-log-0.txt" | cut -c1-120 | tr '\n' '|')"
+check "VO0: the test VPN is connected (tun0 has 10.111.0.2)" test "$VO_UP" = 1
+adb shell cmd statusbar expand-settings; sleep 3; shot vo-0-panel-with-vpn
+adb shell uiautomator dump /sdcard/vo0.xml >/dev/null 2>&1; adb shell cat /sdcard/vo0.xml > "$OUT/vo-0-panel.xml" 2>/dev/null
+check "VO0b: the quick-settings panel shows SystemUI's row 'Device connected to ...' while a VPN is up (research/VPN_FOOTER_2026-11-13.md)" grep -q 'Device connected to' "$OUT/vo-0-panel.xml"
+adb shell cmd statusbar collapse; sleep 2; rebind; sleep 3   # the dump restarted the accessibility service: let the new one settle
+# ---- A: switch OFF: the screen goes off, the VPN stays
+vosleep 5; VO_A="$(voup)"; vounlock
+check "VO1: with the switch OFF the VPN stays connected when the screen goes off" test "$VO_A" = 1
+# ---- B: switch ON, Android has NOT allowed the launcher: nothing happens, and it says why
+vofeat true; rebind; home; sleep 3; adb logcat -c
+vosleep 5; VO_B="$(voup)"; volog b; vounlock
+info "VO B: tun0 up=$VO_B; launcher says: $(grep -m2 TjVpnOff "$OUT/vo-log-b.txt" | cut -c1-160 | tr '\n' '|')"
+check "VO2: switch on but not allowed by Android: the VPN stays connected" test "$VO_B" = 1
+check "VO2b: ... and the launcher says Android has not allowed it" grep -q 'has not allowed' "$OUT/vo-log-b.txt"
+# ---- C: allowed (the same app-op Android's OK sets): the screen goes off -> the VPN is turned off
+adb shell appops set "$PKG" ACTIVATE_VPN allow >> "$OUT/vo-appops.txt" 2>&1
+info "VO C: launcher ACTIVATE_VPN = $(adb shell appops get "$PKG" ACTIVATE_VPN 2>/dev/null | tr -d '\r' | head -1 | cut -c1-80)"
+adb logcat -c
+adb shell input keyevent KEYCODE_SLEEP; VO_T0=$(date +%s); vowait 0 10; VO_C="$(voup)"; VO_CS=$(( $(date +%s) - VO_T0 )); sleep 2; volog c
+info "VO C: tun0 up=$VO_C ${VO_CS}s after the screen went off; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
+check "VO3: allowed + switch on: the VPN is turned off when the screen goes off" test "$VO_C" = 0
+check "VO3b: ... by Android revoking it (the test VPN got onRevoke)" grep -q 'TJVPN.*revoked' "$OUT/vo-log-c.txt"
+check "VO3c: ... and the launcher wrote why (the screen went off)" grep -q 'turned the VPN off (the screen went off)' "$OUT/vo-log-c.txt"
+sleep 3; check "VO3d: nothing turns it back on while dark" test "$(voup)" = 0
+# ---- D: the VPN app reconnects while the tablet is dark: turned off again (the network callback)
+adb logcat -c
+vostart >/dev/null; vowait 0 12; VO_D="$(voup)"; sleep 2; volog d
+info "VO D: tun0 up=$VO_D after a reconnect while dark; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-d.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
+check "VO4: a VPN that reconnects while the screen is dark is turned off again" test "$VO_D" = 0
+check "VO4b: ... because it connected while locked" grep -q 'a VPN connected while locked' "$OUT/vo-log-d.txt"
+# ---- E: the cap: stop 3 (this reconnect) is still turned off, a 4th reconnect during the same lock is left alone (no ping-pong all night)
+vostart >/dev/null; vowait 0 12; VO_E3="$(voup)"
+adb logcat -c
+vostart >/dev/null; sleep 6; VO_E4="$(voup)"; volog e
+info "VO E: after reconnect 3 tun0 up=$VO_E3, after reconnect 4 tun0 up=$VO_E4; log: $(grep TjVpnOff "$OUT/vo-log-e.txt" | cut -c1-160 | tail -2 | tr '\n' '|')"
+check "VO5: the 3rd stop of one lock still happens" test "$VO_E3" = 0
+check "VO5b: a 4th reconnect during the same lock is left alone" test "$VO_E4" = 1
+check "VO5c: ... and the launcher says it gave up for this lock" grep -q 'reconnected 3 times' "$OUT/vo-log-e.txt"
+# ---- F: unlocked: a connected VPN is Tj's to use (the unlock also resets the count)
+vounlock; sleep 5; VO_F="$(voup)"; info "VO F: unlocked, tun0 up=$VO_F, keyguard $(kg_state)"
+check "VO6: unlocked, the VPN stays connected" test "$VO_F" = 1
+# ---- G: after the unlock the count starts again: screen off turns it off; the LOCK screen's panel then has no VPN row
+adb logcat -c
+vosleep 1; vowait 0 10; VO_G="$(voup)"; vowake; sleep 1
+adb shell cmd statusbar expand-settings; sleep 3; shot vo-1-lock-panel-after
+adb shell uiautomator dump /sdcard/vo1.xml >/dev/null 2>&1; adb shell cat /sdcard/vo1.xml > "$OUT/vo-1-panel.xml" 2>/dev/null
+adb shell input keyevent KEYCODE_BACK; sleep 2
+check "VO7: after an unlock the count starts again: the next screen-off turns the VPN off" test "$VO_G" = 0
+check "VO7b: the lock screen's quick-settings panel shows no 'Device connected to' row" bash -c "test -s '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
+# ---- clean up: the test VPN off, the launcher's app-op back to the default, the switch off
+vounlock
+adb shell am force-stop "$VOT"; adb shell appops set "$PKG" ACTIVATE_VPN ignore >/dev/null 2>&1; adb shell appops set "$VOT" ACTIVATE_VPN ignore >/dev/null 2>&1
+vofeat false; rebind; home; sleep 2
+info "VO end: tun0 up=$(voup), keyguard $(kg_state)"
+fi # section vo
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
