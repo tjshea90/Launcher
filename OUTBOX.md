@@ -2198,3 +2198,16 @@
 >
 > Send me what it prints, or "nothing".
 <!-- sha:9b1044118221 -->
+
+## 2026-11-13T17:06:01Z
+> The helper started (`[1] 16808` is its process number). Keep the cable plugged in for now.
+>
+> **Step 5**
+>
+> On the tablet, in Quickstep, open **Launcher control > Tablet setup & report**.
+>
+> 1. Check the line near the top. It should say **Shell helper: RUNNING**.
+> 2. Tap **"1. Do everything that is missing (N)"** and wait about a minute for the list to turn green.
+>
+> Tell me what the top line said, and the number N that was on the button.
+<!-- sha:2734887e4358 -->
