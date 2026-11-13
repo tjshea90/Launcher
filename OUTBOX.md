@@ -1930,3 +1930,19 @@
 >
 > When the reviews are in, I'll write the findings to `research/PERF_AUDIT_2026-11-13.md` and fix only what keeps every function and the look.
 <!-- sha:3b916744536f -->
+
+## 2026-11-13T02:18:44Z
+> Status:
+>
+> - **Fixed and unit-tested (1041 tests, 0 failures):** nine changes, plus one diagnostic.
+>   - The PIN-key scans.
+>   - The 4.9–12 MB wallpaper copy and the 2.4 MB curtain kept in memory where nothing can show them.
+>   - The Launcher reload when switching to Quickstep.
+>   - Status-line disk writes.
+>   - Repeated permission checks.
+>   - The Solitaire lookups.
+>   - The pencil watch that kept polling with the screen dark.
+>   - Formatter garbage.
+> - **Rejected:** one idea, because it could have picked the wrong mode after an unlock handshake.
+> - **Now:** an independent reviewer is checking the change for bugs. After its fixes, the emulator gate runs: 5 parallel runs, about 35 minutes.
+<!-- sha:1fe848505eaf -->
