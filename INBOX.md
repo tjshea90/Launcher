@@ -1525,3 +1525,8 @@ Review the launcher for code efficiency, ram optimization without sacrificing sp
 ```
 The launcher is running well, but I just got a VPN. The VPN key symbol disappears as I asked for, but now there is a new VPN message in the notification panel on the lock screen and both launchers which says device connected to [the name of my VPN] and it has a key symbol to the right. Can this entire message be removed completely so the notification panel looks normal like it did before the VPN? 
 ```
+
+## 2026-11-13T04:32:50Z
+```
+If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on
+```
