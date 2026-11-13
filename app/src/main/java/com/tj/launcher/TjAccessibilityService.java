@@ -593,6 +593,10 @@ public class TjAccessibilityService extends AccessibilityService {
             if (FailsafeKeys.HOTSPOT_KEY.equals(key) || FailsafeKeys.CORNER_KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { removeHotspot(); updateHotspot(); } });
         }
     };
+    /** CA1 S7 review LOW7: an installed app may be the Solitaire target that was "not installed": look again now, not after the 5-minute re-check. */
+    private final android.content.BroadcastReceiver packageAddedReceiver = new android.content.BroadcastReceiver() {
+        @Override public void onReceive(android.content.Context c, android.content.Intent i) { try { ReturnReset.forgetMissingTarget(); } catch (Throwable ignored) { } }
+    };
     private final android.content.BroadcastReceiver wallpaperReceiver = new android.content.BroadcastReceiver() {
         @Override public void onReceive(android.content.Context c, android.content.Intent i) { dropWallpaper(); lockBmp = null; lockCalSig = ""; lockShot = null; lockShotFresh = false; homeWallId = -1; homeWallBmp = null; homeBuiltAtMs = 0; handler.post(new Runnable() { @Override public void run() { removeOverlay(); removePatch(); refreshLayers(); } }); }
     };
@@ -617,6 +621,7 @@ public class TjAccessibilityService extends AccessibilityService {
         getSharedPreferences("tj_mode", MODE_PRIVATE).registerOnSharedPreferenceChangeListener(prefWatch);
         getSharedPreferences("tj_features", MODE_PRIVATE).registerOnSharedPreferenceChangeListener(prefWatch);
         registerReceiver(wallpaperReceiver, new android.content.IntentFilter(android.content.Intent.ACTION_WALLPAPER_CHANGED));
+        try { android.content.IntentFilter pf = new android.content.IntentFilter(android.content.Intent.ACTION_PACKAGE_ADDED); pf.addDataScheme("package"); registerReceiver(packageAddedReceiver, pf); } catch (Throwable t) { Log.e(TAG, "package receiver failed", t); }   // CA1 S7 review LOW7
         try { registerReceiver(closeDialogsReceiver, new android.content.IntentFilter(android.content.Intent.ACTION_CLOSE_SYSTEM_DIALOGS)); } catch (Throwable t) { Log.e(TAG, "close dialogs receiver not registered", t); }   // BC2
         patchWatching = true;
         refreshLayers();
@@ -627,6 +632,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { getSharedPreferences("tj_mode", MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(prefWatch); } catch (Throwable ignored) { }
         try { getSharedPreferences("tj_features", MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener(prefWatch); } catch (Throwable ignored) { }
         try { unregisterReceiver(wallpaperReceiver); } catch (Throwable ignored) { }
+        try { unregisterReceiver(packageAddedReceiver); } catch (Throwable ignored) { }   // CA1 S7
         try { unregisterReceiver(closeDialogsReceiver); } catch (Throwable ignored) { }   // BC2
         patchWatching = false;
     }
@@ -2098,7 +2104,16 @@ public class TjAccessibilityService extends AccessibilityService {
     private boolean curtainKeep() { return HomeCurtainRules.keepInMemory(curtainSwitchOn(), Mode.isCustom(this), ReturnReset.bootCleanPending(this)); }
 
     /** CA1 M1: the mode, the boot flag or the switch changed: read the curtain into memory where a cover can show it, drop it (2.4 MB) where none can. */
-    private void curtainMemoryFollow() { try { if (curtainKeep()) curtainPreloadAsync(); else HomeCurtain.dropCache(); } catch (Throwable t) { Log.e(TAG, "curtain memory follow failed", t); } }
+    private void curtainMemoryFollow() {
+        try {
+            handler.removeCallbacks(curtainPreloadLater);
+            if (curtainKeep()) handler.postDelayed(curtainPreloadLater, 4000);   // review LOW3: not while Quickstep's home is starting (a 600x1024 PNG decode on the 4-core MT8168); the Enter tap that ends that session comes after a lock, long after this
+            else HomeCurtain.dropCache();
+        } catch (Throwable t) { Log.e(TAG, "curtain memory follow failed", t); }
+    }
+    private final Runnable curtainPreloadLater = new Runnable() { @Override public void run() { curtainPreloadAsync(); } };
+    /** CA1 M1 review LOW5: a worker that read "keep" before the mode flipped may fill the cache after the drop: look again on the main thread when it is done. */
+    private final Runnable curtainRecheck = new Runnable() { @Override public void run() { try { if (!curtainKeep()) HomeCurtain.dropCache(); } catch (Throwable ignored) { } } };
 
     private void curtainPreloadAsync() {
         if (curtainPreloading || !curtainKeep()) return;   // CA1 M1: was curtainSwitchOn() (the picture was kept in memory for the whole custom session)
@@ -2107,7 +2122,7 @@ public class TjAccessibilityService extends AccessibilityService {
         new Thread(new Runnable() { @Override public void run() {
             try { android.util.DisplayMetrics dm = realMetrics(); HomeCurtain.preload(app, rotation(), homeSig(), dm.widthPixels, dm.heightPixels); }
             catch (Throwable t) { Log.e(TAG, "curtain preload failed", t); }
-            finally { curtainPreloading = false; }
+            finally { curtainPreloading = false; handler.post(curtainRecheck); }   // CA1 M1 review LOW5
         } }, "tj-curtain-load").start();
     }
 
@@ -2212,7 +2227,7 @@ public class TjAccessibilityService extends AccessibilityService {
                         if (comp == null) result = "could not compose the picture";
                         else {
                             long now = System.currentTimeMillis();
-                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { if (keep) HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
+                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { if (keep) { HomeCurtain.setCache(rot, sig, now, comp); handler.post(curtainRecheck); } result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
                             else { comp.recycle(); result = "the picture could not be written"; }
                         }
                     }
@@ -3127,7 +3142,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long n = android.os.SystemClock.uptimeMillis();
         sumPresentAt = n; sumResumedAt = 0; sumFirstDrawAt = 0; sumCoverGoneAt = 0; sumMode = Mode.isCustom(this) ? "custom" : "quickstep"; sumArmed = true;
         if (resetCover == null) sumCoverUpAt = 0;                       // a cover from an earlier, unrelated unlock is gone; one raised at THIS Enter stays counted
-        if (sumEnterAt != 0 && n - sumEnterAt > 6000) sumEnterAt = 0;   // an Enter long ago (a wrong PIN) is not this unlock's
+        if (sumEnterAt != 0 && n - sumEnterAt > 10_000) sumEnterAt = 0;   // an Enter long ago (a wrong PIN) is not this unlock's (CA1 review LOW6: 10 s, was 6 s: the Enter time is now the TAP's time, which includes the event lag, up to 2.2 s measured)
         // review 2026-11-08: a Launcher that was already behind the keyguard (the custom-after-custom case) can resume and draw during the keyguard's exit animation, BEFORE this broadcast arrives, and a static home draws no more: look at the
         // last times the Launcher reported, so such an unlock is not mistaken for "no custom-Launcher frame"
         long ld = TjHooks.lastHomeDrawMs, lr = TjHooks.lastResumeMs;
