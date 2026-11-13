@@ -4967,26 +4967,33 @@ vostart; VO_UP="$(voup)"; volog 0
 adb shell dumpsys connectivity 2>/dev/null | tr -d '\r' | grep -i 'vpn' | cut -c1-200 | head -8 > "$OUT/vo-0-connectivity.txt"
 info "VO premise probes: dumpsys VPN CONNECTED=$(vodump) ip=$(voip); connectivity lines: $(head -3 "$OUT/vo-0-connectivity.txt" | cut -c1-140 | tr '\n' '|')"
 info "VO premise: up=$VO_UP; test app says: $(grep -m3 TJVPN "$OUT/vo-log-0.txt" | cut -c1-120 | tr '\n' '|')"
-check "VO0: the test VPN is connected (tun0 has 10.111.0.2)" test "$VO_UP" = 1
+check "VO0: the test VPN is connected" test "$VO_UP" = 1
 adb shell cmd statusbar expand-settings; sleep 3; shot vo-0-panel-with-vpn
 adb shell uiautomator dump /sdcard/vo0.xml >/dev/null 2>&1; adb shell cat /sdcard/vo0.xml > "$OUT/vo-0-panel.xml" 2>/dev/null
 check "VO0b: the quick-settings panel shows SystemUI's row 'Device connected to ...' while a VPN is up (research/VPN_FOOTER_2026-11-13.md)" grep -q 'Device connected to' "$OUT/vo-0-panel.xml"
 adb shell cmd statusbar collapse; sleep 2; rebind; sleep 3   # the dump restarted the accessibility service: let the new one settle
-# ---- A: switch OFF: the screen goes off, the VPN stays
-vosleep 5; VO_A="$(voup)"; vounlock
-check "VO1: with the switch OFF the VPN stays connected when the screen goes off" test "$VO_A" = 1
-# ---- B: switch ON, Android has NOT allowed the launcher: nothing happens, and it says why
+# ---- B: switch ON, Android has NOT allowed the launcher: nothing happens, it says why; the LOCK screen's panel shows the row (the premise of VO7b)
 vofeat true; rebind; home; sleep 3; adb logcat -c
-vosleep 5; VO_B="$(voup)"; volog b; vounlock
-info "VO B: tun0 up=$VO_B; launcher says: $(grep -m2 TjVpnOff "$OUT/vo-log-b.txt" | cut -c1-160 | tr '\n' '|')"
+vosleep 5; VO_B="$(voup)"; volog b
+vowake; sleep 1; adb shell cmd statusbar expand-settings; sleep 3; shot vo-b-lock-panel-with-vpn
+adb shell uiautomator dump /sdcard/vob.xml >/dev/null 2>&1; adb shell cat /sdcard/vob.xml > "$OUT/vo-b-panel.xml" 2>/dev/null
+adb shell input keyevent KEYCODE_BACK; sleep 2; vounlock; rebind; sleep 3
+info "VO B: up=$VO_B; launcher says: $(grep -m2 TjVpnOff "$OUT/vo-log-b.txt" | cut -c1-160 | tr '\n' '|')"
 check "VO2: switch on but not allowed by Android: the VPN stays connected" test "$VO_B" = 1
 check "VO2b: ... and the launcher says Android has not allowed it" grep -q 'has not allowed' "$OUT/vo-log-b.txt"
-# ---- C: allowed (the same app-op Android's OK sets): the screen goes off -> the VPN is turned off
+check "VO2c: (premise of VO7b) the LOCK screen's quick-settings panel shows the row while a VPN is up" grep -q 'Device connected to' "$OUT/vo-b-panel.xml"
+# ---- allowed from here on (the same app-op Android's OK sets)
 adb shell appops set "$PKG" ACTIVATE_VPN allow >> "$OUT/vo-appops.txt" 2>&1
-info "VO C: launcher ACTIVATE_VPN = $(adb shell appops get "$PKG" ACTIVATE_VPN 2>/dev/null | tr -d '\r' | head -1 | cut -c1-80)"
+info "VO: launcher ACTIVATE_VPN = $(adb shell appops get "$PKG" ACTIVATE_VPN 2>/dev/null | tr -d '\r' | head -1 | cut -c1-80)"
+# ---- A: allowed but the switch OFF: the screen goes off, the VPN stays (review of CB2 MED3: before, this ran while NOT allowed and could not fail)
+vofeat false; rebind; home; sleep 3
+vosleep 5; VO_A="$(voup)"; vounlock
+check "VO1: allowed, but with the switch OFF the VPN stays connected when the screen goes off" test "$VO_A" = 1
+# ---- C: switch ON: the screen goes off -> the VPN is turned off
+vofeat true; rebind; home; sleep 3; [ "$(voup)" = 1 ] || vostart >/dev/null
 adb logcat -c
 adb shell input keyevent KEYCODE_SLEEP; VO_T0=$(date +%s); vowait 0 10; VO_C="$(voup)"; VO_CS=$(( $(date +%s) - VO_T0 )); sleep 2; volog c
-info "VO C: tun0 up=$VO_C ${VO_CS}s after the screen went off; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
+info "VO C: up=$VO_C ${VO_CS}s after the screen went off; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
 check "VO3: allowed + switch on: the VPN is turned off when the screen goes off" test "$VO_C" = 0
 check "VO3b: ... by Android revoking it (the test VPN got onRevoke)" grep -q 'TJVPN.*revoked' "$OUT/vo-log-c.txt"
 check "VO3c: ... and the launcher wrote why (the screen went off)" grep -q 'turned the VPN off (the screen went off)' "$OUT/vo-log-c.txt"
@@ -4994,28 +5001,31 @@ sleep 3; check "VO3d: nothing turns it back on while dark" test "$(voup)" = 0
 # ---- D: the VPN app reconnects while the tablet is dark: turned off again (the network callback)
 adb logcat -c
 vostart >/dev/null; vowait 0 12; VO_D="$(voup)"; sleep 2; volog d
-info "VO D: tun0 up=$VO_D after a reconnect while dark; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-d.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
-check "VO4: a VPN that reconnects while the screen is dark is turned off again" test "$VO_D" = 0
+info "VO D: up=$VO_D after a reconnect while dark; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-d.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
+check "VO4: a VPN that reconnects while the screen is dark is turned off again" bash -c "test '$VO_D' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-d.txt'"
 check "VO4b: ... because it connected while locked" grep -q 'a VPN connected while locked' "$OUT/vo-log-d.txt"
-# ---- E: the cap: stop 3 (this reconnect) is still turned off, a 4th reconnect during the same lock is left alone (no ping-pong all night)
-vostart >/dev/null; vowait 0 12; VO_E3="$(voup)"
-adb logcat -c
+# ---- E: the cap: stop 3 (this reconnect) still happens, a 4th within 10 minutes is left alone (no ping-pong all night)
+sleep 3; adb logcat -c
+vostart >/dev/null; vowait 0 12; VO_E3="$(voup)"; sleep 1; volog e3
+sleep 3; adb logcat -c
 vostart >/dev/null; sleep 6; VO_E4="$(voup)"; volog e
-info "VO E: after reconnect 3 tun0 up=$VO_E3, after reconnect 4 tun0 up=$VO_E4; log: $(grep TjVpnOff "$OUT/vo-log-e.txt" | cut -c1-160 | tail -2 | tr '\n' '|')"
-check "VO5: the 3rd stop of one lock still happens" test "$VO_E3" = 0
-check "VO5b: a 4th reconnect during the same lock is left alone" test "$VO_E4" = 1
-check "VO5c: ... and the launcher says it gave up for this lock" grep -q 'reconnected 3 times' "$OUT/vo-log-e.txt"
-# ---- F: unlocked: a connected VPN is Tj's to use (the unlock also resets the count)
-vounlock; sleep 5; VO_F="$(voup)"; info "VO F: unlocked, tun0 up=$VO_F, keyguard $(kg_state)"
-check "VO6: unlocked, the VPN stays connected" test "$VO_F" = 1
+info "VO E: after reconnect 3 up=$VO_E3, after reconnect 4 up=$VO_E4; log: $(grep TjVpnOff "$OUT/vo-log-e.txt" | cut -c1-160 | tail -2 | tr '\n' '|')"
+check "VO5: the 3rd stop within 10 minutes still happens (the VPN really came back first)" bash -c "test '$VO_E3' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-e3.txt' && grep -q 'TJVPN.*revoked' '$OUT/vo-log-e3.txt'"
+check "VO5b: a 4th reconnect within 10 minutes is left alone" bash -c "test '$VO_E4' = 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-e.txt'"
+check "VO5c: ... and the launcher says it gave up for now" grep -q 'reconnected 3 times' "$OUT/vo-log-e.txt"
+# ---- F: unlocked: the count starts again, and a VPN connected while unlocked is Tj's to use (review LOW8: connect AFTER the unlock)
+vounlock; adb shell am force-stop "$VOT"; sleep 2; adb logcat -c
+vostart >/dev/null; sleep 6; VO_F="$(voup)"; volog f
+info "VO F: unlocked, up=$VO_F, keyguard $(kg_state); launcher lines: $(grep -c TjVpnOff "$OUT/vo-log-f.txt")"
+check "VO6: unlocked in the custom launcher, a VPN connected now stays connected" bash -c "test '$VO_F' = 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-f.txt' && ! grep -q 'turned the VPN off' '$OUT/vo-log-f.txt'"
 # ---- G: after the unlock the count starts again: screen off turns it off; the LOCK screen's panel then has no VPN row
 adb logcat -c
 vosleep 1; vowait 0 10; VO_G="$(voup)"; vowake; sleep 1
 adb shell cmd statusbar expand-settings; sleep 3; shot vo-1-lock-panel-after
 adb shell uiautomator dump /sdcard/vo1.xml >/dev/null 2>&1; adb shell cat /sdcard/vo1.xml > "$OUT/vo-1-panel.xml" 2>/dev/null
-adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell input keyevent KEYCODE_BACK; sleep 2; rebind; sleep 2
 check "VO7: after an unlock the count starts again: the next screen-off turns the VPN off" test "$VO_G" = 0
-check "VO7b: the lock screen's quick-settings panel shows no 'Device connected to' row" bash -c "test -s '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
+check "VO7b: the lock screen's quick-settings panel (open: its panel node is in the dump) shows no 'Device connected to' row" bash -c "grep -q 'quick_settings_panel' '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
 # ---- H: CB2e (Tj: "And any time I lock the screen from quickstep"): the same in Quickstep mode
 vounlock; setmode quickstep; rebind; home; sleep 3
 vostart >/dev/null; sleep 3; VO_H1="$(voup)"
