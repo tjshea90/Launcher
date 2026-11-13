@@ -317,7 +317,7 @@ public final class ReturnReset {
      * the preferences across process restarts (checked to still be installed), and re-checked on a background thread; only the very first lookup for a label scans on the calling thread.
      */
     /** CA1 S7 review LOW7: an app was installed: a remembered "no such app" is re-checked at the next ask (off the calling thread), not 5 minutes later. */
-    public static void forgetMissingTarget() { if (cachedPkg == null) cachedAt = 0; }
+    public static void forgetMissingTarget() { if (cachedPkg == null) cachedAt = -NO_TARGET_TTL_MS - 1; }   // older than any TTL even right after a boot (elapsedRealtime small)
 
     public static String targetPackage(Context c) {
         final Context app = c.getApplicationContext();
