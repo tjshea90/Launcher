@@ -2021,3 +2021,7 @@
 > - the Eleven questions and tablet check (BV1i/j/k);
 > - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
 <!-- sha:877e2b93e976 -->
+
+## 2026-11-13T04:29:48Z
+> Progress is saved. I'm waiting for the Android 10 source results; the answer depends on them.
+<!-- sha:93f30c04a934 -->
