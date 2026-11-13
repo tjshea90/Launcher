@@ -1570,3 +1570,10 @@ com.tj.launcher/com.tj.launcher.TjAccessibilityService
 DONE
 tb8168p1_bsp:/ $ 
 ```
+
+## 2026-11-13T17:04:31Z
+```
+tb8168p1_bsp:/ $ CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) H=$(pm path com.tj.launcher | head -1 | cut -d: -f2)                          <setsid nohup app_process er | head -1 | cut -d: -f2) setsid nohup app_process                          </system/bin com.tj.launch2) setsid nohup app_process /system/bin com.tj.launch                         <er.ShellServer >/dev/nullss /system/bin com.tj.launcher.ShellServer >/dev/null                         < 2>&1 &
+[1] 16808
+tb8168p1_bsp:/ $ 
+```
