@@ -4470,7 +4470,7 @@ WFL="$(wflist)"; WFM="$(wfmark)"
 info "WF G (all preference files gone, switch back to its debug default OFF): icon_blacklist=$WFL marker=$WFM"
 check "WF10: after 'Clear data' the list is put back and nothing is held" bash -c "[ \"$WFL\" = null ] && [ \"$WFM\" = null ]"
 # ---- H: without the adb permission nothing can hide the symbol, so Wi-Fi is switched off in the custom launcher like before
-wffeat true true; adb shell pm revoke "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1; sleep 1; rebind; home; sleep 6
+adb shell am force-stop "$PKG"; wffeat true true; adb shell pm revoke "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1; sleep 1; rebind; home; sleep 6   # CA1 review MED2: force-stop BEFORE writing the preferences (a running process kept phase G's in-memory switch OFF, so WF11 never reached the grant check)
 adb shell svc wifi enable; sleep 8
 WFW="$(wfwifi)"; WFL="$(wflist)"
 info "WF H (no adb permission): wifi_on=$WFW icon_blacklist=$WFL"

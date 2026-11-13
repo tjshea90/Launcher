@@ -38,17 +38,21 @@ public final class AnimationSpeedup {
     public static boolean permitted(Context c) { return secureSettingsGranted(c); }
 
     /**
-     * CA1 S6: the adb grant WRITE_SECURE_SETTINGS, asked by the animation, banner and radio-symbol holds on every sync (a binder call each on Android 10, 4 per tick in Quickstep). Remembered for 30 s
-     * when granted (a revoke by `pm revoke` kills the app process anyway) and 2 s when not (a fresh grant is seen at once in practice). One memo for all three holds.
+     * CA1 S6: the adb grant WRITE_SECURE_SETTINGS, asked by the animation, banner and radio-symbol holds on every sync (a binder call each on Android 10, 4 per tick in Quickstep). One memo for all
+     * three, 3 s either way (review MED2: a `pm revoke` of a development permission does NOT kill the process, so a long "granted" memo could keep the radios on where the symbols can no longer be
+     * hidden); the helper also clears it at its connect / unbind and at every screen on / off, the moments a hold decides the lock screen.
      */
     public static boolean secureSettingsGranted(Context c) {
         long now = android.os.SystemClock.uptimeMillis();
         long at = grantAt;
-        if (at != 0 && now >= at && now - at < (grantVal ? 30_000L : 2_000L)) return grantVal;
+        if (at != 0 && now >= at && now - at < GRANT_MEMO_MS) return grantVal;
         boolean v = c.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED;
-        grantVal = v; grantAt = now == 0 ? 0 : now;
+        grantVal = v; grantAt = now;
         return v;
     }
+    /** CA1 S6: forget the remembered grant (the next question asks Android). */
+    public static void forgetGrant() { grantAt = 0; }
+    private static final long GRANT_MEMO_MS = 3_000L;
     private static volatile long grantAt = 0;
     private static volatile boolean grantVal = false;
     public static boolean enabled(Context c) { return Features.get(c, KEY, true); }

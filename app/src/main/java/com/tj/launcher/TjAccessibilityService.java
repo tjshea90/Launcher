@@ -319,6 +319,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { KeepAliveService.ensure(this); } catch (Throwable t) { Log.e(TAG, "keep-alive failed", t); }   // AA2: after a restart / update the helper reconnects first: bring the service back
         Log.i(TAG, "connected; power mode=" + Features.powerMode(this) + " custom=" + Mode.isCustom(this));
         LockLog.add(this, "SERVICE", "connected, mode " + Mode.get(this) + (CrashGuard.automationOff(this) ? " PAUSED" : ""));
+        AnimationSpeedup.forgetGrant();   // CA1 S6 review MED2: a (re)connect reads the adb grant fresh
         curtainPreloadAsync();   // BL1: the stored home curtain is read into memory now (a worker thread), so the cover at the next Enter tap never waits for a disk read
         handler.postDelayed(new Runnable() { @Override public void run() { reconcileAfterGap("the helper (re)connected"); } }, 1500);   // AC1: was the helper away at an unlock? (after the connect has settled)
         handler.postDelayed(new Runnable() { @Override public void run() { try { if (keyguardLocked() && !CrashGuard.automationOff(getApplicationContext())) lockQuietNow("the helper connected on the lock screen"); } catch (Throwable t) { Log.e(TAG, "connect lock rules failed", t); } } }, 2000);   // AW2 / AW3: the first lock screen after a restart (or after the helper was away) gets the same rules
@@ -2889,7 +2890,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act) || android.content.Intent.ACTION_SCREEN_ON.equals(act) || android.content.Intent.ACTION_USER_PRESENT.equals(act))
                 LockLog.add(getApplicationContext(), android.content.Intent.ACTION_SCREEN_OFF.equals(act) ? "SCREEN_OFF" : android.content.Intent.ACTION_SCREEN_ON.equals(act) ? "SCREEN_ON" : "USER_PRESENT", "locked=" + keyguardLocked() + " mode=" + Mode.get(getApplicationContext()));
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
-                screenDarkNow = true;   // CA1 S3
+                screenDarkNow = true; AnimationSpeedup.forgetGrant();   // CA1 S3; S6 review MED2: the lock decisions read the grant fresh
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
@@ -2901,7 +2902,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
                 handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
             }
-            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
                 try { if (keyguardLocked()) unlock.onPower(android.content.Intent.ACTION_POWER_CONNECTED.equals(act), t); } catch (Throwable e) { Log.e(TAG, "power event failed", e); }
