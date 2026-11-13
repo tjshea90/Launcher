@@ -1,21 +1,24 @@
-# CHECKPOINT 1299 — read me first, then TASKS.md
+# CHECKPOINT 1300 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T04:40:15Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `13792c6a` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T04:42:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `f2fed0e9` (this checkpoint is the commit after it)
 
 ## Just done
-CB2b started: VpnOffRules + VpnOffRulesTest (pure rule: screen dark or lock up, VPN up, allowed, cap 3/lock), testnotifier TestVpnService (routes 10.111.0.0/24 only, TJVPN log) + MainActivity --ez vpn true
+CB2a verified (Vpn.prepare path, Always-on blocks, legacy lockdown throws, ConfirmDialog OK revokes once); research doc updated
 
 ## Do this next
-wait for web-fetch agent (AOSP 10 Vpn.prepare verify); then VpnOff.java glue (appops check android:activate_vpn, getAllNetworks TRANSPORT_VPN, prepare on bg thread, NetworkCallback), hooks in TjAccessibilityService lockReceiver SCREEN_OFF/ON + lockPrepareLater + USER_PRESENT reset, ControlActivity row + Allow, ReportState line, ACCESS_NETWORK_STATE
+write VpnOff.java glue + hooks (SCREEN_OFF, SCREEN_ON locked, USER_PRESENT reset, connect/unbind watch), ControlActivity row + Allow (startActivityForResult), ReportState line, RestoreStore off, manifest ACCESS_NETWORK_STATE
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M TASKS.md
+     M research/VPN_FOOTER_2026-11-13.md
 
 ## Last ten checkpoints
 ```
+  f2fed0e9 ckpt 1299: CB2b started: VpnOffRules + VpnOffRulesTest (pure rule: screen dark or lock 
   732dcb95 ckpt 1298: CB2 (Tj: turn the VPN off at screen-off / lock screen) written into TASKS; C
   5c2800f9 ckpt 1297: CB1a done: research/VPN_FOOTER_2026-11-13.md (QSSecurityFooter; no setting; 
   589a9f66 ckpt 1296: CB1a started: web-fetch agent reading AOSP 10 QSSecurityFooter / QSPanel / Q
@@ -25,8 +28,4 @@ wait for web-fetch agent (AOSP 10 Vpn.prepare verify); then VpnOff.java glue (ap
   1d0c087b ckpt 1292: ship.sh v0.9.9 green (SHIP_EXIT=0, f43d41ad, main==tip); android.yml full_bu
   f43d41ad ckpt 1291: gated v0.9.9 (code 48) and pushed it: the handoff self-test, the full unit s
   573db729 ckpt 1290: version bumped to 48 / 0.9.9; ship.sh starting in background (scratchpad/shi
-  1f37ec66 ckpt 1289: GATE GREEN on 566fc305: #586 #588 green; reruns #589 fl head GREEN (0 Screen
 ```
-
-(4 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)

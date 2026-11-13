@@ -28,5 +28,14 @@ Sources read 2026-11-13 by a web-fetch subagent (verbatim excerpts in its report
 - Places: the lock screen, the custom launcher AND Quickstep (Tj names all three; today's pencil cover runs only in the custom world + lock screen).
 - Dark theme (battery saver in a launcher): the cover must take the panel colour of the current theme (the pencil cover's colour rule).
 
-## Decision needed from Tj (asked 2026-11-13)
-Cover it (the strip, the short flash while the panel moves, taps on the strip do nothing) or leave it as Android draws it.
+## Tj's answer (CB2, 2026-11-13): "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on"
+No cover. The VPN itself goes off while the tablet is dark or locked.
+
+## How an app turns ANOTHER app's VPN off on Android 10 (VERIFIED, AOSP android10-release, web-fetch subagent 2026-11-13)
+- `VpnService.prepare(ctx)` = `IConnectivityManager.prepareVpn(callerPkg, null, user)`; null result = prepared.
+- `ConnectivityService.prepareVpn`: `enforceCrossUserPermission(user)`, then `throwIfLockdownEnabled()` (system LEGACY lockdown VPN: `IllegalStateException("Unavailable in lockdown mode")`), then `Vpn.prepare(old, new)`.
+- `Vpn.prepare(oldPackage = us, newPackage = null)`: (1) `if (mAlwaysOn && !isCurrentPreparedPackage(us)) return false;` = an Always-on VPN can never be dethroned; (2) not the current package and `isVpnUserPreConsented(us)` (app-op `OP_ACTIVATE_VPN` == MODE_ALLOWED for the CALLING uid) -> `prepareInternal(us)`, return true. No CONTROL_VPN check on this path (it is only on the newPackage path used by the consent dialog).
+- `prepareInternal(us)`: tears the interface down (agentDisconnect), sends `LAST_CALL_TRANSACTION` to the old app's VpnService (= its `onRevoke()`), unbinds it, or `mLegacyVpnRunner.exit()` for a built-in (L2TP / IPsec) VPN; then `mPackage = us`, state IDLE.
+- Consent: default mode of ACTIVATE_VPN is MODE_IGNORED. Two ways to allow it: Android's own `ConfirmDialog` (started with startActivityForResult from the Intent prepare() returns; OK calls `prepareVpn(null, us)` = revokes the running VPN ONCE, then `setVpnPackageAuthorization(us, true)`; Cancel does nothing; it closes at once if another app is Always-on) or adb `appops set com.tj.launcher ACTIVATE_VPN allow` (the shell command's name for the op: NOT read in source; the CI run proves it).
+- After the launcher took the VPN over it is the "prepared" package with NO interface; Tj's VPN app, already consented, takes it back silently the next time it connects (no dialog).
+- Cost: one binder call per trigger, only when a VPN network is up (`ConnectivityManager.getAllNetworks()` + TRANSPORT_VPN, which lists every network).
