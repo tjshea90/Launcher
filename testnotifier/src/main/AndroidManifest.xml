@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- CI-only test app for the emulator check: shows a line of text and posts one notification each time it is opened; with --ez vpn true it starts TestVpnService instead (CB2). No permissions. -->
+    <!-- CI-only test app for the emulator check: shows a line of text and posts one notification each time it is opened; with the boolean extra vpn=true it starts TestVpnService instead (CB2). No permissions. -->
     <application
         android:allowBackup="false"
         android:label="${appLabel}"
