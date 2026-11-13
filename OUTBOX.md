@@ -2229,3 +2229,7 @@
 >
 > Earlier I said you might need to approve deleting an old auto-resume reminder. I can no longer find it from this session, so there's nothing for you to approve.
 <!-- sha:5c044e35745e -->
+
+## 2026-11-13T23:51:09Z
+> Installing the hooks first, as the working agreement requires. In the same step I'll check what the repo already knows about this question: the CA1 RAM audit, any tablet memory numbers, and what label and process each app in this list has.
+<!-- sha:7378b6a853b2 -->
