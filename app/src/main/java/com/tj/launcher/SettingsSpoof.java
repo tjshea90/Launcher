@@ -111,7 +111,8 @@ public final class SettingsSpoof {
             String line = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  Settings entry " + (want ? "ON" : "OFF") + " (" + why + ")";
             Log.i(TAG, line);
             Features.setStringAsync(app, STATUS_KEY, line);
-            new Handler(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { try { HiddenApps.reloadLauncher(appCtx); } catch (Throwable ignored) { } } });
+            if (want || Mode.isCustom(app)) new Handler(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { try { HiddenApps.reloadLauncher(appCtx); } catch (Throwable ignored) { } } });
+            else Log.i(TAG, "no forced reload: Quickstep (the custom drawer is not on screen; the system's component-changed update drops the entry, the return to custom re-enables the alias and reloads)");   // CA1 S2: a full Launcher3 load + bind (est. 0.5-1.5 s of CPU on the tablet) ran at every switch to Quickstep, while Quickstep itself was starting
             return true;
         } catch (Throwable t) {
             Log.e(TAG, "sync failed", t);
