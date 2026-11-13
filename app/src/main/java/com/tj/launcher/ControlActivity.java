@@ -172,6 +172,13 @@ public class ControlActivity extends Activity {
                 LockQuiet.enabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, LockQuiet.KEY, v); LockQuiet.applyNotificationsAsync(ControlActivity.this); rebuild(); } });   // v0.7.6 (review): do not wait for a bound accessibility helper to put the setting back
         toggle("A gesture unlock into Quickstep puts Wi-Fi and Bluetooth back", "Whatever the lock screen rule itself switched off during that lock comes back after the lock-screen gesture opens Quickstep. A plain PIN into the custom launcher leaves them off (the custom launcher's own rule).", LockQuiet.restoreEnabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, LockQuiet.RESTORE_KEY, v); } });
         note("Lock screen quiet: " + Features.getString(this, LockQuiet.LAST_KEY, "(has not had to act yet)") + "   (lock_screen_show_notifications = " + android.provider.Settings.Secure.getString(getContentResolver(), LockQuiet.SHOW) + ")");
+        toggle("Turn the VPN off when the screen goes off or the lock screen is up", "ON: the moment the screen goes off, or whenever the lock screen is showing, a connected VPN is turned off (so the quick-settings panel no longer shows \"Device connected to ...\"). Nothing turns it back on: connect again in your VPN app after unlocking. While the tablet is locked its traffic goes without the VPN. A VPN set as \"Always-on VPN\" in Android's settings cannot be turned off by another app. Needs Android's OK once (the row below).",
+                VpnOff.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, VpnOffRules.KEY, v); } });   // CB2 (Tj, 2026-11-13)
+        if (!VpnOff.allowed(this)) action("Allow the launcher to turn the VPN off", "Opens Android's own \"Connection request\" question once: tap OK. The launcher never sets up a VPN of its own; Android words the question for any app that uses the VPN service. Tapping OK also disconnects a VPN that is connected right now (connect again in your VPN app).", new Runnable() { public void run() {
+            try { Intent ask = android.net.VpnService.prepare(ControlActivity.this); if (ask != null) startActivityForResult(ask, REQ_VPN); else rebuild(); }   // only reached while NOT allowed: then prepare() changes nothing and returns Android's question
+            catch (Throwable t) { Log.w("TjControl", "VPN question failed: " + t); }
+        }});
+        note("VPN off when locked: " + VpnOff.describe(this));
         toggle("Prepare the custom launcher behind the lock screen", "On waking to the lock screen the custom home screen is put in front behind it, so the unlock opens it at once with no delay (Solitaire too, only if \"Open Solitaire automatically\" is on). A handshake puts Quickstep there instead, at once.", ProfileSession.prearm(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ProfileSession.PREARM_KEY, v); } });
         toggle("A gesture unlock comes back to the app I had open", "ON: after the lock-screen gesture, Quickstep opens the app that was in front when you locked the tablet, exactly as you left it (like tapping its icon). OFF: it opens the Quickstep home screen instead, with the apps minimised. With no app open it is always the home screen.", Features.get(this, ResumeTarget.KEY, true), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ResumeTarget.KEY, v); } });
 
@@ -398,6 +405,8 @@ public class ControlActivity extends Activity {
 
     // ---------------------------------------------------------------- small UI kit
     private interface Chg { void on(boolean v); }
+    private static final int REQ_VPN = 4711;   // CB2: Android's VPN question (VpnService.prepare); the answer only changes what the page shows
+    @Override protected void onActivityResult(int req, int res, Intent data) { super.onActivityResult(req, res, data); if (req == REQ_VPN) rebuild(); }
     private interface Str { void on(String v); }
 
     private TextView text(String t, int sp, int color, boolean bold) {
