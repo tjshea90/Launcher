@@ -1,13 +1,13 @@
-# CHECKPOINT 1270 — read me first, then TASKS.md
+# CHECKPOINT 1271 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T01:43:45Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `fa9ce612` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T01:47:12Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `0ac9f715` (this checkpoint is the commit after it)
 
 ## Just done
-CA1a: heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv armed (every 2h at :40); 3 read-only audit subagents running (unlock path, steady CPU/battery, RAM)
+CA1a slice 4 notes: R8 off kept by AD8 decision (research/EFFICIENCY_2026-11-05.md); app has 0 Kotlin files but kotlin plugin applied (checking deps); tablet data 2026-11-10: PSS 69 MB, 984 menu scans avg 28 ms max 563, 834 pencil searches avg 33 max 1305 in 121 min; compile -m speed manual per update (SetupActivity COMPILE_SELF)
 
 ## Do this next
-CA1a slice 4 (build config) by hand: R8 decision, manifest, TjApplication, gradle.properties; then collect the 3 audit results into research/PERF_AUDIT_2026-11-13.md. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
+wait for 3 audit agents + deps.txt in scratchpad; then write research/PERF_AUDIT_2026-11-13.md and pick fixes. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ CA1a slice 4 (build config) by hand: R8 decision, manifest, TjApplication, gradl
 
 ## Last ten checkpoints
 ```
+  0ac9f715 ckpt 1270: CA1a: heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv armed (every 2h at :40); 3 rea
   fa9ce612 ckpt 1269: CA1 written into TASKS (Tj perf/RAM/battery review request)
   4edd1601 ckpt 1268: heartbeat 00:32Z stood down (rule 2: ckpt 1267 of the other account 44 min o
   8f725348 ckpt 1267: BY1d ticked (BY1 open only for BY1g tablet checks + BY1e LOW flake note), HA
@@ -25,5 +26,4 @@ CA1a slice 4 (build config) by hand: R8 decision, manifest, TjApplication, gradl
   4ad1f461 ckpt 1263: version bumped to 47 / 0.9.8; ship.sh running in background (log scratchpad/
   925f34f8 ckpt 1262: #582 id 43328172010 (se,ss ref main) GREEN + #583 id 43328175947 (se,ss bran
   8ba3cfc7 ckpt 1261: HANDOFF 0v: gate triage + rerun state written
-  914160f7 ckpt 1260: dispatched 23:21Z se,ss on ref main + on branch (head d5017a2c, product == 1
 ```
