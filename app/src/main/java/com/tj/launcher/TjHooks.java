@@ -159,6 +159,18 @@ public final class TjHooks {
         } catch (Throwable t) { return null; }
     }
 
+    /**
+     * CA1 U12 (diagnostic only): one lock-log line each time the Launcher activity is CREATED, with the keyguard state, so the tablet report shows whether a Quickstep -> custom unlock re-creates it
+     * during the wake or the PIN entry (inflation + bind on the main thread the accessibility helper shares; the tablet measured the Enter tap reaching the helper 2164 ms late there). The log
+     * write itself is queued (LockLog's own thread); the keyguard question is one binder call per creation (a few a day).
+     */
+    public static void onLauncherCreated(android.app.Activity a) {
+        try {
+            android.app.KeyguardManager km = (android.app.KeyguardManager) a.getSystemService(Context.KEYGUARD_SERVICE);
+            LockLog.add(a.getApplicationContext(), "LAUNCHER", "created (locked=" + (km != null && km.isKeyguardLocked()) + ", process up " + (android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()) + " ms)");
+        } catch (Throwable ignored) { }
+    }
+
     public static void watchState(com.android.launcher3.LauncherStateManager sm) {
         try {
             sm.addStateListener(new com.android.launcher3.LauncherStateManager.StateListener() {
