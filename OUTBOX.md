@@ -2025,3 +2025,7 @@
 ## 2026-11-13T04:29:48Z
 > Progress is saved. I'm waiting for the Android 10 source results; the answer depends on them.
 <!-- sha:93f30c04a934 -->
+
+## 2026-11-13T04:32:45Z
+> The source settles it: the row is Android's own quick-settings "security footer", and a sideloaded app cannot remove it, only cover it. I'm saving the findings, then I'll ask you how you want it handled.
+<!-- sha:9adf7576f62b -->
