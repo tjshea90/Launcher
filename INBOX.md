@@ -1582,3 +1582,8 @@ tb8168p1_bsp:/ $
 ```
 It is done 
 ```
+
+## 2026-11-13T23:49:37Z
+```
+Is quickstep supposed to use this much ram, and if not, what is wrong
+```
