@@ -33,7 +33,17 @@ public final class EventNoise {
 
     /** BY1a B1: as above, and a CLICK starts the scan only when it comes from SystemUI or the system ("android") or the menu is already up: a click inside an app cannot open the power menu (984 scans in 121 min on the tablet, avg 28 ms each, the foreground app's tree included). */
     public static boolean needsPowerMenuScan(int eventType, boolean menuKnownUp, boolean inFullScanWindow, boolean fromSystemPackage) {
-        if (eventType == TYPE_VIEW_CLICKED) return menuKnownUp || fromSystemPackage;
+        return needsPowerMenuScan(eventType, menuKnownUp, inFullScanWindow, fromSystemPackage, false);
+    }
+
+    /**
+     * CA1 U1 (Tj, 2026-11-13: "speed of the launcher and loading from the lock screen"): every PIN-pad key is a SystemUI click, and each one started the power-menu scan (two whole-tree text searches run
+     * by SystemUI's UI thread, the thread that handles the next key) on our main thread; the tablet measured the Enter tap reaching us 224 ms late on a plain unlock and 2164 ms late on a Quickstep -> custom
+     * unlock (report 2026-11-10-2). A key of the PIN pad cannot open the power menu: the menu is a NEW window, and its window event always starts the scan (plus the 300 ms full-scan window after it).
+     * So while the PIN pad is up a click starts the scan only when the menu is already known to be up (a click inside the open menu, exactly as before).
+     */
+    public static boolean needsPowerMenuScan(int eventType, boolean menuKnownUp, boolean inFullScanWindow, boolean fromSystemPackage, boolean pinPadUp) {
+        if (eventType == TYPE_VIEW_CLICKED) return menuKnownUp || (fromSystemPackage && !pinPadUp);
         if (eventType != TYPE_WINDOW_CONTENT_CHANGED) return true;   // window changes always start the scan, exactly as before
         return menuKnownUp || inFullScanWindow;
     }
@@ -52,6 +62,14 @@ public final class EventNoise {
      */
     public static boolean tallEnoughForPanel(int windowHeightPx, int displayHeightPx) {
         return displayHeightPx <= 0 || windowHeightPx * 3 >= displayHeightPx;
+    }
+
+    /**
+     * CA1 U1: may this event start a FULL pencil search (a whole-tree walk of SystemUI's shade window)? Not for a click while the PIN pad is up and no pencil cover is shown: a PIN key cannot open the quick
+     * settings (the panel opening is a window change and a burst of content changes, which still start the search with their own spacing). A cover that is up is followed as before.
+     */
+    public static boolean pencilSearchOnEvent(int eventType, boolean pinPadUp, boolean coverShown) {
+        return !(eventType == TYPE_VIEW_CLICKED && pinPadUp && !coverShown);
     }
 
     /** AN1: the shortest gap between two FULL pencil searches (a whole-tree walk in SystemUI's shade window): 40 ms after a window change or a click, 200 ms inside a burst of content changes. Following a pencil that is already known is one node, not a tree, and is not limited by this. */
