@@ -5025,7 +5025,8 @@ adb shell cmd statusbar expand-settings; sleep 3; shot vo-1-lock-panel-after
 adb shell uiautomator dump /sdcard/vo1.xml >/dev/null 2>&1; adb shell cat /sdcard/vo1.xml > "$OUT/vo-1-panel.xml" 2>/dev/null
 adb shell input keyevent KEYCODE_BACK; sleep 2; rebind; sleep 2
 check "VO7: after an unlock the count starts again: the next screen-off turns the VPN off" test "$VO_G" = 0
-check "VO7b: the lock screen's quick-settings panel (open: its panel node is in the dump) shows no 'Device connected to' row" bash -c "grep -q 'quick_settings_panel' '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
+info "VO G: SystemUI ids in the lock-screen panel dump: $(grep -oE 'com.android.systemui:id/(quick_settings_panel|qs_[a-z_]*)' "$OUT/vo-1-panel.xml" | sort -u | head -6 | tr '\n' ' ')"
+check "VO7b: the lock screen's quick-settings panel (open: a quick-settings node is in the dump) shows no 'Device connected to' row" bash -c "grep -qE 'com.android.systemui:id/(quick_settings_panel|qs_)' '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
 # ---- H: CB2e (Tj: "And any time I lock the screen from quickstep"): the same in Quickstep mode
 vounlock; setmode quickstep; rebind; home; sleep 3
 vostart >/dev/null; sleep 3; VO_H1="$(voup)"
