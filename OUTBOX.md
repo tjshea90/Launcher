@@ -2141,3 +2141,18 @@
 >
 > The heartbeat fires again at about 08:32 UTC. If nothing new has started by then, it deletes itself; that may need your approval in the app.
 <!-- sha:447cdbf8ca67 -->
+
+## 2026-11-13T16:45:08Z
+> **Step 1**
+>
+> 1. On the tablet, go to Settings > System > Developer options and make sure **USB debugging** is ON.
+> 2. Connect your phone to the tablet with the OTG cable and open the adb app on your phone.
+> 3. When the tablet asks whether to allow the phone, tap **Allow**.
+> 4. In the adb app's shell, type this line and press Enter:
+>
+> ```
+> pm path com.tj.launcher
+> ```
+>
+> Send me what it prints.
+<!-- sha:44d5ebe5af6a -->
