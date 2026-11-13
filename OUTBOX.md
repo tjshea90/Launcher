@@ -874,6 +874,7 @@
 >
 > Please tap Allow on the prompt that follows, so I can delete this session's timer.
 <!-- sha:98bb6218dc9b -->
+
 ## 2026-11-10T06:41:36Z
 > v0.9.1 is released. It passed all 911 unit tests and the emulator gate. One of the two gate runs had two failures in the restart section, at the moment of a known crash of the test emulator; that section passed when run again alone.
 >
@@ -1947,6 +1948,14 @@
 > - **Now:** an independent reviewer is checking the change for bugs. After its fixes, the emulator gate runs: 5 parallel runs, about 35 minutes.
 <!-- sha:1fe848505eaf -->
 
+## 2026-11-13T02:35:46Z
+> I didn't start any work. Another Claude session, on branch `ccr-6e656bc6-wl2rhu`, is working on your new request (CA1) right now. It checkpointed at 02:34 UTC and has emulator test runs going.
+>
+> I left `main` alone and saved only a one-line note on this branch.
+>
+> This corrects my last message: the heartbeat did not delete itself at 02:32 UTC, because there is now a job in progress. It stays on as a backup and checks again at about 04:32 UTC.
+<!-- sha:2e2671fa2914 -->
+
 ## 2026-11-13T02:36:35Z
 > The gate is running: 5 emulator runs, results due at about 03:09 UTC. Everything so far is committed and pushed, and the answer to you is drafted in `research/CA1_RELEASE_MESSAGE_DRAFT_2026-11-13.md`. When the results land I'll read them, then build and release v0.9.9 if they're green.
 <!-- sha:1d08cc7e1ee7 -->
@@ -2029,6 +2038,12 @@
 ## 2026-11-13T04:32:45Z
 > The source settles it: the row is Android's own quick-settings "security footer", and a sideloaded app cannot remove it, only cover it. I'm saving the findings, then I'll ask you how you want it handled.
 <!-- sha:9adf7576f62b -->
+
+## 2026-11-13T04:34:29Z
+> I didn't start any work. Another Claude session (branch `ccr-6e656bc6-wl2rhu`) is working right now. It saved a checkpoint at 04:32 UTC and is on CB1, your request to remove the VPN "Device connected to" row from the notification panel.
+>
+> I left `main` alone and saved a one-line note on this branch only. The heartbeat stays on as a backup and checks again at about 06:32 UTC.
+<!-- sha:d490cde46238 -->
 
 ## 2026-11-13T04:58:31Z
 > I'll read the emulator result after 05:03 UTC.
@@ -2116,3 +2131,13 @@
 > - the Eleven questions and tablet check (BV1i/j/k);
 > - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
 <!-- sha:d61e5f2d5d88 -->
+
+## 2026-11-13T06:34:35Z
+> I didn't start any work. Your other Claude session released v0.9.10 at 06:05 UTC, recorded it and sent you its answer at 06:17 UTC:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.10
+>
+> That finished work is under an hour old, so the heartbeat rules said stand down. I left `main` alone and saved a one-line note on this branch only.
+>
+> The heartbeat fires again at about 08:32 UTC. If nothing new has started by then, it deletes itself; that may need your approval in the app.
+<!-- sha:447cdbf8ca67 -->
