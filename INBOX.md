@@ -1540,3 +1540,8 @@ And any time I lock the screen from quickstep
 ```
 I have the adb cable now. Tell me step by step what to do to give the launcher all permissions
 ```
+
+## 2026-11-13T16:56:00Z
+```
+package:/data/app/com.tj.launcher-1eE4rN6F-je7cB921wmqAA==/base.apk
+```
