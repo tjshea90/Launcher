@@ -1552,3 +1552,21 @@ tb8168p1_bsp:/ $ pm grant com.tj.launcher android.permission.WRITE_SECURE_SETT 
 Added: com.tj.launcher
 DONE
 ```
+
+## 2026-11-13T17:01:42Z
+```
+tb8168p1_bsp:/ $ dumpsys package com.tj.launcher | grep -E "(SECURE_SETTINGS|Dpackage com.tj.launcher | grep -E "(SECURE_SETTINGS|D                         <UMP|CHANGE_CONFIGURATION| grep -E "(SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|                         <EXTERNAL_STORAGE|USAGE_STS|DUMP|CHANGE_CONFIGURATION|EXTERNAL_STORAGE|USAGE_ST                         <ATS): granted=true"; cmd ON|EXTERNAL_STORAGE|USAGE_STATS): granted=true"; cmd                          <appops get com.tj.launche_STATS): granted=true"; cmd appops get com.tj.launche                         <r | grep -E "USAGE_STATS|md appops get com.tj.launcher | grep -E "USAGE_STATS|                         <WRITE_SETTINGS|RUN_|VPN";cher | grep -E "USAGE_STATS|WRITE_SETTINGS|RUN_|VPN";                         < settings get secure enabTS|WRITE_SETTINGS|RUN_|VPN"; settings get secure enab                         <led_accessibility_serviceN"; settings get secure enabled_accessibility_service                         <s; echo DONE
+      android.permission.PACKAGE_USAGE_STATS: granted=true
+      android.permission.WRITE_SECURE_SETTINGS: granted=true
+      android.permission.CHANGE_CONFIGURATION: granted=true
+      android.permission.DUMP: granted=true
+        android.permission.READ_EXTERNAL_STORAGE: granted=true, flags=[ USER_SENSITIVE_WHEN_GRANTED|USER_SENSITIVE_WHEN_DENIED|RESTRICTION_INSTALLER_EXEMPT]
+WRITE_SETTINGS: allow
+GET_USAGE_STATS: allow; time=+1m22s817ms ago
+ACTIVATE_VPN: allow; rejectTime=+10h28m28s895ms ago
+RUN_IN_BACKGROUND: allow
+RUN_ANY_IN_BACKGROUND: allow
+com.tj.launcher/com.tj.launcher.TjAccessibilityService
+DONE
+tb8168p1_bsp:/ $ 
+```
