@@ -1921,3 +1921,12 @@
 > - **Music app questions and tablet check** (BV1i/j/k).
 > - **Older tablet checks:** BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1.
 <!-- sha:dc1fe9fab435 -->
+
+## 2026-11-13T01:47:31Z
+> I'm still waiting on the three reviewers. So far:
+>
+> - **Build setup:** code shrinking (R8) stays off, as decided in the earlier 2026-11-05 efficiency review. The app has no Kotlin code of its own, but the Kotlin library comes in through the AndroidX libraries anyway, so removing the Kotlin plugin would save nothing. I'm writing these into the audit file rather than changing anything.
+> - **Your tablet's last report:** 69 MB total memory and 5 MB Java heap, which is fine. In 2 hours it ran about 1,800 tree searches (984 for the power menu, 834 for the pencil cover). Each took about 30 ms on average, but single ones took up to 1.3 s. Those block the thread that also draws the home screen, so they are my main suspect for stutter.
+>
+> When the reviews are in, I'll write the findings to `research/PERF_AUDIT_2026-11-13.md` and fix only what keeps every function and the look.
+<!-- sha:3b916744536f -->
