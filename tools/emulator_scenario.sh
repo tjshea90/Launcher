@@ -4949,7 +4949,7 @@ VOT=com.tj.testnotifier
 adb install -r -g testnotifier/build/outputs/apk/quick/debug/testnotifier-quick-debug.apk > "$OUT/vo-install.txt" 2>&1
 adb shell appops set "$VOT" ACTIVATE_VPN allow > "$OUT/vo-appops.txt" 2>&1
 adb shell appops set "$PKG" ACTIVATE_VPN ignore >> "$OUT/vo-appops.txt" 2>&1
-voup(){ adb shell ip addr show tun0 2>/dev/null | grep -c '10.111.0.2' | tr -d '\r\n'; }   # 1 = the test VPN's interface is up, 0 = gone
+voup(){ adb shell "ip addr show tun0 2>/dev/null; ifconfig tun0 2>/dev/null" | grep -q '10.111.0.2' && echo 1 || echo 0; }   # 1 = the test VPN's interface is up, 0 = gone (ip, else ifconfig)
 vowait(){ local want="$1" i; for i in $(seq 1 "${2:-10}"); do [ "$(voup)" = "$want" ] && return 0; sleep 1; done; [ "$(voup)" = "$want" ]; }   # vowait <1|0> [seconds]
 vostart(){ adb shell am start -n "$VOT/.MainActivity" --ez vpn true >/dev/null 2>&1; vowait 1 10; }
 vofeat(){ adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"vpn_off_when_locked\\\" value=\\\"$1\\\" /></map>\" > shared_prefs/tj_features.xml'"; }
