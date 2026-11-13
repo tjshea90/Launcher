@@ -2170,3 +2170,17 @@
 >
 > Send me what it prints.
 <!-- sha:588fb4e7fc7a -->
+
+## 2026-11-13T17:00:08Z
+> That worked. The jumbled text is only how the adb app redraws a long line. "Added: com.tj.launcher" and "DONE" with no error lines means everything was applied.
+>
+> **Step 3** (a check that changes nothing)
+>
+> Copy this line into the adb app and press Enter:
+>
+> ```
+> dumpsys package com.tj.launcher | grep -E "(SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|EXTERNAL_STORAGE|USAGE_STATS): granted=true"; cmd appops get com.tj.launcher | grep -E "USAGE_STATS|WRITE_SETTINGS|RUN_|VPN"; settings get secure enabled_accessibility_services; echo DONE
+> ```
+>
+> Send me what it prints.
+<!-- sha:0fc3c19191ae -->
