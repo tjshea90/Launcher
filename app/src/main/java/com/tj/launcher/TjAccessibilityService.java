@@ -2472,12 +2472,15 @@ public class TjAccessibilityService extends AccessibilityService {
     private final Runnable penWatch = new Runnable() { @Override public void run() {
         try {
             if (penView == null || !penShown) return;
+            if (screenDarkNow) return;   // CA1 S3: the panel cannot move while the screen is dark (an open quick-settings panel survives the screen-off, BY1c F1b): no look every 150 ms while the CPU is awake for music or charging; the cover stays, SCREEN_ON starts the watch again
             if (penNode == null) { hidePencil("the pencil node is gone"); return; }   // a cover must always have a pencil it follows
             updatePencil(false);
             if (penView != null && penShown) startPenWatch();   // BN8b: fast or slow (PencilRules.watchGapMs); never two pending looks
         } catch (Throwable t) { Log.e(TAG, "pencil watch failed", t); }
     } };
 
+    /** CA1 S3: set by the SCREEN_OFF / SCREEN_ON broadcasts only (false until the first SCREEN_OFF = the old behaviour). */
+    private volatile boolean screenDarkNow = false;
     private long penFastUntil = 0;   // BN8b: until this uptime the shown cover is looked at every PencilRules.FAST_WATCH_MS
 
     /** BN8b: something may be about to move the panel ({@code why}: a finger went down somewhere, SystemUI is redrawing, the pencil was just found at a new place): look at the covered pencil every FAST_WATCH_MS for a while. Main thread. */
@@ -2878,6 +2881,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act) || android.content.Intent.ACTION_SCREEN_ON.equals(act) || android.content.Intent.ACTION_USER_PRESENT.equals(act))
                 LockLog.add(getApplicationContext(), android.content.Intent.ACTION_SCREEN_OFF.equals(act) ? "SCREEN_OFF" : android.content.Intent.ACTION_SCREEN_ON.equals(act) ? "SCREEN_ON" : "USER_PRESENT", "locked=" + keyguardLocked() + " mode=" + Mode.get(getApplicationContext()));
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
+                screenDarkNow = true;   // CA1 S3
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
@@ -2889,7 +2893,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
                 handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
             }
-            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } screenOnEpoch = t;   // CA1 S3: the cover is watched again from the wake unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
                 try { if (keyguardLocked()) unlock.onPower(android.content.Intent.ACTION_POWER_CONNECTED.equals(act), t); } catch (Throwable e) { Log.e(TAG, "power event failed", e); }
