@@ -2071,3 +2071,7 @@
 ## 2026-11-13T05:49:48Z
 > The 4 solo reruns are going: the pencil-cover section and the AC section, each on the new code and on the released v0.9.9. If the new code passes alone, or v0.9.9 fails the same way, the failures aren't from the VPN change and I ship v0.9.10. Results due at about 05:58 UTC.
 <!-- sha:da30dc6a2734 -->
+
+## 2026-11-13T06:01:02Z
+> `ship.sh` is running the release checks: the handoff self-test, the full unit suite, lint and the version check. When it passes, GitHub builds and signs v0.9.10.
+<!-- sha:0e170e58484b -->
