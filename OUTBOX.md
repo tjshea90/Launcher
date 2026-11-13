@@ -1958,3 +1958,7 @@
 ## 2026-11-13T03:15:46Z
 > Reruns are going: `fl` on both the head and the v0.9.8 tag (to see whether the FL2 frames are new), plus `ss`, `base` and `mu` solo. Results due at about 03:30 UTC.
 <!-- sha:ee59d857edce -->
+
+## 2026-11-13T03:33:05Z
+> `ship.sh` is running the release checks: the full unit suite, lint, the handoff self-test and the versionCode check. When it passes, GitHub builds and signs v0.9.9.
+<!-- sha:b19a5d129998 -->
