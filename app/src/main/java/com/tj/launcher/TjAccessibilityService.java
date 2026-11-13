@@ -2041,7 +2041,8 @@ public class TjAccessibilityService extends AccessibilityService {
             String cur = android.provider.Settings.Secure.getString(getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
             if (cur != null && cur.contains("/")) ime = cur.substring(0, cur.indexOf('/'));
             ComponentName stock = stockCached();   // AD8: cached (one lookup a minute), not a package-manager call per window change
-            if (RecentsDirty.shouldMark(e.getPackageName().toString(), getPackageName(), stock == null ? null : stock.getPackageName(), ime, ReturnReset.targetPackage(this), true)) {
+            String wpkg = e.getPackageName().toString();
+            if (RecentsDirty.shouldMark(wpkg, getPackageName(), stock == null ? null : stock.getPackageName(), ime, null, true) && !wpkg.equals(ReturnReset.targetPackage(this))) {   // CA1 S7: the cheap exclusions first (SystemUI, ours, the stock launcher, the keyboard: most window events); the target lookup (a binder call, a background label scan when it is stale) only for a real app window
                 // AC2 follow-up: the app that was in front BEHIND the lock screen shows for a moment while the gesture's unlock goes away. Tj did not open it in Quickstep: it stays the custom account's.
                 if (ProfileSession.windowIsLockLeftover(keyguardLockedFast(), unlock.armedMethod() != null, System.currentTimeMillis(), lastUnlockAt)) {
                     LockLog.add(getApplicationContext(), "WINDOW", e.getPackageName() + " appeared under the lock screen / during the unlock: NOT counted as opened in Quickstep (window " + e.getClassName() + ")");
@@ -3232,8 +3233,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private void updateHotspot() {
         try {
             android.content.Context app = getApplicationContext();
-            String target = ReturnReset.targetPackage(app);
-            boolean want = FailsafeKeys.hotspot(app) && Mode.isCustom(app) && target != null && target.equals(fgPkg) && !keyguardLocked();
+            boolean want = FailsafeKeys.hotspot(app) && Mode.isCustom(app) && fgPkg != null && fgPkg.equals(ReturnReset.targetPackage(app)) && !keyguardLocked();   // CA1 S7: the target lookup only when the hotspot switch is on, in the custom mode
             if (want && hotView == null) showHotspot(); else if (!want && hotView != null) removeHotspot();
         } catch (Throwable t) { Log.e(TAG, "hotspot update failed", t); removeHotspot(); }
     }
