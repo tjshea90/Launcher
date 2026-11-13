@@ -2147,3 +2147,15 @@
 >
 > I left `main` alone and won't ask to delete the heartbeat while that job runs. It stays on as a backup and checks again in about 2 hours.
 <!-- sha:51d54952aa63 -->
+
+## 2026-11-13T23:20:18Z
+> Thanks for approving: the heartbeat is deleted, so nothing on this account will wake a session every 2 hours any more. I saved a checkpoint on this branch only and left `main` alone, in case you go back to the adb session.
+>
+> Nothing is left for Claude to do; everything open needs your tablet:
+> - **VPN-off check** (CB2g): lock the tablet with the VPN on and see that it turns off. The adb session already granted the permission, so the extra OK step should no longer be needed.
+> - **Speed check** (CA1d): typing the PIN and unlocking into the custom launcher.
+> - **v0.9.8 lock-screen cover checks** (BY1g).
+> - **Older checks:** BZ1d, BX1e, BV1i/j/k, BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1.
+>
+> A new session will arm a fresh heartbeat when you start the next long job.
+<!-- sha:36a977b4b96b -->
