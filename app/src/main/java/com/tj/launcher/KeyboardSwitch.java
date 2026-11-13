@@ -27,7 +27,7 @@ public final class KeyboardSwitch {
     public static boolean permitted(Context c) { return c.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED; }
     public static String status(Context c) { return Features.getString(c, STATUS_KEY, "(not run yet)"); }
 
-    private static void say(Context c, String s) { Features.setString(c, STATUS_KEY, s); Log.i(TAG, s); }
+    private static void say(Context c, String s) { Features.setStringAsyncIfChanged(c, STATUS_KEY, s); Log.i(TAG, s); }   // BY1a C6/C7: a status line: async and only when it changed (it was a commit + fsync on the unlock path at every mode change)
 
     public static void apply(Context c, String mode) {
         try {

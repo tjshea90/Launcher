@@ -64,4 +64,27 @@ public class RecentsFilterTest {
         assertFalse(RecentsFilter.mayOpenRecents(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, "com.android.calendar", "com.android.launcher3", "Recents"));    // an app's own window
         assertFalse(RecentsFilter.mayOpenRecents(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, null, "com.android.launcher3", null));
     }
+
+    /** BY1a C1: a look uses the label set only while it is fresh (the old 60 s rule), else it waits for the background build. */
+    @Test public void theLabelSetIsUsedOnlyWhileFresh() {
+        long t = 1_000_000;
+        assertFalse("never built", RecentsFilter.labelsFresh(false, 0, t));
+        assertTrue(RecentsFilter.labelsFresh(true, t, t));
+        assertTrue("rebuilt only when OLDER than the TTL, as before", RecentsFilter.labelsFresh(true, t - RecentsFilter.LABELS_TTL_MS, t));
+        assertFalse(RecentsFilter.labelsFresh(true, t - RecentsFilter.LABELS_TTL_MS - 1, t));
+    }
+
+    @Test public void aBuildStartsOnlyForASetThatIsNotFreshAndNeverTwiceAtATime() {
+        assertTrue(RecentsFilter.buildNeeded(false, false));
+        assertFalse("one build at a time", RecentsFilter.buildNeeded(false, true));
+        assertFalse(RecentsFilter.buildNeeded(true, false));
+        assertFalse(RecentsFilter.buildNeeded(true, true));
+    }
+
+    @Test public void theLookThatWaitedRunsOnlyWithASet() {
+        assertTrue(RecentsFilter.lookAfterBuild(true, true));
+        assertFalse("the build failed: that look ends, as a failed scan ended it before", RecentsFilter.lookAfterBuild(true, false));
+        assertFalse("nobody waited (a build started at the event and ended before the first look)", RecentsFilter.lookAfterBuild(false, true));
+        assertFalse(RecentsFilter.lookAfterBuild(false, false));
+    }
 }

@@ -42,10 +42,23 @@ def video_size(video):
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
+# screenrecord writes a frame only when the screen CHANGES (variable frame rate): a film ends at its LAST change, not at its time limit
+# (run #563: 10 s films were 3-5 s long and "the last 400 ms" was the middle of the last animation, so REF was wrong and 6 of 7 menu
+# films found no menu at all). PAD = the last frame repeated for 1 s: it IS the settled screen (nothing changed after it), so
+# --ref last compares every frame with the settled end state. setpts makes frame index n sit at exactly n / fps seconds.
+PAD = "tpad=stop_mode=clone:stop_duration=1"
+
+
+def chain(fps):
+    return "fps=%d,setpts=N/(%d*TB),%s" % (fps, fps, PAD)
+
+
 def frames(video, box, fps):
-    """Grey pixels of one box per frame (resampled to a constant fps): a list of bytes objects. box = (x, y, w, h) in VIDEO px."""
+    """Grey pixels of one box per frame (resampled to a constant fps, end padded): a list of bytes objects. box = (x, y, w, h) in VIDEO px."""
     x, y, w, h = box
-    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "fps=%d,crop=%d:%d:%d:%d,format=gray" % (fps, w, h, x, y), "-f", "rawvideo", "-"]
+    # format=gray BEFORE crop: a crop of the yuv420p video rounds an odd width / height / offset to the chroma grid, so the raw frames
+    # were NOT w * h bytes and the stream was cut at the wrong places (run #563: the 99 x 83 core box read 194 frames of shifted pixels).
+    cmd = ["ffmpeg", "-v", "error", "-i", video, "-vf", "%s,format=gray,crop=%d:%d:%d:%d" % (chain(fps), w, h, x, y), "-f", "rawvideo", "-"]
     data = subprocess.run(cmd, capture_output=True).stdout
     n = w * h
     return [data[i:i + n] for i in range(0, len(data) - n + 1, n)]
@@ -76,7 +89,7 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
             if top_up[i] >= MENU_D:
                 first_menu = i
                 break
-    fa, fb, shot, menu, spans, worst = [], [], [], [], [], (0.0, -1)
+    fa, fb, shot, menu, spans, worst, raw = [], [], [], [], [], (0.0, -1), []
     for i in range(n):
         if first_menu is not None and i >= first_menu:
             if top_up[i] >= MENU_D:
@@ -90,7 +103,7 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
                 worst = (ring_d[i] - core_d[i], i)
         elif core_d[i] >= t2 and ring_d[i] <= t1:
             fb.append(i)
-    for name, lst in (("A", fa), ("B", fb), ("S", shot)):
+    for name, lst in (("A", fa), ("B", fb), ("S", shot), ("M", menu)):
         if not lst:
             continue
         s = p = lst[0]
@@ -98,13 +111,42 @@ def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
             if i is not None and i == p + 1:
                 p = i
                 continue
-            spans.append("%s%.2f-%.2f" % (name, s / fps, (p + 1) / fps))
+            raw.append((name, s / fps, (p + 1) / fps))
+            if name != "M":
+                spans.append("%s%.2f-%.2f" % (name, s / fps, (p + 1) / fps))
             if i is not None:
                 s = p = i
     ms = lambda k: int(round(len(k) * 1000.0 / fps))
     return {"frames": n, "flashA": len(fa), "flashA_ms": ms(fa), "flashB": len(fb), "flashB_ms": ms(fb), "menu": len(menu), "shot": len(shot),
             "shot_ms": ms(shot), "first_menu": ("%.2f" % (first_menu / fps)) if first_menu is not None else "none",
-            "worst": ("%.1f@%.2f" % (worst[0], worst[1] / fps)) if worst[1] >= 0 else "0", "spans": ",".join(spans[:8]) or "none"}
+            "worst": ("%.1f@%.2f" % (worst[0], worst[1] / fps)) if worst[1] >= 0 else "0", "spans": ",".join(spans[:8]) or "none",
+            "raw": raw}
+
+
+COLORS = {"A": "red", "B": "blue", "S": "yellow", "M": "green"}
+
+
+def sheet(video, out, box, fps, n, raw, step=6, cols=10):
+    """A contact sheet PNG of one box: a thumbnail every `step` frames (0.1 s at 60 fps), left to right, `cols` per row, so thumbnail k
+    (row r, column c, k = r * cols + c) is at k * step / fps seconds. A thick frame marks a flash (A red, B blue), a visible Screenshot
+    entry (S yellow) or an open menu (M green, thin). Published to the branch ci-shots by a shots=true run: LOOK at it before theorising."""
+    x, y, w, h = box
+    marks = "".join(",drawbox=x=0:y=0:w=iw:h=ih:color=%s:t=%d:enable='between(t,%.3f,%.3f)'" % (COLORS[k], 3 if k == "M" else 8, a, b - 0.001)
+                    for k, a, b in raw[:24])
+    rows = max(1, -(-((n + step - 1) // step) // cols))
+    vf = "%s,crop=%d:%d:%d:%d%s,select='not(mod(n\\,%d))',scale=iw/2:-2,tile=%dx%d:padding=2:color=white" % (chain(fps), w, h, x, y, marks, step, cols, rows)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", video, "-vf", vf, "-frames:v", "1", out], capture_output=True)
+
+
+def timeline(core_d, ring_d, top_up, n, fps, every=12):
+    """core_d/ring_d[/top_up] every `every` frames (0.2 s at 60 fps), whole grey levels: what the counts were made of."""
+    v = []
+    for i in range(0, n, every):
+        s = "%.1f:%d/%d" % (i / fps, round(core_d[i]), round(ring_d[i]))
+        if top_up is not None:
+            s += "/%d" % round(top_up[i])
+        v.append(s)
+    return " ".join(v)
 
 
 def box_of(s, sx, sy, vw, vh):
@@ -153,7 +195,8 @@ def main(argv):
         print(__doc__)
         return 2
     video, label = argv[1], argv[2]
-    opt = {"--disp": "600x1024", "--mode": "flash", "--ref": "first", "--refms": "400", "--fps": "60", "--t1": str(T1), "--t2": str(T2), "--top": "", "--core": "", "--ring": ""}
+    opt = {"--disp": "600x1024", "--mode": "flash", "--ref": "first", "--refms": "400", "--fps": "60", "--t1": str(T1), "--t2": str(T2), "--top": "", "--core": "", "--ring": "",
+           "--sheet": "", "--sheetbox": ""}
     a = argv[3:]
     for i in range(0, len(a) - 1, 2):
         opt[a[i]] = a[i + 1]
@@ -168,6 +211,7 @@ def main(argv):
         core = box_of(opt["--core"], sx, sy, vs[0], vs[1])
         rings = [box_of(s, sx, sy, vs[0], vs[1]) for s in opt["--ring"].split(";") if s.strip()]
         top = box_of(opt["--top"], sx, sy, vs[0], vs[1]) if opt["--top"] else None
+        sbox = box_of(opt["--sheetbox"], sx, sy, vs[0], vs[1]) if opt["--sheetbox"] else None
     except Exception as e:  # noqa: BLE001 - one line for the results block, never a traceback
         print("FLMETRIC label=%s error=boxes:%s" % (label, e))
         return 1
@@ -191,6 +235,11 @@ def main(argv):
         top_up = [mean(ft[i]) - mrt for i in range(n)]
         core_up = [mean(fc[i]) - mrc for i in range(n)]
     r = classify(core_d, ring_d, top_up, core_up, opt["--mode"], fps, float(opt["--t1"]), float(opt["--t2"]))
+    if opt["--sheet"] and sbox:
+        sheet(video, opt["--sheet"], sbox, fps, n, r["raw"])
+    real = max(0, n - fps)  # without the 1 s PAD
+    print("FLTL label=%s every 0.2 s core/ring%s: %s" % (label, "/top" if top_up is not None else "", timeline(core_d, ring_d, top_up, real, fps)))
+    r["frames"] = real
     print("FLMETRIC label=%s mode=%s ref=%s " % (label, opt["--mode"], opt["--ref"]) + " ".join("%s=%s" % (k, r[k]) for k in
           ("frames", "flashA", "flashA_ms", "flashB", "flashB_ms", "menu", "shot", "shot_ms", "first_menu", "worst", "spans")))
     return 0

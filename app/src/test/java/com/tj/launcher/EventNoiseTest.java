@@ -58,24 +58,42 @@ public class EventNoiseTest {
     }
 
     @Test public void withTheActionsDialogUpOnlyThatWindowIsSearched() {
-        for (boolean just : new boolean[] { false, true }) {
-            assertTrue(EventNoise.mayHoldPowerMenu(true, true, AccessibilityWindowInfo.TYPE_SYSTEM, just));
-            assertFalse(EventNoise.mayHoldPowerMenu(true, false, AccessibilityWindowInfo.TYPE_SYSTEM, just));
-            assertFalse(EventNoise.mayHoldPowerMenu(true, false, AccessibilityWindowInfo.TYPE_APPLICATION, just));
-        }
+        assertTrue(EventNoise.mayHoldPowerMenu(true, true, AccessibilityWindowInfo.TYPE_SYSTEM));
+        assertFalse(EventNoise.mayHoldPowerMenu(true, false, AccessibilityWindowInfo.TYPE_SYSTEM));
+        assertFalse(EventNoise.mayHoldPowerMenu(true, false, AccessibilityWindowInfo.TYPE_APPLICATION));
     }
 
-    @Test public void rightAfterAWindowChangeEveryWindowIsSearchedLikeBefore() {
-        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_APPLICATION, true));
-        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_INPUT_METHOD, true));
-        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_SYSTEM, true));
+    @Test public void onlySystemWindowsAreSearched() {   // BY1a B1
+        assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_APPLICATION));
+        assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_INPUT_METHOD));
+        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_SYSTEM));
+        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_SPLIT_SCREEN_DIVIDER));
     }
 
-    @Test public void theQuietFollowUpChecksSkipTheAppAndTheKeyboard() {
-        assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_APPLICATION, false));
-        assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_INPUT_METHOD, false));
-        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_SYSTEM, false));
-        assertTrue(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY, false));
+    @Test public void ourOwnOverlaysAreNeverSearched() {   // BY1a B1: type 4 is always one of our windows
+        assertFalse(EventNoise.mayHoldPowerMenu(false, false, AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY));
+        assertFalse(EventNoise.mayHoldPowerMenu(true, true, AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY));
+    }
+
+    @Test public void aClickStartsTheScanOnlyFromTheSystemOrWithTheMenuUp() {   // BY1a B1
+        assertFalse(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, false, false, false));   // a click inside an app
+        assertFalse(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, false, true, false));    // ... also right after a window change
+        assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, false, false, true));     // a click in SystemUI
+        assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_VIEW_CLICKED, true, false, false));     // the menu is up: follow it
+        assertTrue(EventNoise.needsPowerMenuScan(AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED, false, false, false));   // window changes still always scan
+        assertTrue(EventNoise.systemPackage("com.android.systemui"));
+        assertTrue(EventNoise.systemPackage("android"));
+        assertFalse(EventNoise.systemPackage("com.android.chrome"));
+        assertFalse(EventNoise.systemPackage(null));
+        assertEquals(AccessibilityEvent.TYPE_VIEW_CLICKED, EventNoise.TYPE_VIEW_CLICKED);
+    }
+
+    @Test public void onlyTallWindowsCanHoldTheKeyguardOrThePanel() {   // BY1a B2 / B3
+        assertTrue(EventNoise.tallEnoughForPanel(1024, 1024));   // the keyguard / expanded panel: full height
+        assertTrue(EventNoise.tallEnoughForPanel(342, 1024));
+        assertFalse(EventNoise.tallEnoughForPanel(24, 1024));    // the collapsed status bar
+        assertFalse(EventNoise.tallEnoughForPanel(48, 1024));    // the navigation bar
+        assertTrue(EventNoise.tallEnoughForPanel(10, 0));        // unknown display: search as before
     }
 
     // ---- AN1: the shade must not be searched on every redraw

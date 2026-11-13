@@ -12,7 +12,7 @@ import android.util.Log;
 /**
  * BS1 + BS2 (Tj, 2026-11-10 23:27 UTC: "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher"; 23:55 UTC: "Make it
  * also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any time, show up
- * on the lock screen or in the custom launcher"). The Android side of the Wi-Fi and Bluetooth SYMBOL hold: {@code Settings.Secure icon_blacklist} gets the slots {@code wifi} and {@code bluetooth} added whenever
+ * on the lock screen or in the custom launcher"). The Android side of the Wi-Fi and Bluetooth SYMBOL hold: {@code Settings.Secure icon_blacklist} gets the slots {@code wifi}, {@code bluetooth} and {@code vpn} (the VPN key, BZ1) added whenever
  * {@link NotifQuietPolicy} says "quiet" (the custom launcher, a dark or locked screen in ANY launcher, a plain PIN still being decided) and is put back exactly as found for an unlocked Quickstep session. The
  * rules, with the proof from the AOSP 10 sources, are in {@link RadioIconHold}; THIS class reads the facts, adapts the two settings to its small interfaces and keeps the saved original. Needs
  * WRITE_SECURE_SETTINGS (the one-time adb grant the launcher already holds); without it nothing changes.
@@ -66,7 +66,7 @@ public final class RadioIconHide {
         @Override public boolean held() { return Settings.Global.getString(cr, MARKER) != null; }
         @Override public String original() { return RadioIconHold.decodeMarker(Settings.Global.getString(cr, MARKER)); }
         @Override public void save(boolean held, String original) {
-            if (!Settings.Global.putString(cr, MARKER, held ? RadioIconHold.encodeMarker(original) : null)) throw new IllegalStateException("could not save the Wi-Fi / Bluetooth symbol state");
+            if (!Settings.Global.putString(cr, MARKER, held ? RadioIconHold.encodeMarker(original) : null)) throw new IllegalStateException("could not save the Wi-Fi / Bluetooth / VPN symbol state");
         }
     }
 
@@ -102,7 +102,7 @@ public final class RadioIconHide {
             if (before && !want && deferRelease(app, why, look)) return;   // the symbols stay hidden until the radios are off (reviews of BS2)
             final boolean after = RadioIconHold.set(new MarkerState(cr), new ListSetting(cr), f.grant, want, SINK);
             if (before != after) {
-                String msg = after ? "Wi-Fi and Bluetooth symbols HIDDEN (" + NotifQuietPolicy.quietFor(f) + ", " + trigger + ")" : "Wi-Fi and Bluetooth symbols shown again: " + (why.isEmpty() ? "hold ended" : why) + " (" + trigger + ")";
+                String msg = after ? "Wi-Fi, Bluetooth and VPN symbols HIDDEN (" + NotifQuietPolicy.quietFor(f) + ", " + trigger + ")" : "Wi-Fi, Bluetooth and VPN symbols shown again: " + (why.isEmpty() ? "hold ended" : why) + " (" + trigger + ")";
                 Log.i(TAG, msg);
                 LockLog.addAsync(app, "SYMBOLS", msg);
                 p(app).edit().putString("last", new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + msg).apply();
@@ -203,7 +203,7 @@ public final class RadioIconHide {
             StringBuilder b = new StringBuilder();
             b.append("switch ").append(switchOn(app) ? "on" : "off").append(", adb permission ").append(permitted(app) ? "granted" : "MISSING");
             b.append(", radios kept on by us: ").append(keepsRadiosOn(app) ? "yes" : "no").append(", Wi-Fi radio now: ").append(wifiState(app)).append(", Bluetooth radio now: ").append(bluetoothState()).append(" | now: ");
-            b.append(marker != null ? "Wi-Fi and Bluetooth symbols HIDDEN (held)" : "symbols as Android has them");
+            b.append(marker != null ? "Wi-Fi, Bluetooth and VPN symbols HIDDEN (held)" : "symbols as Android has them");
             b.append(" | ").append(RadioIconHold.SETTING).append(" = ").append(Settings.Secure.getString(cr, RadioIconHold.SETTING));
             if (marker != null) { String o = RadioIconHold.decodeMarker(marker); b.append(" | put back to: ").append(o == null ? "(system default)" : "\"" + o + "\""); }
             b.append(" | last change: ").append(p(app).getString("last", "(none yet)"));

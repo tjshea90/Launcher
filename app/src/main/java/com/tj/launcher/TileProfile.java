@@ -86,7 +86,7 @@ public final class TileProfile {
                 Features.setString(c, QUICKSTEP_KEY, sanitize(cur, DEFAULT_QUICKSTEP));
                 Log.i(TAG, "remembered the Quickstep tiles Tj arranged: " + cur);
             }
-            Features.setString(c, APPLIED_KEY, Mode.QUICKSTEP.equals(mode) ? Mode.QUICKSTEP : Mode.CUSTOM);
+            Features.setStringIfChanged(c, APPLIED_KEY, Mode.QUICKSTEP.equals(mode) ? Mode.QUICKSTEP : Mode.CUSTOM);   // BY1a C6/C7: only when it changes (it was a commit at every apply, several per lock); still commit(): the next apply reads it back to keep Tj's Quickstep tiles
             String want = tilesFor(c, mode);
             if (want.equals(cur)) return;
             Settings.Secure.putString(c.getContentResolver(), SETTING, want);

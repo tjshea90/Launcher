@@ -306,6 +306,8 @@ public final class ReturnReset {
     private static volatile String cachedLabel, cachedPkg;
     private static volatile long cachedAt = 0;
     private static volatile boolean refreshing = false;
+    /** Review LOW2 (2026-11-12): a stored "no app" ("") was taken on trust in this process and its background re-check has not landed yet ({@link #targetForAction}). */
+    private static volatile boolean noneUnchecked = false;
     private static final long TARGET_TTL_MS = 10 * 60_000;
     private static final long NO_TARGET_TTL_MS = 30_000;       // "no such app installed" is re-checked soon: it may be installed a minute later
 
@@ -325,13 +327,24 @@ public final class ReturnReset {
             return known;
         }
         String saved = Features.getString(app, "target_pkg_for_" + label.toLowerCase(java.util.Locale.ROOT), null);
-        if (saved != null && isInstalled(app, saved)) {
+        int kind = savedKind(saved);
+        if (kind == SAVED_NO_APP) {                     // BY1a A2: the last full scan found no app for this label: a known "none", re-checked off the calling thread (it was a full label scan on the calling thread, often main, in every new process)
+            cachedPkg = null; cachedAt = now; cachedLabel = label;
+            noneUnchecked = true;
+            refreshTargetAsync(app, label);
+            return null;
+        }
+        if (kind == SAVED_PACKAGE && isInstalled(app, saved)) {
             cachedLabel = label; cachedPkg = saved; cachedAt = now;
             refreshTargetAsync(app, label);            // is there a better match now? (off the calling thread)
             return saved;
         }
         return scanTarget(app, label);                  // the first time ever for this label
     }
+
+    /** BY1a A2 (pure): what a stored answer of {@link #scanTarget} means: nothing stored (never scanned for this label), "" (the scan found no app), or a package (still to be checked as installed). */
+    static final int SAVED_NOTHING = 0, SAVED_NO_APP = 1, SAVED_PACKAGE = 2;
+    static int savedKind(String saved) { return saved == null ? SAVED_NOTHING : saved.isEmpty() ? SAVED_NO_APP : SAVED_PACKAGE; }
 
     private static boolean isInstalled(Context c, String pkg) {
         try { c.getPackageManager().getApplicationInfo(pkg, 0); return true; } catch (PackageManager.NameNotFoundException e) { return false; }
@@ -346,7 +359,19 @@ public final class ReturnReset {
         String pkg = i < 0 ? null : ris.get(i).activityInfo.packageName;
         cachedPkg = pkg; cachedLabel = label; cachedAt = android.os.SystemClock.elapsedRealtime();
         Features.setString(app, "target_pkg_for_" + label.toLowerCase(java.util.Locale.ROOT), pkg == null ? "" : pkg);
+        noneUnchecked = false;
         Log.i(TAG, "target app for '" + label + "' = " + pkg + " (full scan of " + ris.size() + " apps took " + (android.os.SystemClock.elapsedRealtime() - t0) + " ms)");
+        return pkg;
+    }
+
+    /**
+     * The target for a path that ACTS on the answer (starts the app, or goes Home because there is none). Review LOW2 (2026-11-12): a stored "no app" taken on trust in a new process while its background
+     * re-check is still running could send the startup Home although the app was installed since (clean start off, Solitaire reinstalled, process restarted): such a "none" is checked now, once (the
+     * scan these paths always ran before BY1a A2; never on the common paths).
+     */
+    private static String targetForAction(Context c) {
+        String pkg = targetPackage(c);
+        if (pkg == null && noneUnchecked) { Context app = c.getApplicationContext(); pkg = scanTarget(app, appLabel(app)); }
         return pkg;
     }
 
@@ -387,7 +412,7 @@ public final class ReturnReset {
     public static void startTargetBehindLock(Context c) {
         Context app = c.getApplicationContext();
         if (!autoOpenWanted(app)) { Log.i(TAG, "lock-screen preparation: the target app is NOT started (\"Open Solitaire automatically\" is off)"); return; }   // AC2/AC8
-        String pkg = targetPackage(app);
+        String pkg = targetForAction(app);
         if (pkg == null) return;
         List<String> labels = new ArrayList<>();
         List<ResolveInfo> ris = launchablesOf(app, pkg, labels);
@@ -412,7 +437,7 @@ public final class ReturnReset {
         if (cleanStart(c)) { settleHome(c); return; }   // BE3: a clean start never starts a stand-in app
         final long t0 = android.os.SystemClock.elapsedRealtime();
         final List<String> labels = new ArrayList<>();
-        String targetPkg = targetPackage(c);                       // AB2: cached, no label loading for every installed app
+        String targetPkg = targetForAction(c);                     // AB2: cached, no label loading for every installed app (LOW2: an unchecked stored "none" is checked once)
         List<ResolveInfo> ris = targetPkg == null ? new ArrayList<ResolveInfo>() : launchablesOf(c, targetPkg, labels);
         int i = ris.isEmpty() ? -1 : Math.max(0, ResetPolicy.pickLabel(labels, appLabel(c)));
         Log.i(TAG, "openApp: target resolved in " + (android.os.SystemClock.elapsedRealtime() - t0) + " ms");

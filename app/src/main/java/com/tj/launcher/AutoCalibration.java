@@ -95,8 +95,14 @@ public final class AutoCalibration {
      * {@code menuSeenMs} / {@code padSeenMs} / {@code unlockMs}: the last time (uptime ms) each was seen, 0 = never.
      */
     public static String refusal(long shotUptimeMs, long menuSeenMs, boolean menuOpenNow, long padSeenMs, boolean padUpNow, long unlockMs) {
+        return refusal(shotUptimeMs, menuSeenMs, menuOpenNow, padSeenMs, padUpNow, unlockMs, 0, false);
+    }
+
+    /** BY1 review LOW5 (2026-11-12): also the notification panel / quick settings: a screenshot taken while it was open (or within the guard of it) shows the panel, not the lock screen. */
+    public static String refusal(long shotUptimeMs, long menuSeenMs, boolean menuOpenNow, long padSeenMs, boolean padUpNow, long unlockMs, long shadeSeenMs, boolean shadeOpenNow) {
         if (menuOpenNow || near(shotUptimeMs, menuSeenMs, GUARD_MS)) return "the power menu was open when that screenshot was taken: take it with the menu closed";
         if (padUpNow || near(shotUptimeMs, padSeenMs, GUARD_MS)) return "the PIN pad was showing when that screenshot was taken: take it on the plain lock screen";
+        if (shadeOpenNow || near(shotUptimeMs, shadeSeenMs, GUARD_MS)) return "the notification panel was open when that screenshot was taken: take it on the plain lock screen";
         if (unlockMs > 0 && unlockMs >= shotUptimeMs && unlockMs - shotUptimeMs <= UNLOCK_GUARD_MS) return "the tablet was unlocked right after that screenshot, so it may not show the lock screen";
         return "";
     }

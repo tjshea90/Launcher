@@ -21,13 +21,19 @@ public final class RecentsPolicy {
 
     public static boolean enabled(Context c) { return Features.get(c, KEY, false); }
 
+    /** BY1a A4 (pure): does this launch need the target app at all? Without it {@link #shouldExclude} is false whatever the target is. */
+    static boolean needsTarget(boolean enabled, String pkg, String selfPkg) {
+        return enabled && pkg != null && !pkg.isEmpty() && !pkg.equals(selfPkg);
+    }
+
     /** Called by the patched Launcher3 right before it starts an app. Never throws; on any problem the launch stays exactly as stock. */
     public static void apply(Context c, Intent intent) {
         try {
             ComponentName cn = intent.getComponent();
             String pkg = cn != null ? cn.getPackageName() : intent.getPackage();
             if (pkg != null && !pkg.equals(c.getPackageName())) AppOrigin.markCustom(c, pkg);   // D5: started from the custom launcher = the custom launcher's own app
-            if (shouldExclude(enabled(c), pkg, ReturnReset.targetPackage(c), c.getPackageName())) {
+            if (!needsTarget(enabled(c), pkg, c.getPackageName())) return;   // BY1a A4: switch off (the default): no target lookup (a package-manager call, sometimes a full label scan) on every app launch
+            if (shouldExclude(true, pkg, ReturnReset.targetPackage(c), c.getPackageName())) {
                 intent.addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS);
             }
         } catch (Throwable t) {

@@ -1,13 +1,13 @@
-# CHECKPOINT 1207 — read me first, then TASKS.md
+# CHECKPOINT 1267 — read me first, then TASKS.md
 
-**Written:** 2026-11-12T17:53:09Z · **tests:** all 10 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-knuth-f1khhb` · **builds on:** `3946e69c` (this checkpoint is the commit after it)
+**Written:** 2026-11-12T23:49:56Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-91599ec3-za40s7` · **builds on:** `735752f5` (this checkpoint is the commit after it)
 
 ## Just done
-BY1b: fl BEFORE run #563 id 43273214570 dispatched 17:48Z on fcc27808; fl got PATCHEV event lines + menuPU diagnostic (not in #563)
+BY1d ticked (BY1 open only for BY1g tablet checks + BY1e LOW flake note), HANDOFF 0v = released
 
 ## Do this next
-BY1b: read #563 RESULTS (job id via list_workflow_jobs, tail ~120) and ckpt the raw FL numbers; then design fixes F1-F3; heartbeat trig_01DZ15y7gsi1bXpJ7P2KBghc
+send the answer to Tj (draft research/V098_RELEASE_MESSAGE_DRAFT_2026-11-12.md + Release link https://github.com/tjshea90/Launcher/releases/tag/v0.9.8 on its own line) as the LAST message; heartbeat trig_01JYEUXs7JosHyg85f2T1oCK deletes itself at its next firing (rule 6)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,17 +16,17 @@ BY1b: read #563 RESULTS (job id via list_workflow_jobs, tail ~120) and ckpt the 
 
 ## Last ten checkpoints
 ```
-  fcc27808 ckpt 1206: BY1b: section fl written (films: wakeH1/2 wakeL shade shadeX pad tap + menuL
-  59478275 ckpt 1205: BY1b: tools/fl_analyze.py (selftest OK) + section fl design in research/BY1_
-  4c088a33 ckpt 1204: BY1-F: 4 code findings (lock patch over open shade, dark-rest at wake, fastD
-  b83f8177 ckpt 1203: BY1 written into TASKS (Tj 17:26Z: perf review + lock/home patch flicker fil
-  44afb137 ckpt 1202: BX1 DONE: v0.9.7 (code 46) RELEASED+RECORDED (android.yml #48 id 43139795817
-  30021942 ckpt 1201: BX1 emulator #562 id 43137670443 (base,legacy,x on 16b47b65, product code ==
-  3ba1ec6f ckpt 1200: gated v0.9.7 (code 46) and pushed it: the handoff self-test, the full unit s
-  3f0de92d ckpt 1199: BX1: emulator smoke #562 id 43137670443 on 16b47b65 (base,legacy,x) dispatch
-  16b47b65 ckpt 1198: BX1 code done: Quickstep -> Gboard (KeyboardPolicy.pickGboard/noTargetStatus
-  89ac6020 ckpt 1197: BX1 written into TASKS (Tj: Quickstep keyboard Gboard instead of SwiftKey, c
+  d61fa73f ckpt 1266: v0.9.8 RELEASED + RECORDED: android.yml #49 id 43330901250 green on 4ce6f0f0
+  79ad60d1 ckpt 1265: ship.sh v0.9.8 green (SHIP_EXIT=0, 4ce6f0f0, main==tip); android.yml full_bu
+  4ce6f0f0 ckpt 1264: gated v0.9.8 (code 47) and pushed it: the handoff self-test, the full unit s
+  4ad1f461 ckpt 1263: version bumped to 47 / 0.9.8; ship.sh running in background (log scratchpad/
+  925f34f8 ckpt 1262: #582 id 43328172010 (se,ss ref main) GREEN + #583 id 43328175947 (se,ss bran
+  8ba3cfc7 ckpt 1261: HANDOFF 0v: gate triage + rerun state written
+  914160f7 ckpt 1260: dispatched 23:21Z se,ss on ref main + on branch (head d5017a2c, product == 1
+  d5017a2c ckpt 1259: SS7 diag INFO added (dump size, packages, texts when no Settings entry); dry
+  1e7cce30 ckpt 1258: #580 tag v0.9.7 se,ss GREEN; #581 id 43325521656 head se GREEN (SE-C2 interm
+  a2a371a0 ckpt 1257: SE-C2 diag INFO added to the scenario (mode, kg, battery, tj_crash, power br
 ```
 
-(2 automatic checkpoint(s) since the last deliberate one — the
+(8 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)

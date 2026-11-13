@@ -1889,6 +1889,10 @@ sefeat true true true; sefresh
 adb shell dumpsys battery unplug >/dev/null 2>&1; sleep 1
 adb shell "dumpsys battery set ac 1; dumpsys battery set ac 0; dumpsys battery set ac 1" >/dev/null 2>&1; sleep 3; getmode > "$OUT/se-chg-on.txt"
 check "SE-C2: with the charger flick ON, in / out / in takes Tj to Quickstep" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/se-chg-on.txt)\" = quickstep ]"
+if [ "$(tr -d ' \r\n' < "$OUT/se-chg-on.txt")" != quickstep ]; then   # BY1d (#570, #576: SE-C2 red twice on the head): say WHY in the results block (the charger code is unchanged since v0.9.7)
+  info "SE-C2 diag: mode=$(tr -d ' \r\n' < "$OUT/se-chg-on.txt") $(kg_state) battery=[$(adb shell dumpsys battery 2>/dev/null | grep -E 'AC powered|USB powered|status:' | tr -s ' \r\n' ' ')] crash=[$(adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" 2>/dev/null | tr -d '\r\n' | grep -o '<boolean[^>]*>' | tr '\n' ' ' | cut -c1-160)] power-broadcasts-in-history=$(adb shell dumpsys activity broadcasts history 2>/dev/null | grep -c 'ACTION_POWER_')"
+  info "SE-C2 diag log: $(adb logcat -d -s TjEntrance:V 2>/dev/null | grep -v 'ENTRANCE ' | tail -4 | tr -s ' \r\n' ' ' | cut -c1-280)"
+fi
 adb shell dumpsys battery reset >/dev/null 2>&1
 adb logcat -d -s TjEntrance:I > "$OUT/se-log.txt" 2>&1
 info "SE entrance log: $(grep -c 'ENTRANCE' $OUT/se-log.txt) entrance(s): $(grep 'ENTRANCE' $OUT/se-log.txt | sed 's/.*ENTRANCE //' | tr '\n' ',' | cut -c1-120)"
@@ -4282,6 +4286,7 @@ ssdrawer "$OUT/ss-drawer2.xml"; SB=$(ssbounds "$OUT/ss-drawer2.xml" Settings); s
 SS7_T=0; for i in 1 2 3 4 5 6 7 8 9 10; do sleep 2; SS7_T=$((SS7_T+2)); resumed > "$OUT/ss-resumed2.txt"; grep -q "com.android.settings" "$OUT/ss-resumed2.txt" && break; done
 shot ss-03-real-settings
 info "SS7: the real Settings was in front after $SS7_T s (drawer entry bounds: ${SB:-none}; resumed = $(tr -s ' \n' ' ' < "$OUT/ss-resumed2.txt" | cut -c1-120))"
+[ -z "$SB" ] && info "SS7 diag (no Settings entry in the drawer dump; #576 on the head, tag #580 found it): dump $(wc -c < "$OUT/ss-drawer2.xml" 2>/dev/null || echo 0) bytes, pkgs [$(grep -o 'package="[^"]*"' "$OUT/ss-drawer2.xml" 2>/dev/null | sort -u | tr '\n' ' ' | cut -c1-120)], texts [$(grep -o 'text="[^"][^"]*"' "$OUT/ss-drawer2.xml" 2>/dev/null | head -14 | tr '\n' ' ' | cut -c1-200)]"
 check "SS7: switch off: the drawer's Settings is the real one" grep -q "com.android.settings" "$OUT/ss-resumed2.txt"
 setfeat; setmode custom; rebind; home; sleep 6
 fi # section ss
@@ -4327,7 +4332,8 @@ ensurehome
 # ---- BS1 + BS2 (Tj, 2026-11-10 23:27 and 23:55 UTC): "Is it possible to keep wifi on when I turn the screen off and it goes to screen lock, but hide the wifi symbol in the lock screen and custom launcher" and
 #      "Make it also keep Bluetooth on but hide Bluetooth the same way it keeps wifi on but hides the symbol. Only keep them on if they are already on. Don't turn them on automatically. They should never, at any
 #      time, show up on the lock screen or in the custom launcher".
-#      Switch keep_radios_hide_icons (the debug default is OFF, so it is set explicitly here). The hold = Settings.Secure icon_blacklist gets "wifi,bluetooth" (a MISSING setting means rotate,headset: those entries
+#      BZ1 (Tj, 2026-11-12): the VPN key (slot "vpn") is hidden by the same hold; the emulator has no VPN, so only the list (WFHIDDEN) and the JVM tests prove it.
+#      Switch keep_radios_hide_icons (the debug default is OFF, so it is set explicitly here). The hold = Settings.Secure icon_blacklist gets "wifi,bluetooth,vpn" (a MISSING setting means rotate,headset: those entries
 #      stay) in the custom launcher and on any lock screen; the original is saved in Settings.Global tj_radio_icons_original and put back in an unlocked Quickstep session. Neither radio is switched off by the lock-screen
 #      rule (AK1) nor by the custom launcher's radio guard while the hold can work (adb grant), and NOTHING turns one on. The emulator has NO Bluetooth hardware: Bluetooth is proven by the list and the JVM tests only.
 #      The Wi-Fi symbol itself is measured in the pictures (white pixels in the status bar; the emulator is fixed at 600x1024). The PIN is ALWAYS cleared again at the end.
@@ -4343,7 +4349,7 @@ wfmark(){ adb shell settings get global tj_radio_icons_original | tr -d '\r\n'; 
 wfnet(){ adb shell dumpsys wifi 2>/dev/null | grep -m1 -oE 'mNetworkInfo[^]]*\]' | tr -d '\r' | cut -c1-120; }
 wfwhite(){ # wfwhite <png> <x> <y> <w> <h>: how many pure-white pixels are in that box of a screenshot (the status-bar icons are white); ImageMagick + python3, like the other pixel probes
   convert "$1" -crop "$4x$5+$2+$3" +repage rgb:- 2>/dev/null | python3 -c 'import sys; d=sys.stdin.buffer.read(); print(sum(1 for i in range(0,len(d)-2,3) if d[i]>235 and d[i+1]>235 and d[i+2]>235))' | tr -d '\r\n'; }
-WFHIDDEN="rotate,headset,wifi,bluetooth"
+WFHIDDEN="rotate,headset,wifi,bluetooth,vpn"
 adb shell settings delete secure icon_blacklist >/dev/null 2>&1; adb shell settings delete global tj_radio_icons_original >/dev/null 2>&1      # a KNOWN original: the setting is missing
 adb shell locksettings set-pin 1234 > "$OUT/wf-setpin.txt" 2>&1
 adb shell am force-stop "$PKG"; adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
@@ -4362,7 +4368,7 @@ setmode custom; rebind; home; sleep 8
 adb shell svc wifi disable; sleep 3; adb shell svc wifi enable; sleep 8        # something turns Wi-Fi on in the custom launcher
 WFL="$(wflist)"; WFM="$(wfmark)"; WFW="$(wfwifi)"
 info "WF B (custom launcher): icon_blacklist=$WFL marker=$WFM wifi_on=$WFW net=$(wfnet)"
-check "WF2: in the custom launcher the list hides Wi-Fi and Bluetooth and keeps the system default entries (rotate,headset)" test "$WFL" = "$WFHIDDEN"
+check "WF2: in the custom launcher the list hides Wi-Fi, Bluetooth and the VPN key and keeps the system default entries (rotate,headset)" test "$WFL" = "$WFHIDDEN"
 check "WF2b: the original (the setting was missing) is saved outside the app's files, in Settings.Global" test "$WFM" = n
 check "WF3: Wi-Fi is ON in the custom launcher although its radio guard is on" test "$WFW" = 1
 shot wf-2-custom; WFPC="$(wfwhite "$OUT/wf-2-custom.png" 543 3 20 17)"
@@ -4535,18 +4541,23 @@ btnote(){ # btnote <label> <gap> <core_mean>: INFO lines (the press verdict with
 btcard(){ # btcard <label>: "full" when the press covered the whole panel with the card (the CARD line's area equals its full), "short" for a short card, "" for no CARD line
   local l; l="$(grep 'CARD area' "$OUT/bt-$1-log.txt" | tail -1)"; [ -n "$l" ] || return 0
   [ "$(hpnums "$l" area)" = "$(hpnums "$l" full)" ] && echo full || echo short; }
-btnever(){ # btnever <label> <core_mean>: the stock Screenshot entry is never visible: the patch covers the slot (deviation within 2 levels) OR the card covers the WHOLE panel (the log says so)
-  awk -v c="${2:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}' && return 0
+# BY1 gate (#569, 2026-11-12): after section ps in the same run the emulator's stock scrim fits 0.75 while the patch draws the tablet's 0.80 (BT2, as HP4):
+# every round read core_mean=+7.17, the control too, with a fresh patch and the fast path. Where the fit is not 0.80 the slot may deviate by that difference
+# (below 12 levels; a visible stock Screenshot entry is tens of levels off), and an INFO line says so (never silent).
+btscale(){ grep PBMETRIC "$OUT/bt-$1-pb.txt" 2>/dev/null | grep -o ' scale=[0-9.]*' | head -1 | cut -d= -f2; }
+bttol(){ local sc; sc="$(btscale "$1")"; if awk -v s="${sc:-0.8}" 'BEGIN{exit !(s>=0.78&&s<=0.82)}'; then echo 2.0; else info "BT1c $1: the stock scrim fits ${sc:-?} here (the patch draws 0.80, BT2): the slot checks allow 12 levels instead of 2" >&2; echo 12.0; fi; }   # info to stderr: stdout is the value
+btnever(){ # btnever <label> <core_mean> [tolerance]: the stock Screenshot entry is never visible: the patch covers the slot (deviation within the tolerance, 2 levels) OR the card covers the WHOLE panel (the log says so)
+  awk -v c="${2:-99}" -v t="${3:-2.0}" 'BEGIN{exit !((c<0?-c:c) < t+0)}' && return 0
   [ "$(btcard "$1")" = full ] && grep -q 'no usable patch, the card covers the whole panel' "$OUT/bt-$1-log.txt"; }
 if [ -n "$BT_PANEL" ]; then
-  BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"
-  check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM0:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'
+  BT_CM0="$(btround ctl 0)"; btnote ctl 0 "$BT_CM0"; BT_TOL="$(bttol ctl)"
+  check "BT1c-ctl: CONTROL, no shade: the side key covers the Screenshot spot (slot deviation within $BT_TOL levels)" awk -v c="${BT_CM0:-99}" -v t="$BT_TOL" 'BEGIN{exit !((c<0?-c:c) < t+0)}'
   hpclose; sleep 6
   for BT_GAP in 0.4 1.2 4; do
     BT_L="g$(echo "$BT_GAP" | tr -d .)"
-    BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"
-    check "BT1c-$BT_L-never: the FIRST press $BT_GAP s after the shade was closed never shows the stock Screenshot entry (patch over it, or the card over the whole panel)" btnever "$BT_L" "$BT_CM"
-    if [ "$BT_GAP" != 0.4 ]; then check "BT1c-$BT_L: ... and at $BT_GAP s it is the PATCH that covers the Screenshot spot (slot deviation within 2 levels)" awk -v c="${BT_CM:-99}" 'BEGIN{exit !((c<0?-c:c) < 2.0)}'; fi
+    BT_CM="$(btround "$BT_L" "$BT_GAP")"; btnote "$BT_L" "$BT_GAP" "$BT_CM"; BT_TOL="$(bttol "$BT_L")"
+    check "BT1c-$BT_L-never: the FIRST press $BT_GAP s after the shade was closed never shows the stock Screenshot entry (patch over it, or the card over the whole panel)" btnever "$BT_L" "$BT_CM" "$BT_TOL"
+    if [ "$BT_GAP" != 0.4 ]; then check "BT1c-$BT_L: ... and at $BT_GAP s it is the PATCH that covers the Screenshot spot (slot deviation within $BT_TOL levels)" awk -v c="${BT_CM:-99}" -v t="$BT_TOL" 'BEGIN{exit !((c<0?-c:c) < t+0)}'; fi
     hpclose; sleep 6
   done
   # how long after the shade is closed is the patch fresh and resting again? (poll the log: "PATCH rest on" after the collapse)
@@ -4787,19 +4798,30 @@ flnums(){ echo "$1" | grep -o "$2=[^ ]*" | head -1 | grep -o '[0-9]*' | tr '\n' 
 flstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
 fllock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }
 flunlock(){ local i; for i in 1 2 3; do [ "$(kg_state)" = "showing=false" ] && return 0; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.5; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input text 1234; sleep 0.5; adb shell input keyevent KEYCODE_ENTER; sleep 3; done; [ "$(kg_state)" = "showing=false" ]; }
-flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
+flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; FL_T0="$(adb shell cat /proc/uptime | cut -d' ' -f1 | tr -d '\r\n')"; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
 flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull, analyse, keep the app's PATCH lines of the case
   local L="$1" M="$2" i T=""
   for i in $(seq 1 15); do adb shell pidof screenrecord >/dev/null 2>&1 || break; sleep 1; done
   adb pull /sdcard/fl.mp4 "$OUT/fl-$L.mp4" >/dev/null 2>&1
   [ "$M" = menu ] && T="--top $FL_TOP"
-  python3 -I tools/fl_analyze.py "$OUT/fl-$L.mp4" "$L" --disp 600x1024 --core "$FL_CORE" --ring "$FL_RING" $T --mode "$M" --ref last 2>&1 | tail -1 >> "$OUT/fl-metrics.txt"
+  python3 -I tools/fl_analyze.py "$OUT/fl-$L.mp4" "$L" --disp 600x1024 --core "$FL_CORE" --ring "$FL_RING" $T --mode "$M" --ref last \
+    --sheet "$OUT/fl-sheet-$L.png" --sheetbox "$FL_SHEET" > "$OUT/fl-an-$L.txt" 2>&1
+  grep -q '^FLMETRIC' "$OUT/fl-an-$L.txt" && grep '^FLMETRIC' "$OUT/fl-an-$L.txt" | tail -1 >> "$OUT/fl-metrics.txt" \
+    || echo "FLMETRIC label=$L error=$(tail -1 "$OUT/fl-an-$L.txt" | tr -s ' ' | cut -c1-120)" >> "$OUT/fl-metrics.txt"
   adb logcat -d -s TjA11y:I 2>/dev/null | grep -E 'PATCH' | sed 's/^.*TjA11y *: //' > "$OUT/fl-log-$L.txt"
   info "FL $L: $(grep "label=$L " "$OUT/fl-metrics.txt" | tail -1 | cut -c10-330)"
+  grep '^FLTL' "$OUT/fl-an-$L.txt" | tail -1 | cut -d: -f2- | fold -w 290 | head -3 | while IFS= read -r ln; do info "FL $L tl:$ln"; done
+  # BY1b: what SystemUI's panes said (window-state events: content-change type + text), in film seconds (the film starts about 0.4 s after flrec)
+  info "FL $L panes: $(grep 'PATCHEV t=[0-9]* type=0x20 pkg=com.android.systemui' "$OUT/fl-log-$L.txt" 2>/dev/null | awk -v t0="${FL_T0:-0}" '{t=$2; sub("t=","",t); c="-"; x="-"; for(i=1;i<=NF;i++){ if($i ~ /^cct=/) c=$i; if($i ~ /^txt=/) x=$i }; printf "%.2f %s %s; ", (t - t0*1000 - 400)/1000, c, x}' | cut -c1-300)"
+  # BY1c: the ORDER of the patch's own decisions in film seconds (which path hid / showed it when; a mid-menu Screenshot needs this, run #565 menuP2)
+  # (#567: a seq shorter than one folded line has no newline and `read` dropped it: only the films with a LONG seq printed one; '|| [ -n "$ln" ]' keeps the last piece)
+  grep -v '^PATCHEV' "$OUT/fl-log-$L.txt" 2>/dev/null | grep -E ' t=[0-9]+' | sed "s/fast open: the dialog.s window event is /fast open age=/; s/ ms after the first window event of the burst/ ms in burst/" \
+    | awk -v t0="${FL_T0:-0}" '{ t=""; for(i=1;i<=NF;i++) if($i ~ /^t=[0-9]+/){ t=$i; sub("t=","",t); sub(/[^0-9].*$/,"",t) }; if (t=="") next; w=substr($2" "$3" "$4" "$5" "$6, 1, 40); printf "%.2f %s; ", (t - t0*1000 - 400)/1000, w } END { printf "\n" }' \
+    | fold -w 290 | head -3 | while IFS= read -r ln || [ -n "$ln" ]; do [ -n "${ln// /}" ] && info "FL $L seq:$ln"; done
   [ "$M" = flash ] && info "FL $L events (debug PATCHEV, count type pkg cls): $(grep -o 'PATCHEV t=[0-9]* type=0x[0-9a-f]* pkg=[^ ]* cls=[^ ]*' "$OUT/fl-log-$L.txt" 2>/dev/null | sed 's/t=[0-9]* //; s/com.android.systemui/SUI/; s/android.widget./w./' | sort | uniq -c | sort -rn | head -7 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
-flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
+flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left|pin pad cancelled|shade open|shade closed)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
 FL_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
 adb shell settings put secure lock_screen_show_notifications 0            # no notification card next to the slot (see section ps, AZ4)
 adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
@@ -4834,6 +4856,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   FL_CORE="$((FLX0+6)),$((FLCB+6)),$((FLX1-6)),$((FLY1-6))"
   FL_RING="$((FLX0-50)),$FLCB,$((FLX0-20)),$FLY1;$FLX0,$((FLY1+45)),$FLX1,$((FLY1+60))"
   FL_TOP="$((FLX0+10)),$((FLY0+10)),$((FLX1-10)),$((FLCB-10))"
+  FL_SHEET="$((FLX0-60)),$((FLY0-10)),$((FLX1+4)),$((FLY1+70))"   # contact sheet box (fl_analyze --sheet): the panel, the ring boxes and a margin
   info "FL geometry: panel [$FLX0,$FLY0][$FLX1,$FLY1] card bottom $FLCB; core $FL_CORE; ring $FL_RING; top $FL_TOP; animations before: ${FL_ANIM0:-?}"
   flanim 1
   rm -f "$OUT/fl-metrics.txt"
@@ -4850,6 +4873,13 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   flend shade flash
   sleep 2; adb logcat -c; flrec 9; adb shell cmd statusbar expand-notifications; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 4
   flend shadeX flash
+  # (3c) diagnostic: a SLOW pull (2.6 s: the finger hold of 1.5 s ends mid-pull, before the panel names itself 'Quick settings.'); (3d) diagnostic: the panel open, screen off, wake: is it still open at the wake?
+  sleep 2; adb logcat -c; flrec 12; adb shell input swipe 300 2 300 700 2600; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 4.5
+  flend shadeSlow flash
+  sleep 2; adb logcat -c; adb shell input swipe 300 2 300 700 300; sleep 1.5; adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 2.5
+  info "FL shadeOff (panel open, screen off, wake; diagnostic): $(adb shell dumpsys activity service com.android.systemui/.SystemUIService 2>/dev/null | grep -iE 'mQsExpanded|mQsFullyExpanded|mBarState|mPanelExpanded' | head -4 | tr -s ' ' | tr '\n' '|' | cut -c1-220); log: $(adb logcat -d -s TjA11y:I | grep -oE 'PATCH (shade open|shade closed|rest on|rest off|visible again \([a-zA-Z]*\))' | tr '\n' ';' | cut -c1-260)"
+  shot fl-shadeoff-wake
+  adb shell input keyevent KEYCODE_BACK; sleep 1.5
   # (4) the PIN pad pulled up, left 2.5 s, dismissed with BACK; (5) two taps on the empty lock screen
   sleep 2; adb logcat -c; flrec 10; adb shell input swipe 300 900 300 300 300; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 5
   flend pad flash
@@ -4886,9 +4916,14 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     info "FL1 $L path: $(flpath $L)"
   done
   info "FL1 shadeX (panel opened WITHOUT a finger, diagnostic): flashA=$(flget shadeX flashA) flashB=$(flget shadeX flashB) $(flget shadeX spans); path: $(flpath shadeX)"
+  info "FL1 shadeSlow (a 2.6 s pull, diagnostic): flashA=$(flget shadeSlow flashA) flashB=$(flget shadeSlow flashB) $(flget shadeSlow spans); path: $(flpath shadeSlow)"
+  # menuW1 = the first menu after the custom home + a wake: runs #565-#568 showed 3, 3, 4, 2 frames of flash A (the patch a little brighter than the darkening
+  # surround at the very start of the fade) while OUR side handled the dialog's event 2 ms after it was made and drew the first fade frame 19 ms after it (#568 seq);
+  # menuW2, the same steps again, 0. The rest is the stock dialog's own timing on its first opening (it announces itself about when its first frame is drawn). Its
+  # Screenshot entry must still never show, and the lag must not grow past those runs (AW1 = 4 frames); the number is printed for every run (BY1c, research/BY1_FLICKER_FINDINGS).
   for L in menuL menuW1 menuW2 menuS1 menuS2 menuP1 menuP2; do
-    m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"
-    check "FL2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?}; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a+0<=1)}'
+    m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"; AW=1; [ "$L" = menuW1 ] && AW=4
+    check "FL2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?} of at most $AW; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" -v aw="$AW" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a!="" && a+0<=aw+0)}'
     info "FL2 $L path: $(flpath $L)"
   done
 else

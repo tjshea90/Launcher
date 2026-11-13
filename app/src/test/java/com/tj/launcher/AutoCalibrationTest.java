@@ -80,6 +80,15 @@ public class AutoCalibrationTest {
         assertTrue(AutoCalibration.refusal(shot, 0, false, 0, true, 0).contains("PIN pad"));
         assertTrue(AutoCalibration.refusal(shot, 0, false, 0, false, shot + 800).contains("unlocked"));
     }
+    @Test public void aScreenshotAroundTheOpenNotificationPanelIsRefused() {   // BY1 review LOW5 (2026-11-12)
+        long shot = 100_000;
+        assertTrue(AutoCalibration.refusal(shot, 0, false, 0, false, 0, 0, true).contains("notification panel"));
+        assertTrue(AutoCalibration.refusal(shot, 0, false, 0, false, 0, shot - 1_000, false).contains("notification panel"));
+        assertTrue(AutoCalibration.refusal(shot, 0, false, 0, false, 0, shot + 2_000, false).contains("notification panel"));
+        assertEquals("a panel closed long before does not matter", "", AutoCalibration.refusal(shot, 0, false, 0, false, 0, shot - AutoCalibration.GUARD_MS - 1_000, false));
+        assertEquals("no panel seen: the old rules only", "", AutoCalibration.refusal(shot, 0, false, 0, false, 0, 0, false));
+        assertTrue("the menu still comes first", AutoCalibration.refusal(shot, 0, true, 0, false, 0, 0, true).contains("power menu"));
+    }
     @Test public void aPlainLockScreenScreenshotIsAccepted() {
         long shot = 100_000;
         assertEquals("", AutoCalibration.refusal(shot, 0, false, 0, false, 0));

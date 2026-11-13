@@ -78,6 +78,8 @@ public final class TjHooks {
     /** Called by Launcher.onResume. The FIRST resume of each launcher process (boot, or after Android restarted it) puts the target app (Solitaire) in front. */
     /** BK1c: uptime of the Launcher's last onResume (the unlock summary looks at it when the Launcher resumed before the keyguard's broadcast). */
     public static volatile long lastResumeMs = 0;
+    /** BY1a A2/C13: the Launcher instance whose tasks are flagged already (main thread). A recreated Launcher is a new instance and flags again. */
+    private static java.lang.ref.WeakReference<Context> recentsFlaggedFor;
 
     public static void onLauncherResumed(final Context c) {
         launcherResumed = true; lastResumeMs = android.os.SystemClock.uptimeMillis();
@@ -85,8 +87,8 @@ public final class TjHooks {
         try { TjAccessibilityService s0 = TjAccessibilityService.get(); if (launcherHidden && (s0 == null || !s0.homeCalRunning())) setLauncherHidden(false); } catch (Throwable ignored) { }   // BI1: a hidden Launcher without a running calibration is a leftover
         try { if (c instanceof com.android.launcher3.Launcher) launcherNormal = ((com.android.launcher3.Launcher) c).isInState(com.android.launcher3.LauncherState.NORMAL); } catch (Throwable ignored) { }
         try { TjAccessibilityService s = TjAccessibilityService.get(); if (s != null) { s.sumNoteResume(); s.refreshLayersSoon(); } } catch (Throwable ignored) { }   // BK1c: when the Launcher resumed after the keyguard went away
-        RecentsGuard.excludeOurTasks(c);                       // W2: also fixes a Launcher task created before the exclude flags existed
-        if (c instanceof android.app.Activity) RecentsGuard.describeAsTarget((android.app.Activity) c);
+        if (!RecentsGuard.sameInstance(recentsFlaggedFor, c) && RecentsGuard.excludeOurTasks(c, true)) recentsFlaggedFor = new java.lang.ref.WeakReference<>(c);   // W2: also fixes a Launcher task created before the exclude flags existed; BY1a A2/C13: once per Launcher instance, task ids already flagged skipped (it was 1 + 2 binder calls per task at EVERY resume)
+        if (c instanceof android.app.Activity) RecentsGuard.describeAsTarget((android.app.Activity) c);   // BY1a A2: returns at once for the instance that already carries the description
         try {
             if (!startedOnce) {
                 startedOnce = true;

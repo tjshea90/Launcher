@@ -23,12 +23,15 @@ final class RecentsFilter {
     private static final String TAG = "TjRecentsFilter";
     static final String KEY = "recents_drawer_only";        // switch, default ON
     static final String STATUS_KEY = "recents_guard_status"; // what the guard did last (Launcher control and the tablet report)
-    private static final long LABELS_TTL_MS = 60_000;
+    static final long LABELS_TTL_MS = 60_000;
 
     private final TjAccessibilityService svc;
     private final android.os.Handler handler;
-    private Set<String> blocked = new HashSet<>();
-    private long blockedAt = -LABELS_TTL_MS;
+    // BY1a C1: the label set is built on a background thread (it was built on the main thread when Recents opened); these fields are touched on the main thread only, the worker posts its result
+    private Set<String> blocked = null;   // null = never built
+    private long blockedAt = 0;           // uptime when the build that made it started
+    private boolean building = false;     // a build runs
+    private boolean lookWaits = false;    // a look waits for that build (it counts as pending)
     private boolean pending = false;
     private int rounds = 0, looks = 0;
     /** BE2: the first look comes 60 ms after the Recents window opened (it was 150 ms); the cards are closed in ONE pass (it was one card per 70 ms), so a hidden app's card is on screen for as short a time as the tree allows. */
@@ -88,6 +91,15 @@ final class RecentsFilter {
         return "com.android.systemui".equals(pkg) && className != null && className.toString().toLowerCase(Locale.ROOT).contains("recents");
     }
 
+    /** BY1a C1 (pure): may a look use the set built at {@code builtAtMs}? Never built = no; older than the TTL = no (the same 60 s rule as before). */
+    static boolean labelsFresh(boolean built, long builtAtMs, long nowMs) { return built && nowMs - builtAtMs <= LABELS_TTL_MS; }
+
+    /** BY1a C1 (pure): start a background build? Only for a set that is not fresh, and never a second one at a time. */
+    static boolean buildNeeded(boolean fresh, boolean building) { return !fresh && !building; }
+
+    /** BY1a C1 (pure): the end of a build runs the look that waited for it, unless the build failed (that look ends, as a failed scan ended it before; the next Recents open tries again). */
+    static boolean lookAfterBuild(boolean lookWaited, boolean built) { return lookWaited && built; }
+
     // ---------------------------------------------------------------- Android side
 
     /** Called for every accessibility event; cheap (a few comparisons) unless a window of the stock launcher / SystemUI changed. Never throws. */
@@ -101,6 +113,7 @@ final class RecentsFilter {
             if (!wanted(Mode.isCustom(svc), Features.get(svc, KEY, true), svc.keyguardLockedNow(), CrashGuard.automationOff(svc), svc.resetDrivesRecents())) return;
             schedule(FIRST_LOOK_MS);
             rounds = 0; looks = 0;
+            if (buildNeeded(labelsFresh(blocked != null, blockedAt, android.os.SystemClock.uptimeMillis()), building)) build();   // BY1a C1: start at the event; the first look finds the set ready or waits for it
         } catch (Throwable t) { Log.e(TAG, "recents guard event failed", t); }
     }
 
@@ -109,14 +122,51 @@ final class RecentsFilter {
         handler.postDelayed(run, delayMs);
     }
 
-    private final Runnable run = new Runnable() { @Override public void run() {
+    private final Runnable run = new Runnable() { @Override public void run() { look(false); } };
+
+    /** BY1a C1: builds the label set on the worker; the main thread gets it with {@link #built}. Never throws. */
+    private void build() {
+        building = true;
+        final long startedAt = android.os.SystemClock.uptimeMillis();
+        try {
+            Labels.EX.execute(new Runnable() { @Override public void run() {
+                Set<String> s = null;
+                try {
+                    s = blockedNow(svc);
+                    Log.i(TAG, "labels built in " + (android.os.SystemClock.uptimeMillis() - startedAt) + " ms on " + Thread.currentThread().getName() + ", " + s.size() + " blocked");
+                } catch (Throwable t) { Log.e(TAG, "could not build the labels", t); }
+                finally {
+                    final Set<String> result = s;   // always handed back: a build that never ends would leave the guard waiting
+                    handler.post(new Runnable() { @Override public void run() { built(result, startedAt); } });
+                }
+            } });
+        } catch (Throwable t) { Log.e(TAG, "could not start the label build", t); built(null, startedAt); }
+    }
+
+    /** BY1a C1: the end of a build (main thread). */
+    private void built(Set<String> s, long startedAt) {
+        building = false;
+        if (s != null) { blocked = s; blockedAt = startedAt; }
+        boolean waited = lookWaits;
+        lookWaits = false;
+        if (lookAfterBuild(waited, s != null)) look(true);
+        else if (waited) pending = false;
+    }
+
+    /** One look at the Recents cards (main thread). {@code justBuilt}: the set was built for this look and is used whatever its age. */
+    private void look(boolean justBuilt) {
         pending = false;
         try {
             if (!wanted(Mode.isCustom(svc), Features.get(svc, KEY, true), svc.keyguardLockedNow(), CrashGuard.automationOff(svc), svc.resetDrivesRecents())) return;
-            long now = android.os.SystemClock.uptimeMillis();
-            if (now - blockedAt > LABELS_TTL_MS) { blocked = blockedNow(svc); blockedAt = now; }
-            if (blocked.isEmpty()) return;
-            java.util.List<String> closedNow = svc.closeRecentsCards(blocked);
+            boolean fresh = labelsFresh(blocked != null, blockedAt, android.os.SystemClock.uptimeMillis());
+            if (!justBuilt && !fresh) {   // BY1a C1: missing or older than the TTL: never used; the worker builds it and this look runs again with it (the set the scan here gave before)
+                pending = true; lookWaits = true;
+                if (buildNeeded(false, building)) build();
+                return;
+            }
+            Set<String> b = blocked;
+            if (b == null || b.isEmpty()) return;
+            java.util.List<String> closedNow = svc.closeRecentsCards(b);
             if (!closedNow.isEmpty()) {
                 closedTotal += closedNow.size();
                 String what = closedNow.size() == 1 ? "closed a Recents card of '" + closedNow.get(0) + "'" : "closed " + closedNow.size() + " Recents cards, '" + closedNow.get(0) + "' and " + (closedNow.size() - 1) + " more";
@@ -128,9 +178,20 @@ final class RecentsFilter {
                 schedule(LOOK_DELAYS_MS[looks++]);        // the cards of a freshly opened Recents screen can arrive late (a busy tablet / emulator): a few more looks over about 4 s, then stop
             }
         } catch (Throwable t) { Log.e(TAG, "recents guard run failed", t); }
-    } };
+    }
 
-    /** The labels (app label and every launcher-activity label) of the apps that are NOT in the custom drawer, never a drawer app's own label. Cheap enough to be refreshed once a minute. */
+    /** BY1a C1: the one thread that builds the label set (a PackageManager query and labels for every app); it ends when idle. */
+    private static final class Labels {
+        static final java.util.concurrent.ThreadPoolExecutor EX = make();
+        private static java.util.concurrent.ThreadPoolExecutor make() {
+            java.util.concurrent.ThreadPoolExecutor e = new java.util.concurrent.ThreadPoolExecutor(1, 1, 10, java.util.concurrent.TimeUnit.SECONDS, new java.util.concurrent.LinkedBlockingQueue<Runnable>(),
+                    new java.util.concurrent.ThreadFactory() { @Override public Thread newThread(Runnable r) { Thread t = new Thread(r, "tj-recents-labels"); t.setDaemon(true); return t; } });
+            e.allowCoreThreadTimeOut(true);
+            return e;
+        }
+    }
+
+    /** The labels (app label and every launcher-activity label) of the apps that are NOT in the custom drawer, never a drawer app's own label. Built on the worker (BY1a C1), at most once a minute. */
     static Set<String> blockedNow(Context c) {
         Set<String> hidden = new HashSet<>(), drawer = new HashSet<>();
         try {
