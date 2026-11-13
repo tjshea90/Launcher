@@ -2063,3 +2063,7 @@
 ## 2026-11-13T05:13:20Z
 > The answer draft is saved. The emulator rerun's result is due at about 05:19 UTC; I'll read it then.
 <!-- sha:fc1cea762375 -->
+
+## 2026-11-13T05:24:40Z
+> I'm waiting on the gate. Its 3 emulator runs finish at about 05:45 UTC; if they're green, the next step is building and publishing v0.9.10.
+<!-- sha:3a4fbd8412ee -->
