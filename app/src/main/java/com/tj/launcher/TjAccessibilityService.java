@@ -3536,7 +3536,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     @Override public void onInterrupt() { scrimTeardown(); removeHotspot(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); removeLockNumber(); picker().remove("interrupted"); try { stopShotWatch(); handler.removeCallbacks(shotIngest); handler.removeCallbacks(autoShot); handler.removeCallbacks(shotEnd); Features.setString(this, PatchShot.CAL_UNTIL_KEY, "0"); } catch (Throwable ignored) { } }
 
-    @Override public boolean onUnbind(android.content.Intent i) { instance = null; LockLog.add(this, "SERVICE", "unbound"); try { AnimationSpeedup.syncNow(this, "helper unbound"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: the helper is what hears the screen go off: without it the animations are real again
+    @Override public boolean onUnbind(android.content.Intent i) { instance = null; LockLog.add(this, "SERVICE", "unbound"); AnimationSpeedup.forgetGrant(); try { AnimationSpeedup.syncNow(this, "helper unbound"); } catch (Throwable t) { Log.e(TAG, "animation sync failed", t); }   // BF1: the helper is what hears the screen go off: without it the animations are real again
         cancelPatchWork(); removeOverlay(); removePatch(); removePencil(); hideResetCover(); curtainStop(); picker().remove("unbound"); stopPatchWatch(); stopLockNumber(); stopRadioGuard(); stopTileGuard(); removeHotspot(); try { ((android.hardware.SensorManager) getSystemService(SENSOR_SERVICE)).unregisterListener(sensorListener); motionOn = false; } catch (Throwable ignored) { } return super.onUnbind(i); }
 
     /**
