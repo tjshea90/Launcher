@@ -1,13 +1,13 @@
-# CHECKPOINT 1277 — read me first, then TASKS.md
+# CHECKPOINT 1278 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T02:11:06Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `cd2eb75c` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T02:13:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `fe2b73a3` (this checkpoint is the commit after it)
 
 ## Just done
-CA1b batch1: + M2 lock bitmaps dropped on home target / trim, M9 TimeFmt (+TimeFmtTest), M10 allowedReadOnly, S2 no forced Launcher3 reload when switching to Quickstep; U5 REJECTED (front-of-queue could beat a late Enter click: race of runs 63/64)
+CA1b batch1 coded + unit suite 1040/0 green (before M1); + S3 pencil watch paused while dark, M1 curtain in memory only where a cover can show it (HomeCurtainRules.keepInMemory, test 21/21)
 
 ## Do this next
-full unit suite running (scratchpad/t2.txt); then S3 screen-dark early returns + M1 curtain only when it can be shown; then /code-review high. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
+next: full suite again, then /code-review high on git diff v0.9.8 (base = v0.9.8 target_commitish 4ce6f0f0), fix, then tools/gate.sh 4ce6f0f0. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ full unit suite running (scratchpad/t2.txt); then S3 screen-dark early returns +
 
 ## Last ten checkpoints
 ```
+  7900bf97 ckpt 1277: CA1b batch1: + M2 lock bitmaps dropped on home target / trim, M9 TimeFmt (+T
   4aaee9ca ckpt 1276: CA1b batch1 in progress: U1 (EventNoiseTest 16/16 green), S12 status async, 
   e8789bb3 ckpt 1275: CA1a DONE: all 3 reviewers in PERF_AUDIT_2026-11-13.md (U1-U12, S1-S12, M1-M
   c0e24942 ckpt 1274: CA1a: U1 design written (PERF_AUDIT design notes); reading code for U1 done
@@ -25,8 +26,7 @@ full unit suite running (scratchpad/t2.txt); then S3 screen-dark early returns +
   0ac9f715 ckpt 1270: CA1a: heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv armed (every 2h at :40); 3 rea
   fa9ce612 ckpt 1269: CA1 written into TASKS (Tj perf/RAM/battery review request)
   4edd1601 ckpt 1268: heartbeat 00:32Z stood down (rule 2: ckpt 1267 of the other account 44 min o
-  8f725348 ckpt 1267: BY1d ticked (BY1 open only for BY1g tablet checks + BY1e LOW flake note), HA
 ```
 
-(6 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
