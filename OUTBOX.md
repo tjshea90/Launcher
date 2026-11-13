@@ -2184,3 +2184,17 @@
 >
 > Send me what it prints.
 <!-- sha:0fc3c19191ae -->
+
+## 2026-11-13T17:03:20Z
+> The check passed. All 5 permissions say granted=true and all 5 background settings say allow. That includes the VPN one, which was refused 10 hours ago and is allowed now. The accessibility helper was already on, so there's nothing to do for it.
+>
+> **Step 4**
+>
+> Copy this line into the adb app and press Enter. It usually prints nothing:
+>
+> ```
+> CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/dev/null 2>&1 &
+> ```
+>
+> Send me what it prints, or "nothing".
+<!-- sha:9b1044118221 -->
