@@ -37,5 +37,24 @@ Checked and fine (M): overlays small (<1 MB total), full-screen windows removed 
 widgets off / shortcuts stubbed / AppFilter before icons, all collections bounded, statics hold only the app context or WeakReference, no per-frame
 allocations outside a 300 ms fade, the wallpaper-change receiver drops every cached picture.
 
-## U: unlock path (reviewer U) - pending
+## U: unlock path (reviewer U; TAS = TjAccessibilityService.java, TR = research/tablet/2026-11-10-2/tablet-report.txt, pre-v0.9.8)
+Measured on the tablet: Enter-tap lag (event handled vs tap) 224 ms plain custom unlock (TR:758), 359 ms handshake (TR:776), 2164 ms
+Quickstep->custom (TR:729); plain custom unlock otherwise 249 ms (TR:761); Quickstep->custom: 350 ms to the reset plan, Clear all 838 ms, settle 291 ms.
+| id | what | verdict |
+| :- | :- | :- |
+| U1 NEW HIGH | per PIN key: SystemUI click -> power-menu scan (`EventNoise:35-36`, TAS:104/112), pencil search 40 ms after a click (`EventNoise:58`, TAS:2403), `updateLockNumber` 2 binder calls + pad scan (TAS:2914-2933), `trackUnlockKey` fresh `keyguardLocked()` per click (TAS:1678); all before `trackUnlockKey` (TAS:94-96) on the main thread, and each search runs on SystemUI's UI thread too | candidate: while the PIN pad is up and no menu / cover is up, clicks + content changes start no menu scan / pencil search (a menu over the pad still comes by window event; `menuKnownUp` keeps clicks inside an open menu); `keyguardLockedFast()`; measure Enter with `e.getEventTime()` |
+| U2 NEW HIGH (Q->custom) | `recentsEmpty` polls every 40 ms from the instant of the Recents action, every window root + 2 text searches + an 8-level card walk (TAS:3939-3980, 3884-3895, 3872-3878, 3752, 3806) | candidate: first look at the stock launcher's window-state event (300 ms fallback), card walk only in the launcher's window + tall system windows |
+| U3 NEW | `AppOrigin.pending` -> `mergeUsage` = `UsageStatsManager.queryEvents` on the main thread at the Enter tap (TAS:1914 -> `ReturnReset:425-427`) and in `ReturnReset.run` (208-209) | candidate: merge on a worker; clean start decides from the cheap check + `usedSinceClearCached` |
+| U4 NEW | `killApps` (`ReturnReset:193-196, 264-283`): queryIntentActivities + one `killBackgroundProcesses` per app, at the same instant as Recents / Launcher resume | candidate: run after the cover is gone, background thread |
+| U5 NEW | USER_PRESENT posts `layerRefresh` + `lockEval` (TAS:2863-2864) before `unlockApply` (2886) | candidate: `postAtFrontOfQueue(unlockApply)` when mode is Quickstep or a cover is up |
+| U6 (=C6) | `Mode.set` runs Keyboard / Tile / Immersive / BatterySaver profile switches on the main thread (`Mode:63-82`) | candidate: one serial background executor, same order, after the commit + animation sync |
+| U7 (=C7 rest) | commits on the cover-removal path (TAS:4078-4082, `RecentsDirty:19`, `ReturnReset:54`, TAS:2311/4094-4097, `releaseReset` TAS:2310 + `AnimationSpeedup:74`) | candidate: done-runnable first, report async, `apply()` |
+| U8 (=A1/C5) | full Launcher3 reload 3 s after every return to custom (`SettingsSpoof:108-114` via `Mode:73`) | NEXT (0 or 2 Settings entries risk, section `ss`) |
+| U9 NEW LOW | `settleHome` polls every 40 ms (TAS:2302-2322, 4086-4092) | candidate: also hide on our package's window-state event |
+| U10 NEW LOW | `syncNow` twice per unlock (`Mode:72`, TAS:1926), 3 uncached `checkSelfPermission` per sync; `TileProfile.apply` 3x per mode-changing unlock | candidate: grant read once per sync |
+| U11 (=C3/C4) | helper ping thread joined up to 700 ms on the main thread at the Enter tap and in every `lockPrepare` (TAS:1837, 1845, 1914) although the helper is not running on the tablet | candidate: cached helper state from a worker |
+| U12 NEW | the dark prearm reached the router only 507 ms after SCREEN_ON (TR:719, 728): the custom stack may be (re)created during the wake / PIN entry | measure first: lock-log line at `Launcher.onCreate` |
+
+Checked and fine (U): LockLog writes on its own thread; plain custom unlock prepared behind the keyguard, light after USER_PRESENT; resume hooks once per
+instance; curtain copy async; wake run ~18 ms; cold start rare and 48 ms.
 ## S: steady CPU / battery (reviewer S) - pending
