@@ -1,13 +1,13 @@
-# CHECKPOINT 1322 — read me first, then TASKS.md
+# CHECKPOINT 1323 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T16:45:00Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-f5f0188b-i5qhqa` · **builds on:** `5ef478b5` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T16:57:28Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-f5f0188b-i5qhqa` · **builds on:** `eeb0a8d0` (this checkpoint is the commit after it)
 
 ## Just done
-CC1 written (Tj: adb cable, all permissions); live cable session started, step 1 sent
+CC1a done: pm path printed the base.apk (shell works); step 2 = joined grant line sent
 
 ## Do this next
-CC1: wait for Tj's reply to step 1 (pm path com.tj.launcher), then send CC1b (the one joined grant line incl. ACTIVATE_VPN), one step per message
+CC1: wait for Tj's output of the step-2 grant line (expect 'Added: com.tj.launcher' + DONE); then CC1c check line
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -17,6 +17,7 @@ CC1: wait for Tj's reply to step 1 (pm path com.tj.launcher), then send CC1b (th
 
 ## Last ten checkpoints
 ```
+  e34553c0 ckpt 1322: CC1 written (Tj: adb cable, all permissions); live cable session started, st
   fdac2f4c ckpt 1321: heartbeat 12:33Z: nothing new (no Tj message since 04:58Z, no other session)
   45fe90fe ckpt 1320: heartbeat 08:32Z+10:33Z: merged main (v0.9.10, CA1/CB1/CB2 of the other sess
   7c05a840 ckpt 1271: stand-down note only, no work: heartbeat 06:33Z rule 2 (other branch ckpt 13
@@ -26,8 +27,7 @@ CC1: wait for Tj's reply to step 1 (pm path com.tj.launcher), then send CC1b (th
   f666bb65 ckpt 1316: gated v0.9.10 (code 49) and pushed it: the handoff self-test, the full unit 
   3db81d27 ckpt 1315: version bumped to 49 / 0.9.10; ship.sh starting (scratchpad/ship-cb2.txt, SH
   498e4b60 ckpt 1314: GATE GREEN: solo reruns #599 b6 head GREEN, #600 b6 TAG GREEN, #601 43374384
-  e7f4655b ckpt 1313: gate FAILs: #597 AC8 (custom home still prepared behind lock) in e1,x,ac,an;
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
