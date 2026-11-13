@@ -586,6 +586,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (LockQuiet.KEY.equals(key)) { try { LockQuiet.applyNotificationsAsync(getApplicationContext()); } catch (Throwable ignored) { } }   // AK1: the switch changed: hide / put back the lock-screen notification setting now
             if (PatchRest.KEY.equals(key) || LOCK_PATCH_KEY.equals(key) || PATCH_DIM_KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { layerRefresh.run(); patchShow(overlayShown); } });   // AE3: the always-on switch / dim nudge changed: apply it now
             if ("mode".equals(key)) handler.post(new Runnable() { @Override public void run() { updateHotspot(); } });
+            if ("mode".equals(key) || ReturnReset.BOOT_CLEAN_KEY.equals(key) || HomeCurtainRules.KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { curtainMemoryFollow(); } });   // CA1 M1
             if (key != null && (key.startsWith("unlock_m_") || key.startsWith("return_m_") || "mode".equals(key))) handler.post(new Runnable() { @Override public void run() { updateMotion(); } });
             if (key != null && (key.startsWith("unlock_m_") || key.startsWith("return_m_") || "mode".equals(key) || FailsafeKeys.KONAMI_KEY.equals(key))) handler.post(new Runnable() { @Override public void run() { updateKeyFilter(); } });
             if (FailsafeKeys.HOTSPOT_KEY.equals(key) || FailsafeKeys.CORNER_KEY.equals(key)) handler.post(new Runnable() { @Override public void run() { removeHotspot(); updateHotspot(); } });
@@ -2092,8 +2093,14 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     /** Reads the stored curtain into memory (worker thread, one at a time): at service start, after a trim, and whenever a cover found it stored but not in memory. */
+    /** CA1 M1: see {@link HomeCurtainRules#keepInMemory}. */
+    private boolean curtainKeep() { return HomeCurtainRules.keepInMemory(curtainSwitchOn(), Mode.isCustom(this), ReturnReset.bootCleanPending(this)); }
+
+    /** CA1 M1: the mode, the boot flag or the switch changed: read the curtain into memory where a cover can show it, drop it (2.4 MB) where none can. */
+    private void curtainMemoryFollow() { try { if (curtainKeep()) curtainPreloadAsync(); else HomeCurtain.dropCache(); } catch (Throwable t) { Log.e(TAG, "curtain memory follow failed", t); } }
+
     private void curtainPreloadAsync() {
-        if (curtainPreloading || !curtainSwitchOn()) return;
+        if (curtainPreloading || !curtainKeep()) return;   // CA1 M1: was curtainSwitchOn() (the picture was kept in memory for the whole custom session)
         curtainPreloading = true;
         final android.content.Context app = getApplicationContext();
         new Thread(new Runnable() { @Override public void run() {
@@ -2188,8 +2195,9 @@ public class TjAccessibilityService extends AccessibilityService {
             else {
                 HomeCurtainRules.Meta m = HomeCurtain.meta(app, rot);
                 boolean changed = HomeCurtainRules.changed(m != null, m == null ? "" : m.sig, m == null ? 0 : m.step, m == null ? 0 : m.hash, sig, step, h);
+                final boolean keep = curtainKeep();   // CA1 M1
                 if (!changed) {
-                    HomeCurtain.preload(app, rot, sig, dispW, dispH);
+                    if (keep) HomeCurtain.preload(app, rot, sig, dispW, dispH);
                     if (m != null && HomeCurtainRules.stampDue(System.currentTimeMillis() - m.savedAtMs)) { HomeCurtain.refreshStamp(app, rot); result = "unchanged: the picture's time stamp was renewed"; }   // a still-correct picture must never expire just because the home was not rearranged
                     else result = "unchanged since the last picture";
                     noteIt = false;
@@ -2203,7 +2211,7 @@ public class TjAccessibilityService extends AccessibilityService {
                         if (comp == null) result = "could not compose the picture";
                         else {
                             long now = System.currentTimeMillis();
-                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
+                            if (HomeCurtain.saveCurtain(app, rot, comp, sig, step, h, now)) { if (keep) HomeCurtain.setCache(rot, sig, now, comp); result = "picture saved (" + comp.getWidth() + "x" + comp.getHeight() + ", layer " + layer.getWidth() + "x" + layer.getHeight() + " at " + left + "," + top + ", wallpaper position " + step + ")"; }
                             else { comp.recycle(); result = "the picture could not be written"; }
                         }
                     }
