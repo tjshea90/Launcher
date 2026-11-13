@@ -58,3 +58,12 @@ Quickstep->custom (TR:729); plain custom unlock otherwise 249 ms (TR:761); Quick
 Checked and fine (U): LockLog writes on its own thread; plain custom unlock prepared behind the keyguard, light after USER_PRESENT; resume hooks once per
 instance; curtain copy async; wake run ~18 ms; cold start rare and 48 ms.
 ## S: steady CPU / battery (reviewer S) - pending
+
+## Design notes for the fixes (Claude, while waiting for reviewer S)
+- U1 design: (a) `EventNoise.needsPowerMenuScan` gets a `padUp` input: a CLICK starts a scan only when the menu is known up, or it comes from the
+  system AND the PIN pad is not up (a power menu is a NEW window: its window event always scans, plus the 300 ms full-scan window); (b)
+  `schedulePencil`: a click while `lastBouncer` and no pencil cover is shown starts no FULL pencil search (content changes still may, 200 ms gap);
+  (c) `trackUnlockKey`: proceed if `keyguardLockedFast()` says locked, else ask the real `keyguardLocked()` (identical decisions, no binder call per
+  key during PIN entry); (d) handle `trackUnlockKey` before the schedule* calls of the same event; (e) Enter timing from `e.getEventTime()`.
+  Per key today: click -> power-menu scan (evaluate) + full pencil search (40 ms gap) + updateLockNumber (60 ms gap) + 1 binder call; the content
+  changes after the key already drive updateLockNumber, so the pad-hide detection keeps its triggers.
