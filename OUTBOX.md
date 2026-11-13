@@ -1966,3 +1966,58 @@
 ## 2026-11-13T03:38:57Z
 > The answer draft is updated. Waiting on the build (about 3 minutes).
 <!-- sha:309cb918b027 -->
+
+## 2026-11-13T03:48:16Z
+> Tj, v0.9.9 is out. It is the second performance pass; yesterday's v0.9.8 was the first.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.9
+>
+> **What I looked at:** three separate reviews covered unlocking from the lock screen into the custom launcher, steady battery and CPU use, and memory. I used the numbers from your last tablet report:
+> - 69 MB of memory in total;
+> - about 1,800 searches of the whole screen in 2 hours, on the thread that draws the launcher;
+> - your Enter tap reached the launcher 224 ms late on a plain unlock, and 2.2 s late on a Quickstep → custom unlock.
+>
+> A fourth review checked my changes for bugs and found 2 medium and 6 small problems. All are fixed except one rare case, which keeps today's plain black cover.
+>
+> **What changed (nothing removed, no change to the look):**
+> 1. **Typing the PIN:** each key press used to start two searches of the whole screen, on the same thread that draws the launcher. A PIN key can't open what they look for, so they no longer run while the PIN pad is up. If the power menu opens over the PIN pad, it is still caught. This is the main fix for slow loading from the lock screen.
+> 2. **Memory:** two copies stayed in memory on the custom home screen where nothing uses them:
+>    - a 4.9 MB copy of the wallpaper (up to 12 MB with a separate lock-screen photo);
+>    - a 2.4 MB copy of the home screen.
+>
+>    Both are now dropped there and loaded again only when needed.
+> 3. **Switching to Quickstep** no longer rebuilds the whole custom app drawer while Quickstep is starting. The drawer is rebuilt when you come back, as before.
+> 4. **Battery and CPU:**
+>    - A permission check that ran 4 times per tick now runs once every 3 s.
+>    - Status lines are saved in the background instead of the launcher waiting on the disk.
+>    - The Solitaire lookup runs only when it matters.
+>    - The pencil cover's 150 ms watch pauses while the screen is off.
+>    - Each lock does one panel check instead of two.
+>    - Each log line creates less garbage in memory.
+> 5. **The unlock timing in the report** now starts at your actual Enter tap, not when the launcher got round to it. The next report's numbers may look bigger; they are the honest ones.
+> 6. **A new "LAUNCHER created" line** in the lock log shows whether the custom home is rebuilt while the tablet wakes. That tells me whether the slow Quickstep → custom unlock needs the next fix.
+>
+> **What was tested:**
+> - All 1041 unit tests and lint passed.
+> - The emulator ran 35 test sections in 5 runs. Six checks failed. Some failed right after the emulator's known crashes inside Android's own libraries. The others were the film check of the power menu, which also fails sometimes on the released v0.9.8.
+> - Every section with a failure passed when run alone on the same code. The film run showed 0 Screenshot frames.
+>
+> **What only your tablet can show:** whether typing the PIN and the Quickstep → custom unlock feel faster, and the memory number ("total PSS" in Launcher control or the tablet report).
+>
+> **Not done yet** (each needs its own test first; details in `research/PERF_AUDIT_2026-11-13.md`):
+> - the Recents clean-up loop on the Quickstep → custom unlock;
+> - closing background apps after the black cover goes, not while it is up;
+> - moving the mode-switch settings changes off the thread that draws the screen.
+>
+> **One question (your rule, not a bug):** the lock screen always turns battery saver off. That also loses the battery saver's savings while the tablet sits locked. Do you want to keep that rule?
+>
+> The 2-hour auto-resume timer for this job is deleted, so nothing will wake a session for no reason.
+>
+> **Still waiting on you:**
+> - the v0.9.9 tablet check above (CA1d);
+> - the flicker checks and two questions from v0.9.8 (BY1g);
+> - the VPN key on the tablet (BZ1d);
+> - the Gboard check (BX1e);
+> - the Eleven questions and tablet check (BV1i/j/k);
+> - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
+<!-- sha:877e2b93e976 -->
