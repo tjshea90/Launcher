@@ -1950,3 +1950,7 @@
 ## 2026-11-13T02:36:35Z
 > The gate is running: 5 emulator runs, results due at about 03:09 UTC. Everything so far is committed and pushed, and the answer to you is drafted in `research/CA1_RELEASE_MESSAGE_DRAFT_2026-11-13.md`. When the results land I'll read them, then build and release v0.9.9 if they're green.
 <!-- sha:1d08cc7e1ee7 -->
+
+## 2026-11-13T02:40:14Z
+> The auto-resume timer fired while this session was still active, so there is nothing to resume. The gate runs (#584–#588) are still in progress and I'll read them when the 03:09 UTC wait ends. Nothing else to do until then.
+<!-- sha:94b6cb9a0020 -->
