@@ -1954,3 +1954,7 @@
 ## 2026-11-13T02:40:14Z
 > The auto-resume timer fired while this session was still active, so there is nothing to resume. The gate runs (#584–#588) are still in progress and I'll read them when the 03:09 UTC wait ends. Nothing else to do until then.
 <!-- sha:94b6cb9a0020 -->
+
+## 2026-11-13T03:15:46Z
+> Reruns are going: `fl` on both the head and the v0.9.8 tag (to see whether the FL2 frames are new), plus `ss`, `base` and `mu` solo. Results due at about 03:30 UTC.
+<!-- sha:ee59d857edce -->
