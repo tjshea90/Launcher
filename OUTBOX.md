@@ -2079,3 +2079,40 @@
 ## 2026-11-13T06:05:59Z
 > GitHub is building v0.9.10 now, which takes about 3 minutes. I'll confirm the Release when it's done.
 <!-- sha:93ef029ed328 -->
+
+## 2026-11-13T06:17:55Z
+> Tj, v0.9.10 is out. The launcher now turns your VPN off whenever the screen goes off or the lock screen is showing, in both the custom launcher and Quickstep.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.10
+>
+> **Why the message itself couldn't be removed:** "Device connected to …" is Android's own quick-settings row, and it appears whenever any VPN is connected. Android 10 has no setting to hide it. The only way to change that part of the panel is an add-on that would have to be signed by the tablet's maker. Painting over it would leave an empty strip, and the row would flash while the panel moves.
+>
+> **What happens now:**
+> 1. **Screen off or lock screen up:** when the screen goes off, or whenever the lock screen is showing, a connected VPN is turned off. That covers locking from Quickstep too. With no VPN connected, the row and the key are gone from the panel.
+> 2. **Reconnects:** if your VPN app reconnects by itself while the tablet is dark or locked, it's turned off again. That happens at most 3 times in 10 minutes, so the two apps can't fight all night.
+> 3. **Turning it back on is up to you:** after unlocking, connect again in your VPN app. While the tablet is locked, its traffic goes without the VPN.
+> 4. **Unlocked, the launcher never touches the VPN.**
+>
+> **One step for you, once:** Launcher control → Lock screen → "Allow the launcher to turn the VPN off". Android then asks its own "Connection request" question; tap OK.
+> - Android words that question the same way for any app that uses its VPN feature. The launcher never sets up a VPN of its own.
+> - Tapping OK disconnects your VPN once.
+> - The switch above that row is on by default.
+>
+> **One case where it can't work:** if your VPN is set as "Always-on VPN" in Android's settings (Settings → Network & internet → Advanced → VPN → the gear next to your VPN), Android won't let any other app turn it off. Launcher control will say so if that happens.
+>
+> **What was tested:**
+> - 1051 unit tests and lint pass.
+> - The new emulator test with a real VPN passed all 24 of its checks, twice. On it, the "Device connected to" row appeared, and turning the screen off turned the VPN off, in both launchers.
+> - The release gate ran 14 sections in 3 runs. 4 checks failed inside two long runs; each failed section passed when run alone, both on v0.9.10 and on v0.9.9.
+> - I skipped 4 gate sections the change can't reach (they were flagged only by a shared line or the manifest), and recorded why in the task list.
+>
+> **What only your tablet can show:** how your own VPN app reacts when the launcher takes the VPN over. Some apps reconnect on their own or show a warning. Launcher control's "VPN off when locked" line says what happened each time.
+>
+> **Still waiting on you:**
+> - the Allow step, then a lock test with your VPN on (CB2g);
+> - the v0.9.9 tablet check and the battery-saver question (CA1d);
+> - the v0.9.8 flicker checks (BY1g);
+> - the Gboard check (BX1e);
+> - the Eleven questions and tablet check (BV1i/j/k);
+> - the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
+<!-- sha:d61e5f2d5d88 -->
