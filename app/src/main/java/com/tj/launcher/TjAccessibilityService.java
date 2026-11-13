@@ -109,7 +109,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long now = android.os.SystemClock.uptimeMillis();
         // AN1 (Tj: the battery saver tile in the shade is slow / unresponsive): a content change of the shade or the status bar (a tile redrawing, the clock) cannot OPEN the power menu, so it starts no scan unless a menu is
         // already up or a window just changed. Every scan is a pair of whole-tree searches run by SystemUI's own UI thread, the thread that handles the tap on the tile (EventNoise.needsPowerMenuScan).
-        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()))) { evSkipped++; return; }
+        if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()), lastBouncer)) { evSkipped++; return; }   // CA1 U1: lastBouncer = a PIN key starts no scan
         if (now - lastEvalMs >= 40) {
             lastEvalMs = now;
             try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
@@ -1675,7 +1675,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // The Enter tap unlocks the tablet, and its click event can be delivered AFTER the keyguard already reports "unlocked" (race seen in emulator runs 63/64: ten pad taps
             // reached us, the final Enter did not, so the handshake was never completed). A click of the PIN pad within 3 s of the previous pad tap still counts.
             long nowMs = System.currentTimeMillis();
-            if (!keyguardLocked() && nowMs - lastPadKeyAt > 3000) return;
+            if (!keyguardLockedFast() && !keyguardLocked() && nowMs - lastPadKeyAt > 3000) return;   // CA1 U1: the 250 ms memo answers "locked" during PIN entry without a binder call per key; "unlocked" is asked again for real (same decision as before)
             ensureUnlockListener();
             AccessibilityNodeInfo n = e.getSource();
             UnlockPick.Key k = null;
@@ -2400,6 +2400,7 @@ public class TjAccessibilityService extends AccessibilityService {
         int type = e == null ? 0 : e.getEventType();
         if (sysui) penFinger.systemUiEvent(now);   // BQ1b: SystemUI is redrawing: the wait after a finger is not over yet
         if (sysui) penQuicken("SystemUI is redrawing");   // BN8b: a shown cover is watched closely while the panel may be moving (does nothing when no cover is up)
+        if (!EventNoise.pencilSearchOnEvent(type, lastBouncer, penShown)) return;   // CA1 U1: a PIN key cannot open the quick settings: no whole-tree search (now or 90 ms later) per key while the pad is up and no cover is shown
         if (now - lastPenMs >= 40) {
             lastPenMs = now; updatePencil(now - lastPenFullMs >= EventNoise.minPencilSearchGapMs(type));   // AN1: following a known pencil every 40 ms is cheap; a full tree search is spaced out in a burst of redraws
             if (debuggable()) { long end = android.os.SystemClock.uptimeMillis(); if (end - now >= 15) Log.i(TAG, "PATCH pencil took " + (end - now) + " ms t=" + end); }   // BJ1 diagnostic (debug builds only), see the scan line in leadingEdge
