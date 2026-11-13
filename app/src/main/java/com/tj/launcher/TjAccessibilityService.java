@@ -543,7 +543,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** AM1: the inputs of the resting decision, newest only, kept in a preference (Launcher control / tablet report / emulator INFO): why does the patch rest, or not? */
     private void restInfo(String what) {
         try {
-            String v = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + what + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + "]";
+            String v = TimeFmt.hms(System.currentTimeMillis()) + "  " + what + " [always=" + lockPatchAlways() + " switch=" + Features.get(this, PatchRest.KEY, true) + " wanted=" + lockPatchWanted() + " calibrating=" + calibrating() + " shot=" + (patchShotBmp != null) + " bouncer=" + lastBouncer + "]";
             String key = v.substring(10);
             if (!key.equals(lastRestInfo)) { lastRestInfo = key; Features.setStringAsync(this, "patch_rest_info", v); }
         } catch (Throwable ignored) { }
@@ -1769,7 +1769,7 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
     }
 
-    private String now() { return new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()); }
+    private String now() { return TimeFmt.hms(System.currentTimeMillis()); }   // CA1 M9: one formatter per thread
 
     private void profileNote(String s) {
         Features.setString(this, ProfileSession.PREARM_REPORT_KEY, now() + "  " + s);
@@ -2106,7 +2106,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** What the cover did, for Launcher control, the tablet report and the lock log (written off the main thread). */
     private void curtainNoteUse(boolean curtain, String why, boolean touchable) {
         try {
-            String line = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  "
+            String line = TimeFmt.hms(System.currentTimeMillis()) + "  "
                     + (curtain ? "the curtain was shown (touches " + (touchable ? "swallowed" : "pass through until the unlock is confirmed") + ")" : "black cover: " + why);
             Features.setStringAsync(this, CURTAIN_STATE_KEY, line);
             LockLog.add(getApplicationContext(), "COVER", line);
@@ -2215,7 +2215,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.post(new Runnable() { @Override public void run() {
             curtainBuilding = false; curtainCaptureNote = res;
             Log.i(TAG, "CURTAIN " + res);
-            if (note) Features.setStringAsync(TjAccessibilityService.this, CURTAIN_CAPTURE_KEY, new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  " + res);
+            if (note) Features.setStringAsync(TjAccessibilityService.this, CURTAIN_CAPTURE_KEY, TimeFmt.hms(System.currentTimeMillis()) + "  " + res);
         } });
     }
 
@@ -2677,7 +2677,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private void gearStatus(String what) {
-        try { Features.setStringAsync(this, GearRules.STATUS_KEY, GearRules.statusLine(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), what)); } catch (Throwable ignored) { }
+        try { Features.setStringAsync(this, GearRules.STATUS_KEY, GearRules.statusLine(TimeFmt.hms(System.currentTimeMillis()), what)); } catch (Throwable ignored) { }
     }
 
     /** The cover was hidden or removed: a new panel visit starts (the learn tries count again) and the overlay goes with it. */

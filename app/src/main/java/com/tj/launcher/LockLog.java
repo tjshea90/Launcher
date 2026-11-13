@@ -24,7 +24,7 @@ public final class LockLog {
     /** Pure: one log line ("HH:mm:ss.SSS EVENT detail"), flattened to a single line and cut to 200 characters. */
     public static String line(long nowMs, String event, String detail) {
         String d = detail == null ? "" : detail.replace('\r', ' ').replace('\n', ' ');
-        String l = new java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US).format(new java.util.Date(nowMs)) + " " + (event == null ? "?" : event) + (d.isEmpty() ? "" : " " + d);
+        String l = TimeFmt.hmsMs(nowMs) + " " + (event == null ? "?" : event) + (d.isEmpty() ? "" : " " + d);
         if (l.length() > 200) l = l.substring(0, 200);
         return l + "\n";
     }
