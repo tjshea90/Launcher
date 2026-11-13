@@ -1,22 +1,22 @@
-# CHECKPOINT 1285 — read me first, then TASKS.md
+# CHECKPOINT 1286 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T02:36:23Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `4216fd27` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T03:11:45Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `3ac81965` (this checkpoint is the commit after it)
 
 ## Just done
-CA1b status in TASKS; answer draft research/CA1_RELEASE_MESSAGE_DRAFT_2026-11-13.md (BA2 battery-saver question verified in BatterySaverGuard.onLock)
+gate read 03:10Z: #586 y2..hp GREEN, #588 rg GREEN; #584 (job 131648084482) RED, #585 (job 131648095416) RED, #587 (job 131648120764) RED; FAIL names not yet read
 
 ## Do this next
-timer fires 03:09Z: read #584-#588 RESULTS (list_workflow_jobs run id -> get_job_logs tail 60), ckpt raw verdicts, triage; then version bump 48/0.9.9, ship.sh, android.yml full_build. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
+haiku subagent extracts RESULTS header + FAIL + NATIVE CRASH lines from jobs 131648084482 131648095416 131648120764; then solo reruns of failing sections on head AND tag v0.9.8. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  6e3e0224 ckpt 1285: CA1b status in TASKS; answer draft research/CA1_RELEASE_MESSAGE_DRAFT_2026-1
   2d37f372 ckpt 1284: gate dispatched 02:33Z on 566fc305: #584 43352934985 x1,se,nq,rt,gear,wf,mu;
   566fc305 ckpt 1283: CA1b review fixes all in (MED1 reloadOwed, MED2 grant memo 3s+forget, LOW3/5
   d283250f ckpt 1282: CA1b review fixes: MED1 S2 reloadOwed (SettingsSpoof), MED2 grant memo 3 s +
@@ -26,8 +26,7 @@ timer fires 03:09Z: read #584-#588 RESULTS (list_workflow_jobs run id -> get_job
   c2bb6338 ckpt 1278: CA1b batch1 coded + unit suite 1040/0 green (before M1); + S3 pencil watch p
   7900bf97 ckpt 1277: CA1b batch1: + M2 lock bitmaps dropped on home target / trim, M9 TimeFmt (+T
   4aaee9ca ckpt 1276: CA1b batch1 in progress: U1 (EventNoiseTest 16/16 green), S12 status async, 
-  e8789bb3 ckpt 1275: CA1a DONE: all 3 reviewers in PERF_AUDIT_2026-11-13.md (U1-U12, S1-S12, M1-M
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
