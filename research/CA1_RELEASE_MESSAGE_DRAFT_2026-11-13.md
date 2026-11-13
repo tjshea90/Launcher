@@ -1,8 +1,8 @@
-# Draft answer to Tj for CA1 (v0.9.9), written BEFORE the gate result; finalise after the release
+# Answer to Tj for CA1 (v0.9.9), final (sent 2026-11-13 ~03:48Z)
 
 Tj, v0.9.9 is out: a second performance pass (yesterday's v0.9.8 was the first).
 
-<Release link here, plain text on its own line>
+https://github.com/tjshea90/Launcher/releases/tag/v0.9.9
 
 What I looked at: three separate reviewers read the unlock path (lock screen -> custom home), the steady CPU / battery use and the memory, using
 the numbers from your last tablet report (2 hours: 69 MB total, about 1,800 tree searches on the main thread, the Enter tap reaching the launcher
@@ -36,4 +36,4 @@ unlock, closing background apps after the cover instead of during it, moving the
 One question (your rule, not a bug): the lock screen always switches battery saver OFF (BA2). That also loses the saver's standby savings while
 the tablet is locked. Do you want to keep that rule?
 
-Still waiting on you: <the open list>.
+Still waiting on you: the v0.9.9 tablet check above (CA1d), the flicker checks and two questions of v0.9.8 (BY1g), the VPN key on the tablet (BZ1d), the Gboard check (BX1e), the Eleven questions and tablet check (BV1i/j/k), and the older tablet checks (BT1h, BS2e, BR1c, BN7a, BN8c/d, BQ1b, BH1c, BK1e, BM1).
