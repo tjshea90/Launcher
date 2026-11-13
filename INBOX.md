@@ -1535,3 +1535,8 @@ If it can't be removed, make the launcher automatically turn off my VPN any time
 ```
 And any time I lock the screen from quickstep 
 ```
+
+## 2026-11-13T16:42:11Z
+```
+I have the adb cable now. Tell me step by step what to do to give the launcher all permissions
+```
