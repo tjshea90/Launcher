@@ -2211,3 +2211,21 @@
 >
 > Tell me what the top line said, and the number N that was on the button.
 <!-- sha:2734887e4358 -->
+
+## 2026-11-13T17:11:11Z
+> You're finished. The launcher now has every adb permission it uses:
+>
+> - **The 5 permissions:** all granted.
+> - **The background and battery settings:** all allowed.
+> - **Turning the VPN off:** allowed. The launcher had tried this 10 hours ago and Android refused, so this is why it couldn't do it before.
+> - **The accessibility helper:** it was already on.
+> - **The shell helper:** started, and "Do everything that is missing" has run.
+>
+> You can unplug the cable. These permissions stay through launcher updates and are only lost if you uninstall the launcher. **After every tablet restart, repeat only Step 4** (the helper line), because the helper stops when the tablet restarts.
+>
+> You no longer need to tap "Allow the launcher to turn the VPN off" in Launcher control. Next time it's convenient, please check one thing: lock the tablet with the VPN on, pull down the panel on the lock screen, and tell me whether the "Device connected to …" row is gone.
+>
+> If you want, you can also tap **"2. Collect the tablet report"** on the same screen in a few minutes and send me `tablet-report.txt`. It would show whether the helper stays running; on your tablet it used to stop after a few minutes.
+>
+> Earlier I said you might need to approve deleting an old auto-resume reminder. I can no longer find it from this session, so there's nothing for you to approve.
+<!-- sha:5c044e35745e -->
