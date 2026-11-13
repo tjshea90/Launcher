@@ -25,7 +25,9 @@ What changed (no function and no look removed):
 6. A new lock-log line ("LAUNCHER created") shows whether the custom home is rebuilt during the wake; that tells me whether the slow
    Quickstep -> custom unlock needs the next fix.
 
-What was proven: the full unit suite (1041 tests) and the emulator gate <runs>. What only your tablet can show: how much faster the PIN entry and
+What was proven: the full unit suite (1041 tests), lint, and the emulator gate (35 sections in 5 runs, #584-#588; the 6 failed checks sat
+beside known emulator crashes inside Android's own libraries or were the intermittent FL2 film check, which the released v0.9.8 also failed
+in a rerun (#590); every failed section passed solo on the same code: #589 fl with 0 Screenshot frames, #591 ss, #592 base, #593 mu). What only your tablet can show: how much faster the PIN entry and
 the Quickstep -> custom unlock feel, and the memory number (Launcher control / tablet report: "total PSS").
 
 Not done (each needs its own test first, details in research/PERF_AUDIT_2026-11-13.md): the Recents clean-up loop on the Quickstep -> custom
