@@ -1448,6 +1448,10 @@ public class TjAccessibilityService extends AccessibilityService {
                 if (Features.isCover(Features.powerMode(this)) && coverWorld()) warmUp();   // plain cover mode keeps its pre-built card
                 return;
             }
+            if (targetIsHome) {   // CA1 M2: the home flavour draws its own crop (patchShotBmp), never these: the lock-model wallpaper (4.9 MB on the tablet, up to 12 MB for a separate lock photo) and the platform's copy were kept for the whole home session
+                lockBmp = null;
+                if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) dropWallpaper();
+            }
             if (patchView != null && (!PatchRest.sameWindow(rectArr(patchAt), rectArr(want), 2) || patchRot != rotation() || patchLockMode != targetIsLock || patchHomeMode != targetIsHome)) { removeOverlay(); removePatch(); }   // AH3: the slot window follows the card's bottom edge, measured on every scan: a 1-2 px wobble must not rebuild the patch
             if (patchView == null) { removeOverlay(); addPatch(want); warmUp(); }
             if (patchLockMode && !patchHomeMode) { handler.removeCallbacks(calTrigger); handler.postDelayed(calTrigger, 1500); }
@@ -3537,7 +3541,7 @@ public class TjAccessibilityService extends AccessibilityService {
             handler.post(new Runnable() { @Override public void run() {
                 launchableCache.clear();
                 HomeCurtain.dropCache();   // BL1: the in-memory curtain (about 2.4 MB) goes under real pressure; it is read back from its file the next time it is needed (a cover that shows it keeps its own reference)
-                if (patchView == null) { dropWallpaper(); lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }
+                if (patchView == null || patchHomeMode) { dropWallpaper(); lockBmp = null; lockShot = null; lockShotFresh = false; Log.i(TAG, "TRIM released the cached wallpaper bitmaps"); }   // CA1 M2: the home patch window does not use them
             } });
         } catch (Throwable ignored) { }
     }
