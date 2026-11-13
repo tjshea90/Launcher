@@ -99,6 +99,11 @@ public final class SettingsSpoof {
      * Puts the alias in the wanted state NOW (blocking: one package-manager call, only when it differs). True = it changed. When it changed the launcher's app list is rebuilt at once (the package manager's own
      * "component changed" broadcast reaches the launcher too, but a forced reload is certain).
      */
+    /** CA1 S2: a forced reload was skipped while Quickstep was on; the next sync in the custom mode does it even when the alias does not change then (the switch went off meanwhile). */
+    private static volatile boolean reloadOwed = false;
+
+    private static void postReload() { new Handler(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { try { HiddenApps.reloadLauncher(appCtx); } catch (Throwable ignored) { } } }); }
+
     public static synchronized boolean syncNow(Context c, String why) {
         try {
             Context app = c.getApplicationContext();
@@ -106,13 +111,17 @@ public final class SettingsSpoof {
             PackageManager pm = app.getPackageManager();
             ComponentName cn = new ComponentName(app.getPackageName(), ALIAS);
             boolean is = pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;   // DEFAULT = the manifest value = disabled
-            if (is == want) { Log.i(TAG, "alias already " + (want ? "on" : "off") + " (" + why + ")"); return false; }
+            if (is == want) {
+                Log.i(TAG, "alias already " + (want ? "on" : "off") + " (" + why + ")");
+                if (reloadOwed && Mode.isCustom(app)) { reloadOwed = false; postReload(); Log.i(TAG, "the reload skipped in Quickstep is done now (" + why + ")"); }   // CA1 S2 review MED1: the switch went OFF during Quickstep (no alias change at the return), the drawer still needs the real Settings back
+                return false;
+            }
             pm.setComponentEnabledSetting(cn, want ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             String line = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  Settings entry " + (want ? "ON" : "OFF") + " (" + why + ")";
             Log.i(TAG, line);
             Features.setStringAsync(app, STATUS_KEY, line);
-            if (want || Mode.isCustom(app)) new Handler(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { try { HiddenApps.reloadLauncher(appCtx); } catch (Throwable ignored) { } } });
-            else Log.i(TAG, "no forced reload: Quickstep (the custom drawer is not on screen; the system's component-changed update drops the entry, the return to custom re-enables the alias and reloads)");   // CA1 S2: a full Launcher3 load + bind (est. 0.5-1.5 s of CPU on the tablet) ran at every switch to Quickstep, while Quickstep itself was starting
+            if (want || Mode.isCustom(app)) { reloadOwed = false; postReload(); }
+            else { reloadOwed = true; Log.i(TAG, "no forced reload: Quickstep (the custom drawer is not on screen; the system's component-changed update drops the entry, the return to custom re-enables the alias and reloads)"); }   // CA1 S2: a full Launcher3 load + bind (est. 0.5-1.5 s of CPU on the tablet) ran at every switch to Quickstep, while Quickstep itself was starting; reloadOwed pays it at the next custom sync if the alias then does not change
             return true;
         } catch (Throwable t) {
             Log.e(TAG, "sync failed", t);
