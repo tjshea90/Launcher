@@ -86,3 +86,37 @@ idle draws nothing.
   key during PIN entry); (d) handle `trackUnlockKey` before the schedule* calls of the same event; (e) Enter timing from `e.getEventTime()`.
   Per key today: click -> power-menu scan (evaluate) + full pencil search (40 ms gap) + updateLockNumber (60 ms gap) + 1 binder call; the content
   changes after the key already drive updateLockNumber, so the pad-hide detection keeps its triggers.
+
+## Verdicts and status (CA1b, 2026-11-13)
+FIXED in this batch (diff against v0.9.8 product head 4ce6f0f0; full unit suite 1041 / 0):
+- U1 = S1: a PIN key starts no power-menu scan (`EventNoise.needsPowerMenuScan` 5-arg, `pinPadUp`) and no full pencil search
+  (`EventNoise.pencilSearchOnEvent`) while the pad is up and no cover is shown; `trackUnlockKey` asks the 250 ms keyguard memo first; the Enter
+  time is the TAP's time (`e.getEventTime()`), so the unlock summaries now show the real Enter -> home time (numbers will look LARGER, honestly).
+  JVM: EventNoiseTest.aPinPadKeyStartsNoPowerMenuScan / aPinPadKeyStartsNoFullPencilSearch.
+- S12: `patchStatus` / `calStatus` / `shotStatus` -> `Features.setStringAsyncIfChanged` (no whole-file write + fsync on the main thread).
+- S6 (+U10 part): `AnimationSpeedup.secureSettingsGranted` = one memo (30 s granted / 2 s not) for the animation, banner and radio-symbol holds.
+- S7: the Solitaire target lookup runs after the cheap exclusions in `trackDirty` and only with the hotspot switch on in `updateHotspot`;
+  "no such app" is re-checked after 5 min (was 30 s = a ~350 ms label scan every 30 s in Quickstep once Solitaire is gone).
+- S5: `lockPrepare` reads the panel once per dark period (the 6.5 s rerun no longer repeats it).
+- S2: no forced Launcher3 reload when the Settings alias goes OFF in Quickstep (nobody sees the custom drawer; the system's component-changed
+  update drops the entry and the return to custom reloads as before).
+- S3 (part): the pencil-cover watch (every 150 / 25 ms) pauses while the screen is dark and restarts at SCREEN_ON; the cover itself stays.
+- M2: on the home-patch target the lock-model wallpaper (`lockBmp`, 4.9-12 MB) and WallpaperManager's copy are dropped; `onTrimMemory` also
+  releases them while only the home patch window exists.
+- M1: the 2.4 MB home curtain is kept in memory only where a cover can show it (`HomeCurtainRules.keepInMemory`: Quickstep mode, or the boot
+  clean-up pending); followed on every mode / boot-flag / switch change (`curtainMemoryFollow`), the file on disk unchanged. JVM: HomeCurtainRulesTest.
+- M9: `TimeFmt` (one SimpleDateFormat per thread, zone set per use) for LockLog and the status clock strings. JVM: TimeFmtTest.
+- M10: `HiddenApps.allowedReadOnly` for the two "is it shown" questions (no set copy per app per Launcher3 load).
+- U12 (diagnostic): `TjHooks.onLauncherCreated` writes "LAUNCHER created (locked=...)" to the lock log at every Launcher creation.
+REJECTED:
+- U5 (`postAtFrontOfQueue(unlockApply)`): could run the unlock decision BEFORE a still-queued Enter click (the race of emulator runs 63/64) =
+  a wrong mode after a handshake. NO.
+- S10 (narrow event types at runtime), K1 (R8), K2 (drop the Kotlin plugin): see above. NO.
+NEXT (each needs its own emulator proof; most only matter on the Quickstep -> custom unlock or are small):
+- U2 Recents clear loop waits for the stock launcher's window event; U3 usage query off the main thread (the tablet has no usage grant: the query
+  fails fast there); U4 `killApps` after the cover is gone; U6 `Mode.set` profile switches on a worker; U7 commits on the cover-removal path;
+  U9 cover removal on our window event; U11 / S8 helper ping back-off (the helper is not running on the tablet: refused connects are fast).
+- S4 PIN-pad negative check per SystemUI event (lock-number risk); S9 / B5 display + wallpaper binder calls per `refreshLayers`.
+- M3 / S11 curtain capture copy; M4 icon cache for hidden apps; M5 ALPHA_8 masks (pixel equality on MediaTek unproven); M7 idle threads;
+  M8 Hidden apps screen icons.
+- S-BA2: battery saver forced off on the lock screen: a question for Tj (it is his rule), not a code fix.
