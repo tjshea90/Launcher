@@ -2033,3 +2033,7 @@
 ## 2026-11-13T04:58:31Z
 > I'll read the emulator result after 05:03 UTC.
 <!-- sha:332859845776 -->
+
+## 2026-11-13T04:59:12Z
+> Tj, locking from Quickstep is already covered: the rule fires on every screen-off in either launcher, with no mode check. I'm adding it to the task list in your words and a Quickstep step to the emulator test, so it's proven rather than assumed.
+<!-- sha:9c4edfa8e1a8 -->

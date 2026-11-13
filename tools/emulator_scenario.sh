@@ -5012,8 +5012,16 @@ adb shell uiautomator dump /sdcard/vo1.xml >/dev/null 2>&1; adb shell cat /sdcar
 adb shell input keyevent KEYCODE_BACK; sleep 2
 check "VO7: after an unlock the count starts again: the next screen-off turns the VPN off" test "$VO_G" = 0
 check "VO7b: the lock screen's quick-settings panel shows no 'Device connected to' row" bash -c "test -s '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
+# ---- H: CB2e (Tj: "And any time I lock the screen from quickstep"): the same in Quickstep mode
+vounlock; setmode quickstep; rebind; home; sleep 3
+vostart >/dev/null; sleep 3; VO_H1="$(voup)"
+adb logcat -c
+adb shell input keyevent KEYCODE_SLEEP; vowait 0 10; VO_H2="$(voup)"; sleep 2; volog h
+info "VO H (Quickstep): unlocked tun0 up=$VO_H1, after the screen went off up=$VO_H2, mode $(getmode); log: $(grep TjVpnOff "$OUT/vo-log-h.txt" | cut -c1-150 | tail -2 | tr '\n' '|')"
+check "VO8: in an unlocked Quickstep session the VPN stays connected" test "$VO_H1" = 1
+check "VO8b: locking the screen from Quickstep turns the VPN off" test "$VO_H2" = 0
 # ---- clean up: the test VPN off, the launcher's app-op back to the default, the switch off
-vounlock
+vounlock; setmode custom
 adb shell am force-stop "$VOT"; adb shell appops set "$PKG" ACTIVATE_VPN ignore >/dev/null 2>&1; adb shell appops set "$VOT" ACTIVATE_VPN ignore >/dev/null 2>&1
 vofeat false; rebind; home; sleep 2
 info "VO end: tun0 up=$(voup), keyguard $(kg_state)"
