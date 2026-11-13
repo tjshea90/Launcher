@@ -1,22 +1,22 @@
-# CHECKPOINT 1276 — read me first, then TASKS.md
+# CHECKPOINT 1277 — read me first, then TASKS.md
 
-**Written:** 2026-11-13T02:08:08Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `1372b07b` (this checkpoint is the commit after it)
+**Written:** 2026-11-13T02:11:06Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-6e656bc6-wl2rhu` · **builds on:** `cd2eb75c` (this checkpoint is the commit after it)
 
 ## Just done
-CA1b batch1 in progress: U1 (EventNoiseTest 16/16 green), S12 status async, S6 grant memo (AnimationSpeedup.secureSettingsGranted), S7 target lookup after cheap checks + NO_TARGET_TTL 5 min, S5 one dark shade look
+CA1b batch1: + M2 lock bitmaps dropped on home target / trim, M9 TimeFmt (+TimeFmtTest), M10 allowedReadOnly, S2 no forced Launcher3 reload when switching to Quickstep; U5 REJECTED (front-of-queue could beat a late Enter click: race of runs 63/64)
 
 ## Do this next
-next: M2 (refreshLayers drop lockBmp/wallpaper when target is home flavour; onTrimMemory patchHomeMode), then M9/M10, U5, then compile + full unit suite. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
+full unit suite running (scratchpad/t2.txt); then S3 screen-dark early returns + M1 curtain only when it can be shown; then /code-review high. heartbeat trig_01WL1UmCwAoqLLcPFywmb7Dv
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M app/src/main/java/com/tj/launcher/TjAccessibilityService.java
 
 ## Last ten checkpoints
 ```
+  4aaee9ca ckpt 1276: CA1b batch1 in progress: U1 (EventNoiseTest 16/16 green), S12 status async, 
   e8789bb3 ckpt 1275: CA1a DONE: all 3 reviewers in PERF_AUDIT_2026-11-13.md (U1-U12, S1-S12, M1-M
   c0e24942 ckpt 1274: CA1a: U1 design written (PERF_AUDIT design notes); reading code for U1 done
   573bb160 ckpt 1273: CA1a: unlock-path reviewer done (U1-U12 in PERF_AUDIT_2026-11-13.md; U1 PIN-
@@ -26,8 +26,7 @@ next: M2 (refreshLayers drop lockBmp/wallpaper when target is home flavour; onTr
   fa9ce612 ckpt 1269: CA1 written into TASKS (Tj perf/RAM/battery review request)
   4edd1601 ckpt 1268: heartbeat 00:32Z stood down (rule 2: ckpt 1267 of the other account 44 min o
   8f725348 ckpt 1267: BY1d ticked (BY1 open only for BY1g tablet checks + BY1e LOW flake note), HA
-  d61fa73f ckpt 1266: v0.9.8 RELEASED + RECORDED: android.yml #49 id 43330901250 green on 4ce6f0f0
 ```
 
-(5 automatic checkpoint(s) since the last deliberate one — the
+(6 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
