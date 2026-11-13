@@ -654,7 +654,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private boolean coverWorld() { return PowerMenuRule.coverWorld(Mode.isCustom(this), keyguardLockedFast()); }
 
     private void patchStatus(String s) {
-        if (!s.equals(Features.getString(this, PATCH_STATUS_KEY, ""))) Features.setString(this, PATCH_STATUS_KEY, s);
+        Features.setStringAsyncIfChanged(this, PATCH_STATUS_KEY, s);   // CA1 S12: a status line for Launcher control and the report: no whole-file write + fsync on the main thread (one lands in the unlock -> home moment)
     }
 
     /** All the reasons NOT to cover the system menu with a wallpaper patch; null = go. Each reason is shown in Launcher control. */
@@ -1308,7 +1308,7 @@ public class TjAccessibilityService extends AccessibilityService {
         return id + "|r" + rotation() + "|" + dm.widthPixels + "x" + dm.heightPixels + "|" + r.toShortString() + "|k" + Features.getInt(this, "patch_test_skew", 0);
     }
 
-    private void calStatus(String s) { if (!s.equals(Features.getString(this, CAL_STATUS_KEY, ""))) Features.setString(this, CAL_STATUS_KEY, s); }
+    private void calStatus(String s) { Features.setStringAsyncIfChanged(this, CAL_STATUS_KEY, s); }   // CA1 S12: async, only on change
 
     /** Runs once per wallpaper / rotation / rectangle: a real screenshot (shell helper) of the lock screen with the menu closed is compared with the wallpaper picture. */
     private void maybeCalibrateLock() {
@@ -4653,7 +4653,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /** What a stored crop is valid for: this wallpaper picture, this rotation, this display size. */
     private String shotSig() { return PatchShot.currentSig(this); }
 
-    private void shotStatus(String s) { try { Features.setString(this, PatchShot.STATUS_KEY, s); } catch (Throwable ignored) { } }
+    private void shotStatus(String s) { try { Features.setStringAsyncIfChanged(this, PatchShot.STATUS_KEY, s); } catch (Throwable ignored) { } }   // CA1 S12: async, only on change
 
     private long calibrationUntilMs() { try { return Long.parseLong(Features.getString(this, PatchShot.CAL_UNTIL_KEY, "0").trim()); } catch (NumberFormatException e) { return 0; } }
     /** AW5: when the current calibration window opened (an automatic one is short, a manual one lasts {@link PatchShot#WINDOW_MS}); older windows recorded no start, so the old length is the fallback. */
