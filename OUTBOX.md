@@ -2067,3 +2067,7 @@
 ## 2026-11-13T05:24:40Z
 > I'm waiting on the gate. Its 3 emulator runs finish at about 05:45 UTC; if they're green, the next step is building and publishing v0.9.10.
 <!-- sha:3a4fbd8412ee -->
+
+## 2026-11-13T05:49:48Z
+> The 4 solo reruns are going: the pencil-cover section and the AC section, each on the new code and on the released v0.9.9. If the new code passes alone, or v0.9.9 fails the same way, the failures aren't from the VPN change and I ship v0.9.10. Results due at about 05:58 UTC.
+<!-- sha:da30dc6a2734 -->
