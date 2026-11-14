@@ -5230,6 +5230,59 @@ ensurehome; setfeat; setmode custom; rebind; home
 check "CD3n: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD3 [nf][0-9]+: pid=none' $OUT/results.txt"
 info "CD3n end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section cd3n
+if want cd4; then # section cd4
+ensurehome
+# ---- CD4 (TASKS CD2d): Tj's real DAY on the emulator, everything at once: 20 cycles of  lock -> the secret handshake (d d + PIN) into a Quickstep session -> an app opened and the battery saver switched on inside it -> Home -> lock -> plain PIN back
+#      to the custom launcher (the return reset) -> a hidden app's card made in the custom mode and Recents opened (the Recents watcher). Tj's RELEASE switches are on as in cd3; the real lock-time machinery runs too (saver guard, banner / radio-icon
+#      holds, radios off / on, animation holds, the handshake's stock-home start, the reset cover). One memory line every 5 cycles ("CD4 d<n>"). RESEARCH, not in the gate; a lock-screen flake (native crash) may cost a cycle, the checks allow 3 misses.
+CDP=CD4
+beat "before CD4"
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+setfeat
+for CDKEY in clean_start settings_spoof quickstep_animations_off recents_sweep quiet_banners keep_radios_hide_icons; do hpkey "$CDKEY" true; done
+for CDSC in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $CDSC 1.0; done
+CDHN=com.tj.testnotifier.ctl
+adb install -r -g testnotifier/build/outputs/apk/ctl/debug/testnotifier-ctl-debug.apk > "$OUT/cd4-install-ctl.txt" 2>&1
+setmode custom; rebind; home; sleep 2
+adb shell settings put global low_power 0; sleep 1
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+adb shell locksettings set-pin 1234 > "$OUT/cd4-setpin.txt" 2>&1
+adb logcat -c
+cdmem d0
+CDGOOD=0; CDALL=0
+cdday(){ # cdday <n>: n cycles of the day described above; counts the cycles in which the mode really went custom -> quickstep -> custom
+  local i M1 M2
+  for i in $(seq 1 "$1"); do
+    CDALL=$((CDALL+1))
+    lockpad; pad d d 1 2 3 4 e; sleep 7
+    M1="$(getmode)"
+    adb shell monkey -p com.android.contacts -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2
+    adb shell settings put global low_power 1; sleep 1
+    adb shell input keyevent KEYCODE_HOME; sleep 2
+    lockpad; pad 1 2 3 4 e; sleep 8
+    M2="$(getmode)"
+    if [ "$M1" = "quickstep" ] && [ "$M2" = "custom" ]; then CDGOOD=$((CDGOOD+1)); fi
+    adb shell am start -n $CDHN/com.tj.testnotifier.MainActivity --ez quiet true >/dev/null 2>&1; sleep 2
+    adb shell input keyevent KEYCODE_HOME; sleep 1
+    adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4
+    adb shell input keyevent KEYCODE_HOME; sleep 1.5
+  done
+}
+for CDK in 1 2 3 4; do
+  cdday 5
+  cdmem "d$((CDK*5))"
+  info "CD4 d$((CDK*5)) day: $CDGOOD of $CDALL cycles went custom -> Quickstep -> custom; mode $(getmode); low_power=$(adb shell settings get global low_power | tr -d '\r\n'); night=$(cdnight); relaunch events of a stock launcher3 activity: $(cdrelaunch); Recents watcher: $(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="recents_guard_status">[^<]*' | sed 's/.*>//' | cut -c1-120)"
+done
+cdlog D
+b6unlock
+adb shell settings put global low_power 0; adb shell dumpsys battery reset >/dev/null 2>&1
+for CDSC in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $CDSC 0; done
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD4: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD4 d[0-9]+: pid=none' $OUT/results.txt"
+check "CD4: at least 17 of the 20 cycles really went custom -> Quickstep -> custom (so the day was run)" bash -c "[ ${CDGOOD:-0} -ge 17 ]"
+info "CD4 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd4
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
