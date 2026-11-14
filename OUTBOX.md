@@ -2271,3 +2271,32 @@
 ## 2026-11-14T02:32:57Z
 > Tj's six screenshots are in. The key numbers: Quickstep's average is 414 MB and its maximum 427 MB over 3 hours, "always running (100%)", and 445 MB averaged over 1 day. Before replying I'm checking whether our app can read another process's memory without the helper, because that decides how Tj can send me the breakdown without the cable.
 <!-- sha:db12024c0f78 -->
+
+## 2026-11-14T02:35:36Z
+> Your screenshots rule out one suspect and narrow the rest.
+>
+> **What they show**
+> - Quickstep sits on a **flat plateau**: 3-hour average 414 MB, maximum 427 MB, "always running (100%)". The process itself is 401 MB, plus 14 MB squeezed into Z-Ram. It isn't spiking and it isn't restarting.
+> - The **1-day average is 445 MB**, as big as the 3-hour one. So it was already this big *before* today's adb session. **The helper, the permissions and the background sweeps we turned on today are not the cause.**
+> - It isn't a classic leak that keeps climbing either. It dipped about 35 MB between your two evening readings (450 → 414).
+> - Our launcher (the house-icon "Settings" row) is **52 MB** over the whole day, which is fine.
+> - Your Running services shots were the cached-apps list, so Quickstep isn't in them. That's fine, because the detail page already gave its size.
+>
+> **What that means:** something big and steady is sitting inside the stock launcher. This screen can't say whether it's pictures, graphics buffers or leftover screens, and the fix depends on which. I'm not changing the launcher until we know.
+>
+> **Next step, either one:**
+> 1. **With the cable:** paste back the output of these two commands, *before anything restarts Quickstep*. Say "cable" if you want me to walk you through it one step at a time like this afternoon.
+> ```
+> dumpsys meminfo com.android.launcher3 | head -62
+> dumpsys procstats --hours 24 com.android.launcher3 | head -40
+> ```
+> 2. **No cable:** a restart test, which also gives you the RAM back.
+>    - Go to Settings → Apps & notifications → See all apps → ⋮ → Show system → Quickstep → Force stop.
+>    - The Recents button may be dead for a few seconds. It should come back by itself, and Home always works.
+>    - Then open Developer options → Running services (the first view, not the cached list). Tell me Quickstep's MB right after, an hour later, and tomorrow morning. Screenshots are fine.
+>    - Back at about 400 MB at once means that's how this stock launcher behaves on your tablet. Small for hours means a one-off event. Climbing means something feeds it, and how fast tells me what.
+>
+> If you do both, take the dump first.
+>
+> Still open from before: the VPN check on the lock screen (your status bar shows the VPN key right now). Does the "Device connected to …" row disappear?
+<!-- sha:b4ebef973ee5 -->
