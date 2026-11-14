@@ -5041,6 +5041,71 @@ adb shell am force-stop "$VOT"; adb shell appops set "$PKG" ACTIVATE_VPN ignore 
 vofeat false; rebind; home; sleep 2
 info "VO end: tun0 up=$(voup), keyguard $(kg_state)"
 fi # section vo
+if want cd1; then # section cd1
+ensurehome
+# ---- CD1 (TASKS CD1i; Tj 2026-11-13/14): the STOCK launcher (com.android.launcher3) holds ~400 MB on his tablet and 48 MB on a friend's identical tablet, where it is the real home.
+#      RESEARCH, not in the gate (no gate-map line): INFO lines of the stock process's memory split, plus premise checks that only fail when the experiment itself did not run as described.
+#      Question: does OUR setup (our router is the only HOME; the stock launcher only hosts Recents and the Quickstep session) make the stock process bigger than when it is the real home?
+#      A = the stock launcher is the real home (our accessibility service off, our app stopped); B = our router is the home, app only (no helper); C = the same with the shell helper. Same load each time:
+#      Recents open + close, then (B, C) a Quickstep session started and ended (the return reset). Read: PSS TOTAL, Native Heap, Graphics, and the leak signs Activities / Views / ViewRootImpl.
+beat "before CD1"
+cdmem(){ # cdmem <tag>: one INFO line with the stock launcher's memory split; the whole dump + /proc status stay in $OUT/cd1-<tag>.txt
+  heal
+  local f="$OUT/cd1-$1.txt" pid
+  adb shell dumpsys meminfo com.android.launcher3 > "$f" 2>&1 </dev/null
+  pid="$(adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n')"
+  { echo "== /proc status of pid ${pid:-none}"; [ -n "$pid" ] && adb shell "grep -E 'VmRSS|VmSwap|Threads' /proc/$pid/status" </dev/null 2>&1; } >> "$f"
+  info "CD1 $1: pid=${pid:-none} $(grep -oE '(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL|Views|ViewRootImpl|Activities|AppContexts): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';' | cut -c1-240) $(grep -E 'VmRSS|VmSwap' "$f" | tr -s ' \t\r' ' ' | tr '\n' ' ' | cut -c1-60)"
+}
+cdrecents(){ local i; for i in $(seq 1 "$1"); do adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1.5; adb shell input keyevent KEYCODE_HOME; sleep 1.2; done; }   # cdrecents <n>: the Recents key, then Home, n times
+cdapps(){ local APP; for APP in com.android.contacts com.android.gallery3d com.android.email; do adb shell monkey -p $APP -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2; adb shell input keyevent KEYCODE_HOME; sleep 1; done; }   # three apps so Recents has cards
+cdreturns(){ local i; for i in $(seq 1 "$1"); do setmode quickstep; rebind; home; sleep 3; adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8; done; }   # cdreturns <n>: a Quickstep session started and ended n times
+
+# ---- phase A: the stock launcher is the REAL home (the friend's tablet)
+setfeat; setmode quickstep; rebind; home; sleep 2
+CD_STOCK="$(resumed | grep -o 'com.android.launcher3/[^ }]*' | head -1)"; : "${CD_STOCK:=com.android.launcher3/com.android.launcher3.uioverrides.QuickstepLauncher}"
+info "CD1: the stock home component: $CD_STOCK (display $(adb shell wm size | tr -d '\r' | tr '\n' ' ')$(adb shell wm density | tr -d '\r' | tr '\n' ' '))"
+adb shell settings put secure enabled_accessibility_services ""; adb shell settings put secure accessibility_enabled 0
+adb shell am force-stop "$PKG"
+adb shell cmd package set-home-activity "$CD_STOCK" > "$OUT/cd1-sethome.txt" 2>&1
+adb shell am force-stop com.android.launcher3; sleep 2
+adb shell input keyevent KEYCODE_HOME; sleep 5
+resumed > "$OUT/cd1-a-resumed.txt"
+check "CD1: phase A: the stock launcher is the real home and on screen" grep -q 'com.android.launcher3/' "$OUT/cd1-a-resumed.txt"
+cdapps; cdmem a0
+cdrecents 5; cdmem a5
+cdrecents 10; cdmem a15
+
+# ---- phase B: our router is the only home (Tj's tablet), app only: no shell helper
+ensurehome; setfeat; setmode custom; rebind
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+resumed > "$OUT/cd1-b-resumed.txt"
+check "CD1: phase B: our launcher is the home on screen" grep -q 'com.tj.launcher/' "$OUT/cd1-b-resumed.txt"
+cdapps; cdmem b0
+cdrecents 5; cdmem b5
+cdrecents 10; cdmem b15
+cdreturns 3; cdmem b15r3
+
+# ---- phase C: the same with the shell helper (invisible sweeps by task id, no Recents screen opened by the launcher)
+setfeat; setmode custom; rebind; home; sleep 2
+adb shell 'CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/data/local/tmp/tjshell.log 2>&1 &' > "$OUT/cd1-start.txt" 2>&1; sleep 5
+adb shell "ps -A -o ARGS | grep -c '[S]hellServer'" > "$OUT/cd1-ps.txt" 2>&1
+check "CD1: phase C: the shell helper process is running" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/cd1-ps.txt)\" -ge 1 ]"
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+cdapps; cdmem c0
+cdrecents 5; cdmem c5
+cdrecents 10; cdmem c15
+cdreturns 3; cdmem c15r3
+adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RESET (start|recents|cover)' | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' | cut -c1-70 | tail -n 6 | tr '\n' '|' > "$OUT/cd1-c-log.txt"
+info "CD1 C: the helper's return lines: $(cut -c1-300 "$OUT/cd1-c-log.txt")"
+
+# ---- clean up: the helper off, our router the home again, the mode custom
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+ensurehome; setfeat; setmode custom; rebind; home
+info "CD1 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd1
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
