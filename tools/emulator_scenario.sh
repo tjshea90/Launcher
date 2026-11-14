@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n cd4 (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
@@ -5069,7 +5069,7 @@ ensurehome
 #      A = the stock launcher is the real home (our accessibility service off, our app stopped); B = our router is the home, app only (no helper); C = the same with the shell helper. Same load each time:
 #      Recents open + close, then (B, C) a Quickstep session started and ended (the return reset). Read: PSS TOTAL, Native Heap, Graphics, and the leak signs Activities / Views / ViewRootImpl.
 beat "before CD1"
-# CD1 / CD2 / CD3: the stock launcher's memory helpers are hoisted above (a11ydump), shared by sections cd1, cd2, cd2h, cd3 and cd3n
+# CD1 / CD2 / CD3: the stock launcher's memory helpers are hoisted above (a11ydump), shared by sections cd1, cd2, cd2h, cd3, cd3n and cd4
 
 # ---- phase A: the stock launcher is the REAL home (the friend's tablet)
 setfeat; setmode quickstep; rebind; home; sleep 2
