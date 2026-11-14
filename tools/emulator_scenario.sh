@@ -5097,9 +5097,7 @@ home; sleep 3
 cdapps; cdmem c0
 cdrecents 5; cdmem c5
 cdrecents 10; cdmem c15
-cdreturns 3; cdmem c15r3
-adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RESET (start|recents|cover)' | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' | cut -c1-70 | tail -n 6 | tr '\n' '|' > "$OUT/cd1-c-log.txt"
-info "CD1 C: the helper's return lines: $(cut -c1-300 "$OUT/cd1-c-log.txt")"
+cdreturns 3; cdmem c15r3; cdlog C
 
 # ---- clean up: the helper off, our router the home again, the mode custom
 adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
