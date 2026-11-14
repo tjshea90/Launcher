@@ -5060,6 +5060,7 @@ cdmem(){ # cdmem <tag>: one INFO line with the stock launcher's memory split; th
 cdrecents(){ local i; for i in $(seq 1 "$1"); do adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1.5; adb shell input keyevent KEYCODE_HOME; sleep 1.2; done; }   # cdrecents <n>: the Recents key, then Home, n times
 cdapps(){ local APP; for APP in com.android.contacts com.android.gallery3d com.android.email; do adb shell monkey -p $APP -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2; adb shell input keyevent KEYCODE_HOME; sleep 1; done; }   # three apps so Recents has cards
 cdreturns(){ local i; for i in $(seq 1 "$1"); do setmode quickstep; rebind; home; sleep 3; adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8; done; }   # cdreturns <n>: a Quickstep session started and ended n times
+cdlog(){ adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RESET (start|recents|cover)' | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' | cut -c1-70 | tail -n 6 | tr '\n' '|' > "$OUT/cd1-$1-log.txt"; info "CD1 $1: the return lines of the log (newest last): $(cut -c1-300 "$OUT/cd1-$1-log.txt")"; }
 
 # ---- phase A: the stock launcher is the REAL home (the friend's tablet)
 setfeat; setmode quickstep; rebind; home; sleep 2
