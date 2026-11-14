@@ -1597,3 +1597,10 @@ My friend has the same tablet and his is 48mb ram on quickstep. I pressed force 
 ```
 I forced stopped quickstep several times, cleared the cache (it was only a small cache anyway) , force stopped the custom launcher, and every time I look at quickstep ram it goes down slightly but still very high like 280mb
 ```
+
+## 2026-11-14T03:34:10Z
+```
+Quickstep sessions: Starting and ending a Quickstep session adds about 12–15 MB, which is the stock home screen being created. I only tried that 3 times.
+
+Investigate this whether it would cause quickstep to keep growing. Investigate all parts of the custom launcher if any function or accessibility feature could plausibly increase the ram usage of quickstep
+```
