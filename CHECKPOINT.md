@@ -1,23 +1,22 @@
-# CHECKPOINT 1350 — read me first, then TASKS.md
+# CHECKPOINT 1351 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T04:59:08Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `15f79ae8` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T05:00:50Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `b9f71ac3` (this checkpoint is the commit after it)
 
 ## Just done
-CD2d: section cd3u (night-bit driver probes + 80 font changes, mem line every 20) written
+audit doc: cd3 #606 + cd3n #607 results filled in; cd3u = run 43559289225 (#609) dispatched 04:59Z; cd4 #608 (43557924106) pending
 
 ## Do this next
-dispatch cd3u on main; read #608 cd4 (run 43557924106, ~05:08Z); fill results into research/CD2_QUICKSTEP_RAM_AUDIT_2026-11-14.md; ANSWER Tj; heartbeat trig_016JDaHGdcKC7zixfuPRkF9E delete when done
+read cd4 at ~05:09Z (timer task bgakk0imy) and cd3u at ~05:13Z (job log tail_lines 40); add them to the audit doc results section; ANSWER Tj (plain words, last message of the turn); heartbeat trig_016JDaHGdcKC7zixfuPRkF9E delete when done
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
-    M  .github/workflows/emulator.yml
      M CHECKPOINT.md
-    M  tools/emulator_scenario.sh
 
 ## Last ten checkpoints
 ```
+  d27f991a ckpt 1350: CD2d: section cd3u (night-bit driver probes + 80 font changes, mem line ever
   f4461829 ckpt 1349: cd3 #606 run 43557515116: job success; 48 alias flips in 24 sessions, anim h
   592e74d7 ckpt 1348: cd3n #607 run 43557517749: 5 PASS 0 FAIL, night bit did NOT move (saver on/o
   8225c14a ckpt 1347: CD2b: audit doc research/CD2_QUICKSTEP_RAM_AUDIT_2026-11-14.md written (18 r
@@ -27,7 +26,6 @@ dispatch cd3u on main; read #608 cd4 (run 43557924106, ~05:08Z); fill results in
   8de317b0 ckpt 1343: CD2a DONE: cd2 run 43553084459 5 PASS + cd2h run 43553087209 6 PASS: stock l
   54f1644a ckpt 1342: heartbeat armed: trig_016JDaHGdcKC7zixfuPRkF9E (every 2 h, next 06:22Z, boun
   4c5ea279 ckpt 1341: CD2a dispatched: cd2 = run 43553084459 (#604), cd2h = run 43553087209 (#605)
-  aae08790 ckpt 1340: CD2a: emulator sections cd2 + cd2h written (24 Quickstep sessions, memory li
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
