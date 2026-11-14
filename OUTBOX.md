@@ -2300,3 +2300,7 @@
 >
 > Still open from before: the VPN check on the lock screen (your status bar shows the VPN key right now). Does the "Device connected to …" row disappear?
 <!-- sha:b4ebef973ee5 -->
+
+## 2026-11-14T02:51:04Z
+> That's the most useful number so far, so I'm first checking one thing in our manifest that could explain the difference from your friend's tablet. I'm also looking at how a short emulator test would be built.
+<!-- sha:e205fcef9744 -->
