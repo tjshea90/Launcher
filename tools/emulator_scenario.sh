@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
@@ -287,7 +287,7 @@ cdmem(){ # cdmem <tag>: one INFO line with the stock launcher's memory split + t
   pid="$(adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n')"
   { echo "== /proc status of pid ${pid:-none}"; [ -n "$pid" ] && adb shell "grep -E 'VmRSS|VmSwap|Threads' /proc/$pid/status" </dev/null 2>&1; } >> "$f"
   adb shell dumpsys activity activities </dev/null > "$OUT/cd-$1-activities.txt" 2>&1
-  info "${CDP:-CD1} $1: pid=${pid:-none} $(grep -oE '\b(Java Heap|Native Heap|Code|Graphics|Private Other|System|TOTAL|Views|ViewRootImpl|Activities): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';' | cut -c1-230) $(grep -E 'VmRSS' "$f" | tr -s ' \t\r' ' ' | tr -d '\n') tasks=$(grep -E '^ *\* Task\{' "$OUT/cd-$1-activities.txt" | grep -c 'com.android.launcher3') records=$(grep -E 'Hist #[0-9]+: ActivityRecord\{' "$OUT/cd-$1-activities.txt" | grep -c ' com.android.launcher3/') ours=$(cdtotal com.tj.launcher) sysui=$(cdtotal com.android.systemui)"
+  info "${CDP:-CD1} $1: pid=${pid:-none} $(grep -oE '\b(Java Heap|Native Heap|Code|Graphics|Private Other|System|TOTAL|Views|ViewRootImpl|Activities): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';' | cut -c1-230) $(grep -E 'VmRSS' "$f" | tr -s ' \t\r' ' ' | tr -d '\n') tasks=$(grep -E '^ *\* (TaskRecord|Task)\{' "$OUT/cd-$1-activities.txt" | grep -c 'com.android.launcher3') records=$(grep -E 'Hist #[0-9]+: ActivityRecord\{' "$OUT/cd-$1-activities.txt" | grep -c ' com.android.launcher3/') ours=$(cdtotal com.tj.launcher) sysui=$(cdtotal com.android.systemui)"
 }
 cdrecents(){ local i; for i in $(seq 1 "$1"); do adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1.5; adb shell input keyevent KEYCODE_HOME; sleep 1.2; done; }   # cdrecents <n>: the Recents key, then Home, n times
 cdapps(){ local APP; for APP in com.android.contacts com.android.gallery3d com.android.email; do adb shell monkey -p $APP -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2; adb shell input keyevent KEYCODE_HOME; sleep 1; done; }   # three apps so Recents has cards
@@ -5112,6 +5112,43 @@ adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
 ensurehome; setfeat; setmode custom; rebind; home
 info "CD1 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section cd1
+if want cd2; then # section cd2
+ensurehome
+# ---- CD2 (TASKS CD2a; Tj 2026-11-14 03:34Z: "[does starting and ending a Quickstep session] cause quickstep to keep growing"). RESEARCH, not in the gate (no gate-map line).
+#      The Quickstep session is started and ended 24 times with NO helper (the Recents screen is opened and cleared on screen each time), a memory line every 6 sessions, then 30 more Recents open / close cycles.
+#      Read the INFO `CD2 s<n>` lines: TOTAL (PSS KB), Native / Java, Views, Activities, records (stock activity records the system holds), tasks, and the two controls (ours, sysui). A slope of more than ~0.4 MB per session,
+#      Activities above 2, or records / tasks that climb = something is kept per session. Same code with the helper: section cd2h.
+CDP=CD2
+beat "before CD2"
+setfeat; setmode custom; rebind; home; sleep 2
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+cdapps; cdmem s0
+for CDK in 1 2 3 4; do cdreturns 6; cdmem "s$((CDK*6))"; done
+cdlog S
+cdrecents 30; cdmem sR30
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD2: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD2 [sh][R0-9]+: pid=none' $OUT/results.txt"
+info "CD2 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd2
+if want cd2h; then # section cd2h
+ensurehome
+# ---- CD2h: the same as cd2 with the shell helper running (invisible sweeps by task id, no Recents screen opened by the launcher). RESEARCH, not in the gate.
+CDP=CD2
+beat "before CD2h"
+setfeat; setmode custom; rebind; home; sleep 2
+cdhelper
+check "CD2h: the shell helper process is running" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/cd-helper-ps.txt)\" -ge 1 ]"
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+cdapps; cdmem h0
+for CDK in 1 2 3 4; do cdreturns 6; cdmem "h$((CDK*6))"; done
+cdlog H
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD2h: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD2 [sh][R0-9]+: pid=none' $OUT/results.txt"
+info "CD2h end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd2h
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before

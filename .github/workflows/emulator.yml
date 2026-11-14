@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       sections:
-        description: 'Which scenario sections to run, comma list, in the order they run: base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x,v,g,rs,ka,ac,bs,bl,pa,pt,ad,se,rs2,rt,im,rs3,gc,rs4,pf,rb,last,ao,rg,uf,cs,cs2,an,nq,hp,cu,hf,fp,ss,gear,wf,bt,mu,fl,vo,cd1. EMPTY = everything incl. research: do NOT, pick sections with tools/gate.sh (about 42 min since 2026-11-05, close to the 2700 s step limit: do not use it as the gate). RELEASE GATE = two side-by-side runs, about 20 min each: A = base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x and B = v,g,ka,ac,rt,im,gc,pf,rb,last (the one-off research sections rs to rs4 are not part of it). A new feature usually needs only its own, e.g. "n6" (~5 min).'
+        description: 'Which scenario sections to run, comma list, in the order they run: base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x,v,g,rs,ka,ac,bs,bl,pa,pt,ad,se,rs2,rt,im,rs3,gc,rs4,pf,rb,last,ao,rg,uf,cs,cs2,an,nq,hp,cu,hf,fp,ss,gear,wf,bt,mu,fl,vo,cd1,cd2,cd2h. EMPTY = everything incl. research: do NOT, pick sections with tools/gate.sh (about 42 min since 2026-11-05, close to the 2700 s step limit: do not use it as the gate). RELEASE GATE = two side-by-side runs, about 20 min each: A = base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x and B = v,g,ka,ac,rt,im,gc,pf,rb,last (the one-off research sections rs to rs4 are not part of it). A new feature usually needs only its own, e.g. "n6" (~5 min).'
         required: false
         default: ''
       shots:
