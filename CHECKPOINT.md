@@ -1,13 +1,13 @@
-# CHECKPOINT 1330 — read me first, then TASKS.md
+# CHECKPOINT 1331 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T00:07:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `8d691f4c` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T02:34:42Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `d9902a94` (this checkpoint is the commit after it)
 
 ## Just done
-CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house 'Settings' 49 MB=ours; not normal; 3 causes; CD1b 3 screen checks + 2 adb lines). No product code changed, nothing released
+CD1b numbers recorded: Quickstep flat plateau (avg 414/max 427, always running; 1-day 445) = big BEFORE today's adb session, so not the helper; ours 52 MB
 
 ## Do this next
-wait for Tj's CD1b numbers (1 DAY vs 3 HOURS, Quickstep Avg/Max/Runtime, Running services, optional meminfo paste). Then CD1d: if big before ~17Z today -> not the helper; else look at RecentsSweep with helper. Either way add emulator section cd1 (25x Recents open/close + 25x SettingsAlias toggle, print dumpsys meminfo com.android.launcher3 before/after) to test our flows. Probe lines (CD1c) ship with the next real version. No heartbeat armed
+wait for Tj: CD1e cable dump (dumpsys meminfo + procstats of com.android.launcher3) or CD1f restart test; no emulator run before the dump; then read App Summary split + Activities/Views and pick: targeted emulator section cd1, or idle restart via helper (ShellServer.forceStop); probe lines CD1c ride in the next version; no heartbeat armed
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -17,6 +17,7 @@ wait for Tj's CD1b numbers (1 DAY vs 3 HOURS, Quickstep Avg/Max/Runtime, Running
 
 ## Last ten checkpoints
 ```
+  f1890526 ckpt 1330: CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house '
   8d691f4c ckpt 1329: CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock laun
   4b92c094 ckpt 1328: CD1 written: Tj asks if Quickstep 450 MB is normal (Memory screen). Row map 
   276cfb51 ckpt 1327: CC1 DONE: all adb grants + ACTIVATE_VPN + helper + Do everything (Tj: It is 
@@ -26,5 +27,7 @@ wait for Tj's CD1b numbers (1 DAY vs 3 HOURS, Quickstep Avg/Max/Runtime, Running
   6386b958 ckpt 1323: CC1a done: pm path printed the base.apk (shell works); step 2 = joined grant
   e34553c0 ckpt 1322: CC1 written (Tj: adb cable, all permissions); live cable session started, st
   fdac2f4c ckpt 1321: heartbeat 12:33Z: nothing new (no Tj message since 04:58Z, no other session)
-  45fe90fe ckpt 1320: heartbeat 08:32Z+10:33Z: merged main (v0.9.10, CA1/CB1/CB2 of the other sess
 ```
+
+(2 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
