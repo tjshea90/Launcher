@@ -2325,3 +2325,19 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:ce20e68b98a5 -->
+
+## 2026-11-14T03:13:06Z
+> Neither of your two Running services screens shows Quickstep, so they can't give its live size. My instruction to look there was wrong, and I'm sorry for sending you to them.
+>
+> - **Why it's missing:** Those lists only itemise apps that run a service of their own, plus cached apps. Quickstep's only job on your tablet is a connection that System UI holds, and that isn't listed. That's my reading of how Android builds the list. It fits what you see, but I haven't proven it. I also can't tell from these screens whether Quickstep is running right now.
+> - **Good news:** Free RAM is 830 MB to 1.0 GB, and our launcher is 64 MB live. It restarted 3 minutes before the first screenshot, from your force stop. The tablet isn't short of memory right now.
+> - **The 280 MB:** If that came from "Memory used by apps", it's the 3-hour average. That average drifts down after any restart, whether Quickstep comes back small or big. So 450 → 414 → 350 → 280 can't separate those two cases.
+>
+> Two ways to get the real answer:
+> 1. **Cable, tonight (about 5 minutes):** The two `dumpsys` commands show Quickstep's live size and what it's made of. Say "cable" and I'll walk you through it one step at a time.
+> 2. **No cable, tomorrow:** Leave the tablet alone. From about 01:10 tablet time (3 hours after your last force stop), open Memory used by apps, set it to 3 hours, and tap Quickstep. By then the window only covers time after your restarts, so that number is the restarted process's own size. About 50–100 MB means a restart cures it for a while, and I then need to learn what re-inflates it. About 280 or more means it's big from the first minute on this tablet.
+>
+> The emulator test is nearly done, and I'll send what it shows in a few minutes.
+>
+> Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
+<!-- sha:027ac0035352 -->
