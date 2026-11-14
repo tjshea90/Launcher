@@ -1,13 +1,13 @@
-# CHECKPOINT 1338 — read me first, then TASKS.md
+# CHECKPOINT 1339 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T03:18:33Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `2ace7e63` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T03:38:19Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `f6dd6dbc` (this checkpoint is the commit after it)
 
 ## Just done
-CD1i DONE: run 43549429509 7 PASS 0 FAIL: stock launcher 15-43 MB PSS in all 3 phases (A stock home 39-43, B 15-39, C 19-35), no growth, no leak; Graphics row 0 on emulator; doc research/CD1_EMULATOR_2026-11-14.md
+CD2 written: Tj asks to investigate whether Quickstep sessions make Quickstep keep growing + audit all launcher functions / accessibility features that could raise its RAM
 
 ## Do this next
-tell Tj the emulator result (our flows do not inflate it there; limits: Go build, GPU, uptime); the tablet dump CD1e/CD1k stays the deciding step (cable, say 'cable') or the 3-hour average read after ~06:10Z; then wait for Tj; no heartbeat armed
+start: (1) hoist cd1 helpers, write emulator sections cd2 + cd2h (many Quickstep sessions, cdmem every 5) and dispatch both; (2) spawn 4 read-only audit subagents (A-D, neutral briefs) + AOSP web-fetch agent; (3) write research/CD2_QUICKSTEP_RAM_AUDIT_2026-11-14.md; no product change; no heartbeat armed
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ tell Tj the emulator result (our flows do not inflate it there; limits: Go build
 
 ## Last ten checkpoints
 ```
+  ac475cae ckpt 1338: CD1i DONE: run 43549429509 7 PASS 0 FAIL: stock launcher 15-43 MB PSS in all
   7714987b ckpt 1337: CD1l: Tj's two Running-services screenshots show NO Quickstep in either list
   70908b8e ckpt 1336: CD1j/CD1k: Tj says restarts + cache clear + stop of our launcher leave Quick
   59d31f8b ckpt 1335: CD1g answer to Tj being sent now (ckpt 1332 claim was wrong: it had not gone
@@ -25,7 +26,6 @@ tell Tj the emulator result (our flows do not inflate it there; limits: Go build
   7a65f0b4 ckpt 1331: CD1b numbers recorded: Quickstep flat plateau (avg 414/max 427, always runni
   f1890526 ckpt 1330: CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house '
   8d691f4c ckpt 1329: CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock laun
-  4b92c094 ckpt 1328: CD1 written: Tj asks if Quickstep 450 MB is normal (Memory screen). Row map 
 ```
 
 (3 automatic checkpoint(s) since the last deliberate one — the
