@@ -2341,3 +2341,28 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:027ac0035352 -->
+
+## 2026-11-14T03:19:09Z
+> The emulator test is done, and it found nothing in our launcher that inflates the stock launcher. The memory below is counted the way Android's memory screens count it, and the test ran three setups:
+>
+> | Setup | Stock launcher size |
+> | :- | :- |
+> | Stock launcher as the real home screen (like your friend's tablet) | about 39–43 MB |
+> | Our launcher as home, helper off (like yours) | 15–39 MB |
+> | Our launcher as home, helper on | 19–35 MB |
+>
+> - **No growth:** After 15 rounds of opening and closing Recents it did not grow. It held 1–2 screens at most, so nothing is piling up.
+> - **Quickstep sessions:** Starting and ending a Quickstep session adds about 12–15 MB, which is the stock home screen being created. I only tried that 3 times.
+> - **Meaning:** In the flows I tested, nothing our launcher does makes the stock launcher big. I checked the most likely suspect and it didn't show up.
+>
+> **What the emulator can't tell us:**
+> - It runs the plain Android 10 launcher, not MediaTek's Go build.
+> - It can't measure graphics memory. That row reads 0 there, and on your tablet it could be the big one.
+> - It ran for minutes, not days. It also can't reproduce the dark-mode flips from battery saver.
+>
+> So the cause is something specific to your tablet, or something that builds up over time, and only the tablet can show it. The dump from the cable shows the live size, the graphics memory and the number of leftover screens. I'm not changing any code until we know.
+>
+> Say "cable" whenever you're ready and I'll walk you through it one step at a time. Or leave the tablet alone and read Memory used by apps → 3 hours → Quickstep after about 01:10 tablet time, or tomorrow morning.
+>
+> Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
+<!-- sha:7b8cff7be915 -->
