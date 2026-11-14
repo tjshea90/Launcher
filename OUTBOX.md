@@ -2267,3 +2267,7 @@
 >
 > Still open from before: the VPN check. With the VPN on, pull down the panel on the lock screen and tell me whether the "Device connected to …" row is gone.
 <!-- sha:ad10ecafbe0e -->
+
+## 2026-11-14T02:32:57Z
+> Tj's six screenshots are in. The key numbers: Quickstep's average is 414 MB and its maximum 427 MB over 3 hours, "always running (100%)", and 445 MB averaged over 1 day. Before replying I'm checking whether our app can read another process's memory without the helper, because that decides how Tj can send me the breakdown without the cable.
+<!-- sha:db12024c0f78 -->
