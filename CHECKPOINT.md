@@ -1,22 +1,22 @@
-# CHECKPOINT 1332 — read me first, then TASKS.md
+# CHECKPOINT 1333 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T02:53:01Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `edc0908d` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T03:01:22Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `e6d128d1` (this checkpoint is the commit after it)
 
 ## Just done
-CD1g written: friend's identical tablet has Quickstep at 48 MB; Tj force-stopped Quickstep (3h avg 414->350); ours is the only HOME app in both modes
+CD1i: emulator section cd1 written (A stock home / B ours no helper / C ours helper; INFO CD1 <tag> lines), registered in emulator.yml; handoff test 53/53
 
 ## Do this next
-reply sent to Tj (friend datapoint, force stop invisible, live-number ask CD1h). NOW: write emulator section cd1 in tools/emulator_scenario.sh (A stock home / B ours helper off / C ours helper on; N Recents cycles; INFO lines of dumpsys meminfo com.android.launcher3), register in tools/gate-map.txt + emulator.yml description, bash -n + tools/test_handoff.sh, push, dispatch emulator.yml sections=cd1, read RESULTS; no product code change; no heartbeat armed
+dispatch emulator.yml sections=cd1 on main, wait ~12 min (bounded until loop), read RESULTS INFO CD1 lines; ckpt the raw numbers BEFORE analysing; no product code change; no heartbeat armed
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  c6d23a07 ckpt 1332: CD1g written: friend's identical tablet has Quickstep at 48 MB; Tj force-sto
   7a65f0b4 ckpt 1331: CD1b numbers recorded: Quickstep flat plateau (avg 414/max 427, always runni
   f1890526 ckpt 1330: CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house '
   8d691f4c ckpt 1329: CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock laun
@@ -26,8 +26,7 @@ reply sent to Tj (friend datapoint, force stop invisible, live-number ask CD1h).
   1b27a9b1 ckpt 1325: CC1c+d done: all 5 grants true, 5 appops allow incl ACTIVATE_VPN, accessibil
   f9f8eb84 ckpt 1324: CC1b done: joined grant line ran, Added: com.tj.launcher + DONE, no errors
   6386b958 ckpt 1323: CC1a done: pm path printed the base.apk (shell works); step 2 = joined grant
-  e34553c0 ckpt 1322: CC1 written (Tj: adb cable, all permissions); live cable session started, st
 ```
 
-(3 automatic checkpoint(s) since the last deliberate one — the
+(6 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
