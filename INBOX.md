@@ -1604,3 +1604,8 @@ Quickstep sessions: Starting and ending a Quickstep session adds about 12–15 M
 
 Investigate this whether it would cause quickstep to keep growing. Investigate all parts of the custom launcher if any function or accessibility feature could plausibly increase the ram usage of quickstep
 ```
+
+## 2026-11-14T05:44:33Z
+```
+The weird thing is every time I look at the quickstep ram it is a little lower. Right now it is at 130mb
+```
