@@ -2366,3 +2366,26 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:7b8cff7be915 -->
+
+## 2026-11-14T04:46:57Z
+> Status on the Quickstep RAM question (CD2). Nothing is needed from you right now.
+>
+> - **Growth per session:** there is none. I started and ended 24 Quickstep sessions in an emulator. After the first six sessions Quickstep stayed flat. Without the helper it read 42.1, 42.4, 41.3 and 41.5 MB at sessions 6, 12, 18 and 24. With the helper on it read 36.4, 36.4, 35.6 and 37.1 MB. The count of open screens and views did not change, and the process was never restarted. The one-time cost is the first sessions, about 17 MB growing to 36–42 MB.
+> - **Code review:** five separate read-only reviews of every part of the custom launcher have finished. Our app never kills, force-stops or trims Quickstep, and none of the reviews found a mechanism that holds memory in it. They list a few things that could add churn, based on how Android works:
+>   - the Recents screen the app opens and clears
+>   - the dark-theme flips caused by the battery-saver writes
+>   - the Settings look-alike turning its entry on and off
+>   - the accessibility service watching Recents
+>   - the keyboard switch, which affects overall RAM only indirectly
+>
+>   I also read the Android 10 launcher source. Its Recents caches are capped at 12 icons and 3 small thumbnails, and it trims itself when hidden. MediaTek's Go build may differ.
+> - **A gap in my first test:** the test build has your release switches off, so the 24 sessions never ran the Settings look-alike toggle, the dark-theme flips or the animation-speed writes. Three more emulator runs with those switches on are going now:
+>   - 24 sessions with the release switches on
+>   - 30 battery-saver flips, plus font-size flips as a control
+>   - a simulated day of 20 lock, handshake and Quickstep-session cycles
+>
+>   I'll read them at about 04:55–05:10Z and send the full answer after that.
+> - **Limit:** the emulator can't show graphics memory, MediaTek's Go build, or days of uptime. Only the cable dump (say "cable") or the Memory screen's 3-hour reading after about 01:10 tablet time can settle those. I added a third command to the dump: `dumpsys gfxinfo com.android.launcher3 | head -40`.
+>
+> Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
+<!-- sha:adf6319b838c -->
