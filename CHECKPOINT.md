@@ -1,13 +1,13 @@
-# CHECKPOINT 1339 — read me first, then TASKS.md
+# CHECKPOINT 1340 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T03:38:19Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `f6dd6dbc` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T03:43:21Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `00dd21ef` (this checkpoint is the commit after it)
 
 ## Just done
-CD2 written: Tj asks to investigate whether Quickstep sessions make Quickstep keep growing + audit all launcher functions / accessibility features that could raise its RAM
+CD2a: emulator sections cd2 + cd2h written (24 Quickstep sessions, memory line every 6; cd1 helpers hoisted; handoff test 53/53). 5 audit subagents A,B1,B2,C,D running (read-only)
 
 ## Do this next
-start: (1) hoist cd1 helpers, write emulator sections cd2 + cd2h (many Quickstep sessions, cdmem every 5) and dispatch both; (2) spawn 4 read-only audit subagents (A-D, neutral briefs) + AOSP web-fetch agent; (3) write research/CD2_QUICKSTEP_RAM_AUDIT_2026-11-14.md; no product change; no heartbeat armed
+dispatch emulator.yml cd2 and cd2h on main (two runs side by side), note both run ids in the next ckpt; when the audit agents report: write research/CD2_QUICKSTEP_RAM_AUDIT_2026-11-14.md; ~16 min later read both RESULTS (list_workflow_jobs, get_job_logs tail ~70), ckpt raw INFO CD2 lines first; no heartbeat armed
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ start: (1) hoist cd1 helpers, write emulator sections cd2 + cd2h (many Quickstep
 
 ## Last ten checkpoints
 ```
+  a7de438e ckpt 1339: CD2 written: Tj asks to investigate whether Quickstep sessions make Quickste
   ac475cae ckpt 1338: CD1i DONE: run 43549429509 7 PASS 0 FAIL: stock launcher 15-43 MB PSS in all
   7714987b ckpt 1337: CD1l: Tj's two Running-services screenshots show NO Quickstep in either list
   70908b8e ckpt 1336: CD1j/CD1k: Tj says restarts + cache clear + stop of our launcher leave Quick
@@ -25,8 +26,7 @@ start: (1) hoist cd1 helpers, write emulator sections cd2 + cd2h (many Quickstep
   c6d23a07 ckpt 1332: CD1g written: friend's identical tablet has Quickstep at 48 MB; Tj force-sto
   7a65f0b4 ckpt 1331: CD1b numbers recorded: Quickstep flat plateau (avg 414/max 427, always runni
   f1890526 ckpt 1330: CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house '
-  8d691f4c ckpt 1329: CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock laun
 ```
 
-(3 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
