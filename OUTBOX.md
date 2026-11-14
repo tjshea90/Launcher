@@ -2233,3 +2233,37 @@
 ## 2026-11-13T23:51:09Z
 > Installing the hooks first, as the working agreement requires. In the same step I'll check what the repo already knows about this question: the CA1 RAM audit, any tablet memory numbers, and what label and process each app in this list has.
 <!-- sha:7378b6a853b2 -->
+
+## 2026-11-14T00:07:42Z
+> **No, 450 MB is not normal for Quickstep, and it isn't our launcher.** The screenshot shows that the stock launcher is big, but not why.
+>
+> **Which row is which**
+> - **Quickstep, 450 MB:** the stock launcher that came with the tablet, MediaTek's Go build (`MtkLauncher3GoIconRecents`). It isn't our code.
+> - **Settings, 49 MB, house icon:** this is our launcher. We named the app "Settings" so its Recents card reads "Settings", and it keeps the house icon. The real Settings app has a gear icon. Our launcher measured 69–71 MB while running in earlier tablet reports, which fits a 3-hour average of 49 MB.
+>
+> **Why 450 MB is too much**
+> A Go launcher is a grid of icons, and I'd expect roughly 80–150 MB. That is my estimate: nothing in the repo has a baseline for the stock launcher on your tablet. 450 MB is about a fifth of the tablet's 2 GB and about a third of what the top of that list adds up to. It takes memory from every other app and can make the tablet feel slow.
+>
+> **Possible causes, most likely first**
+> 1. **A leak inside the stock launcher.** It is MediaTek's modified Android 10 launcher, and it also runs the Recents screen, so it is always running.
+> 2. **Something our launcher does to it.** I can't rule this out. We open its Recents and press Clear all, read its screen through the accessibility service, and toggle the Settings look-alike, which makes Android notify it that our app changed. While the shell helper runs (it was started in today's adb session), we also remove Recents cards in the background. None of that is designed to make it grow, but a leak that builds up with repeated use is possible.
+> 3. **Graphics memory counted against it.** MediaTek may count GPU buffers per app. That is still real RAM, but it needs a different fix.
+>
+> **What decides it (a minute, no cable)**
+> 1. On that same Memory screen, change "3 HOURS" to **1 DAY** and tell me Quickstep's number. If it was already around 450 MB before today's adb session, that session isn't the cause.
+> 2. Tap the **Quickstep** row and tell me Average, Maximum and the runtime percentage.
+> 3. Open Developer options → **Running services** and tell me what Quickstep shows right now.
+>
+> If you have the cable handy, paste the output of these two commands. They show whether the memory is Java, native or graphics:
+> ```
+> dumpsys meminfo com.android.launcher3 | head -62
+> dumpsys procstats --hours 3 com.android.launcher3 | head -40
+> ```
+>
+> **What I did and what's next**
+> - I added those same dumps to the tablet report, plus an automatic red flag when the stock launcher is over 250 MB. The intake tests pass. This is not released yet, so it reaches your tablet with the next version.
+> - Once I have your numbers, I'll test on the emulator whether our Recents and look-alike flows make the stock launcher grow. If the growth is the stock launcher's own, I'll add a safe cleanup, such as asking Android to trim it when the screen is off.
+> - I haven't changed the launcher itself, and I'd rather you didn't force-stop Quickstep yet. That would wipe out exactly what we want to measure.
+>
+> Still open from before: the VPN check. With the VPN on, pull down the panel on the lock screen and tell me whether the "Device connected to …" row is gone.
+<!-- sha:ad10ecafbe0e -->
