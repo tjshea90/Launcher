@@ -5151,6 +5151,85 @@ ensurehome; setfeat; setmode custom; rebind; home
 check "CD2h: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD2 [sh][R0-9]+: pid=none' $OUT/results.txt"
 info "CD2h end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section cd2h
+if want cd3; then # section cd3
+ensurehome
+# ---- CD3 (TASKS CD2d; Tj 2026-11-14 03:34Z: "investigate all parts of the custom launcher if any function or accessibility feature could plausibly increase the ram usage of quickstep"). RESEARCH, not in the gate.
+#      The same 24 Quickstep sessions as cd2, but with Tj's RELEASE switches on (the debug build has them OFF, so cd2 never ran them): clean_start, settings_spoof (the alias flips twice per session: audit slices A, C, D), quickstep_animations_off
+#      (three Settings.Global writes each way), recents_sweep (inert without the helper), quiet_banners, keep_radios_hide_icons. The three animation scales start at 1.0 so the hold has something to change (the CI emulator boots with them at 0).
+#      Premise INFO lines say whether the hold engaged and how many alias flips happened (the number is counted from the log); the checks fail if the alias never flipped. Read the INFO `CD3 r<n>` lines like cd2's `CD2 s<n>` lines.
+CDP=CD3
+beat "before CD3"
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+setfeat
+for CDKEY in clean_start settings_spoof quickstep_animations_off recents_sweep quiet_banners keep_radios_hide_icons; do hpkey "$CDKEY" true; done
+for CDSC in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $CDSC 1.0; done
+setmode custom; rebind; home; sleep 2
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+# one session by hand, so the animation hold can be looked at in the middle of it
+setmode quickstep; rebind; home; sleep 3
+info "CD3 premise: inside a Quickstep session the animator scale is $(adb shell settings get global animator_duration_scale | tr -d '\r\n') (0 = the hold works, 1.0 = it did not engage here); resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1)"
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8
+info "CD3 premise: back in the custom launcher the animator scale is $(adb shell settings get global animator_duration_scale | tr -d '\r\n') (1.0 = restored); the alias line of the log: $(adb logcat -d -s TjSettingsSpoof:I 2>/dev/null | grep -c 'Settings entry') flip(s) so far"
+adb logcat -c
+cdapps; cdmem r0
+CDSPOOF=0
+for CDK in 1 2 3 4; do
+  cdreturns 6
+  cdmem "r$((CDK*6))"
+  CDSPOOF=$((CDSPOOF + $(adb logcat -d -s TjSettingsSpoof:I 2>/dev/null | grep -c 'Settings entry')))
+  if [ "$CDK" -eq 4 ]; then cdlog R; fi
+  adb logcat -c
+done
+cdrecents 10; cdmem rR10
+info "CD3 flips: the Settings alias changed $CDSPOOF times in 24 sessions (expected about 48); animator scale now $(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
+for CDSC in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $CDSC 0; done
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD3: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD3 r[R0-9]+: pid=none' $OUT/results.txt"
+check "CD3: the Settings alias really flipped (at least 20 times in 24 sessions)" bash -c "[ ${CDSPOOF:-0} -ge 20 ]"
+info "CD3 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd3
+if want cd3n; then # section cd3n
+ensurehome
+# ---- CD3n (TASKS CD2d; audit slice C, ranked first there): the battery saver flips the dark theme, i.e. a night-mode CONFIGURATION CHANGE for every process incl. the stock launcher, about twice per lock / unlock cycle on Tj's tablet. The CI image cannot do `cmd uimode night`
+#      (CLAUDE.md), so the saver itself is flipped by a plain settings write (NOT through our guard: profile_battery_saver_off is OFF here, so only the platform effect is measured). RESEARCH, not in the gate.
+#      The stock launcher is first brought into the state a day of sessions leaves (3 sessions, Recents opened 3 times), then 30 saver flips with a memory line every 10, then 6 font-scale flips as the generic Configuration-change control.
+#      The premise line says whether the global night bit really moved (no change = the image cannot show it: say so, do not read the memory lines as a clean bill of health).
+CDP=CD3
+beat "before CD3n"
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+setfeat; hpkey profile_battery_saver_off false
+setmode custom; rebind; home; sleep 2
+adb shell settings put global low_power 0; sleep 1
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+cdapps; cdreturns 3; cdrecents 3
+adb shell settings put global low_power 0; sleep 2
+CDN0="$(cdnight)"
+adb shell settings put global low_power 1; sleep 3
+CDN1="$(cdnight)"
+adb shell settings put global low_power 0; sleep 3
+CDN2="$(cdnight)"
+info "CD3n premise: global night bit before=${CDN0:-?}, saver on=${CDN1:-?}, saver off=${CDN2:-?} (a difference = the flip reaches every process; no difference = the CI image cannot show it)"
+cdmem n0
+CDREL0="$(cdrelaunch)"
+for CDK in 1 2 3; do
+  for CDI in 1 2 3 4 5 6 7 8 9 10; do adb shell settings put global low_power 1; sleep 2.5; adb shell settings put global low_power 0; sleep 2.5; done
+  cdmem "n$((CDK*10))"
+done
+info "CD3n flips: 30 saver flips; night bit now ${CDN2:-?}->$(cdnight); relaunch events of a stock launcher3 activity in the events log: $CDREL0 before, $(cdrelaunch) after"
+CDFS="$(adb shell settings get system font_scale | tr -d '\r\n')"
+if [ -z "$CDFS" ] || [ "$CDFS" = "null" ]; then CDFS=1.0; fi
+CDFS2="$(awk -v f="$CDFS" 'BEGIN{printf "%.2f", f+0.15}')"
+for CDI in 1 2 3 4 5 6; do adb shell settings put system font_scale "$CDFS2"; sleep 3; adb shell settings put system font_scale "$CDFS"; sleep 3; done
+cdmem f6
+info "CD3n font control: font_scale $CDFS <-> $CDFS2 six times; relaunch events of a stock launcher3 activity now $(cdrelaunch); font_scale is $(adb shell settings get system font_scale | tr -d '\r\n')"
+adb shell settings put system font_scale "$CDFS"
+adb shell settings put global low_power 0; adb shell dumpsys battery reset >/dev/null 2>&1
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD3n: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD3 [nf][0-9]+: pid=none' $OUT/results.txt"
+info "CD3n end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd3n
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
