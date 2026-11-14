@@ -1592,3 +1592,8 @@ Is quickstep supposed to use this much ram, and if not, what is wrong
 ```
 My friend has the same tablet and his is 48mb ram on quickstep. I pressed force stop but it doesn't look like it did anything at all. The ram number went down to 350mb, but that is the 3 hour average, not a current number
 ```
+
+## 2026-11-14T03:06:54Z
+```
+I forced stopped quickstep several times, cleared the cache (it was only a small cache anyway) , force stopped the custom launcher, and every time I look at quickstep ram it goes down slightly but still very high like 280mb
+```
