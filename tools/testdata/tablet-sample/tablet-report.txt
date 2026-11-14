@@ -144,6 +144,35 @@ $ dumpsys package com.tj.launcher | grep -iE 'dexopt|status=|reason=|arm|x86' | 
       arm64: [status=speed] [reason=cmdline]
 $ dumpsys activity processes | grep -iE 'launcher|systemui' | grep -iE 'oom|adj|state' | head -12
     Proc # 3: prcp  F/ /T  t: com.tj.launcher/u0a123 oom adj=200
+$ dumpsys meminfo com.android.launcher3 | head -62
+Applications Memory Usage (in Kilobytes):
+** MEMINFO in pid 2345 [com.android.launcher3] **
+ App Summary
+                       Pss(KB)
+                        ------
+           Java Heap:    21000
+         Native Heap:    30000
+                Code:    41000
+               Stack:      900
+            Graphics:    18000
+       Private Other:     6000
+              System:     3000
+
+           TOTAL:       120000       TOTAL SWAP PSS:        0
+
+ Objects
+               Views:      412         ViewRootImpl:        2
+         AppContexts:        6           Activities:        3
+$ dumpsys procstats --hours 3 com.android.launcher3 | head -40
+AGGREGATED OVER LAST 3 HOURS:
+  * com.android.launcher3 / u0a83 / v29:
+      TOTAL: 100% (112MB-120MB-130MB/80MB-86MB-92MB/80MB-86MB-92MB over 30)
+$ dumpsys meminfo | sed -n '/Total PSS by process/,/^$/p' | head -16
+Total PSS by process:
+    190,000K: com.android.systemui (pid 1000 / activities)
+    120,000K: com.android.launcher3 (pid 2345 / activities)
+$ ps -A -o PID,RSS,NAME | grep -E 'launcher3|com.tj.launcher|systemui'
+ 2345 130000 com.android.launcher3
 
 ===== how the launcher has been doing: its crashes, then its own log
 $ logcat -b crash -d -v time | grep -A12 'com.tj.launcher' | head -60

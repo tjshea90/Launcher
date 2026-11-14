@@ -37,9 +37,18 @@ check "folder: the screen-structure xml is kept"           '[ -f "$T/out/2026-11
 check "folder: a symlink inside the folder is not followed" '! grep -rq "root:" "$T/out"'
 check "folder: a clean sample shows no red flag"           'grep -q "none found by the automatic checks" "$T/out/2026-11-05/FACTS.md"'
 check "folder: the table answers the open questions"       'grep -q "Side-key test (Power menu v2) | the side key WAS seen" "$T/out/2026-11-05/FACTS.md" && grep -q "Recents format check | the launcher.s reader parsed 2" "$T/out/2026-11-05/FACTS.md" && grep -q "Encryption" "$T/out/2026-11-05/FACTS.md"'
+check "folder: CD1 the stock launcher's memory row reads the dump (PSS, parts, activities, procstats, RSS, biggest) and a normal size raises NO flag" 'grep -q "Stock launcher (Quickstep) memory (CD1) | PSS now 117 MB (java heap 20, native heap 29, code 40, graphics 17" "$T/out/2026-11-05/FACTS.md" && grep -q "3 activities, 412 views" "$T/out/2026-11-05/FACTS.md" && grep -q "RSS 126 MB" "$T/out/2026-11-05/FACTS.md" && grep -q "biggest now: 190,000K: com.android.systemui" "$T/out/2026-11-05/FACTS.md" && ! grep -q "STOCK launcher (Quickstep, com.android.launcher3) holds" "$T/out/2026-11-05/FACTS.md"'
 check "folder: LATEST.md is the newest FACTS.md"           'grep -q "Latest tablet intake: 2026-11-05" "$T/out/LATEST.md" && grep -q "Red flags" "$T/out/LATEST.md"'
 OUT2="$($INTAKE "$T/in" --out "$T/out" --date 2026-11-05 2>&1)"
 check "a second intake on the same day gets its own folder (nothing is overwritten)" '[ -d "$T/out/2026-11-05-2" ] && [ -f "$T/out/2026-11-05/FACTS.md" ] && grep -q "2026-11-05-2" "$T/out/LATEST.md"'
+
+# ---------------------------------------------------------------- CD1: a stock launcher at 450 MB raises a red flag (and a report without the dump just has an empty row)
+mkdir -p "$T/big"; sed 's/TOTAL:       120000/TOTAL:       460000/' "$SAMPLE" > "$T/big/tablet-report.txt"
+$INTAKE "$T/big" --out "$T/outbig" --date 2026-11-07 >/dev/null 2>&1
+check "CD1: a stock launcher at 450 MB raises the red flag with its size" 'grep -q "STOCK launcher (Quickstep, com.android.launcher3) holds 449 MB" "$T/outbig/2026-11-07/FACTS.md"'
+mkdir -p "$T/nodump"; grep -v 'launcher3' "$SAMPLE" > "$T/nodump/tablet-report.txt"
+$INTAKE "$T/nodump" --out "$T/outnd" --date 2026-11-08 >/dev/null 2>&1; RCND=$?
+check "CD1: a report without the dump still runs and shows an empty (not made-up) answer" '[ "$RCND" = 0 ] && grep -q "Stock launcher (Quickstep) memory (CD1) | (not in the report)" "$T/outnd/2026-11-08/FACTS.md"'
 
 # ---------------------------------------------------------------- --keep-images keeps ONLY a small png
 head -c 400000 /dev/urandom > "$T/in/shots/BIG.png"
