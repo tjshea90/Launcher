@@ -5283,6 +5283,58 @@ check "CD4: the stock launcher was running at every measurement" bash -c "! grep
 check "CD4: at least 17 of the 20 cycles really went custom -> Quickstep -> custom (so the day was run)" bash -c "[ ${CDGOOD:-0} -ge 17 ]"
 info "CD4 end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section cd4
+if want cd3u; then # section cd3u
+ensurehome
+# ---- CD3u (TASKS CD2d; follow-up of cd3n, run #607): (a) on the CI image the battery saver does NOT move the global night bit (night stayed "notnight"), and (b) a font-scale change RELAUNCHES the stock launcher activity (12 relaunch events for 12 changes) and the stock
+#      process read 37.8 -> 56.2 MB after six flip pairs. Question: a one-time STEP (the relaunched activity at the other size, caches) or GROWTH per relaunch?  RESEARCH, not in the gate.
+#      Part 1: other ways to flip the global night bit (cmd uimode night, Settings.Secure ui_night_mode), each with its output; a driver that works is used for 30 night flips (lines m10 m20 m30).
+#      Part 2: 80 font-scale changes (40 pairs, 1.2 <-> 1.35) with a memory line every 20 (u0 u20 u40 u60 u80): flat after the first step = no growth per relaunch; a slope = something is kept per relaunch.
+CDP=CD3
+beat "before CD3u"
+setfeat; hpkey profile_battery_saver_off false
+setmode custom; rebind; home; sleep 2
+adb shell settings put global low_power 0; sleep 1
+adb shell am force-stop com.android.launcher3; sleep 2
+home; sleep 3
+cdapps; cdreturns 3; cdrecents 3
+cdmem u0
+CDNYES=""; CDNNO=""
+cdnightprobe(){ # cdnightprobe <label> <yes command> <no command>: run each, read the global night bit 3 s later; true when the bit moved both ways
+  local a b
+  adb shell "$2" > "$OUT/cd3u-$1-yes.txt" 2>&1; sleep 3; a="$(cdnight)"
+  adb shell "$3" > "$OUT/cd3u-$1-no.txt" 2>&1; sleep 3; b="$(cdnight)"
+  info "CD3u driver $1: night bit after yes=${a:-?}, after no=${b:-?}; output of yes: [$(head -c 90 "$OUT/cd3u-$1-yes.txt" | tr '\r\n' '  ')]"
+  [ "$a" = "night" ] && [ "$b" = "notnight" ]
+}
+if cdnightprobe uimode "cmd uimode night yes" "cmd uimode night no"; then CDNYES="cmd uimode night yes"; CDNNO="cmd uimode night no"; fi
+if [ -z "$CDNYES" ] && cdnightprobe secure "settings put secure ui_night_mode 2" "settings put secure ui_night_mode 1"; then CDNYES="settings put secure ui_night_mode 2"; CDNNO="settings put secure ui_night_mode 1"; fi
+adb shell cmd uimode night auto >/dev/null 2>&1; adb shell settings put secure ui_night_mode 0 >/dev/null 2>&1
+info "CD3u uimode state: $(adb shell dumpsys uimode 2>&1 | tr -d '\r' | grep -iE 'mNightMode|mComputedNightMode|mPowerSave|night' | head -4 | tr '\n' '|' | cut -c1-200)"
+if [ -n "$CDNYES" ]; then
+  CDREL1="$(cdrelaunch)"
+  for CDK in 1 2 3; do
+    for CDI in 1 2 3 4 5 6 7 8 9 10; do adb shell "$CDNYES" >/dev/null 2>&1; sleep 2.5; adb shell "$CDNNO" >/dev/null 2>&1; sleep 2.5; done
+    cdmem "m$((CDK*10))"
+  done
+  adb shell cmd uimode night auto >/dev/null 2>&1; adb shell settings put secure ui_night_mode 0 >/dev/null 2>&1
+  info "CD3u night loop: 30 flips with [$CDNYES]; relaunch events of a stock launcher3 activity $CDREL1 -> $(cdrelaunch)"
+else
+  info "CD3u night loop: no way to move the global night bit worked on this image, so no night flips were made (the font loop below is the stand-in)"
+fi
+CDFS="$(adb shell settings get system font_scale | tr -d '\r\n')"
+if [ -z "$CDFS" ] || [ "$CDFS" = "null" ]; then CDFS=1.0; fi
+CDFS2="$(awk -v f="$CDFS" 'BEGIN{printf "%.2f", f+0.15}')"
+CDREL2="$(cdrelaunch)"
+for CDK in 1 2 3 4; do
+  for CDI in 1 2 3 4 5 6 7 8 9 10; do adb shell settings put system font_scale "$CDFS2"; sleep 2; adb shell settings put system font_scale "$CDFS"; sleep 2; done
+  cdmem "u$((CDK*20))"
+done
+adb shell settings put system font_scale "$CDFS"
+info "CD3u font loop: font_scale $CDFS <-> $CDFS2, 40 pairs; relaunch events of a stock launcher3 activity $CDREL2 -> $(cdrelaunch); font_scale is $(adb shell settings get system font_scale | tr -d '\r\n')"
+ensurehome; setfeat; setmode custom; rebind; home
+check "CD3u: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD3 [mu][0-9]+: pid=none' $OUT/results.txt"
+info "CD3u end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section cd3u
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
