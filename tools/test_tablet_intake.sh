@@ -46,7 +46,7 @@ check "a second intake on the same day gets its own folder (nothing is overwritt
 mkdir -p "$T/big"; sed 's/TOTAL:       120000/TOTAL:       460000/' "$SAMPLE" > "$T/big/tablet-report.txt"
 $INTAKE "$T/big" --out "$T/outbig" --date 2026-11-07 >/dev/null 2>&1
 check "CD1: a stock launcher at 450 MB raises the red flag with its size" 'grep -q "STOCK launcher (Quickstep, com.android.launcher3) holds 449 MB" "$T/outbig/2026-11-07/FACTS.md"'
-mkdir -p "$T/nodump"; grep -v 'launcher3' "$SAMPLE" > "$T/nodump/tablet-report.txt"
+mkdir -p "$T/nodump"; sed '/^\$ dumpsys meminfo com.android.launcher3/,/^ 2345 130000 com.android.launcher3$/d' "$SAMPLE" > "$T/nodump/tablet-report.txt"
 $INTAKE "$T/nodump" --out "$T/outnd" --date 2026-11-08 >/dev/null 2>&1; RCND=$?
 check "CD1: a report without the dump still runs and shows an empty (not made-up) answer" '[ "$RCND" = 0 ] && grep -q "Stock launcher (Quickstep) memory (CD1) | (not in the report)" "$T/outnd/2026-11-08/FACTS.md"'
 
