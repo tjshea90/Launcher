@@ -2389,3 +2389,13 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:adf6319b838c -->
+
+## 2026-11-14T05:00:59Z
+> Status: two of the three new emulator runs are in, and they point to no growth.
+>
+> - **Release-switch run (cd3):** 24 Quickstep sessions with the Settings look-alike toggle on (48 toggles counted) and the animation-speed writes on. The stock launcher was flat from session 12 to 24 at 36.5, 36.7 and 36.7 MB, and the screen counts never changed.
+> - **Dark-theme flips (cd3n):** the CI emulator does not switch to dark theme when the battery saver changes, so that run proves nothing about dark-theme flips.
+> - **Font-size control:** each font-size change did rebuild Quickstep's screen, with 12 relaunches for 12 changes. Memory rose from 37.8 to 56.2 MB over six flip pairs.
+>
+> I can't yet tell whether that rise is a one-time step or grows per relaunch. A follow-up run (cd3u: 80 font changes, a reading every 20, plus other ways to flip dark theme) is going now. The full simulated-day run (cd4) is also still going. I'll read cd4 at about 05:09Z and cd3u at about 05:13Z.
+<!-- sha:8339b9e98d02 -->
