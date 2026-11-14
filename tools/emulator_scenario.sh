@@ -278,6 +278,24 @@ setpower(){ adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml 
 A11Y="$PKG/com.tj.launcher.TjAccessibilityService"
 rebind(){ adb shell settings put secure enabled_accessibility_services ""; sleep 1; adb shell settings put secure enabled_accessibility_services "$A11Y"; adb shell settings put secure accessibility_enabled 1; sleep 3; }
 a11ydump(){ { echo "== $1"; adb shell settings get secure enabled_accessibility_services; adb shell dumpsys accessibility | grep -iE 'tj|Bound services|Enabled services' | head -8; resumed; adb shell dumpsys window windows | grep -iE 'Window\{[^}]*(GlobalActions|ActionsDialog|TjA11y|com.tj.launcher)' | head -6; adb logcat -d -s TjA11y:I | tail -8; } >> "$OUT/a11y-diag.txt" 2>&1; }
+# ---- CD1 / CD2 (TASKS CD1i, CD2a): the STOCK launcher's memory split, shared by sections cd1, cd2, cd2h. INFO prefix = $CDP (default CD1).
+cdtotal(){ adb shell dumpsys meminfo "$1" </dev/null 2>/dev/null | grep -oE 'TOTAL: +[0-9]+' | head -1 | tr -dc '0-9'; }   # one process's PSS TOTAL in KB (empty when it is not running)
+cdmem(){ # cdmem <tag>: one INFO line with the stock launcher's memory split + two controls (our own process, SystemUI) + how many stock tasks / activity records the system holds; the whole dump stays in $OUT/cd-<tag>.txt
+  heal
+  local f="$OUT/cd-$1.txt" pid
+  adb shell dumpsys meminfo com.android.launcher3 > "$f" 2>&1 </dev/null
+  pid="$(adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n')"
+  { echo "== /proc status of pid ${pid:-none}"; [ -n "$pid" ] && adb shell "grep -E 'VmRSS|VmSwap|Threads' /proc/$pid/status" </dev/null 2>&1; } >> "$f"
+  adb shell dumpsys activity activities </dev/null > "$OUT/cd-$1-activities.txt" 2>&1
+  info "${CDP:-CD1} $1: pid=${pid:-none} $(grep -oE '\b(Java Heap|Native Heap|Code|Graphics|Private Other|System|TOTAL|Views|ViewRootImpl|Activities): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';' | cut -c1-230) $(grep -E 'VmRSS' "$f" | tr -s ' \t\r' ' ' | tr -d '\n') tasks=$(grep -E '^ *\* Task\{' "$OUT/cd-$1-activities.txt" | grep -c 'com.android.launcher3') records=$(grep -E 'Hist #[0-9]+: ActivityRecord\{' "$OUT/cd-$1-activities.txt" | grep -c ' com.android.launcher3/') ours=$(cdtotal com.tj.launcher) sysui=$(cdtotal com.android.systemui)"
+}
+cdrecents(){ local i; for i in $(seq 1 "$1"); do adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1.5; adb shell input keyevent KEYCODE_HOME; sleep 1.2; done; }   # cdrecents <n>: the Recents key, then Home, n times
+cdapps(){ local APP; for APP in com.android.contacts com.android.gallery3d com.android.email; do adb shell monkey -p $APP -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2; adb shell input keyevent KEYCODE_HOME; sleep 1; done; }   # three apps so Recents has cards
+cdreturns(){ local i; for i in $(seq 1 "$1"); do setmode quickstep; rebind; home; sleep 3; adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8; done; }   # cdreturns <n>: a Quickstep session started and ended n times
+cdlog(){ adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RESET (start|recents|cover)' | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' | cut -c1-70 | tail -n 6 | tr '\n' '|' > "$OUT/cd-$1-log.txt"; info "${CDP:-CD1} $1: the return lines of the log (newest last): $(cut -c1-300 "$OUT/cd-$1-log.txt")"; }
+cdhelper(){ # start the shell helper from the installed APK (the one adb line), wait, and say whether it runs
+  adb shell 'CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/data/local/tmp/tjshell.log 2>&1 &' > "$OUT/cd-helper-start.txt" 2>&1; sleep 5
+  adb shell "ps -A -o ARGS | grep -c '[S]hellServer'" > "$OUT/cd-helper-ps.txt" 2>&1; }
 rebind
 prefhome start
 if want legacy; then # section legacy
@@ -5049,18 +5067,7 @@ ensurehome
 #      A = the stock launcher is the real home (our accessibility service off, our app stopped); B = our router is the home, app only (no helper); C = the same with the shell helper. Same load each time:
 #      Recents open + close, then (B, C) a Quickstep session started and ended (the return reset). Read: PSS TOTAL, Native Heap, Graphics, and the leak signs Activities / Views / ViewRootImpl.
 beat "before CD1"
-cdmem(){ # cdmem <tag>: one INFO line with the stock launcher's memory split; the whole dump + /proc status stay in $OUT/cd1-<tag>.txt
-  heal
-  local f="$OUT/cd1-$1.txt" pid
-  adb shell dumpsys meminfo com.android.launcher3 > "$f" 2>&1 </dev/null
-  pid="$(adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n')"
-  { echo "== /proc status of pid ${pid:-none}"; [ -n "$pid" ] && adb shell "grep -E 'VmRSS|VmSwap|Threads' /proc/$pid/status" </dev/null 2>&1; } >> "$f"
-  info "CD1 $1: pid=${pid:-none} $(grep -oE '(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL|Views|ViewRootImpl|Activities|AppContexts): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';' | cut -c1-240) $(grep -E 'VmRSS|VmSwap' "$f" | tr -s ' \t\r' ' ' | tr '\n' ' ' | cut -c1-60)"
-}
-cdrecents(){ local i; for i in $(seq 1 "$1"); do adb shell input keyevent KEYCODE_APP_SWITCH; sleep 1.5; adb shell input keyevent KEYCODE_HOME; sleep 1.2; done; }   # cdrecents <n>: the Recents key, then Home, n times
-cdapps(){ local APP; for APP in com.android.contacts com.android.gallery3d com.android.email; do adb shell monkey -p $APP -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 2; adb shell input keyevent KEYCODE_HOME; sleep 1; done; }   # three apps so Recents has cards
-cdreturns(){ local i; for i in $(seq 1 "$1"); do setmode quickstep; rebind; home; sleep 3; adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8; done; }   # cdreturns <n>: a Quickstep session started and ended n times
-cdlog(){ adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RESET (start|recents|cover)' | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' | cut -c1-70 | tail -n 6 | tr '\n' '|' > "$OUT/cd1-$1-log.txt"; info "CD1 $1: the return lines of the log (newest last): $(cut -c1-300 "$OUT/cd1-$1-log.txt")"; }
+# CD1 / CD2: the stock launcher's memory helpers are hoisted above (a11ydump), shared by sections cd1, cd2 and cd2h
 
 # ---- phase A: the stock launcher is the REAL home (the friend's tablet)
 setfeat; setmode quickstep; rebind; home; sleep 2
