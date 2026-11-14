@@ -1821,3 +1821,24 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:9cbee201d1fd -->
+
+## 2026-11-14T05:50:42Z
+> Good news, and it fits how that screen works.
+>
+> **Why it keeps falling.** "Memory used by apps" shows an average over the last few hours, not the live size. Since your force stops, Quickstep's new readings are small. The old readings of 400 or more keep dropping out of the window, so the average slides down a little each time you look. An average only falls like that when the new readings are lower than the old ones leaving.
+>
+> **What 130 tells us.** The old readings were around 400. For the average to be 130, the readings since your force stops must average below 130. So Quickstep did **not** grow straight back to 400 after the restart. That rules out the worst case, where this tablet's Quickstep is simply that big every time it starts.
+>
+> **What it doesn't tell us:**
+> - **Live size right now.** It is below 130. My guess is 50–100 MB, which is only an estimate. Your friend's is 48 and the emulator's was 36–70.
+> - **Why it was 400+ for at least a day before.** Either something built up over a long time, or it creeps back slowly. A few hours can't show which, and the emulator can't reproduce days of uptime.
+>
+> **What to do (no cable, nothing to change):**
+> 1. Tap the Quickstep row and tell me the "Average", the "Maximum" and the period. Once Maximum is far below the old 427, the old samples are gone. Both numbers are then the real ones since the restart.
+> 2. Keep a short log of tablet time and MB each time you look. Bedtime and tomorrow morning is enough. Note anything unusual before it rises, such as long Quickstep use, app installs or updates, a wallpaper change or a reboot.
+> 3. If it climbs above about 300 again, say "cable" right away so the dump can catch it while it's big.
+>
+> I changed no app code. If it stays low for a day or two, I'll write it up as a one-off I couldn't reproduce and close the question.
+>
+> Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
+<!-- sha:9dfd3a1ee6fb -->
