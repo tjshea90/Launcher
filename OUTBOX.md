@@ -2304,3 +2304,24 @@
 ## 2026-11-14T02:51:04Z
 > That's the most useful number so far, so I'm first checking one thing in our manifest that could explain the difference from your friend's tablet. I'm also looking at how a short emulator test would be built.
 <!-- sha:e205fcef9744 -->
+
+## 2026-11-14T03:06:29Z
+> Your friend's 48 MB is the strongest clue so far: it means about 400 MB is not normal for this stock launcher on this tablet. Something in your setup makes it big, and it was already big before today's adb session. I haven't found what yet, and I'm sorry this reply took so long.
+>
+> **Force stop:** Nothing visible is expected. Android restarts the stock launcher within moments, because the Recents button depends on it. The drop to 350 MB is a 3-hour average, so it can't show the size right now. Your two readings from this evening (450, then 414) also fell on their own, with no restart in between. So the 350 doesn't tell us whether the restart helped.
+>
+> **The structural difference I found:** On your friend's tablet Quickstep is the home screen. On yours, our launcher is the only Home app, in both modes. Quickstep only runs the Recents screen and the short "Quickstep sessions" we open. That is a setup the stock launcher may handle badly, or our code may feed it. I can't tell which yet.
+>
+> **What I'm doing now:** A CI emulator test is running and will be done in about 10 minutes. It puts the stock launcher through the same Recents load three ways:
+> - as the real home;
+> - with our launcher as home, helper off;
+> - with our launcher as home, helper on.
+>
+> It prints Quickstep's memory split for each. I'll send you what it shows. The emulator is not your tablet, so it can only show whether our setup makes the stock launcher bigger.
+>
+> **What I need from you** (one minute, no cable): Settings → Developer options → Running services, the first view, not the cached list. Tell me Quickstep's MB right now. Then check again after about 30 minutes of normal use, and tell me what you did (Recents, lock/unlock, or a Quickstep session). If it's back near 400 straight away, that's how it behaves on your tablet. If it starts small and climbs, something is feeding it, and the speed of the climb tells me what.
+>
+> If the cable is handy, the two `dumpsys` commands from before still help. They show what the memory is made of. Run them before anything restarts Quickstep.
+>
+> Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
+<!-- sha:ce20e68b98a5 -->
