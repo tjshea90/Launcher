@@ -296,6 +296,8 @@ cdlog(){ adb logcat -d -s TjReset:I TjA11y:I 2>/dev/null | grep -E 'INVISIBLE|RE
 cdhelper(){ # start the shell helper from the installed APK (the one adb line), wait, and say whether it runs
   adb shell 'CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) setsid nohup app_process /system/bin com.tj.launcher.ShellServer >/data/local/tmp/tjshell.log 2>&1 &' > "$OUT/cd-helper-start.txt" 2>&1; sleep 5
   adb shell "ps -A -o ARGS | grep -c '[S]hellServer'" > "$OUT/cd-helper-ps.txt" 2>&1; }
+cdnight(){ adb shell am get-config </dev/null 2>/dev/null | grep -oE -- '-(notnight|night)-' | head -1 | tr -d '-'; }   # the GLOBAL night bit ("night" / "notnight"; empty = am get-config said nothing): proves a flip really reached the system configuration
+cdrelaunch(){ adb logcat -b events -d </dev/null 2>/dev/null | grep -E 'relaunch' | grep -c 'launcher3'; }   # relaunch events of a stock launcher3 activity in the events log (a Configuration change recreates the activity)
 rebind
 prefhome start
 if want legacy; then # section legacy
