@@ -195,6 +195,53 @@ def power_key_device(rep):
     return ", ".join(found) if found else "no input device lists KEY_POWER"
 
 
+def stock_launcher_memory(rep):
+    """CD1 (Tj, 2026-11-13: Settings > Memory showed the STOCK launcher, Quickstep, at 450 MB average): what the stock launcher holds, read from the probe's
+    `dumpsys meminfo com.android.launcher3`, `dumpsys procstats --hours 3 com.android.launcher3`, the process table and the biggest-process list.
+    Returns (one-line summary or None, total PSS in MB or None). Never raises: a ROM whose output differs must not break an intake."""
+    try:
+        parts, total_mb = [], None
+        mi = rep.get("dumpsys meminfo com.android.launcher3")
+        if mi:
+            got, in_summary = {}, False
+            for ln in mi.splitlines():
+                t = ln.strip()
+                if t.startswith("App Summary"):
+                    in_summary = True
+                    continue
+                m = re.match(r"^(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL(?: PSS)?):\s+([0-9]+)", t)
+                if m and in_summary:
+                    got.setdefault(m.group(1).replace(" PSS", ""), int(m.group(2)))
+            if "TOTAL" in got:
+                total_mb = got["TOTAL"] // 1024
+                parts.append("PSS now %d MB (%s)" % (total_mb, ", ".join("%s %d" % (k.lower(), got[k] // 1024) for k in ("Java Heap", "Native Heap", "Code", "Graphics", "Private Other", "System") if k in got)))
+            act = re.search(r"Activities:\s+([0-9]+)", mi)
+            views = re.search(r"\bViews:\s+([0-9]+)", mi)
+            if act or views:
+                parts.append("%s activities, %s views" % (act.group(1) if act else "?", views.group(1) if views else "?"))
+        ps = rep.get("dumpsys procstats", "com.android.launcher3")
+        if ps:
+            lines = [" ".join(x.split()) for x in ps.splitlines() if x.strip()]
+            tot = [x for x in lines if x.startswith("TOTAL:")]
+            if tot:
+                parts.append("Android's own count (min-avg-max PSS/USS): " + tot[0][:160])
+        pt = rep.get("ps -A -o PID,RSS,NAME")
+        if pt:
+            for ln in pt.splitlines():
+                f = ln.split()
+                if len(f) >= 3 and f[-1] == "com.android.launcher3" and f[1].isdigit():
+                    parts.append("RSS %d MB" % (int(f[1]) // 1024))
+                    break
+        top = rep.get("Total PSS by process")
+        if top:
+            rows = [" ".join(x.split()) for x in top.splitlines() if "K:" in x][:4]
+            if rows:
+                parts.append("biggest now: " + "; ".join(r[:60] for r in rows))
+        return (" | ".join(parts) if parts else None), total_mb
+    except Exception:
+        return None, None
+
+
 def facts_markdown(rep, source, when):
     kv = rep.kv
     flags, rows = [], []
@@ -288,6 +335,10 @@ def facts_markdown(rep, source, when):
     row("Keep-alive", "running=%s; services: %s" % (kv.get("keep-alive service running", "?"), "; ".join(" ".join(x.split()) for x in (rep.get("dumpsys activity services com.tj.launcher") or "").splitlines()[:3])), "state + dumpsys")
     cost = " | ".join(kv[k] for k in ("process memory (AD8)", "start-up (AD8)", "accessibility helper load (AD8)") if kv.get(k))
     row("Launcher cost on this tablet (AD8: memory, start-up, helper load)", cost or None, "state section")
+    sl_txt, sl_mb = stock_launcher_memory(rep)
+    row("Stock launcher (Quickstep) memory (CD1)", sl_txt, "dumpsys meminfo / procstats com.android.launcher3")
+    if sl_mb is not None and sl_mb >= 250:
+        flags.append("The STOCK launcher (Quickstep, com.android.launcher3) holds %d MB right now; a Go launcher normally sits around 80-150 MB. The row 'Stock launcher (Quickstep) memory (CD1)' says what fills it (Java / native / graphics); TASKS.md CD1." % sl_mb)
     adj = rep.get("dumpsys activity processes")
     row("Launcher process priority", "; ".join(x.strip() for x in (adj or "").splitlines()[:3]) if adj else None, "dumpsys activity processes")
     row("Compiled ahead of time?", "; ".join(x.strip() for x in (rep.get("dexopt") or "").splitlines()[:3]), "dumpsys package ... dexopt")
