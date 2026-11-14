@@ -5085,7 +5085,7 @@ check "CD1: phase B: our launcher is the home on screen" grep -q 'com.tj.launche
 cdapps; cdmem b0
 cdrecents 5; cdmem b5
 cdrecents 10; cdmem b15
-cdreturns 3; cdmem b15r3
+cdreturns 3; cdmem b15r3; cdlog B
 
 # ---- phase C: the same with the shell helper (invisible sweeps by task id, no Recents screen opened by the launcher)
 setfeat; setmode custom; rebind; home; sleep 2
