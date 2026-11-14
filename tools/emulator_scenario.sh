@@ -5272,7 +5272,7 @@ cdday(){ # cdday <n>: n cycles of the day described above; counts the cycles in 
 for CDK in 1 2 3 4; do
   cdday 5
   cdmem "d$((CDK*5))"
-  info "CD4 d$((CDK*5)) day: $CDGOOD of $CDALL cycles went custom -> Quickstep -> custom; mode $(getmode); low_power=$(adb shell settings get global low_power | tr -d '\r\n'); night=$(cdnight); relaunch events of a stock launcher3 activity: $(cdrelaunch); Recents watcher: $(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="recents_guard_status">[^<]*' | sed 's/.*>//' | cut -c1-120)"
+  info "CD4 d$((CDK*5)) day: $CDGOOD of $CDALL cycles went custom -> Quickstep -> custom; mode $(getmode); low_power=$(adb shell settings get global low_power | tr -d '\r\n'); night=$(cdnight); relaunch events of a stock launcher3 activity: $(cdrelaunch); Recents watcher: $(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="recents_guard_status">[^<]*' | sed 's/.*>//' | cut -c1-80)"
 done
 cdlog D
 b6unlock
