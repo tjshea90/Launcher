@@ -88,6 +88,11 @@ getprop dalvik.vm.dex2oat-filter
 ## W1 speed: memory and process state (is the launcher killed in the background on this low-memory tablet?)
 dumpsys meminfo com.tj.launcher | head -22
 dumpsys meminfo com.android.systemui | head -12
+## CD1 (Tj, 2026-11-13: Settings > Memory showed the STOCK launcher (Quickstep) at 450 MB average): what fills it? Java heap vs native vs graphics, Activities leaked, its Android-measured min-avg-max, who else is big
+dumpsys meminfo com.android.launcher3 | head -62
+dumpsys procstats --hours 3 com.android.launcher3 | head -40
+dumpsys meminfo | sed -n '/Total PSS by process/,/^$/p' | head -16
+ps -A -o PID,RSS,NAME | grep -E 'launcher3|com.tj.launcher|systemui'
 dumpsys activity lru | head -25
 dumpsys activity processes | grep -iE 'launcher|systemui' | grep -iE 'oom|adj|state' | head -12
 getprop ro.config.low_ram
