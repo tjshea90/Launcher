@@ -1,13 +1,13 @@
-# CHECKPOINT 1329 — read me first, then TASKS.md
+# CHECKPOINT 1330 — read me first, then TASKS.md
 
-**Written:** 2026-11-14T00:03:49Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `153cca83` (this checkpoint is the commit after it)
+**Written:** 2026-11-14T00:07:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9ed1fe56-f77dz2` · **builds on:** `8d691f4c` (this checkpoint is the commit after it)
 
 ## Just done
-CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock launcher's memory (dumpsys meminfo/procstats com.android.launcher3), intake test 64/64; not released
+CD1a answer sent to Tj (rows: Quickstep=stock MtkLauncher3Go 450 MB, house 'Settings' 49 MB=ours; not normal; 3 causes; CD1b 3 screen checks + 2 adb lines). No product code changed, nothing released
 
 ## Do this next
-send Tj the CD1a answer (rows, not normal, causes, CD1b screen checks); then look at our flows that touch the stock launcher (Recents open/clear, helper sweeps, alias toggle) for CD1d; release only together with a real change
+wait for Tj's CD1b numbers (1 DAY vs 3 HOURS, Quickstep Avg/Max/Runtime, Running services, optional meminfo paste). Then CD1d: if big before ~17Z today -> not the helper; else look at RecentsSweep with helper. Either way add emulator section cd1 (25x Recents open/close + 25x SettingsAlias toggle, print dumpsys meminfo com.android.launcher3 before/after) to test our flows. Probe lines (CD1c) ship with the next real version. No heartbeat armed
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -17,6 +17,7 @@ send Tj the CD1a answer (rows, not normal, causes, CD1b screen checks); then loo
 
 ## Last ten checkpoints
 ```
+  8d691f4c ckpt 1329: CD1c done: probe-commands.txt + tablet_intake.py row/flag for the stock laun
   4b92c094 ckpt 1328: CD1 written: Tj asks if Quickstep 450 MB is normal (Memory screen). Row map 
   276cfb51 ckpt 1327: CC1 DONE: all adb grants + ACTIVATE_VPN + helper + Do everything (Tj: It is 
   76823c2d ckpt 1326: CC1e: helper line ran ([1] 16808)
@@ -26,8 +27,4 @@ send Tj the CD1a answer (rows, not normal, causes, CD1b screen checks); then loo
   e34553c0 ckpt 1322: CC1 written (Tj: adb cable, all permissions); live cable session started, st
   fdac2f4c ckpt 1321: heartbeat 12:33Z: nothing new (no Tj message since 04:58Z, no other session)
   45fe90fe ckpt 1320: heartbeat 08:32Z+10:33Z: merged main (v0.9.10, CA1/CB1/CB2 of the other sess
-  7c05a840 ckpt 1271: stand-down note only, no work: heartbeat 06:33Z rule 2 (other branch ckpt 13
 ```
-
-(4 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
