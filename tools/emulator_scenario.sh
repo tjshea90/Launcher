@@ -4972,6 +4972,7 @@ VOT=com.tj.testnotifier
 adb install -r -g testnotifier/build/outputs/apk/quick/debug/testnotifier-quick-debug.apk > "$OUT/vo-install.txt" 2>&1
 adb shell appops set "$VOT" ACTIVATE_VPN allow > "$OUT/vo-appops.txt" 2>&1
 adb shell appops set "$PKG" ACTIVATE_VPN ignore >> "$OUT/vo-appops.txt" 2>&1
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >> "$OUT/vo-appops.txt" 2>&1   # (CE1) the world word is published only with this grant: `base` gives it, a solo `vo` run must too (run #613: the word read null)
 vodump(){ adb shell dumpsys connectivity 2>/dev/null | tr -d '\r' | grep -c 'type: VPN\[[^]]*\], state: CONNECTED'; }   # VPN networks Android reports CONNECTED (NetworkInfo of every network agent)
 voip(){ adb shell "ip addr 2>/dev/null; ifconfig 2>/dev/null" | grep -c '10.111.0.2'; }                                     # the test VPN's address on any interface (run #594: ip/ifconfig on tun0 saw nothing although the VPN was up)
 voup(){ { [ "$(vodump)" -gt 0 ] 2>/dev/null || [ "$(voip)" -gt 0 ] 2>/dev/null; } && echo 1 || echo 0; }   # 1 = a VPN is up (either probe), 0 = gone
