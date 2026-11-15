@@ -4963,7 +4963,10 @@ ensurehome
 #      The VPN is the CI test app's REAL VpnService (testnotifier TestVpnService: routes only 10.111.0.0/24, logs with the tag TJVPN; consent by appops). The launcher turns it off with VpnService.prepare
 #      once Android allowed it (appops ACTIVATE_VPN for the launcher = what Android's own "Connection request" OK sets); research/VPN_FOOTER_2026-11-13.md. Switch vpn_off_when_locked (debug default OFF: set here).
 #      Phases: premise (the VPN is up, the quick-settings row "Device connected to" shows), A switch off = it stays, B switch on but not allowed = it stays + says why, C allowed = screen off turns it off,
-#      D a VPN that reconnects while dark is turned off again, E the cap (3 per lock) leaves a 4th alone, F unlocked = nothing happens, G the lock screen's panel has no VPN row after a stop.
+#      D a VPN that reconnects while dark is turned off again, E the cap (3 per lock) leaves a 4th alone, F (CE1) unlocked in the CUSTOM launcher a VPN is turned off too, H Quickstep unlocked = the VPN stays,
+#      the screen off turns it off, the lock screen's panel has no VPN row after a stop.
+#      CE1 (Tj, 2026-11-15: "The VPN bar ... should never show up at any time on any lock screen or in custom launcher ... Never automatically turn off fast wifi mode ... inside quickstep launcher"):
+#      the launcher also PUBLISHES the world for LinkMeter's Fast Wi-Fi in Settings.Global tj_launcher_world (quiet:<why> | quickstep): checked after B (custom), in A (switch off = removed) and in H (Quickstep).
 beat "before VO"
 VOT=com.tj.testnotifier
 adb install -r -g testnotifier/build/outputs/apk/quick/debug/testnotifier-quick-debug.apk > "$OUT/vo-install.txt" 2>&1
@@ -4999,6 +5002,8 @@ vowake; sleep 1; adb shell cmd statusbar expand-settings; sleep 3; shot vo-b-loc
 adb shell uiautomator dump /sdcard/vob.xml >/dev/null 2>&1; adb shell cat /sdcard/vob.xml > "$OUT/vo-b-panel.xml" 2>/dev/null
 adb shell input keyevent KEYCODE_BACK; sleep 2; vounlock; rebind; sleep 3
 info "VO B: up=$VO_B; launcher says: $(grep -m2 TjVpnOff "$OUT/vo-log-b.txt" | cut -c1-160 | tr '\n' '|')"
+VO_BW="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"
+check "VO2d: (CE1) with the switch on and Android's OK missing the launcher still tells LinkMeter the world (custom launcher = quiet): word '$VO_BW'" test "$VO_BW" = "quiet:custom launcher"
 check "VO2: switch on but not allowed by Android: the VPN stays connected" test "$VO_B" = 1
 check "VO2b: ... and the launcher says Android has not allowed it" grep -q 'has not allowed' "$OUT/vo-log-b.txt"
 check "VO2c: (premise of VO7b) the LOCK screen's quick-settings panel shows the row while a VPN is up" grep -q 'Device connected to' "$OUT/vo-b-panel.xml"
@@ -5009,6 +5014,8 @@ info "VO: launcher ACTIVATE_VPN = $(adb shell appops get "$PKG" ACTIVATE_VPN 2>/
 vofeat false; rebind; home; sleep 3
 vosleep 5; VO_A="$(voup)"; vounlock
 check "VO1: allowed, but with the switch OFF the VPN stays connected when the screen goes off" test "$VO_A" = 1
+VO_AW="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"
+check "VO1b: (CE1) with the switch OFF the launcher says nothing: the world word is removed (word '$VO_AW')" test "$VO_AW" = null
 # ---- C: switch ON: the screen goes off -> the VPN is turned off
 vofeat true; rebind; home; sleep 3; [ "$(voup)" = 1 ] || vostart >/dev/null
 adb logcat -c
@@ -5016,14 +5023,14 @@ adb shell input keyevent KEYCODE_SLEEP; VO_T0=$(date +%s); vowait 0 10; VO_C="$(
 info "VO C: up=$VO_C ${VO_CS}s after the screen went off; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
 check "VO3: allowed + switch on: the VPN is turned off when the screen goes off" test "$VO_C" = 0
 check "VO3b: ... by Android revoking it (the test VPN got onRevoke)" grep -q 'TJVPN.*revoked' "$OUT/vo-log-c.txt"
-check "VO3c: ... and the launcher wrote why (the screen went off)" grep -q 'turned the VPN off (the screen went off)' "$OUT/vo-log-c.txt"
+check "VO3c: ... and the launcher wrote why (screen off)" grep -q 'turned the VPN off (screen off)' "$OUT/vo-log-c.txt"
 sleep 3; check "VO3d: nothing turns it back on while dark" test "$(voup)" = 0
 # ---- D: the VPN app reconnects while the tablet is dark: turned off again (the network callback)
 adb logcat -c
 vostart >/dev/null; vowait 0 12; VO_D="$(voup)"; sleep 2; volog d
 info "VO D: up=$VO_D after a reconnect while dark; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-d.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
 check "VO4: a VPN that reconnects while the screen is dark is turned off again" bash -c "test '$VO_D' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-d.txt'"
-check "VO4b: ... because it connected while locked" grep -q 'a VPN connected while locked' "$OUT/vo-log-d.txt"
+check "VO4b: ... because a VPN connected in the quiet world" grep -q 'turned the VPN off (a VPN connected)' "$OUT/vo-log-d.txt"
 # ---- E: the cap: stop 3 (this reconnect) still happens, a 4th within 10 minutes is left alone (no ping-pong all night)
 sleep 3; adb logcat -c
 vostart >/dev/null; vowait 0 12; VO_E3="$(voup)"; sleep 1; volog e3
@@ -5033,33 +5040,33 @@ info "VO E: after reconnect 3 up=$VO_E3, after reconnect 4 up=$VO_E4; log: $(gre
 check "VO5: the 3rd stop within 10 minutes still happens (the VPN really came back first)" bash -c "test '$VO_E3' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-e3.txt' && grep -q 'TJVPN.*revoked' '$OUT/vo-log-e3.txt'"
 check "VO5b: a 4th reconnect within 10 minutes is left alone" bash -c "test '$VO_E4' = 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-e.txt'"
 check "VO5c: ... and the launcher says it gave up for now" grep -q 'reconnected 3 times' "$OUT/vo-log-e.txt"
-# ---- F: unlocked: the count starts again, and a VPN connected while unlocked is Tj's to use (review LOW8: connect AFTER the unlock)
+# ---- F: CE1 (Tj, 2026-11-15: "never ... in custom launcher"): UNLOCKED in the CUSTOM launcher a VPN that connects is turned off too (before CE1 this phase proved the opposite: "unlocked = Tj's to use")
 vounlock; adb shell am force-stop "$VOT"; sleep 2; adb logcat -c
-vostart >/dev/null; sleep 6; VO_F="$(voup)"; volog f
-info "VO F: unlocked, up=$VO_F, keyguard $(kg_state); launcher lines: $(grep -c TjVpnOff "$OUT/vo-log-f.txt")"
-check "VO6: unlocked in the custom launcher, a VPN connected now stays connected" bash -c "test '$VO_F' = 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-f.txt' && ! grep -q 'turned the VPN off' '$OUT/vo-log-f.txt'"
-# ---- G: after the unlock the count starts again: screen off turns it off; the LOCK screen's panel then has no VPN row
+vostart >/dev/null; sleep 6; VO_F="$(voup)"; volog f; VO_FW="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"
+info "VO F: custom launcher, unlocked, up=$VO_F, keyguard $(kg_state), word '$VO_FW'; launcher lines: $(grep TjVpnOff "$OUT/vo-log-f.txt" | cut -c1-150 | tail -2 | tr '\n' '|')"
+check "VO6: unlocked in the CUSTOM launcher a VPN that connects is turned off too" bash -c "test '$VO_F' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-f.txt' && grep -q 'turned the VPN off (a VPN connected)' '$OUT/vo-log-f.txt'"
+check "VO6b: ... and the world word says the custom launcher (LinkMeter's Fast Wi-Fi pauses on it)" test "$VO_FW" = "quiet:custom launcher"
+# ---- H: CB2e (Tj: "And any time I lock the screen from quickstep") + CE1: Quickstep, unlocked: the VPN stays and the word says Quickstep; the screen off turns it off; the LOCK screen's panel has no VPN row after the stop
+vounlock; setmode quickstep; rebind; home; sleep 3
+vostart >/dev/null; sleep 3; VO_H1="$(voup)"; VO_HW1="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"
 adb logcat -c
-vosleep 1; vowait 0 10; VO_G="$(voup)"; vowake; sleep 1
+adb shell input keyevent KEYCODE_SLEEP; vowait 0 10; VO_H2="$(voup)"; VO_HW2="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"; sleep 2; volog h
+vowake; sleep 1
 adb shell cmd statusbar expand-settings; sleep 3; shot vo-1-lock-panel-after
 adb shell uiautomator dump /sdcard/vo1.xml >/dev/null 2>&1; adb shell cat /sdcard/vo1.xml > "$OUT/vo-1-panel.xml" 2>/dev/null
 adb shell input keyevent KEYCODE_BACK; sleep 2; rebind; sleep 2
-check "VO7: after an unlock the count starts again: the next screen-off turns the VPN off" test "$VO_G" = 0
-info "VO G: SystemUI ids in the lock-screen panel dump: $(grep -oE 'com.android.systemui:id/(quick_settings_panel|qs_[a-z_]*)' "$OUT/vo-1-panel.xml" | sort -u | head -6 | tr '\n' ' ')"
-check "VO7b: the lock screen's quick-settings panel (open: a quick-settings node is in the dump) shows no 'Device connected to' row" bash -c "grep -qE 'com.android.systemui:id/(quick_settings_panel|qs_)' '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
-# ---- H: CB2e (Tj: "And any time I lock the screen from quickstep"): the same in Quickstep mode
-vounlock; setmode quickstep; rebind; home; sleep 3
-vostart >/dev/null; sleep 3; VO_H1="$(voup)"
-adb logcat -c
-adb shell input keyevent KEYCODE_SLEEP; vowait 0 10; VO_H2="$(voup)"; sleep 2; volog h
-info "VO H (Quickstep): unlocked tun0 up=$VO_H1, after the screen went off up=$VO_H2, mode $(getmode); log: $(grep TjVpnOff "$OUT/vo-log-h.txt" | cut -c1-150 | tail -2 | tr '\n' '|')"
-check "VO8: in an unlocked Quickstep session the VPN stays connected" test "$VO_H1" = 1
+info "VO H (Quickstep): unlocked up=$VO_H1 word '$VO_HW1', after the screen went off up=$VO_H2 word '$VO_HW2', mode $(getmode); log: $(grep TjVpnOff "$OUT/vo-log-h.txt" | cut -c1-150 | tail -2 | tr '\n' '|')"
+check "VO8: in an unlocked Quickstep session the VPN stays connected (Tj: never turn off fast wifi inside Quickstep)" test "$VO_H1" = 1
+check "VO8a: ... and the world word for LinkMeter says Quickstep" test "$VO_HW1" = quickstep
 check "VO8b: locking the screen from Quickstep turns the VPN off" test "$VO_H2" = 0
+check "VO8c: ... and the world word turns quiet (LinkMeter's Fast Wi-Fi pauses and does not put it back)" bash -c "case '$VO_HW2' in quiet:*) exit 0;; *) exit 1;; esac"
+info "VO H: SystemUI ids in the lock-screen panel dump: $(grep -oE 'com.android.systemui:id/(quick_settings_panel|qs_[a-z_]*)' "$OUT/vo-1-panel.xml" | sort -u | head -6 | tr '\n' ' ')"
+check "VO7b: the lock screen's quick-settings panel (open: a quick-settings node is in the dump) shows no 'Device connected to' row after the stop" bash -c "grep -qE 'com.android.systemui:id/(quick_settings_panel|qs_)' '$OUT/vo-1-panel.xml' && ! grep -q 'Device connected to' '$OUT/vo-1-panel.xml'"
 # ---- clean up: the test VPN off, the launcher's app-op back to the default, the switch off
 vounlock; setmode custom
 adb shell am force-stop "$VOT"; adb shell appops set "$PKG" ACTIVATE_VPN ignore >/dev/null 2>&1; adb shell appops set "$VOT" ACTIVATE_VPN ignore >/dev/null 2>&1
 vofeat false; rebind; home; sleep 2
-info "VO end: tun0 up=$(voup), keyguard $(kg_state)"
+info "VO end: tun0 up=$(voup), keyguard $(kg_state), world word '$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')'"
 fi # section vo
 if want cd1; then # section cd1
 ensurehome
