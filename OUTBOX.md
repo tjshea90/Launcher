@@ -1886,3 +1886,7 @@
 ## 2026-11-15T22:50:26Z
 > The `vo` rerun with the rewritten cap phase is running. The restart audit for your question is saved in the repo, and I'll turn it into plain words once the releases are out.
 <!-- sha:47cf25b4eb25 -->
+
+## 2026-11-15T23:05:30Z
+> The v0.9.11 release build is running. When it finishes I'll check the release exists and record it, then send you the CE1 answer and the restart answer.
+<!-- sha:628cf30b9bbb -->
