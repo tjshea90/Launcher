@@ -50,13 +50,21 @@ public final class VpnOff {
     private static volatile String published = null;      // the last world word this process wrote (null: none, or the write failed)
     private static volatile boolean retractChecked = false;   // the switch is off and the word was looked for (and removed) once in this process
 
+    private static volatile boolean lookWanted = false;   // a poll, a connecting VPN or a settling re-look asked for a look at the networks: a heartbeat sync that coalesced with it must not swallow it (review CE1 5)
+    private static long refusedAt = 0;                      // elapsedRealtime of the refusal behind refusedThisLock: a refusal is believed for REFUSE_MS only (review CE1 3: the custom-launcher world lasts all day)
+    private static final long REFUSE_MS = 10 * 60_000L;
+
+    private static final Object WORKER_LOCK = new Object();   // not the class monitor: watch() used to hold that across a binder call (review CE1 8)
     private static Handler worker;
-    private static ConnectivityManager.NetworkCallback callback;
+    private static volatile ConnectivityManager.NetworkCallback callback;
+    private static final java.util.concurrent.atomic.AtomicBoolean watchPosted = new java.util.concurrent.atomic.AtomicBoolean();
     private static volatile Context appCtx;
 
-    private static synchronized Handler worker() {
-        if (worker == null) { HandlerThread t = new HandlerThread("tj-vpn-off"); t.start(); worker = new Handler(t.getLooper()); }
-        return worker;
+    private static Handler worker() {
+        synchronized (WORKER_LOCK) {
+            if (worker == null) { HandlerThread t = new HandlerThread("tj-vpn-off"); t.start(); worker = new Handler(t.getLooper()); }
+            return worker;
+        }
     }
 
     public static boolean switchOn(Context c) { return Features.get(c, VpnOffRules.KEY, VpnOffRules.defaultOn(ReturnReset.isDebuggable(c))); }
@@ -127,8 +135,9 @@ public final class VpnOff {
             if (!quiet) { endQuiet(); return; }
             final boolean began = !quietWorld;
             quietWorld = true;
-            if (began) worker().post(() -> { if (allowed(app)) schedulePoll(); });   // nothing could be done without Android's OK: no look at all then
-            if (began || !HEARTBEAT.equals(trigger)) check(app, true, trigger);      // the heartbeat only re-reads the world; a look at the networks costs binder calls
+            // the poll is armed in EVERY quiet sync, once (idempotent): a switch that was off and went on again, or Android's OK given later in the same world, still gets its look (review CE1 1)
+            worker().post(() -> { if (allowed(app) && !worker().hasCallbacks(poll)) schedulePoll(); });   // nothing could be done without Android's OK: no look at all then
+            if (began || lookWanted || !HEARTBEAT.equals(trigger)) { lookWanted = false; check(app, true, trigger, assumeHelper); }   // the heartbeat only re-reads the world; a look at the networks costs binder calls
         } catch (Throwable t) { Log.e(TAG, "VPN world sync failed", t); }
     }
 
@@ -159,6 +168,7 @@ public final class VpnOff {
         published = value;
         worker().post(() -> {
             try {
+                if (!switchOn(app)) { if (value.equals(published)) published = null; return; }   // Restore everything / the switch went off while this was queued: the word stays removed (review CE1 6)
                 if (!Settings.Global.putString(app.getContentResolver(), VpnOffRules.WORLD_KEY, value)) throw new IllegalStateException("the settings provider refused the write");
                 Log.i(TAG, "world word: " + value);   // not in the lock log: it changes four times in a lock cycle (Launcher control and the tablet report show the current word)
             } catch (Throwable t) {
@@ -185,36 +195,42 @@ public final class VpnOff {
     // ================================================================ turning a VPN off
 
     /** A trigger (any thread): the world is quiet. Cheap when the switch is off (one preference read, nothing posted). */
-    static void check(Context c, final boolean quiet, final String trigger) {
+    static void check(Context c, final boolean quiet, final String trigger, final boolean assumeHelper) {
         final Context app = c.getApplicationContext();
         if (!switchOn(app)) return;
-        worker().post(() -> run(app, quiet, trigger));
+        worker().post(() -> run(app, quiet, trigger, assumeHelper));
     }
 
     private static final Runnable poll = new Runnable() { @Override public void run() {
         Context app = appCtx;
-        if (!quietWorld || app == null || !switchOn(app)) return;
-        AnimationSpeedup.syncSoon(app, "a look while quiet");   // level-triggered: the facts are read again by the pipeline, a VPN that appeared is turned off
-        schedulePoll();
+        if (!quietWorld || app == null) return;
+        lookWanted = true;
+        AnimationSpeedup.syncSoon(app, "a look while quiet");   // level-triggered: the facts are read again by the pipeline (a switch that went off ends the world there), a VPN that appeared is turned off
+        if (switchOn(app)) schedulePoll();
     } };
     private static void schedulePoll() { Handler w = worker(); w.removeCallbacks(poll); w.postDelayed(poll, VpnOffRules.POLL_MS); }
 
-    private static void run(final Context app, boolean quiet, final String trigger) {
+    private static void run(final Context app, boolean quiet, final String trigger, final boolean assumeHelper) {
         try {
             boolean on = switchOn(app);
             boolean up = on && vpnUp(app);
             final boolean ok = up && allowed(app);   // the app-op is read only when there is something to turn off
             long now = SystemClock.elapsedRealtime();
             long since = lastPrepareAt == 0 ? Long.MAX_VALUE / 4 : now - lastPrepareAt;
+            if (refusedThisLock && now - refusedAt >= REFUSE_MS) refusedThisLock = false;   // believed for ten minutes, then asked again (one binder call a poll, only while a VPN is up)
             String why = VpnOffRules.why(on, ok, quiet, up, VpnOffRules.recentStops(stopTimes, now), refusedThisLock, since);
             if (why != VpnOffRules.STOP) {
                 if (VpnOffRules.SETTLING.equals(why)) {   // level-triggered: look again (fresh facts) once the teardown had its time
-                    worker().postDelayed(() -> AnimationSpeedup.syncSoon(app, trigger), VpnOffRules.SETTLE_MS - since + 100);
+                    worker().postDelayed(() -> { lookWanted = true; AnimationSpeedup.syncSoon(app, trigger); }, VpnOffRules.SETTLE_MS - since + 100);
                     return;
                 }
                 if (VpnOffRules.worthALine(why) && !why.equals(loggedThisLock)) { loggedThisLock = why; note(app, why + " (" + trigger + ")"); }
                 return;
             }
+            // the world is read AGAIN here: the snapshot that queued this run may be stale (a gesture unlock in the gap would otherwise stop the VPN of an unlocked Quickstep session) (review CE1 4)
+            NotifQuietPolicy.Facts fresh = new NotifQuietPolicy.Facts();
+            fillWorld(app, fresh, new AnimationSpeedup.Look(app, null, null), assumeHelper);
+            if (!NotifQuietPolicy.wanted(fresh)) { Log.i(TAG, "VPN left alone: the world is no longer quiet (" + trigger + ")"); return; }
             int result;
             try { Intent need = VpnService.prepare(app); result = need == null ? VpnOffRules.PREPARED : VpnOffRules.REFUSED; }
             catch (IllegalStateException e) { result = VpnOffRules.LOCKDOWN; }
@@ -230,7 +246,7 @@ public final class VpnOff {
                 }, LOOK_AGAIN_MS);
                 return;
             }
-            if (VpnOffRules.refusesForThisLock(result)) refusedThisLock = true;
+            if (VpnOffRules.refusesForThisLock(result)) { refusedThisLock = true; refusedAt = now; }
             String line = VpnOffRules.outcome(result, ok, true);
             if (!line.equals(loggedThisLock)) { loggedThisLock = line; note(app, line + " (" + trigger + ")"); }
         } catch (Throwable t) { Log.e(TAG, "VPN off failed", t); }
@@ -249,25 +265,31 @@ public final class VpnOff {
      * no accessibility helper (the custom launcher needs none: without it nothing can change the mode). A VPN that connects in an unlocked Quickstep session is
      * looked at too (one cheap pipeline run) and left alone.
      */
-    static synchronized void watch(Context c) {
+    static void watch(Context c) {
         final Context app = c.getApplicationContext();
         appCtx = app;
-        if (callback != null) return;
+        if (callback != null || !watchPosted.compareAndSet(false, true)) return;
+        worker().post(() -> registerWatch(app));   // a binder call: never on the caller's thread (the main thread at a mode change)
+    }
+
+    private static void registerWatch(final Context app) {
         try {
             ConnectivityManager cm = (ConnectivityManager) app.getSystemService(Context.CONNECTIVITY_SERVICE);
-            if (cm == null) return;
-            // API 29 narrows a listen to VPNs that route the CALLER's traffic: a VPN that leaves the launcher out is never heard here; the 30 s look covers it
-            NetworkRequest req = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_VPN).removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
-            ConnectivityManager.NetworkCallback cb = new ConnectivityManager.NetworkCallback() {
-                @Override public void onAvailable(Network n) { if (switchOn(app)) AnimationSpeedup.syncSoon(app, "a VPN connected"); }
-            };
-            cm.registerNetworkCallback(req, cb, worker());
-            callback = cb;
+            if (cm != null) {
+                // API 29 narrows a listen to VPNs that route the CALLER's traffic: a VPN that leaves the launcher out is never heard here; the 30 s look covers it
+                NetworkRequest req = new NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_VPN).removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN).build();
+                ConnectivityManager.NetworkCallback cb = new ConnectivityManager.NetworkCallback() {
+                    @Override public void onAvailable(Network n) { if (switchOn(app)) { lookWanted = true; AnimationSpeedup.syncSoon(app, "a VPN connected"); } }
+                };
+                cm.registerNetworkCallback(req, cb, worker());
+                callback = cb;
+            }
         } catch (Throwable t) { Log.w(TAG, "VPN watch failed: " + t); }
+        if (callback == null) worker().postDelayed(() -> watchPosted.set(false), 60_000L);   // a failed registration is tried again after a minute, not at every sync
     }
 
     /** The helper's service went away: nothing here depends on it (the pipeline and the callback live in the process), the callback is kept. Kept for the service's calls. */
-    public static synchronized void unwatch(Context c) { }
+    public static void unwatch(Context c) { }
 
     /** One line for Launcher control and the tablet report (no VPN name). */
     public static String describe(Context c) {
