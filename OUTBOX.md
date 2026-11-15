@@ -1842,3 +1842,13 @@
 >
 > Still open from before: the VPN lock-screen check. Does the "Device connected to …" row disappear?
 <!-- sha:9dfd3a1ee6fb -->
+
+## 2026-11-15T22:02:11Z
+> The LinkMeter build and the three emulator runs are still going, so there's nothing to act on until they finish.
+>
+> - **Launcher:** the VPN rule is rewritten so it also acts in the custom launcher and publishes the lock-state word LinkMeter reads. A review of the diff found 8 issues; I fixed 6 and recorded why the other 2 stay. After the fixes the unit suite (1054 tests) and lint pass.
+> - **LinkMeter:** all 23 of the checks that deliberately break its code are now caught, after I fixed 3 tests that had been masked by the pretend clock. Offline tests and the release build pass. The closing save is pushed and its build run (#184) is in progress.
+> - **Emulator gate:** runs #610, #611 and #612 started at 21:57Z.
+>
+> I'll read all of them as soon as the first wake-up arrives, record the verdicts in the repo before analysing any failure, and then ship both apps.
+<!-- sha:ffc1a3b39729 -->
