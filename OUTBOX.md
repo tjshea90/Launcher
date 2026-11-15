@@ -1852,3 +1852,7 @@
 >
 > I'll read all of them as soon as the first wake-up arrives, record the verdicts in the repo before analysing any failure, and then ship both apps.
 <!-- sha:ffc1a3b39729 -->
+
+## 2026-11-15T22:05:19Z
+> LinkMeter v0.2.184 is released and `main` follows it. I'm waiting on the three Launcher emulator runs until about 22:20Z, then I'll read their results.
+<!-- sha:b1e8012b8e32 -->
