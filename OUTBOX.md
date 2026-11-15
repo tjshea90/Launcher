@@ -1864,3 +1864,7 @@
 ## 2026-11-15T22:25:31Z
 > Both solo runs are queued: `vo` with the rewritten phases, and `ss` to see whether SS7 fails again on its own. I'll read them in about 10 minutes.
 <!-- sha:e6428ee5402a -->
+
+## 2026-11-15T22:37:30Z
+> The `vo` solo run with the added permission grant is in flight. The product code matches the gated commit exactly, so only the test setup changed. I'll read the result as soon as the timer fires.
+<!-- sha:4fb7ef0f0309 -->
