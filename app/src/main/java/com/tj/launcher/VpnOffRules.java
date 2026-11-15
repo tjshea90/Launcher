@@ -3,8 +3,16 @@ package com.tj.launcher;
 /**
  * CB2 (Tj, 2026-11-13: "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on";
  * CB2e: "And any time I lock the screen from quickstep"). The quick-settings row "Device connected to <VPN>" is SystemUI's own and cannot be removed or
- * covered well (research/VPN_FOOTER_2026-11-13.md), so the VPN itself is turned off whenever the screen is dark or the lock screen is up, in EITHER launcher
- * (no mode condition). Pure rules (no Android), pinned by VpnOffRulesTest; VpnOff is the Android side.
+ * covered well (research/VPN_FOOTER_2026-11-13.md), so the VPN itself is turned off whenever the screen is dark or the lock screen is up, in EITHER launcher.
+ *
+ * CE1 (Tj, 2026-11-15: "The VPN bar in the notification panel should never show up at any time on any lock screen or in custom launcher ... Never automatically
+ * turn off fast wifi mode if I turned it on and I'm inside quickstep launcher"): the world is now the SAME one the pop-up banners (BH1) and the radio symbols
+ * (BS1) use, {@link NotifQuietPolicy}: the custom launcher, a dark screen, the lock screen (any launcher) and a plain PIN still being decided are "quiet" = no
+ * VPN; an unlocked, decided Quickstep session is the one place a VPN may run. The launcher also PUBLISHES that world ({@link #WORLD_KEY}) so the VPN's own app
+ * (LinkMeter's Fast Wi-Fi) can pause itself instead of fighting the launcher: before, LinkMeter put its VPN back two seconds after every stop, three times, and
+ * then {@link #GAVE_UP} left the VPN (and its row on the lock screen) alone.
+ *
+ * Pure rules (no Android), pinned by VpnOffRulesTest; VpnOff is the Android side.
  *
  * How the VPN is turned off: {@code VpnService.prepare(launcher)} once Android has allowed the launcher to use the VPN service (the app-op ACTIVATE_VPN, given
  * by Android's own one-time "Connection request" dialog or by adb): Android then makes the launcher the VPN app and revokes the running VPN (its app gets
@@ -32,10 +40,33 @@ public final class VpnOffRules {
     /** Release builds ON (Tj asked for it), debug builds OFF so the older emulator sections never see a VPN taken over (the section vo turns it on). */
     public static boolean defaultOn(boolean debuggable) { return !debuggable; }
 
+    // ---------------------------------------------------------------- the published world (the contract with LinkMeter's Fast Wi-Fi)
+
+    /**
+     * {@code Settings.Global} key the launcher writes (it holds WRITE_SECURE_SETTINGS; no other normal app can write it, every app can read it). Value
+     * {@link #WORLD_QUICKSTEP} = an unlocked, decided Quickstep session is on screen: a VPN may run. {@code quiet:<why>} = no VPN now (the custom launcher, the screen
+     * is off, the lock screen is up, the unlock is not decided yet). Missing = the launcher says nothing (switch off, no adb grant, app removed): the reader acts alone.
+     * LinkMeter's tablet app has the same two words (FastRules.WORLD_*), keep them in step.
+     */
+    public static final String WORLD_KEY = "tj_launcher_world";
+    public static final String WORLD_QUICKSTEP = "quickstep";
+    public static final String WORLD_QUIET = "quiet";
+
+    /** The value to publish: {@code quickstep}, or {@code quiet:<why>} ({@code why} in plain words: {@link NotifQuietPolicy#quietFor}). */
+    public static String worldValue(boolean quiet, String why) {
+        if (!quiet) return WORLD_QUICKSTEP;
+        return WORLD_QUIET + ":" + (why == null || why.trim().isEmpty() ? "quiet" : why.trim());
+    }
+
+    /** Does a published value say "no VPN now"? (Anything else, also null and unknown words, says "may run": the reader must never stay down for a word it does not know.) */
+    public static boolean isQuiet(String value) {
+        return value != null && (value.equals(WORLD_QUIET) || value.startsWith(WORLD_QUIET + ":"));
+    }
+
     /** The reasons for doing nothing; {@link #STOP} = turn the VPN off now. */
     public static final String STOP = null;
     public static final String SWITCHED_OFF = "the switch is off";
-    public static final String UNLOCKED = "the screen is on and unlocked";
+    public static final String UNLOCKED = "an unlocked Quickstep session is on screen (a VPN may run there)";
     public static final String NO_VPN = "no VPN is connected";
     public static final String NOT_ALLOWED = "Android has not allowed the launcher to turn a VPN off yet (Launcher control: Allow)";
     public static final String REFUSED_BEFORE = "Android refused earlier during this lock: not asked again until the next unlock";
@@ -44,17 +75,16 @@ public final class VpnOffRules {
 
     /**
      * Should the running VPN be turned off now?
-     * @param screenDark the screen is off
-     * @param lockUp the lock screen (keyguard) is showing
+     * @param quietWorld the custom launcher is in front, the screen is off, the lock screen is up, or a plain PIN is not decided yet ({@link NotifQuietPolicy#wanted})
      * @param vpnUp a VPN network is connected
      * @param recentStops stops within the last {@link #WINDOW_MS} ({@link #recentStops})
      * @param refusedThisLock Android refused (Always-on VPN, lockdown) since the last unlock
      * @param msSinceLastStop time since the last prepare call (a large number when there was none)
      * @return {@link #STOP} (null) or the reason to leave it
      */
-    public static String why(boolean switchOn, boolean allowed, boolean screenDark, boolean lockUp, boolean vpnUp, int recentStops, boolean refusedThisLock, long msSinceLastStop) {
+    public static String why(boolean switchOn, boolean allowed, boolean quietWorld, boolean vpnUp, int recentStops, boolean refusedThisLock, long msSinceLastStop) {
         if (!switchOn) return SWITCHED_OFF;
-        if (!screenDark && !lockUp) return UNLOCKED;
+        if (!quietWorld) return UNLOCKED;
         if (!vpnUp) return NO_VPN;
         if (!allowed) return NOT_ALLOWED;
         if (refusedThisLock) return REFUSED_BEFORE;
