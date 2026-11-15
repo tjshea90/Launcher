@@ -160,7 +160,7 @@ public final class VpnOff {
         worker().post(() -> {
             try {
                 if (!Settings.Global.putString(app.getContentResolver(), VpnOffRules.WORLD_KEY, value)) throw new IllegalStateException("the settings provider refused the write");
-                LockLog.add(app, "VPN", "world word: " + value);
+                Log.i(TAG, "world word: " + value);   // not in the lock log: it changes four times in a lock cycle (Launcher control and the tablet report show the current word)
             } catch (Throwable t) {
                 Log.w(TAG, "publishing the world failed: " + t);
                 if (value.equals(published)) published = null;   // the next sync writes it again

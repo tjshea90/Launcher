@@ -184,7 +184,7 @@ public final class AnimationSpeedup {
         if (now - tickAt < 500) return;
         tickAt = now;
         Context app = c.getApplicationContext();
-        if (!AnimationPolicy.has(holds(app), AnimationPolicy.HOLD_QUICKSTEP) && !(Mode.QUICKSTEP.equals(Mode.get(app)) && (quickstepSwitch(app) || NotifQuiet.switchOn(app) || RadioIconHide.switchOn(app)))) return;   // BH1: the banner quiet is level-triggered in Quickstep too (a lock screen that came up without its broadcast); still nothing at all in the custom launcher
+        if (!AnimationPolicy.has(holds(app), AnimationPolicy.HOLD_QUICKSTEP) && !(Mode.QUICKSTEP.equals(Mode.get(app)) && (quickstepSwitch(app) || NotifQuiet.switchOn(app) || RadioIconHide.switchOn(app) || VpnOff.switchOn(app)))) return;   // BH1: the banner quiet is level-triggered in Quickstep too (a lock screen that came up without its broadcast); still nothing at all in the custom launcher
         syncSoon(app, "window change");
     }
     private static volatile long tickAt = 0;
@@ -221,6 +221,8 @@ public final class AnimationSpeedup {
         try { NotifQuiet.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "banner quiet sync failed", t); }
         // BS1: the Wi-Fi symbol hold is decided in exactly the same world (custom launcher, dark or locked screen, undecided PIN), from the same triggers and the same look
         try { RadioIconHide.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "Wi-Fi, Bluetooth and VPN symbol sync failed", t); }
+        // CE1: the VPN rule follows the same world: a running VPN is turned off in it, the world word is published for LinkMeter's Fast Wi-Fi (VpnOff only reads and posts: nothing waits here)
+        try { VpnOff.sync(app, trigger, look, assumeHelper); } catch (Throwable t) { Log.e(TAG, "VPN world sync failed", t); }
         try {
             final int before = holds(app);
             final boolean holding = AnimationPolicy.has(before, AnimationPolicy.HOLD_QUICKSTEP);
