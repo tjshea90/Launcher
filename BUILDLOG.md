@@ -58,3 +58,4 @@ No releases yet.
 | v0.9.8 | code 47 | 2026-11-12T23:45Z | v0.9.8: lock-screen cover no longer flashes over the open notification panel or after a cancelled PIN pad (BY1); speed, battery and memory review fixes; VPN key hidden like Wi-Fi and Bluetooth (BZ1)
 | v0.9.9 | code 48 | 2026-11-13T03:42Z | v0.9.9: performance pass 2 (CA1): no searches per PIN key, 4.9-12 MB wallpaper + 2.4 MB curtain dropped where unused, no Launcher3 reload at the Quickstep switch, fewer binder calls and main-thread writes
 | v0.9.10 | code 49 | 2026-11-13T06:08Z | v0.9.10: the VPN is turned off when the screen goes off or the lock screen is up, in both launchers (CB2/CB2e)
+| v0.9.11 | code 50 | 2026-11-15T23:08Z | v0.9.11: no VPN on the lock screen, with the screen off or in the custom launcher; Fast Wi-Fi of LinkMeter pauses and comes back by itself in Quickstep (CE1)
