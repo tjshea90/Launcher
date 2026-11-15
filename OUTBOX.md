@@ -1868,3 +1868,7 @@
 ## 2026-11-15T22:37:30Z
 > The `vo` solo run with the added permission grant is in flight. The product code matches the gated commit exactly, so only the test setup changed. I'll read the result as soon as the timer fires.
 <!-- sha:4fb7ef0f0309 -->
+
+## 2026-11-15T22:41:25Z
+> Your restart question is now task CF1 in TASKS.md. A read-only audit of the launcher is running in the background to gather the facts for it. The `vo` emulator run is still in flight, and I'll read it when its timer fires. The order is unchanged: finish and release CE1, tell you, then answer your restart question.
+<!-- sha:f116cd76400a -->
