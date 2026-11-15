@@ -39,3 +39,22 @@ No cover. The VPN itself goes off while the tablet is dark or locked.
 - Consent: default mode of ACTIVATE_VPN is MODE_IGNORED. Two ways to allow it: Android's own `ConfirmDialog` (started with startActivityForResult from the Intent prepare() returns; OK calls `prepareVpn(null, us)` = revokes the running VPN ONCE, then `setVpnPackageAuthorization(us, true)`; Cancel does nothing; it closes at once if another app is Always-on) or adb `appops set com.tj.launcher ACTIVATE_VPN allow` (the shell command's name for the op: NOT read in source; the CI run proves it).
 - After the launcher took the VPN over it is the "prepared" package with NO interface; Tj's VPN app, already consented, takes it back silently the next time it connects (no dialog).
 - Cost: one binder call per trigger, only when a VPN network is up (`ConnectivityManager.getAllNetworks()` + TRANSPORT_VPN, which lists every network).
+
+## CE1 (2026-11-15): the VPN row on the lock screen came back; LinkMeter and VpnOff fought, now ONE rule
+**What Tj saw:** "Device connected to ..." on the lock-screen panel again. **Cause (read in both repos, not seen on a device):** LinkMeter v0.2.183 put its VPN back 2 s after
+every revoke (at most 3 in 10 min); `VpnOff` revoked it at every screen-off; after three stops `VpnOffRules.GAVE_UP` left it, so the row stayed. `VpnOff` also never acted in
+the unlocked custom launcher, where Tj says the row must never show either.
+**New rule (Tj's four sentences, 2026-11-15):** a VPN may run ONLY in an unlocked, decided Quickstep session; it is off at screen off, on the lock screen (any launcher), in
+the custom launcher and while a plain PIN is undecided. That is exactly `NotifQuietPolicy`'s "quiet" world (the banner switch BH1 and the radio symbols BS1 use it), so
+`VpnOff` is one more consumer of `AnimationSpeedup.syncNow` (level-triggered, same triggers) instead of reading its own facts at its own call sites.
+**The contract with LinkMeter:** the Launcher PUBLISHES the world as `Settings.Global tj_launcher_world` = `quickstep` | `quiet:<custom launcher|screen off|lock screen|unlock
+not decided yet>` (`VpnOffRules.worldValue`; written on the worker thread, only when it changes, needs the WRITE_SECURE_SETTINGS grant; removed when the switch is off or
+on Restore everything). The word is written BEFORE the VPN is revoked, so LinkMeter reads "quiet" when `onRevoke` arrives and PAUSES (holds its VPN down, keeps Tj's choice,
+never calls `VpnService.prepare`, does not count pauses as revokes) instead of putting the VPN back. It resumes by itself when the word turns `quickstep` (observer + screen /
+unlock receiver + 30 s level look). Missing word (no grant, Launcher not running) = LinkMeter uses its own screen + keyguard facts; unknown word = may run (fail open).
+**What stays the same:** the revoke mechanism (`VpnService.prepare` with the launcher's own app-op, above), the cap (3 stops per 10 min, `GAVE_UP`; it now counts only stops
+in a quiet world), the switch (Launcher control > Lock screen, renamed "No VPN on the lock screen or in the custom launcher"). **Limits:** a third-party VPN app that
+reconnects by itself forever still wins after 3 stops (nothing else can be done on Android 10); with no adb grant the custom launcher cannot signal LinkMeter, but the Launcher
+still revokes there and LinkMeter then pauses on its first revoke only if it sees quiet facts (it does not in the custom launcher without the word: it would put the VPN back, up
+to 3 times).
+**Proof:** JVM `VpnOffRulesTest` (13 tests incl. the world word and every situation), emulator section `vo` (phases F / H extended; CE1c).
