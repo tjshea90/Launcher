@@ -1,13 +1,13 @@
-# CHECKPOINT 1366 — read me first, then TASKS.md
+# CHECKPOINT 1367 — read me first, then TASKS.md
 
-**Written:** 2026-11-15T22:23:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `94a9c117` (this checkpoint is the commit after it)
+**Written:** 2026-11-15T22:25:17Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `8843c1be` (this checkpoint is the commit after it)
 
 ## Just done
-CE1 gate verdict final on c0d29aae: #610 86 PASS 6 FAIL (VO2b VO3b VO3c VO5 VO5b VO5c, no native crash); #611 GREEN; #612 141 PASS 1 FAIL (SS7 known flake: 'no Settings entry in drawer dump', diag says head #576 failed too, tag #580 found it). Reading of VO fails: the NEW design stops a VPN in the custom launcher at once (process start / a VPN connected), so vo phases B/C/E counts were written for the old screen-off-only design: test design, product behaves as intended
+CE1: vo scenario B/C rewritten for the new custom-launcher stop (log cleared before process start; C = first-look stop, no screen event); rerunning vo solo + ss solo (SS7 flake check)
 
 ## Do this next
-rewrite vo phases B/C/E (clear logcat before the VPN is started; C = process start / reconnect in custom launcher turns it off, E counts 3 stops from a known start), rerun section vo solo, then rerun ss SOLO (SS7), then ship.sh + android.yml
+read the two runs (list_workflow_runs emulator.yml branch ccr-9028296e-kjveqx event workflow_dispatch perPage 2; get_job_logs run_id failed_only tail 60); vo must be all PASS; ss: SS7 only is the known flake; then ship.sh + android.yml full_build; answer Tj from research/CE1_RELEASE_MESSAGE_DRAFT_2026-11-15.md
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ rewrite vo phases B/C/E (clear logcat before the VPN is started; C = process sta
 
 ## Last ten checkpoints
 ```
+  52626f4d ckpt 1366: CE1 gate verdict final on c0d29aae: #610 86 PASS 6 FAIL (VO2b VO3b VO3c VO5 
   94a9c117 ckpt 1365: CE1 gate verdict on c0d29aae: #611 (x1,e1,y2,lq,an,wf) GREEN; #610 (base,ac,
   ed7e4836 ckpt 1364: CE1 gate on c0d29aae dispatched 21:57Z: #610 id 43766533567 base,ac,rb,vo,la
   c0d29aae ckpt 1363: CE1: Launcher unit 1054 tests 0 fail + lint ok after review fixes; dispatchi
@@ -25,5 +26,7 @@ rewrite vo phases B/C/E (clear logcat before the VPN is started; C = process sta
   94f95c50 ckpt 1359: CE1b LinkMeter code written (uncommitted-build): FastRules.pauseWhy+PAUSED c
   a0e1c45b ckpt 1358: CE1a code: VpnOff follows NotifQuiet world (custom launcher too), publishes 
   fce33b22 ckpt 1357: CE1 written (Tj: VPN row on lock screen; LinkMeter vs VpnOff fight); CD3a ve
-  771b5e32 ckpt 1356: CD3 written (Tj 05:44Z: 3h avg keeps falling, 130); CD2e verified+ticked; re
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
