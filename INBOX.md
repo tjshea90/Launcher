@@ -1609,3 +1609,8 @@ Investigate this whether it would cause quickstep to keep growing. Investigate a
 ```
 The weird thing is every time I look at the quickstep ram it is a little lower. Right now it is at 130mb
 ```
+
+## 2026-11-15T22:39:25Z
+```
+When you are finished and all releases and work is complete, review the launcher app and tell me what would continue to work and what would break if I restart the tablet and do not have a cable for adb
+```
