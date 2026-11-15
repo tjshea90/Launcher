@@ -1,13 +1,13 @@
-# CHECKPOINT 1358 — read me first, then TASKS.md
+# CHECKPOINT 1359 — read me first, then TASKS.md
 
-**Written:** 2026-11-15T21:29:15Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `7a4b2d5d` (this checkpoint is the commit after it)
+**Written:** 2026-11-15T21:32:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `a0e1c45b` (this checkpoint is the commit after it)
 
 ## Just done
-CE1a code: VpnOff follows NotifQuiet world (custom launcher too), publishes tj_launcher_world, VpnOffRulesTest 13 green; scenario vo + docs still to update
+CE1b LinkMeter code written (uncommitted-build): FastRules.pauseWhy+PAUSED card, FastVpn gate/pauseFor/watchGate, tile; Launcher CE1a done (1358)
 
 ## Do this next
-CE1b: LinkMeter pause/resume (/home/user/LinkMeter, FastRules.pauseWhy + FastVpn gate); then scenario vo (VO6 now expects custom=stopped), run unit suite tools/test? (gradle :app:testDebugUnitTest), docs
+1) LinkMeter (/home/user/LinkMeter): compile check 'bash tools/test.sh' then 'tools/preview.sh --tests com.tj.linkmeter.FastPreviewTest'; add FastRulesTest cases (pauseWhy, worldIsQuiet, pausedWords, PAUSED card, HISTORY=10 loop) + FastPreviewTest scenarios (revoke while locked -> PAUSED not back; gate opens -> attempt) + mutate_fast.py pure breakages; docs/FAST_WIFI.md + HANDOFF.md; ./gradlew --no-daemon assembleRelease; tools/checkpoint.sh. 2) Launcher: edit tools/emulator_scenario.sh section vo (VO6 now expects custom=stopped; VO4b grep 'a VPN connected'; add world-word checks via 'settings get global tj_launcher_world'; G/H quickstep), docs/HANDOFF; ship.sh; dispatch emulator.yml sections vo; android.yml full_build
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ CE1b: LinkMeter pause/resume (/home/user/LinkMeter, FastRules.pauseWhy + FastVpn
 
 ## Last ten checkpoints
 ```
+  a0e1c45b ckpt 1358: CE1a code: VpnOff follows NotifQuiet world (custom launcher too), publishes 
   fce33b22 ckpt 1357: CE1 written (Tj: VPN row on lock screen; LinkMeter vs VpnOff fight); CD3a ve
   771b5e32 ckpt 1356: CD3 written (Tj 05:44Z: 3h avg keeps falling, 130); CD2e verified+ticked; re
   c57d6ad6 ckpt 1355: heartbeat trig_016JDaHGdcKC7zixfuPRkF9E DELETED; CD2e answer to Tj goes out 
@@ -25,8 +26,4 @@ CE1b: LinkMeter pause/resume (/home/user/LinkMeter, FastRules.pauseWhy + FastVpn
   9860e2b9 ckpt 1351: audit doc: cd3 #606 + cd3n #607 results filled in; cd3u = run 43559289225 (#
   d27f991a ckpt 1350: CD2d: section cd3u (night-bit driver probes + 80 font changes, mem line ever
   f4461829 ckpt 1349: cd3 #606 run 43557515116: job success; 48 alias flips in 24 sessions, anim h
-  592e74d7 ckpt 1348: cd3n #607 run 43557517749: 5 PASS 0 FAIL, night bit did NOT move (saver on/o
 ```
-
-(5 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
