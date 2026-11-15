@@ -4962,7 +4962,7 @@ ensurehome
 # ---- CB2 (Tj, 2026-11-13): "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on".
 #      The VPN is the CI test app's REAL VpnService (testnotifier TestVpnService: routes only 10.111.0.0/24, logs with the tag TJVPN; consent by appops). The launcher turns it off with VpnService.prepare
 #      once Android allowed it (appops ACTIVATE_VPN for the launcher = what Android's own "Connection request" OK sets); research/VPN_FOOTER_2026-11-13.md. Switch vpn_off_when_locked (debug default OFF: set here).
-#      Phases: premise (the VPN is up, the quick-settings row "Device connected to" shows), A switch off = it stays, B switch on but not allowed = it stays + says why, C allowed = screen off turns it off,
+#      Phases: premise (the VPN is up, the quick-settings row "Device connected to" shows), A switch off = it stays, B switch on but not allowed = it stays + says why, C allowed = the VPN that is up when the launcher starts is turned off (stop 1),
 #      D a VPN that reconnects while dark is turned off again, E the cap (3 per lock) leaves a 4th alone, F (CE1) unlocked in the CUSTOM launcher a VPN is turned off too, H Quickstep unlocked = the VPN stays,
 #      the screen off turns it off, the lock screen's panel has no VPN row after a stop.
 #      CE1 (Tj, 2026-11-15: "The VPN bar ... should never show up at any time on any lock screen or in custom launcher ... Never automatically turn off fast wifi mode ... inside quickstep launcher"):
@@ -4996,7 +4996,7 @@ adb shell uiautomator dump /sdcard/vo0.xml >/dev/null 2>&1; adb shell cat /sdcar
 check "VO0b: the quick-settings panel shows SystemUI's row 'Device connected to ...' while a VPN is up (research/VPN_FOOTER_2026-11-13.md)" grep -q 'Device connected to' "$OUT/vo-0-panel.xml"
 adb shell cmd statusbar collapse; sleep 2; rebind; sleep 3   # the dump restarted the accessibility service: let the new one settle
 # ---- B: switch ON, Android has NOT allowed the launcher: nothing happens, it says why; the LOCK screen's panel shows the row (the premise of VO7b)
-vofeat true; rebind; home; sleep 3; adb logcat -c
+adb logcat -c; vofeat true; rebind; home; sleep 3   # (CE1) the log is cleared BEFORE the launcher starts: its one line "has not allowed" is written at the first look of the quiet world (process start), not at every screen off any more
 vosleep 5; VO_B="$(voup)"; volog b
 vowake; sleep 1; adb shell cmd statusbar expand-settings; sleep 3; shot vo-b-lock-panel-with-vpn
 adb shell uiautomator dump /sdcard/vob.xml >/dev/null 2>&1; adb shell cat /sdcard/vob.xml > "$OUT/vo-b-panel.xml" 2>/dev/null
@@ -5016,14 +5016,15 @@ vosleep 5; VO_A="$(voup)"; vounlock
 check "VO1: allowed, but with the switch OFF the VPN stays connected when the screen goes off" test "$VO_A" = 1
 VO_AW="$(adb shell settings get global tj_launcher_world 2>/dev/null | tr -d '\r')"
 check "VO1b: (CE1) with the switch OFF the launcher says nothing: the world word is removed (word '$VO_AW')" test "$VO_AW" = null
-# ---- C: switch ON: the screen goes off -> the VPN is turned off
-vofeat true; rebind; home; sleep 3; [ "$(voup)" = 1 ] || vostart >/dev/null
+# ---- C: switch ON + allowed, the custom launcher: the VPN that is up when the launcher starts (it came from phase A) is turned off at its first look (CE1: no screen event is needed any more); stop 1 of 3
 adb logcat -c
-adb shell input keyevent KEYCODE_SLEEP; VO_T0=$(date +%s); vowait 0 10; VO_C="$(voup)"; VO_CS=$(( $(date +%s) - VO_T0 )); sleep 2; volog c
-info "VO C: up=$VO_C ${VO_CS}s after the screen went off; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
-check "VO3: allowed + switch on: the VPN is turned off when the screen goes off" test "$VO_C" = 0
+vofeat true; rebind; home; sleep 3
+vowait 0 10; VO_C="$(voup)"; sleep 1; volog c
+adb shell input keyevent KEYCODE_SLEEP; sleep 4
+info "VO C: up=$VO_C in the custom launcher after the switch went on; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-c.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
+check "VO3: allowed + switch on in the custom launcher: the VPN that was up is turned off (no screen event)" test "$VO_C" = 0
 check "VO3b: ... by Android revoking it (the test VPN got onRevoke)" grep -q 'TJVPN.*revoked' "$OUT/vo-log-c.txt"
-check "VO3c: ... and the launcher wrote why (screen off)" grep -q 'turned the VPN off (screen off)' "$OUT/vo-log-c.txt"
+check "VO3c: ... and the launcher wrote that it turned the VPN off" grep -q 'turned the VPN off (' "$OUT/vo-log-c.txt"
 sleep 3; check "VO3d: nothing turns it back on while dark" test "$(voup)" = 0
 # ---- D: the VPN app reconnects while the tablet is dark: turned off again (the network callback)
 adb logcat -c
