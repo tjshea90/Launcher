@@ -1890,3 +1890,53 @@
 ## 2026-11-15T23:05:30Z
 > The v0.9.11 release build is running. When it finishes I'll check the release exists and record it, then send you the CE1 answer and the restart answer.
 <!-- sha:628cf30b9bbb -->
+
+## 2026-11-15T23:12:19Z
+> Both updates are released. Install both on the tablet: the Launcher from the first link and LinkMeter from the second. Nothing has run on your tablet yet.
+>
+> https://github.com/tjshea90/Launcher/releases
+>
+> https://github.com/tjshea90/LinkMeter/releases
+>
+> ## The VPN line
+> The two apps were fighting. LinkMeter put its VPN back 2 seconds after the Launcher turned it off. After 3 rounds both gave up and the VPN stayed on, so the "Device connected" line showed on the lock screen. The Launcher also never turned the VPN off in the custom launcher.
+>
+> - **Launcher v0.9.11:** a VPN is turned off on the lock screen (either launcher), with the screen off, in the custom launcher, and while a plain PIN is still being decided. In an unlocked Quickstep session the Launcher never touches it. It also tells LinkMeter which situation applies.
+> - **LinkMeter v0.2.184:** Fast Wi-Fi stays on in Quickstep. On the lock screen, with the screen off, or in the custom launcher it pauses and keeps your choice. When you unlock into Quickstep it comes back by itself, normally within a few seconds. The card says "Fast Wi-Fi is paused" and the tile says "Paused until Quickstep".
+>
+> **Tested (emulator and automated tests):**
+> - In the custom launcher a VPN is turned off at once, and the limit of 3 stops works.
+> - In an unlocked Quickstep session the VPN stays on.
+> - Screen off turns it off, and the lock-screen panel then shows no VPN line.
+> - Automated tests for both apps pass, and an independent review of the Launcher change found 8 issues; I fixed 6 and wrote down why the other 2 stay.
+>
+> **Not tested (needs your tablet):** that the real lock screen shows no VPN line, and how fast Fast Wi-Fi returns after your PIN. The emulator has no LinkMeter, so the two apps together were never run together.
+>
+> **Limits:**
+> - In the custom launcher Fast Wi-Fi is paused, as you asked.
+> - Another VPN app that reconnects by itself still wins after 3 tries in 10 minutes.
+>
+> **Please check:**
+> 1. The lock screen has no "Device connected to…" line.
+> 2. Lock, then unlock into Quickstep: Fast Wi-Fi comes back.
+> 3. LinkMeter > Settings > Fast Wi-Fi > "What changed it lately" shows "Paused (…)" and "came back by itself". Tell me what that list says if anything fails.
+>
+> ## What happens if you restart the tablet with no cable
+> This comes from reading the code and the older tablet reports. The last real restart proofs on your tablet are from the older v0.7 builds.
+>
+> **Keeps working:**
+> - The permissions and Android settings I got through adb survive a restart. This was seen on your tablet.
+> - Android restarts the accessibility service by itself, about 1.5 minutes after boot. Seen on your tablet.
+> - Your default Home setting stays. After a restart the first Home press puts you in the custom launcher. Read in code.
+> - Animations, pop-up banners and the Wi-Fi/Bluetooth symbols are re-decided as soon as the Launcher starts. Read in code.
+> - Turning the VPN off needs only Android's own OK, not a cable. The Launcher already runs without the a
+> [... 180 characters omitted ...]
+> *Stops or gets worse (it fails safe):**
+> - The adb-started helper does not come back after a restart. Without it, invisible clean-ups are skipped and the unlock clears Recents on screen behind a cover instead.
+> - Lock-screen calibration falls back to a stored model. The "do everything that's missing" button stops working.
+> - For about 1.5 minutes after boot there is no secret handshake, lock-number overlay, power-menu patch or pencil cover. A plain PIN still unlocks you.
+> - If you restart from a Quickstep session, animations can stay off, banners off, or the symbols hidden until the Launcher runs again. Press Home once after boot.
+> - Battery numbers in the Settings look-alike are already empty, because one permission was never granted.
+>
+> **Not proven:** whether Android's VPN OK survives a restart, and how soon after boot the Launcher republishes its status. Both are believed fine but untested.
+<!-- sha:f29e14d2a58c -->
