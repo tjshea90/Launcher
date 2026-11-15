@@ -58,3 +58,13 @@ reconnects by itself forever still wins after 3 stops (nothing else can be done 
 still revokes there and LinkMeter then pauses on its first revoke only if it sees quiet facts (it does not in the custom launcher without the word: it would put the VPN back, up
 to 3 times).
 **Proof:** JVM `VpnOffRulesTest` (13 tests incl. the world word and every situation), emulator section `vo` (phases F / H extended; CE1c).
+
+### CE1 read-only review of the diff (2026-11-15, neutral brief, raw findings; verdicts are written below as each is handled)
+1 MED: Launcher control's VPN toggle does not call syncNow; switch OFF in a quiet world leaves the word `quiet:*` (LinkMeter stays paused); poll dies on !switchOn with quietWorld still true; poll armed only once at `began`, so tapping "Allow" later gives no poll.
+2 MED: helper missing / automationOff = "not quiet" -> word flips to `quickstep` on a lock screen when the accessibility service unbinds, or at a process restart between the assumeHelper sync and the +2.5 s sync; endQuiet resets stop counters in between.
+3 MED: MAX_STOPS / GAVE_UP and `refusedThisLock` were made for a lock lasting minutes; the custom-launcher world lasts all day (give-up then row shows ~10 min; one refusal blocks the whole day).
+4 LOW-MED: `run()` acts on a world snapshot taken on the pipeline thread; a gesture unlock in the gap stops Tj's Quickstep VPN. Re-read the world on the worker right before `prepare`.
+5 LOW: syncSoon coalescing keeps the first trigger ("window change" suppresses check): a poll / "a VPN connected" look can be swallowed.
+6 LOW: Restore everything can leave a stale `quiet:*` word (in-flight sync publishes after retract; retractChecked already true).
+7 LOW: a failed word write does not stop the revoke that follows (LinkMeter reads the old `quickstep` and reconnects at once, burning stops).
+8 LOW: `worker()` and `watch()` share the VpnOff class monitor; `registerNetworkCallback` binder call under it can block the main thread; failed registration retried at every sync.

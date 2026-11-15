@@ -1,22 +1,23 @@
-# CHECKPOINT 1360 — read me first, then TASKS.md
+# CHECKPOINT 1361 — read me first, then TASKS.md
 
-**Written:** 2026-11-15T21:47:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `087bb84f` (this checkpoint is the commit after it)
+**Written:** 2026-11-15T21:52:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-9028296e-kjveqx` · **builds on:** `ac285646` (this checkpoint is the commit after it)
 
 ## Just done
-CE1: LinkMeter docs+HANDOFF done (b9e20d7), Launcher HANDOFF 0y + VPN_FOOTER CE1 note written; glue breakages 14/23 caught, review subagent running
+CE1: review of VpnOff diff done, 8 findings saved in research/VPN_FOOTER (MED 1-3); LinkMeter 3 masked glue tests fixed, rerun in /tmp/claude-0/mut-glue2.log
 
 ## Do this next
-1) read /tmp/claude-0/mut-glue.log (all caught), git worktree remove /tmp/claude-0/wt-lm; 2) bash tools/gradle.sh :app:testDebugUnitTest :app:lintDebug + tools/test_handoff.sh; 3) apply review findings (agent a6f01aa1301172e73 result); 4) dispatch emulator gate (vo,base + nq,an,wf at least); 5) LinkMeter assembleRelease + tools/test.sh + closing checkpoint; 6) ship.sh, android.yml, record-release, answer Tj
+1) read VpnOff.java, verify each finding, fix 1,2,4,5,6,7 (3 cheap variant); 2) JVM tests; 3) tools/gradle.sh :app:testDebugUnitTest :app:lintDebug; 4) check /tmp/claude-0/mut-glue2.log all caught, remove worktree /tmp/claude-0/wt-lm; 5) gate vo,base + nq,an,wf; 6) LinkMeter closing checkpoint release
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M HANDOFF.md
+     M research/VPN_FOOTER_2026-11-13.md
 
 ## Last ten checkpoints
 ```
+  ac285646 ckpt 1360: CE1: LinkMeter docs+HANDOFF done (b9e20d7), Launcher HANDOFF 0y + VPN_FOOTER
   94f95c50 ckpt 1359: CE1b LinkMeter code written (uncommitted-build): FastRules.pauseWhy+PAUSED c
   a0e1c45b ckpt 1358: CE1a code: VpnOff follows NotifQuiet world (custom launcher too), publishes 
   fce33b22 ckpt 1357: CE1 written (Tj: VPN row on lock screen; LinkMeter vs VpnOff fight); CD3a ve
@@ -26,8 +27,4 @@ CE1: LinkMeter docs+HANDOFF done (b9e20d7), Launcher HANDOFF 0y + VPN_FOOTER CE1
   96c66e0f ckpt 1353: cd3u #609 run 43559289225: 5 PASS 0 FAIL; image has mNightModeLocked=true (c
   1714e8d9 ckpt 1352: cd4 #608 run 43557924106: 6 PASS 0 FAIL, 1103 s; 20 of 20 day cycles ran; st
   9860e2b9 ckpt 1351: audit doc: cd3 #606 + cd3n #607 results filled in; cd3u = run 43559289225 (#
-  d27f991a ckpt 1350: CD2d: section cd3u (night-bit driver probes + 80 font changes, mem line ever
 ```
-
-(3 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
