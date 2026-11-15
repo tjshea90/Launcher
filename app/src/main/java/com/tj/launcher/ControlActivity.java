@@ -173,7 +173,7 @@ public class ControlActivity extends Activity {
         toggle("A gesture unlock into Quickstep puts Wi-Fi and Bluetooth back", "Whatever the lock screen rule itself switched off during that lock comes back after the lock-screen gesture opens Quickstep. A plain PIN into the custom launcher leaves them off (the custom launcher's own rule).", LockQuiet.restoreEnabled(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, LockQuiet.RESTORE_KEY, v); } });
         note("Lock screen quiet: " + Features.getString(this, LockQuiet.LAST_KEY, "(has not had to act yet)") + "   (lock_screen_show_notifications = " + android.provider.Settings.Secure.getString(getContentResolver(), LockQuiet.SHOW) + ")");
         toggle("No VPN on the lock screen or in the custom launcher", "ON: the moment the screen goes off, whenever the lock screen is showing (either launcher) and while the custom launcher is in front, a connected VPN is turned off (so the quick-settings panel never shows \"Device connected to ...\" there). In an unlocked Quickstep session nothing touches a VPN. The launcher also tells LinkMeter's Fast Wi-Fi which world this is (the setting tj_launcher_world; needs the adb permission), so Fast Wi-Fi pauses by itself and comes back by itself in Quickstep. Any other VPN app connects again in its own app. A VPN set as \"Always-on VPN\" in Android's settings cannot be turned off by another app. Needs Android's OK once (the row below).",
-                VpnOff.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, VpnOffRules.KEY, v); } });   // CB2 (Tj, 2026-11-13)
+                VpnOff.switchOn(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, VpnOffRules.KEY, v); AnimationSpeedup.syncNow(ControlActivity.this, "switched in Launcher control"); } });   // CB2 (Tj, 2026-11-13); CE1: the pipeline reads the switch at once (word removed / published, VPN turned off now)
         if (!VpnOff.allowed(this)) action("Allow the launcher to turn the VPN off", "Opens Android's own \"Connection request\" question once: tap OK. The launcher never sets up a VPN of its own; Android words the question for any app that uses the VPN service. Tapping OK also disconnects a VPN that is connected right now (connect again in your VPN app).", new Runnable() { public void run() {
             try { Intent ask = android.net.VpnService.prepare(ControlActivity.this); if (ask != null) startActivityForResult(ask, REQ_VPN); else rebuild(); }   // only reached while NOT allowed: then prepare() changes nothing and returns Android's question
             catch (Throwable t) { android.util.Log.w("TjControl", "VPN question failed: " + t); }
@@ -406,7 +406,7 @@ public class ControlActivity extends Activity {
     // ---------------------------------------------------------------- small UI kit
     private interface Chg { void on(boolean v); }
     private static final int REQ_VPN = 4711;   // CB2: Android's VPN question (VpnService.prepare); the answer only changes what the page shows
-    @Override protected void onActivityResult(int req, int res, Intent data) { super.onActivityResult(req, res, data); if (req == REQ_VPN) rebuild(); }
+    @Override protected void onActivityResult(int req, int res, Intent data) { super.onActivityResult(req, res, data); if (req == REQ_VPN) { AnimationSpeedup.syncSoon(this, "VPN allowed"); rebuild(); } }
     private interface Str { void on(String v); }
 
     private TextView text(String t, int sp, int color, boolean bold) {
