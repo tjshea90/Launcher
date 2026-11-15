@@ -1882,3 +1882,7 @@
 >
 > The `vo` run and the restart audit are still pending. When they finish I'll record the result, ship the Launcher release, answer you on CE1, and then answer your restart question.
 <!-- sha:3cb68272abfb -->
+
+## 2026-11-15T22:50:26Z
+> The `vo` rerun with the rewritten cap phase is running. The restart audit for your question is saved in the repo, and I'll turn it into plain words once the releases are out.
+<!-- sha:47cf25b4eb25 -->
