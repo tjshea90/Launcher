@@ -5033,14 +5033,19 @@ vostart >/dev/null; vowait 0 12; VO_D="$(voup)"; sleep 2; volog d
 info "VO D: up=$VO_D after a reconnect while dark; log: $(grep -E 'TJVPN|TjVpnOff' "$OUT/vo-log-d.txt" | cut -c1-150 | tail -4 | tr '\n' '|')"
 check "VO4: a VPN that reconnects while the screen is dark is turned off again" bash -c "test '$VO_D' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-d.txt'"
 check "VO4b: ... because a VPN connected in the quiet world" grep -q 'turned the VPN off (a VPN connected)' "$OUT/vo-log-d.txt"
-# ---- E: the cap: stop 3 (this reconnect) still happens, a 4th within 10 minutes is left alone (no ping-pong all night)
-sleep 3; adb logcat -c
-vostart >/dev/null; vowait 0 12; VO_E3="$(voup)"; sleep 1; volog e3
-sleep 3; adb logcat -c
-vostart >/dev/null; sleep 6; VO_E4="$(voup)"; volog e
-info "VO E: after reconnect 3 up=$VO_E3, after reconnect 4 up=$VO_E4; log: $(grep TjVpnOff "$OUT/vo-log-e.txt" | cut -c1-160 | tail -2 | tr '\n' '|')"
-check "VO5: the 3rd stop within 10 minutes still happens (the VPN really came back first)" bash -c "test '$VO_E3' = 0 && grep -q 'TJVPN.*established' '$OUT/vo-log-e3.txt' && grep -q 'TJVPN.*revoked' '$OUT/vo-log-e3.txt'"
-check "VO5b: a 4th reconnect within 10 minutes is left alone" bash -c "test '$VO_E4' = 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-e.txt'"
+# ---- E: the cap (3 stops within 10 minutes, then it gives up and leaves the VPN alone: no ping-pong all night). How many stops THIS launcher process already used (C, D) varies (run #615: C and D ran in two processes), so:
+#      the VPN reconnects up to 5 times; the reconnect that stays up (the cap reached) must be one of the first 3 of this phase, and the reconnects before it must each have been turned off.
+VO_GAVE=0
+for VO_I in 1 2 3 4 5; do
+  sleep 3; adb logcat -c
+  vostart >/dev/null; vowait 0 8; VO_EUP="$(voup)"; sleep 1; volog "e$VO_I"
+  [ "$VO_EUP" = 1 ] && { VO_GAVE=$VO_I; break; }
+done
+cp "$OUT/vo-log-e$VO_GAVE.txt" "$OUT/vo-log-e.txt" 2>/dev/null
+VO_PRE=1; for VO_I in $(seq 1 $((VO_GAVE - 1))); do grep -q 'TJVPN.*revoked' "$OUT/vo-log-e$VO_I.txt" || VO_PRE=0; done
+info "VO E: the VPN stayed up after reconnect #$VO_GAVE of phase E (0 = it never did within 5); log: $(grep TjVpnOff "$OUT/vo-log-e.txt" 2>/dev/null | cut -c1-160 | tail -2 | tr '\n' '|')"
+check "VO5: the cap: a reconnecting VPN is turned off first, and left alone from the 1st-3rd reconnect of phase E on (#$VO_GAVE)" bash -c "test '$VO_GAVE' -ge 1 -a '$VO_GAVE' -le 3 -a '$VO_PRE' = 1"
+check "VO5b: the reconnect that is left alone really came back (the VPN app says established)" bash -c "test '$VO_GAVE' -ge 1 && grep -q 'TJVPN.*established' '$OUT/vo-log-e.txt'"
 check "VO5c: ... and the launcher says it gave up for now" grep -q 'reconnected 3 times' "$OUT/vo-log-e.txt"
 # ---- F: CE1 (Tj, 2026-11-15: "never ... in custom launcher"): UNLOCKED in the CUSTOM launcher a VPN that connects is turned off too (before CE1 this phase proved the opposite: "unlocked = Tj's to use")
 vounlock; adb shell am force-stop "$VOT"; sleep 2; adb logcat -c
