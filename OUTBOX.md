@@ -1940,3 +1940,16 @@
 >
 > **Not proven:** whether Android's VPN OK survives a restart, and how soon after boot the Launcher republishes its status. Both are believed fine but untested.
 <!-- sha:f29e14d2a58c -->
+
+## 2026-11-16T01:23:16Z
+> Everything is saved and pushed in both repos, and the handoff manifest is written. The Launcher branch and `main` are both at `7617cde9`, and LinkMeter's tree is clean.
+>
+> The only open item is your tablet check (task CE1d). With both new updates installed, please check:
+> 1. The lock screen shows no "Device connected to…" line.
+> 2. After you lock and then unlock into Quickstep, Fast Wi-Fi comes back.
+> 3. LinkMeter > Settings > Fast Wi-Fi > "What changed it lately" shows "Paused (…)" and "came back by itself".
+>
+> If any of these fail, tell me what the history list says and I'll start there.
+>
+> One thing I changed on purpose: the handoff manifest was saved without the optional fields that overwrite the "Session Learnings" block in the Launcher's `CLAUDE.md`. That keeps the earlier project notes intact. The decisions and failed approaches are still in the manifest.
+<!-- sha:3bbd776ed024 -->
