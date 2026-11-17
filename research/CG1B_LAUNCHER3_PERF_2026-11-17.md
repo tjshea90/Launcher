@@ -45,12 +45,13 @@ that is still interpreted or JIT-cold is another 2-3x slower (CG1c's baseline pr
 **Where.** `app/src/main/java/com/tj/launcher/Mode.java:77` -> `SettingsSpoof.syncSoon` (`SettingsSpoof.java:89-96`, delay `SYNC_DELAY_MS = 3000` at
 :34) -> `syncNow` (:107-126; reload posted at :123, owed-reload branch :116/:124) -> `HiddenApps.reloadLauncher` (`HiddenApps.java:113-115`) ->
 `LauncherModel.forceReload` (`LauncherModel.java:309-334`) -> `startLoader` (:344-374) -> `LoaderTask.run` (`model/LoaderTask.java:166-240`).
-**What happens.** Three seconds after every mode change the Settings look-alike alias is flipped, and when the alias goes ON (return to custom) a
-COMPLETE LoaderTask is posted on the main thread's behalf: favorites query, `bindWorkspace` (the workspace is torn down and rebuilt:
-`Launcher.startBinding` :1929), `getActivityList` for all users + filter + `bindAllApps`, `getInstalledPackages(MATCH_UNINSTALLED_PACKAGES)` for
-all 176 packages in the `IconCacheUpdateHandler` constructor (`iconloaderlib/.../IconCacheUpdateHandler.java:77-87`, one large binder reply), the
-icon-DB sweep, and three `waitForIdle()` passes (LoaderTask.java:183, 204, 217) that wait for the MAIN looper to go idle, which the accessibility
-service shares. CA1 S2 already removed the second reload (alias OFF inside Quickstep), so it is now one per Quickstep session, but it lands in
+**What happens.** Three seconds after every mode change the Settings look-alike alias is flipped, and when the alias goes ON (return to custom)
+`postReload` runs `forceReload` on the main thread. That starts a COMPLETE LoaderTask on the loader thread, whose bind steps run back on the main
+thread: favorites query, `bindWorkspace` (the workspace is torn down and rebuilt: `Launcher.startBinding` :1929), `getActivityList` for all users +
+filter + `bindAllApps`, `getInstalledPackages(MATCH_UNINSTALLED_PACKAGES)` for all 176 packages in the `IconCacheUpdateHandler` constructor
+(`iconloaderlib/.../IconCacheUpdateHandler.java:77-87`, one large binder reply), the icon-DB sweep, and three `waitForIdle()` passes
+(`LoaderTask.java:183, 204, 217`; the lock is on the MAIN looper, `BaseLoaderResults.java:302-303`) which stretch while the accessibility service,
+sharing that looper, is busy. CA1 S2 already removed the second reload (alias OFF inside Quickstep), so it is now one per Quickstep session, but it lands in
 the first seconds of the custom session. Only ONE drawer row depends on the mode: the real `com.android.settings` (`SettingsSpoof.java:48-56`).
 **Evidence.** VERIFIED (all lines above read). New facts compared with A1:
 - The cheap shortcut `LauncherModel.onPackageChanged("com.android.settings", user)` would NOT work. `AllAppsList.updatePackage`
