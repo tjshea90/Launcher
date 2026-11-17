@@ -162,6 +162,11 @@ call plus `ViewRootImpl` teardown, ~3-8 ms INFERRED) during the first frames of 
 from the finger-down (A7 said the same). Deferring that removal to the transition's end is invisible. This is lock-safety / home-patch code: it
 belongs to slice B's B7, needs the films of sections `hp` / `hf`, and should be measured first (log the ms of `refreshLayers` at transition start).
 
+**G7  `IconShape.init` in the provider's onCreate.** `MainProcessInitializer.java:31-41` runs on the main thread BEFORE `Application.onCreate`;
+`IconShape.pickBestShape` (`IconShape.java:439-476`) rasterises 7 shapes into 200x200 regions, XORs them with the system mask and adds
+`IconNormalizer.normalizeAdaptiveIcon`: ~10-20 ms per process start (INFERRED), 2 starts a day. Could move to the loader thread (the result is
+needed by `FolderIcon` / `IconNormalizer` consumers, so every reader would need a "ready" check): not worth the risk.
+
 **G8  A reload request that creates what it wants to reload.** `HiddenApps.reloadLauncher` (`HiddenApps.java:113-115`) calls
 `LauncherAppState.getInstance(c).getModel().forceReload()`; `getInstance` CONSTRUCTS the whole Launcher3 app state (`LauncherAppState.java:70-114`:
 IDP, `IconCache`, model, LauncherApps callback, receivers) when it does not exist yet. Its callers are `SettingsSpoof.postReload` (custom mode: the
