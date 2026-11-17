@@ -205,7 +205,7 @@ Quickstep was on and has not been in custom since holds none of it.
 
 ### 6.3 The three biggest consumers (likely, INFERRED; G2 turns this into numbers)
 1. **Native heap plus graphics buffers and caches** (bursty bitmap work, HWUI / Skia caches, window buffers of the service's overlays). Evidence: native
-   is ~50 % of the stock launcher's PSS in CD2, and our process jumps +25 MB under Recents scanning with Java heap flat (5-8 MB on the tablet).
+   is 43-50 % of the stock launcher's PSS in CD2, and our process jumps +25 MB under Recents scanning with Java heap flat (5-8 MB on the tablet).
    On the tablet the GPU side (PowerVR, hardware icon bitmaps, EGL surfaces) lands in "Graphics" or in the mtrack rows and was never read.
    Overlay windows are hardware-accelerated because the application sets `hardwareAccelerated=true` (`AndroidManifest.xml:77`; for parentless
    windows `WindowManagerGlobal.addView` copies the application flag, from memory), so each gets an EGL surface and 2-3 buffers; a full-screen cover
