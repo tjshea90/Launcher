@@ -103,6 +103,15 @@ public class StrayCustomGuardTest {
         assertEquals(StrayCustomGuard.RESUMING, reasonOf(true, false, true, false, false, NOW + 50_000, 60_000, 0, 0, 0, NONE));   // the clock stepped back: fails safe
     }
 
+    @Test public void aStockHomeThatWasJustStartedIsNotStartedASecondTime() {   // the unlock handler's start of the stock home is on its way; the custom home is only still in front until its window is ready
+        assertEquals(StrayCustomGuard.ROUTER_BUSY, reasonWithRouter(true, false, true, false, false, 0, NOW - 500, 60_000, 0, 0, 0, NONE));
+        assertEquals(StrayCustomGuard.ROUTER_BUSY, reasonWithRouter(true, false, true, false, false, 0, NOW - StrayCustomGuard.ROUTER_QUIET_MS + 1, 60_000, 0, 0, 0, NONE));
+        assertEquals(StrayCustomGuard.REDIRECT, reasonWithRouter(true, false, true, false, false, 0, NOW - StrayCustomGuard.ROUTER_QUIET_MS, 60_000, 0, 0, 0, NONE));
+        assertEquals(StrayCustomGuard.REDIRECT, reasonWithRouter(true, false, true, false, false, 0, 0, 60_000, 0, 0, 0, NONE));              // 0 = the service never started it
+        assertEquals(StrayCustomGuard.ROUTER_BUSY, reasonWithRouter(true, false, true, false, false, 0, NOW + 40_000, 60_000, 0, 0, 0, NONE)); // the clock stepped back: fails safe
+        assertEquals(StrayCustomGuard.RESUMING, reasonWithRouter(true, false, true, false, false, NOW - 1_000, NOW - 500, 60_000, 0, 0, 0, NONE));   // the older reason comes first
+    }
+
     @Test public void theReasonsComeInTheOrderOfTheLogText() {
         assertEquals(StrayCustomGuard.REDIRECT, reasonOf(true, false, true, false, false, 0, 60_000, 0, 0, 0, NONE));
         assertEquals(StrayCustomGuard.SWITCH_OFF, reasonOf(false, true, false, true, true, 0, 0, 5_000, 5_000, 0, NONE));
@@ -127,6 +136,7 @@ public class StrayCustomGuardTest {
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.LEFTOVER, NOW, NOW - 60_000).startsWith("just after an unlock"));
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.UNDECIDED, NOW, NOW - 60_000).startsWith("the unlock is still being decided"));
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.RESUMING, NOW, NOW - 60_000).startsWith("the app of the gesture is still launching"));
+        assertTrue(StrayCustomGuard.why(StrayCustomGuard.ROUTER_BUSY, NOW, NOW - 60_000).startsWith("the stock home was just started"));
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.MODE_YOUNG, NOW, NOW - 1_000).startsWith("mode changed 1000 ms ago"));
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.MODE_YOUNG, NOW, NOW + 9_000).startsWith("mode changed 0 ms ago"));   // a clock that stepped back never prints a negative age
         assertTrue(StrayCustomGuard.why(StrayCustomGuard.PAUSED, NOW, NOW - 60_000).startsWith("a return reset"));
@@ -140,7 +150,7 @@ public class StrayCustomGuardTest {
     @Test public void onlyWhatTimeCanChangeIsLookedAtAgain() {
         for (int r : new int[]{StrayCustomGuard.REDIRECT, StrayCustomGuard.SWITCH_OFF, StrayCustomGuard.DARK, StrayCustomGuard.STOOD_DOWN, StrayCustomGuard.NOT_STRAY})
             assertEquals("reason " + r, -1, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, 0, NOW - 100, NOW + 100, NOW + 100, 0));
-        for (int r : new int[]{StrayCustomGuard.LOCKED, StrayCustomGuard.LEFTOVER, StrayCustomGuard.UNDECIDED, StrayCustomGuard.RESUMING, StrayCustomGuard.MODE_YOUNG, StrayCustomGuard.PAUSED, StrayCustomGuard.FAIL_OPEN})
+        for (int r : new int[]{StrayCustomGuard.LOCKED, StrayCustomGuard.LEFTOVER, StrayCustomGuard.UNDECIDED, StrayCustomGuard.RESUMING, StrayCustomGuard.ROUTER_BUSY, StrayCustomGuard.MODE_YOUNG, StrayCustomGuard.PAUSED, StrayCustomGuard.FAIL_OPEN})
             assertTrue("reason " + r, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, 0, NOW - 100, NOW + 100, NOW + 100, 0) > 0);
     }
 
@@ -152,6 +162,7 @@ public class StrayCustomGuardTest {
         assertEquals(500, StrayCustomGuard.retryInMs(StrayCustomGuard.UNDECIDED, NOW, 0, 0, 0, NOW - 60_000, 0, 0, 0));
         assertEquals(1650, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW - 1_000, 0, 0, 0));              // 2500 - 1000 + 150
         assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 14_900, 0, NOW - 60_000, 0, 0, 0));     // 15000 - 14900 + 150
+        assertEquals(1650, StrayCustomGuard.retryInMs(StrayCustomGuard.ROUTER_BUSY, NOW, 0, 0, NOW - 1_500, NOW - 60_000, 0, 0, 0));      // 3000 - 1500 + 150
         assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.PAUSED, NOW, 0, 0, 0, NOW - 60_000, NOW + 100, 0, 0));          // never shorter than the minimum step
     }
 
@@ -161,6 +172,7 @@ public class StrayCustomGuardTest {
         assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.FAIL_OPEN, NOW, 0, 0, 0, NOW - 60_000, 0, NOW + 3_600_000, 0));
         assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW + 3_600_000, 0, 0, 0));          // the mode was "changed" in the future
         assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW + 3_600_000, 0, NOW - 60_000, 0, 0, 0));
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.ROUTER_BUSY, NOW, 0, 0, NOW + 3_600_000, NOW - 60_000, 0, 0, 0));
         assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 1_000, 0, NOW - 60_000, 0, 0, 0));
     }
 
@@ -182,7 +194,7 @@ public class StrayCustomGuardTest {
             boolean undecided = undecidedUntil1s && t < 1_000;
             long resumingSince = resumingOffset == Long.MIN_VALUE ? 0 : NOW + resumingOffset;
             long modeAt = NOW - modeAgeAtStart;
-            int reason = StrayCustomGuard.reason(true, true, false, true, true, leftover, undecided, resumingSince, now, modeAt, 0, 0, 0, NONE);
+            int reason = StrayCustomGuard.reason(true, true, false, true, true, leftover, undecided, resumingSince, 0, now, modeAt, 0, 0, 0, NONE);
             if (reason == StrayCustomGuard.REDIRECT) return t;
             long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, 0, modeAt, 0, 0, waited);
             if (again <= 0) return -1;
@@ -218,7 +230,7 @@ public class StrayCustomGuardTest {
         long t = 0, waited = 0;
         for (int looks = 0; looks < 200; looks++) {
             long now = NOW + t;
-            int reason = StrayCustomGuard.reason(true, true, false, true, true, false, false, 0, now, NOW + 10_000_000L, 0, 0, 0, NONE);
+            int reason = StrayCustomGuard.reason(true, true, false, true, true, false, false, 0, 0, now, NOW + 10_000_000L, 0, 0, 0, NONE);
             if (reason == StrayCustomGuard.REDIRECT) return t;
             long again = StrayCustomGuard.retryInMs(reason, now, 0, 0, 0, NOW + 10_000_000L, 0, 0, waited);
             if (again <= 0) return -1;
