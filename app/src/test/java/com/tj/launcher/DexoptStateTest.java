@@ -94,4 +94,24 @@ public class DexoptStateTest {
     @Test public void windowsLineEndingsAreFine() {
         assertEquals("speed", DexoptState.parse(dump("  [com.tj.launcher]\n    path: p\n      arm: [status=speed] [reason=cmdline]\n").replace("\n", "\r\n"), PKG).status);
     }
+
+    @Test public void staleWhenNothingWasStoredOrTheVersionChanged() {
+        long now = 1_000_000_000L, max = 6L * 3600_000L;
+        assertTrue(DexoptState.stale(0, 0L, 50, now, max));              // never stored
+        assertTrue(DexoptState.stale(49, now - 1000, 50, now, max));     // an update throws the compiled code away: the old words say nothing
+        assertFalse(DexoptState.stale(50, now - 1000, 50, now, max));    // same version, fresh
+        assertTrue(DexoptState.stale(50, now - max - 1, 50, now, max));  // older than the limit: the idle job may have compiled since
+        assertFalse(DexoptState.stale(50, now - max, 50, now, max));     // exactly at the limit is still fresh
+        assertTrue(DexoptState.stale(50, now + 5000, 50, now, max));     // the clock went backwards
+    }
+
+    @Test public void ofRebuildsAStoredReading() {
+        DexoptState s = DexoptState.of("speed", "cmdline");
+        assertTrue(s.found);
+        assertTrue(s.full());
+        assertEquals("speed (cmdline)", s.line());
+        assertEquals("verify", DexoptState.of("verify", null).line());
+        assertSame(DexoptState.NONE, DexoptState.of("", "install"));
+        assertSame(DexoptState.NONE, DexoptState.of(null, "install"));
+    }
 }
