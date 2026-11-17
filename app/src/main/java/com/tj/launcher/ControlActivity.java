@@ -62,7 +62,8 @@ public class ControlActivity extends Activity {
         RecentsGuard.excludeOurTasks(this);
         RecentsGuard.describeAsTarget(this);
         if (Mode.isCustom(this)) { finish(); return; }
-        DexoptWatch.refreshAsync(this, true);   // CG1c: a fresh reading of how Android compiled this app (background thread); the line below shows the last one, this screen's next opening the new one
+        DexoptWatch.refreshAsync(this, true); QsMemory.refreshAsync(this, true);   // CG1f: a reading of the stock launcher's memory (background thread, at most one per 30 s)
+          // CG1c: a fresh reading of how Android compiled this app (background thread); the line below shows the last one, this screen's next opening the new one
         build();
     }
 
@@ -180,6 +181,7 @@ public class ControlActivity extends Activity {
             catch (Throwable t) { android.util.Log.w("TjControl", "VPN question failed: " + t); }
         }});
         note("No VPN on the lock screen / in the custom launcher (CB2, CE1): " + VpnOff.describe(this));
+        note("Quickstep memory (CG1f; what the stock launcher process holds, read by the app itself every 25 min while the tablet is in use): " + QsMemory.describe(this));
         note("Compiled ahead of time (CG1c; speed-profile = the profiled code, speed = everything; the Setup compile makes it complete): " + DexoptWatch.describe(this));
         toggle("Prepare the custom launcher behind the lock screen", "On waking to the lock screen the custom home screen is put in front behind it, so the unlock opens it at once with no delay (Solitaire too, only if \"Open Solitaire automatically\" is on). A handshake puts Quickstep there instead, at once.", ProfileSession.prearm(this), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ProfileSession.PREARM_KEY, v); } });
         toggle("A gesture unlock comes back to the app I had open", "ON: after the lock-screen gesture, Quickstep opens the app that was in front when you locked the tablet, exactly as you left it (like tapping its icon). OFF: it opens the Quickstep home screen instead, with the apps minimised. With no app open it is always the home screen.", Features.get(this, ResumeTarget.KEY, true), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, ResumeTarget.KEY, v); } });
