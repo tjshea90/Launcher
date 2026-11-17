@@ -3338,7 +3338,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 android.content.Intent li = getPackageManager().getLaunchIntentForPackage(pkg);
                 if (li != null) {
                     li.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION);
-                    resumedPkg = pkg; resumedAt = System.currentTimeMillis();
+                    resumedPkg = pkg; resumedAt = System.currentTimeMillis(); resumedSeenAt = 0;
                     startActivity(li);
                     Log.i(TAG, "ROUTER resume " + pkg + " (" + why + ")");
                     LockLog.add(app, "START", "resume " + pkg + " (" + why + ")");
