@@ -4529,7 +4529,7 @@ public class TjAccessibilityService extends AccessibilityService {
             final boolean was = patchResting;
             patchView.setAlpha(0f);                          // first: gone in the next frame (patchResting is left alone: the patch is still restable, so the stock dialog's own event brings it back at once, and the PIN-pad logic keeps its log lines)
             handler.removeCallbacks(touchBack); handler.postDelayed(touchBack, away + 20);
-            if (now - lastTouchLogMs > 3000) { lastTouchLogMs = now; Log.i(TAG, "PATCH touch hide (a finger went down) t=" + now); logPatch(was ? "resting patch hidden at the finger's DOWN" : "finger DOWN while the patch was not resting (restable " + patchRestable + (restableSinceMs > 0 ? ", for " + (now - restableSinceMs) + " ms" : "") + "), kept away for " + away + " ms"); }
+            if (now - lastTouchLogMs > 3000) { lastTouchLogMs = now; Log.i(TAG, "PATCH touch hide (a finger went down) t=" + now); logPatch((was ? "resting patch hidden at the finger's DOWN" : "finger DOWN while the patch was not resting (restable " + patchRestable + (restableSinceMs > 0 ? ", for " + (now - restableSinceMs) + " ms" : "") + "), kept away for " + away + " ms") + ", " + touchAge + " ms after the touch event [" + patchGateText(now) + "]"); }   // CG1d L2
         } catch (Throwable t) { Log.e(TAG, "touch hide failed", t); }
     }
     private long lastTouchLogMs = 0;
