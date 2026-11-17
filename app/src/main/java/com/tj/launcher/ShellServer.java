@@ -155,6 +155,11 @@ public final class ShellServer {
             for (String pkg : ShellProtocol.parseNotifPackages(runShell("dumpsys notification | grep 'NotificationRecord('", 15_000))) out.println(pkg);
             out.flush(); return;
         }
+        if (ShellProtocol.isStockMem(line)) {   // CG1f: read-only, a constant command
+            out.println("OK");
+            out.print(runShell("dumpsys meminfo " + ShellProtocol.STOCK_PKG, 20_000));
+            out.flush(); return;
+        }
         List<Integer> rmIds = ShellProtocol.removeTaskIds(line);
         if (rmIds != null) {
             // the deny-list is enforced HERE, on the package the system itself reports for each id: an id can never be used to close the system, the keyboard, this app or the stock launcher
