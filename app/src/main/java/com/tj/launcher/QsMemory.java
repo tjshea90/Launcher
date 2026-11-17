@@ -23,6 +23,9 @@ final class QsMemory {
     static final String KEY = "qs_memory_log";
     static final String RING_KEY = "qs_mem_ring", LAST_AT_KEY = "qs_mem_last_at";
     static final String STATUS_KEY = "qs_mem_status";
+    /** When the last look STARTED (found or not): a look that gave nothing waits {@link #FAIL_GAP_MS} before the next try ({@link #retryDue}). */
+    static final String TRY_AT_KEY = "qs_mem_try_at";
+    static final long FAIL_GAP_MS = 2L * 60 * 60 * 1000;
     static String firstLine(String d) { if (d == null) return "(null)"; String t = d.trim(); int nl = t.indexOf('\n'); if (nl >= 0) t = t.substring(0, nl); return t.length() > 120 ? t.substring(0, 120) : t; }
     static final String PACKAGE = "com.android.launcher3";
     static final long GAP_MS = 25L * 60_000L;          // a sample every 25 minutes at most (the process grows over hours and days)
@@ -261,6 +264,25 @@ final class QsMemory {
     /** The stored ring ("" = none). */
     static String ring(Context c) { try { return Features.getString(c, RING_KEY, ""); } catch (Throwable t) { return ""; } }
 
+    /**
+     * Pure: may a look be tried now? After a look that gave nothing ("no reading ...": an app uid is refused for good on a real device, only the shell helper changes that) the next try waits two hours, or
+     * {@link #FORCED_GAP_MS} when the person opened Launcher control. A clock that went backwards allows the try. After a good look the normal gap ({@link #due}) decides.
+     */
+    static boolean retryDue(String lastStatus, long lastTryMs, long nowMs, boolean forced) {
+        boolean failed = lastStatus != null && lastStatus.startsWith("no reading");
+        if (!failed) return true;
+        long gap = forced ? FORCED_GAP_MS : FAIL_GAP_MS;
+        return lastTryMs <= 0 || nowMs < lastTryMs || nowMs - lastTryMs >= gap;
+    }
+
+    /** Pure: the status line for Launcher control and the report, in plain words ("ok ..." or "no reading: why and what would help"). */
+    static String statusText(boolean found, String how, boolean helperUp, boolean dumpOk, String firstLine, int processesChars) {
+        if (found) return "the shell helper".equals(how) ? "ok via the shell helper" : "meminfo".equals(how) ? "ok" : "ok via " + how;
+        if (helperUp) return "no reading: the shell helper answered but its dump holds no stock launcher process (" + firstLine + ")";
+        if (!dumpOk) return "no reading: the shell helper is not running and the app has no DUMP grant (the adb setup gives it); the stock launcher can only be read by the helper";
+        return "no reading: the shell helper is not running, and Android refuses the stock launcher's memory to an app (" + firstLine + (processesChars >= 0 ? "; activity processes: " + processesChars + " chars" : "") + "); start the helper to record";
+    }
+
     /** One sentence for Launcher control and the tablet report. */
     static String describe(Context c) { String st = ""; try { st = Features.getString(c, STATUS_KEY, ""); } catch (Throwable ignored) { } String d = describe(ring(c), System.currentTimeMillis()); return st.isEmpty() || "ok".equals(st) ? d : d + " [last look: " + st + "]"; }
 
@@ -269,19 +291,28 @@ final class QsMemory {
         final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
         try {
             if (!Features.get(app, KEY, defaultOn(ReturnReset.isDebuggable(app)))) return;
-            if (app.checkSelfPermission(android.Manifest.permission.DUMP) != PackageManager.PERMISSION_GRANTED) return;
-            if (!due(Features.getLong(app, LAST_AT_KEY, 0L), System.currentTimeMillis(), forced)) return;
+            long nowMs = System.currentTimeMillis();
+            if (!due(Features.getLong(app, LAST_AT_KEY, 0L), nowMs, forced)) return;
+            if (!retryDue(Features.getString(app, STATUS_KEY, ""), Features.getLong(app, TRY_AT_KEY, 0L), nowMs, forced)) return;   // a look that gave nothing is not repeated on every screen-on
             if (!RUNNING.compareAndSet(false, true)) return;
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
                         long now = System.currentTimeMillis();
-                        String dump = read(PACKAGE, LIMIT_MS);
-                        Sample s = parse(dump, now);
-                        String how = "meminfo";
-                        if (!s.found) { String d2 = read(new String[] { "dumpsys", "activity", "processes" }, LIMIT_MS); s = parseProcesses(d2, now); if (s.found) how = "activity processes (PSS only)"; else dump = dump + " | activity processes: " + d2.length() + " chars"; }
-                        Features.setStringAsync(app, STATUS_KEY, s.found ? (how.equals("meminfo") ? "ok" : "ok via " + how) : "no reading: " + dump.length() + " chars, first line: " + firstLine(dump));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
+                        Features.setLongAsync(app, TRY_AT_KEY, now);
+                        // CG1f (emulator runs #621-623): an APP uid is refused ("Can't find service: meminfo"), the shell uid reads it: the helper first, the app's own look only as a fallback (it may work on another image)
+                        boolean helperUp = false;
+                        try { helperUp = ShellHelper.running(); } catch (Throwable ignored) { }
+                        boolean dumpOk = app.checkSelfPermission(android.Manifest.permission.DUMP) == PackageManager.PERMISSION_GRANTED;
+                        String dump = "";
+                        Sample s = new Sample();
+                        String how = "the shell helper";
+                        if (helperUp) { String h = ShellHelper.stockMeminfo(); dump = h == null ? "" : h; s = parse(dump, now); }
+                        if (!s.found && dumpOk) { dump = read(PACKAGE, LIMIT_MS); s = parse(dump, now); how = "meminfo"; }
+                        int procChars = -1;
+                        if (!s.found && dumpOk) { String d2 = read(new String[] { "dumpsys", "activity", "processes" }, LIMIT_MS); s = parseProcesses(d2, now); procChars = d2.length(); if (s.found) how = "activity processes (PSS only)"; }
+                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, helperUp, dumpOk, firstLine(dump), procChars));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
