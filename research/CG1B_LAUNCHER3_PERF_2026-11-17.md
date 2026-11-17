@@ -170,7 +170,7 @@ needed by `FolderIcon` / `IconNormalizer` consumers, so every reader would need 
 - Tablet (MEASURED, 3 reports): total PSS 68-71 MB, Java heap 5-8 MB of 128 (`config_largeHeap` is false below sw720dp:
   `launcher3/res/values/config.xml:3`, so the 128 MB limit is real).
 - CI emulator (MEASURED, CD2, x86, software GL so Graphics reads 0): a fresh stock-launcher process 16.8 MB (Java 1.4 / Native 7.4 / System 5.0 /
-  Private other 1.0); the same process after its home and Recents were built 36-42 MB (Java 6.1 / Native 15-21 / System 11.3): about half of the
+  Private other 1.0); the same process after its home and Recents were built 36-42 MB (Java 5.9-6.1 / Native 15.6-21 / System 11.2): 43-50 % of the
   stock launcher is native heap. Our own process 38-45 MB in sessions, 69.6 MB after 30 Recents cycles, no split.
 - Our own bitmaps (CA1b state): Quickstep mode (the long idle) about 2.7 MB (curtain 2.4 MB kept by `HomeCurtainRules.keepInMemory`, patch crop and
   masks ~0.3 MB); custom mode about 0.3 MB. The wallpaper copy (4.9 MB) is dropped since v0.9.8.
