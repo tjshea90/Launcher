@@ -3108,9 +3108,19 @@ public class TjAccessibilityService extends AccessibilityService {
         String p = pk.toString();
         if (!StrayCustomGuard.isCustomHome(p, cl.toString(), getPackageName())) {
             if (!p.equals(getPackageName()) && !"com.android.systemui".equals(p)) lastOtherPkg = p;
+            else if (p.equals(getPackageName()) && !Mode.isCustom(this)) Log.i(TAG, "CG1a window event of our own package: " + cl);   // logcat only: which of our windows the service is told about in a Quickstep session
             return;
         }
-        if (Mode.isCustom(this)) return;   // the normal case: our own Launcher in the custom mode ends here (a string compare and one preference read)
+        customHomeAppeared("window event");
+    }
+
+    /**
+     * CG1a: OUR custom home came to the front. Called by the window event above AND by the Launcher's own onResume ({@link TjHooks#onLauncherResumed}): emulator run #619 (section ad) showed the Launcher resuming
+     * after Back in a Quickstep session (the lock log had "LAUNCHER resumed while the mode is quickstep" four times) while the helper was told of NO window event for it, so the guard never ran. The Launcher's own
+     * onResume is the one signal that cannot be missed. Runs on the main thread (the Launcher and this service share it); everything is throttled, a second call for the same appearance changes nothing.
+     */
+    void customHomeAppeared(String via) {
+        if (Mode.isCustom(this)) return;   // the normal case: our own Launcher in the custom mode ends here (one preference read)
         // The stored mode is Quickstep and OUR Launcher window just appeared: rare, and exactly what Tj saw ("randomly shows the custom launcher although I was in Quickstep").
         long now = System.currentTimeMillis();
         KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
