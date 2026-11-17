@@ -40,6 +40,10 @@ public final class Features {
     public static void setAsync(Context c, String key, boolean on) { p(c).edit().putBoolean(key, on).apply(); }
     public static int getInt(Context c, String key, int def) { return p(c).getInt(key, def); }
     public static void setInt(Context c, String key, int v) { p(c).edit().putInt(key, v).commit(); }
+    /** CG1c: bookkeeping written by a background thread (the in-memory value is visible at once, the disk write happens later). */
+    public static void setIntAsync(Context c, String key, int v) { p(c).edit().putInt(key, v).apply(); }
+    public static long getLong(Context c, String key, long def) { return p(c).getLong(key, def); }
+    public static void setLongAsync(Context c, String key, long v) { p(c).edit().putLong(key, v).apply(); }
     public static void allOff(Context c) { p(c).edit().clear().commit(); }
     /** Removes a stored value (the code default applies again). */
     public static void remove(Context c, String key) { p(c).edit().remove(key).commit(); }
