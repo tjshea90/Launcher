@@ -1,13 +1,13 @@
-# CHECKPOINT 1385 — read me first, then TASKS.md
+# CHECKPOINT 1386 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T19:31:00Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `e76188f0` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T19:33:30Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `da2b76b8` (this checkpoint is the commit after it)
 
 ## Just done
-CG1e: section ro v2 = 5 overlay variants (plain / targetName / sdk28; android + systemui), full pm refusal text, aapt2 dump overlayable of framework-res + SystemUI; make_overlay_apk.sh got targetName/targetSdk args
+CG1e: ro v2 DISPATCHED run #618 id 44159446669 (19:31Z, head 3239688c, shots=false); DexoptStateTest 14/14 green; CG1F report found IconRecentsView leaks a RecentsModel listener per Activity creation
 
 ## Do this next
-dispatch emulator.yml sections=ro on ccr-16772798-h13w43 (shots=false), read RESULTS (INFO RO fw1..ui2 lines + RO verdict); then DexoptStateTest stale/of tests; reviewer reports. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+read run 44159446669 (list_workflow_jobs -> get_job_logs tail_lines 90): INFO RO fw1..ui2 + RO verdict; then CG1B_PROCESS_PERF report -> TASKS CG1b; wait for CG1A / CG1D / CG1B(launcher3, a11y) / CG1F rest. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch emulator.yml sections=ro on ccr-16772798-h13w43 (shots=false), read RES
 
 ## Last ten checkpoints
 ```
+  3239688c ckpt 1385: CG1e: section ro v2 = 5 overlay variants (plain / targetName / sdk28; androi
   bccc1f1e ckpt 1384: CG1c: DexoptState/DexoptWatch wired (Control, report, Setup, intake), unit t
   35dd7fe1 ckpt 1383: CG1: ro run = #617 id 44156308504 (started 19:13Z, head 0da1d72b, shots=true
   d6a7c074 ckpt 1382: CG1: emulator.yml sections=ro (shots=true) DISPATCHED on ccr-16772798-h13w43
@@ -25,8 +26,7 @@ dispatch emulator.yml sections=ro on ccr-16772798-h13w43 (shots=false), read RES
   7617cde9 ckpt 1378: handoff manifest saved (.handoff/), CE1/CF1 fully done and answered; nothing
   8201dfdb ckpt 1377: CE1/CF1 answered to Tj (v0.9.11 + LinkMeter v0.2.184 released; restart/no-ca
   659d20ad ckpt 1376: CE1: v0.9.11 RELEASED and RECORDED (android.yml #52 id 43772718433, publishe
-  39dc3055 ckpt 1375: CE1a-c ticked, HANDOFF 0y updated; android.yml full_build dispatched on dcea
 ```
 
-(4 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
