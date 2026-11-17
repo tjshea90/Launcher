@@ -174,11 +174,6 @@ model is just marked unloaded). Fix: `LauncherAppState s = LauncherAppState.getI
 mode, open Hidden apps, flip one switch: logcat has no `LauncherAppState inited`", and the existing `ss` / `mu` Hidden-apps checks still pass.
 Rare action (a few times a week), so marginal; it is also a reminder that in a Quickstep-only process the Launcher3 share of section 6.2 is zero.
 
-**G7  `IconShape.init` in the provider's onCreate.** `MainProcessInitializer.java:31-41` runs on the main thread BEFORE `Application.onCreate`;
-`IconShape.pickBestShape` (`IconShape.java:439-476`) rasterises 7 shapes into 200x200 regions, XORs them with the system mask and adds
-`IconNormalizer.normalizeAdaptiveIcon`: ~10-20 ms per process start (INFERRED), 2 starts a day. Could move to the loader thread (the result is
-needed by `FolderIcon` / `IconNormalizer` consumers, so every reader would need a "ready" check): not worth the risk.
-
 ## 6. Memory at idle
 
 ### 6.1 Known facts
