@@ -2921,6 +2921,14 @@ public class TjAccessibilityService extends AccessibilityService {
                 lockShotFresh = false;     // a new lock session: photograph the lock screen again after the next wake (notifications may have changed)
                 qsAppAt = ResumeTarget.refreshedAt(qsApp, fgPkg, qsAppAt, t);   // review RV2: the app still in front when the screen goes off is the one Tj had open: its 6 h clock starts now
                 resumedPkg = null; unlock.onScreen(false, t); preArmedThisLock = false; preCleanedThisLock = false; lastBouncer = false; flurryChange(false, t); updateMotion();   // (BY1c F1: the panel's state is KEPT: an open quick-settings panel survives the screen-off, run #566 picture fl-shadeoff-wake; lockPrepare looks again while dark)
+                try {   // CG1d: nothing can touch a dark screen and the PIN pad is gone with it; the finger / PIN-pad holds are UPTIME clocks that stop in deep sleep, so one with 1 s left would end 1 s AFTER the next wake = an away patch at the first hold of the side key
+                    if (darkSettleOn() && patchLockMode && !patchHomeMode) {
+                        long nowD = android.os.SystemClock.uptimeMillis(), left = Math.max(Math.max(pinHiddenUntilMs, touchAwayUntilMs) - nowD, 0);
+                        if (left > 0) logPatch("screen off: the finger / PIN-pad hold with " + left + " ms left is void in the dark (uptime stops in deep sleep, it would run on after the next wake)");
+                        pinHiddenUntilMs = 0; touchAwayUntilMs = 0; lastPadSignMs = 0; lastPadLeftMs = 0;
+                        handler.removeCallbacks(touchBack); handler.removeCallbacks(padBack); handler.removeCallbacks(padCancelCheck);
+                    }
+                } catch (Throwable ignored) { }
                 try { patchShow(overlayShown); } catch (Throwable ignored) { }   // v0.7.6 (review of v0.7.5): lastBouncer is reset here, so a resting patch that was hidden for the PIN pad must come back now; the next wake sees bouncer == lastBouncer and would never re-show it
                 handler.removeCallbacks(lockPrepareLater);
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
