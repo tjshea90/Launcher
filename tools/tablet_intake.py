@@ -341,7 +341,8 @@ def facts_markdown(rep, source, when):
         flags.append("The STOCK launcher (Quickstep, com.android.launcher3) holds %d MB right now; a Go launcher normally sits around 80-150 MB. The row 'Stock launcher (Quickstep) memory (CD1)' says what fills it (Java / native / graphics); TASKS.md CD1." % sl_mb)
     adj = rep.get("dumpsys activity processes")
     row("Launcher process priority", "; ".join(x.strip() for x in (adj or "").splitlines()[:3]) if adj else None, "dumpsys activity processes")
-    row("Compiled ahead of time?", "; ".join(x.strip() for x in (rep.get("dexopt") or "").splitlines()[:3]), "dumpsys package ... dexopt")
+    cg1c = next((v for k, v in kv.items() if k.startswith("compiled ahead of time (CG1c")), None)   # CG1c: the app reads its own dexopt state (DUMP grant), no helper needed
+    row("Compiled ahead of time?", cg1c or "; ".join(x.strip() for x in (rep.get("dexopt") or "").splitlines()[:3]), "state section (CG1c) or dumpsys package ... dexopt")
     row("Quick-settings tiles", "setting=%s; SystemUI has: %s" % (kv.get("quick-settings tiles setting now", "?"), " ".join((rep.get("SystemUIService") or "").split())), "state + SystemUIService")
     row("Last unlock", kv.get("unlock_speed") or kv.get("unlock_pick_last"), "state section (allow-listed)")
     row("Last unlock, start to finish (BK1c)", kv.get("unlock_sum"), "state section (allow-listed): Enter tap -> custom home on screen, with the cover and the Launcher resume")
