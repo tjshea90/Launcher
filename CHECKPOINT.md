@@ -1,13 +1,13 @@
-# CHECKPOINT 1398 — read me first, then TASKS.md
+# CHECKPOINT 1399 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T21:38:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `70d15b80` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T21:40:17Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `79c39612` (this checkpoint is the commit after it)
 
 ## Just done
-qm run #622 id 44180402866: app-uid 'dumpsys meminfo' = Can't find service: meminfo (QM2/QM3 FAIL, DUMP granted); so the full recorder (objects) cannot work app-only
+QsMemory fallback: dumpsys activity processes -> lastPss+pid of stock launcher (PSS only; meminfo is refused to an app uid); 2 new JVM tests green
 
 ## Do this next
-next: add fallback in QsMemory: dumpsys activity processes -> lastPss + pid of com.android.launcher3 (PSS only, no object counts), pure parser + test, rerun qm. Tell Tj plainly object counts need the helper/adb. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
+next: dispatch qm again (emulator.yml main), expect QM2/QM3 PASS; then CG1d L1-L4 logging, lg, /code-review, gate vs v0.9.11, release. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ next: add fallback in QsMemory: dumpsys activity processes -> lastPss + pid of c
 
 ## Last ten checkpoints
 ```
+  0919635b ckpt 1398: qm run #622 id 44180402866: app-uid 'dumpsys meminfo' = Can't find service: 
   cf88ec38 ckpt 1397: QsMemory: store why a look gave nothing (qs_mem_status, shown in describe) +
   c5042815 ckpt 1396: qm run #621 id 44178666208 (head f6b552cc): 5 PASS 2 FAIL (QM2 no sample sto
   2a86eb80 ckpt 1395: CG1b batch a unit tests green; dispatched emulator.yml sections=qm on main a
@@ -25,8 +26,7 @@ next: add fallback in QsMemory: dumpsys activity processes -> lastPss + pid of c
   5ff672be ckpt 1391: CG1a: ad run #619 id 44161930288: 12 PASS 1 FAIL=AD5b (custom home in front 
   12775bb7 ckpt 1390: CG1a: ad run #619 id 44161930288 started 19:45Z head 5d936924 shots=true (un
   5d936924 ckpt 1389: CG1a P0+P1: StrayCustomGuard (pure, 13 tests) + guardStrayCustom in the serv
-  7b0f5893 ckpt 1388: CG1: TASKS holds the reviewer findings (CG1A B1 stray-custom, CG1B x2, CG1D 
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
