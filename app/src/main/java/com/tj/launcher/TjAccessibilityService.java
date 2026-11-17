@@ -1564,7 +1564,7 @@ public class TjAccessibilityService extends AccessibilityService {
         patchLockMode = targetIsLock; patchHomeMode = targetIsHome; patchTouchable = false;
         v.setOnTouchListener(new View.OnTouchListener() {   // AM1: the window is NOT_TOUCHABLE except while the stock menu is open: then a tap on the hidden Screenshot spot closes the menu (like a tap outside) instead of taking a screenshot
             @Override public boolean onTouch(View view, android.view.MotionEvent e) {
-                if (e.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { onOutsideTouch(); return false; }   // BE1
+                if (e.getActionMasked() == android.view.MotionEvent.ACTION_OUTSIDE) { onOutsideTouch(e.getEventTime()); return false; }   // BE1; CG1d L2: the touch event's own time says how late this ran
                 if (!patchTouchable) return false;
                 if (e.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) { try { startClose(android.os.SystemClock.uptimeMillis(), "a tap on the hidden spot: our own BACK"); performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } }   // BC2: the stock dismissal begins ~20 ms after the injected BACK
                 return true;
