@@ -3083,6 +3083,48 @@ public class TjAccessibilityService extends AccessibilityService {
         performGlobalAction(GLOBAL_ACTION_HOME);   // the router answers with our Launcher
     }
 
+    // ---------------------------------------------------------------- CG1a: the mirror of the guard above: OUR custom home in front while the stored mode is Quickstep (StrayCustomGuard)
+    private final long[] customGuardHist = new long[StrayCustomGuard.MAX];
+    private int customGuardIdx = 0;
+    private long customStandDownUntil = 0, lastCustomLogMs = 0, lastCustomActMs = 0;
+    private String lastOtherPkg = "";   // the last window package that was neither ours nor SystemUI: "what was in front before the custom home appeared"
+
+    private void guardStrayCustom(AccessibilityEvent e) {
+        if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
+        CharSequence pk = e.getPackageName(), cl = e.getClassName();
+        if (pk == null || cl == null) return;
+        String p = pk.toString();
+        if (!StrayCustomGuard.isCustomHome(p, cl.toString(), getPackageName())) {
+            if (!p.equals(getPackageName()) && !"com.android.systemui".equals(p)) lastOtherPkg = p;
+            return;
+        }
+        if (Mode.isCustom(this)) return;   // the normal case: our own Launcher in the custom mode ends here (a string compare and one preference read)
+        // The stored mode is Quickstep and OUR Launcher window just appeared: rare, and exactly what Tj saw ("randomly shows the custom launcher although I was in Quickstep").
+        long now = System.currentTimeMillis();
+        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        boolean locked = km != null && km.isKeyguardLocked();
+        android.os.PowerManager pwr = (android.os.PowerManager) getSystemService(POWER_SERVICE);
+        boolean screenOn = pwr == null || pwr.isInteractive();
+        boolean on = Features.get(this, StrayCustomGuard.KEY, StrayCustomGuard.defaultOn(ReturnReset.isDebuggable(this)));
+        boolean leftover = ProfileSession.windowIsLockLeftover(locked, unlock.armedMethod() != null, now, lastUnlockAt);
+        long modeAt = Mode.changedAt(this), failOpen = Mode.failOpenUntil(this);
+        boolean fire = StrayCustomGuard.shouldRedirect(on, true, locked, screenOn, true, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist);
+        if (!fire && StrayHomeGuard.countInWindow(customGuardHist, now) >= StrayCustomGuard.MAX) customStandDownUntil = now + StrayCustomGuard.COOLDOWN_MS;
+        if (now - lastCustomLogMs >= 2000) {   // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it, at most every 2 s
+            lastCustomLogMs = now;
+            LockLog.add(getApplicationContext(), "STRAYCUSTOM", "custom home in front while the mode is quickstep (locked=" + locked + ", screenOn=" + screenOn + ", last unlock "
+                    + (lastUnlockAt > 0 ? (now - lastUnlockAt) + " ms ago" : "none") + ", mode " + (modeAt > 0 ? (now - modeAt) / 1000 + " s old" : "age unknown") + ", before it: " + (lastOtherPkg.isEmpty() ? "?" : lastOtherPkg) + "): "
+                    + StrayCustomGuard.why(on, locked, screenOn, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist));
+        }
+        if (!fire || now - lastCustomActMs < 700) return;   // one appearance can raise two events
+        lastCustomActMs = now;
+        customGuardHist[customGuardIdx++ % customGuardHist.length] = now;
+        int n = bump(StrayCustomGuard.COUNT_KEY);
+        Features.setStringAsync(this, StrayCustomGuard.LAST_KEY, new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date(now)) + " before it: " + (lastOtherPkg.isEmpty() ? "?" : lastOtherPkg));
+        Log.i(TAG, "STRAYCUSTOM custom home shown in Quickstep mode -> the stock home through the router (#" + n + ")");
+        startRouter("stock");   // prearm "stock" = not a Home press: it can never count as a double Home
+    }
+
     private int bump(String key) {
         int n = 1;
         try { n = Integer.parseInt(Features.getString(this, key, "0")) + 1; } catch (NumberFormatException ignored) { }
