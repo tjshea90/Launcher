@@ -408,3 +408,10 @@ the target. A hold at "d" means the dialog appears d after the screen came on; o
 8. Timeout-lock creation timing on the tablet (every window-created line in the newest report follows a power-key-like lock).
 9. How often the pad scan misses a visible pad.
 10. Whether a real 500 ms hold shows the dialog once (the emulator sometimes shows it twice).
+
+## RESULT of the first gesture matrix (section `lg`, run #624 id 44190767040, session A, 2026-11-17) and what is still open
+- H3 (the 1.2 s uptime settle gate keeps a NEW window away) is PROVEN on the emulator by an A/B inside one build (switch `patch_dark_settle`): C0 (first lock after unlocked use, hold at the wake): ON = patch RESTING (window made in the dark at SCREEN_OFF, resting 28 ms later), OFF = AWAY (the flash Tj sees); C3 (finger down, screen off inside the 1.5 s hold, hold at the wake): ON = RESTING and the line `void in the dark`, OFF = AWAY with 713 ms of the hold still running after the wake.
+- NOT addressed (no way to measure on the emulator; the new lock-log lines are the instrument for the tablet): H1 (a node scan delays the hide at the finger's DOWN: read `resting patch hidden at the finger's DOWN, N ms after the touch event`), H2 (clock-timed return while a very slow pull still has the finger down), H4 (cold first draw).
+- Open risks the review named (v0.9.12 review B): (1) the patch now RESTS from the first frame after a wake: if the tablet's keyguard fades in from black (BY1 F2, never seen on the emulator), the resting patch would show as a lighter block for the fade: BY1g asks Tj; (2) a window created at SCREEN_ON because the keyguard locked while the CPU slept (lock-after timeout) is a LIT creation and still waits 1.2 s (the `lockPrepareLater` timers are uptime clocks); (3) the very first menu after the learned menu place is gone (Clear data, a new font / display size) goes through the node scan and has no patch yet: one time only.
+- Lock-log lines are cut at 200 characters: the gate text now starts with `up= rt= dark=` so a long line loses its tail (`shade=`), not the clocks.
+

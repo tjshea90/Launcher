@@ -31,3 +31,9 @@ No code in the app calls `UiModeManager`, writes `ui_night_mode`, a locale, or `
 ## What could be done about it (nothing built yet; Tj decides)
 - Fewer flips: keep the saver as it is across a lock when the dark theme is the only reason (not possible if the lock screen needs the light look), or skip the restore when the next unlock is within seconds.
 - Make the relaunch cheap: an opt-in idle restart of the stock launcher while the screen is off and locked (`am force-stop com.android.launcher3` through the helper; Tj does this by hand and the tablet survives it) at most once per N hours and only above a PSS threshold. Needs the helper allowlist (`ShellProtocol.allowed` denies it today) and a proof that SystemUI rebinds cleanly.
+
+## Limits of the recorder (QsMemory, review C of v0.9.12; read before trusting a number)
+- An APP uid cannot read `dumpsys meminfo com.android.launcher3` (SELinux: "Can't find service: meminfo", emulator runs #621-#623): a reading needs the shell helper (command STOCKMEM, answered through the abstract unix socket first, loopback TCP second). A helper started by an OLDER app version answers `ERR unknown command`: the status line says so in plain words (start the helper again).
+- [?] `dumpsys meminfo <pkg>` asks the target process to run a garbage collection before it counts (AOSP `ActivityThread.dumpMemInfo`, from memory, not verified): the Java-heap and PSS parts of a reading are probably post-GC, so a growth that is only uncollected garbage can be hidden. The signal that matters for R1 is the object COUNT (Activities / Views survive a GC when pinned), which the reading names first.
+- The recorder looks at most every 25 minutes, only while the tablet is in use (30 s after a wake, when Launcher control opens, when a report is written); a look that gave nothing is not repeated for 2 hours.
+
