@@ -5496,7 +5496,7 @@ lglock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyev
 lgunlock(){ adb shell input swipe 300 900 300 300 300; sleep 2; adb shell input text 1234; sleep 1; adb shell input keyevent KEYCODE_ENTER; sleep 4; }   # a plain PIN: the custom home, the PIN stays set
 lgnow(){ adb shell date +%H:%M:%S | tr -d '\r\n'; }
 lgsince(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | awk -v t="$1" '$1 >= t'; }   # the lock log is a 48 KB ring: select by TIME, not by line count
-lgshort(){ sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) /\1 /; s/restable=/r=/; s/settled=/s=/; s/finger=/f=/; s/ pad=/ p=/; s/padUp=/pu=/; s/ shade=[a-z]+//; s/dark=/d=/; s/ up=[0-9]+( rt=[0-9]+)?\]?/]/'; }
+lgshort(){ sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) /\1 /; s/\[up=[0-9]+( rt=[0-9]*)? ?/[/; s/dark=/d=/; s/restable=/r=/; s/settled=/s=/; s/finger=/f=/; s/ pad=/ p=/; s/padUp=/pu=/; s/ shade=[a-z]*\]?/]/'; }
 lgcase(){ # lgcase <label> <start time>: the lock-log lines of the case that decide whether the patch was visible, one compact INFO line each
   local L; L="$(lgsince "$2" | grep -E ' (PATCH|SCREEN_OFF|SCREEN_ON) ' | lgshort)"
   info "LG $1: $(echo "$L" | grep -c .) line(s)"

@@ -146,8 +146,8 @@ public class TjAccessibilityService extends AccessibilityService {
         Rect cached = cachedCard();
         if (menuSeenMs == 0) menuSeenMs = now;
         menuUpAtMs = now;
-        if (!patchResting && !patchHomeMode) logPatch("menu opened while the patch was away (touch " + (touchAwayUntilMs > now) + ", PIN guard " + (pinHiddenUntilMs > now) + "): shown at the dialog's own event");   // BE1: the lock log shows the case behind a Screenshot flash
-        final boolean wasResting = patchResting;                                   // CG1d L2: what the patch was doing at the dialog's own event, read BEFORE the guards below are cleared
+        final boolean wasResting = patchResting && touchAwayUntilMs <= now && pinHiddenUntilMs <= now;   // CG1d L2: what the patch was doing at the dialog's own event, read BEFORE the guards below are cleared; RESTING = really visible over the slot (a finger / PIN-pad hold leaves patchResting true while the patch is hidden: review B)
+        if (!wasResting && !patchHomeMode) logPatch("menu opened while the patch was away (touch " + (touchAwayUntilMs > now) + ", PIN guard " + (pinHiddenUntilMs > now) + "): shown at the dialog's own event");   // BE1: the lock log shows the case behind a Screenshot flash
         final String gateText = patchHomeMode ? null : patchGateText(now);
         touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0;   // a sign of the PIN pad a moment ago is NOT forgotten (code review 2026-11-07: the scan is ~120 ms slower than the first sign)
         Log.i(TAG, "PATCH fast open: the dialog's window event is " + Math.max(0, now - event.getEventTime()) + " ms old, " + Math.max(0, event.getEventTime() - winBurstStartMs) + " ms after the first window event of the burst t=" + now);   // BY1b: t= puts it on the film's timeline (section fl 'seq')
@@ -4535,6 +4535,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // BI1 (audit + review 2026-11-08): while the screen is really UNLOCKED the home patch ignores keyguard-class events (a screen-unpinning bouncer, the keyguard's teardown): hiding it over an open menu would show the
             // stock Screenshot entry. A LOCKED screen whose window is still the home flavour (the layer refresh follows the wake by about 400 ms) is hidden as before: a stale copy of the home screen must never stay over the lock screen.
             if (patchHomeMode && !keyguardLockedFast()) return;
+            if (screenDarkNow && !patchHomeMode && darkSettleOn() && !isScreenOn()) { Log.i(TAG, "PATCH pin sign (" + why + ") ignored: the screen is dark"); return; }   // CG1d review B LOW: a keyguard teardown event after SCREEN_OFF must not start a 2.5 s uptime hold that runs on after the next wake
             long now = android.os.SystemClock.uptimeMillis();
             lastPadSignMs = now;
             pinHiddenUntilMs = Math.max(pinHiddenUntilMs, now + 2500);   // BE1: every sign of the pad pushes the return out (an away patch must not come back over the pad)
@@ -4580,12 +4581,13 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /**
      * CG1d (L1 / L2): every gate the resting lock patch waits on, as ONE compact text for the lock log, so the tablet report says why the patch was visible or away at a given moment. Times are uptime ms
-     * (they stop in deep sleep); rt is elapsedRealtime (it keeps counting), so the two together show how long the CPU slept between two lines.
+     * (they stop in deep sleep); rt is elapsedRealtime (it keeps counting), so the two together show how long the CPU slept between two lines. They come first: a lock-log line is cut at 200 characters.
      */
     private String patchGateText(long now) {
         long shadeUntil = LockShade.holdUntil(lockShadeOpen, lockShadeClosedMs);
-        return "restable=" + patchRestable + " settled=" + PatchRest.settled(now, restableSinceMs) + " finger=" + Math.max(0, touchAwayUntilMs - now) + " pad=" + Math.max(0, pinHiddenUntilMs - now) + " padUp=" + lastBouncer
-                + " shade=" + (lockShadeOpen || now < shadeUntil) + " dark=" + screenDarkNow + " up=" + now + " rt=" + android.os.SystemClock.elapsedRealtime();
+        // the clocks FIRST: LockLog cuts every line at 200 characters and the long ones (a finger line, a window line) lose their END; up / rt / dark are what tells deep sleep from a late timer (CG1d review B)
+        return "up=" + now + " rt=" + android.os.SystemClock.elapsedRealtime() + " dark=" + screenDarkNow + " restable=" + patchRestable + " settled=" + PatchRest.settled(now, restableSinceMs) + " finger=" + Math.max(0, touchAwayUntilMs - now) + " pad=" + Math.max(0, pinHiddenUntilMs - now) + " padUp=" + lastBouncer
+                + " shade=" + (lockShadeOpen || now < shadeUntil);
     }
 
     private boolean isScreenOn() {
@@ -4729,8 +4731,9 @@ public class TjAccessibilityService extends AccessibilityService {
         ensurePatch();
         final boolean first = !overlayShown;
         final boolean slowLine = first && patchLockMode && !patchHomeMode && android.os.SystemClock.uptimeMillis() - fastOpenAtMs > 400;   // CG1d L2: this opening came through the node scan = the dialog's own event did NOT bring the patch in time
-        final boolean wasResting = patchResting;
-        final String gateText = slowLine ? patchGateText(android.os.SystemClock.uptimeMillis()) : null;
+        final long nowS = android.os.SystemClock.uptimeMillis();
+        final boolean wasResting = patchResting && touchAwayUntilMs <= nowS && pinHiddenUntilMs <= nowS;   // the same rule as the fast path: a held-away patch is AWAY
+        final String gateText = slowLine ? patchGateText(nowS) : null;
         if (first) { touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0; }   // BE1: a menu that opens through the scan path also ends every away guard (the PIN pad, if it comes up over the menu, sets its own latch)
         overlayShown = true;
         patchShow(true);   // AZ1: the patch is the time-critical part: it is drawn at the next frame, so nothing slower (a log line, a preferences write) may come before it in this message
