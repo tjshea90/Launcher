@@ -15,7 +15,8 @@ import java.io.InputStreamReader;
  * it later; every update starts again). No polling: one look 20 s after a process start when the stored one is stale, one when Launcher control opens.
  */
 final class DexoptWatch {
-    private static final String K_STATUS = "dexopt_status", K_REASON = "dexopt_reason", K_CODE = "dexopt_code", K_AT = "dexopt_at";
+    private static final String K_STATUS = "dexopt_status", K_REASON = "dexopt_reason", K_CODE = "dexopt_code", K_AT = "dexopt_at", K_TRY = "dexopt_try_at";
+    private static final long FAIL_GAP_MS = 2L * 3600_000L, FORCED_GAP_MS = 30_000L;   // a look that gave nothing is not repeated at every start (CG1 review C)
     private static final long MAX_AGE_MS = 6L * 3600_000L;     // the idle job runs about once a night: a look every 6 h at most
     private static final long LIMIT_MS = 10_000L;               // a hung dumpsys costs one thread for 10 s, never more
     private static final java.util.concurrent.atomic.AtomicBoolean RUNNING = new java.util.concurrent.atomic.AtomicBoolean(false);
@@ -32,8 +33,12 @@ final class DexoptWatch {
     static void refreshAsync(final Context c, final boolean force) {
         final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
         try {
-            if (!force && !DexoptState.stale(Features.getInt(app, K_CODE, 0), Features.getLong(app, K_AT, 0L), versionCode(app), System.currentTimeMillis(), MAX_AGE_MS)) return;
+            long nowMs = System.currentTimeMillis();
+            if (!force && !DexoptState.stale(Features.getInt(app, K_CODE, 0), Features.getLong(app, K_AT, 0L), versionCode(app), nowMs, MAX_AGE_MS)) return;
+            boolean haveReading = Features.getInt(app, K_CODE, 0) == versionCode(app) && Features.getLong(app, K_AT, 0L) > 0;
+            if (!DexoptState.tryDue(haveReading, Features.getLong(app, K_TRY, 0L), nowMs, force, FAIL_GAP_MS, FORCED_GAP_MS)) return;
             if (!RUNNING.compareAndSet(false, true)) return;
+            Features.setLongAsync(app, K_TRY, nowMs);   // counted when the try STARTS (a try that is cut off still counts)
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
@@ -68,7 +73,7 @@ final class DexoptWatch {
     /** One sentence for Launcher control and the tablet report. */
     static String describe(Context c) {
         DexoptState s = stored(c);
-        if (!s.found) return "not known yet (needs the DUMP grant from the adb setup; it is read again 20 s after a start and whenever this screen opens)";
+        if (!s.found) return "not known yet (an app can only read it with the adb grants DUMP and PACKAGE_USAGE_STATS; it is tried again 20 s after a start and whenever this screen opens, at most every 2 hours while it fails)";
         return s.line() + ": " + s.advice();
     }
 

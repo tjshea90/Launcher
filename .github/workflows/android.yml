@@ -133,6 +133,15 @@ jobs:
           else
             echo "::warning::no assets/dexopt/baseline.prof in the release APK: Android will not get a profile to compile from (CG1c)"
           fi
+          # the libraries bring their own rules, so the file above says nothing about OURS: the merged TEXT profile must hold a rule for our package
+          MERGED=$(find app/build/intermediates/merged_art_profile -name 'baseline-prof.txt' 2>/dev/null | head -1)
+          if [ -n "$MERGED" ]; then
+            OURS=$(grep -c 'com/tj/launcher' "$MERGED" || true)
+            echo "Baseline rules for our own package in the merged profile: ${OURS:-0} ($MERGED)" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ "${OURS:-0}" -gt 0 ] || echo "::warning::the merged baseline profile has no rule for com/tj/launcher: src/main/baseline-prof.txt was not used (CG1c)"
+          else
+            echo "::warning::no merged baseline-prof.txt under app/build/intermediates/merged_art_profile: could not check that our rules are in (CG1c)"
+          fi
 
       - name: Build the preview APK (no keystore yet)
         if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release != 'true'

@@ -64,6 +64,17 @@ final class DexoptState {
         return age < 0 || age > maxAgeMs;
     }
 
+    /**
+     * CG1 review C: may a look be tried now? With a reading for THIS version the age rule above decides. WITHOUT one (an app uid is refused: no DUMP / PACKAGE_USAGE_STATS grant) the same refusal would be repeated at every
+     * process start and every Launcher control open, a dumpsys process and a watchdog thread each: wait {@code failGapMs} after the last try, {@code forcedGapMs} when the person opened Launcher control. A clock that went
+     * backwards allows the try. Pure (JVM test).
+     */
+    static boolean tryDue(boolean haveReading, long lastTryMs, long nowMs, boolean forced, long failGapMs, long forcedGapMs) {
+        if (haveReading) return true;
+        long gap = forced ? forcedGapMs : failGapMs;
+        return lastTryMs <= 0 || nowMs < lastTryMs || nowMs - lastTryMs >= gap;
+    }
+
     /** Rebuilds a reading from the two stored words (see DexoptWatch). */
     static DexoptState of(String status, String reason) {
         if (status == null || status.isEmpty()) return NONE;

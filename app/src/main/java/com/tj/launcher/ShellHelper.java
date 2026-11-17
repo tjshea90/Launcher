@@ -12,6 +12,8 @@ import java.util.Collection;
 public final class ShellHelper {
     public static final String KEY = "invisible_cleanup";     // switch, default ON (does nothing unless the helper is running)
     private ShellHelper() {}
+    /** The longest answer a job may return to the app (the server caps its own output at 60 KB; PROBE / SHOTS print more): a process squatting on the port can never stream the app out of memory (CG1 review C). */
+    private static final int MAX_ANSWER_CHARS = 2_000_000;
 
     public static boolean enabled(android.content.Context c) { return Features.get(c, KEY, true); }
 
@@ -82,7 +84,7 @@ public final class ShellHelper {
                 String first = r.readLine();
                 if (first == null || !first.startsWith("OK")) { lastError = "refused: " + first; return null; }
                 StringBuilder sb = new StringBuilder(); String l;
-                while ((l = r.readLine()) != null) sb.append(l).append('\n');
+                while ((l = r.readLine()) != null) { sb.append(l).append('\n'); if (sb.length() > MAX_ANSWER_CHARS) break; }
                 return sb.toString();
             } catch (java.net.ConnectException e) {
                 // nothing on this port: try the next one (the helper takes the first free port of the range)
@@ -90,6 +92,35 @@ public final class ShellHelper {
             finally { try { t.close(); } catch (Throwable ignored) { } }
         }
         return null;
+    }
+
+    /**
+     * CG1f review C: like {@link #askLong} but through the abstract unix socket FIRST, the way {@link #running()} reaches the helper (the tablet may refuse loopback TCP to this app, HLP2: PING would answer and a
+     * TCP-only long answer never arrive), then loopback TCP. Only the commands that need it use it; the older jobs keep their TCP route unchanged. null = not reachable or refused ({@link #lastError} says why).
+     */
+    private static String askLongAny(String line, int timeoutMs) {
+        LocalSocket s = new LocalSocket();
+        boolean connected = false;
+        try {
+            s.connect(new LocalSocketAddress(ShellProtocol.SOCKET, LocalSocketAddress.Namespace.ABSTRACT));
+            connected = true;
+            s.setSoTimeout(timeoutMs);
+            PrintWriter w = new PrintWriter(new OutputStreamWriter(s.getOutputStream()), true);
+            w.println(line);
+            BufferedReader r = new BufferedReader(new InputStreamReader(s.getInputStream()));
+            String first = r.readLine();
+            if (first == null || !first.startsWith("OK")) { lastError = "refused: " + first; return null; }
+            StringBuilder sb = new StringBuilder(); String l;
+            while ((l = r.readLine()) != null) { sb.append(l).append('\n'); if (sb.length() > MAX_ANSWER_CHARS) break; }
+            lastError = "";
+            return sb.toString();
+        } catch (Throwable e) {
+            lastError = "unix: " + e.getClass().getSimpleName() + " " + e.getMessage();
+            if (connected) return null;   // the helper was there and the answer failed: TCP would only ask it again
+        } finally {
+            try { s.close(); } catch (Throwable ignored) { }
+        }
+        return askLong(line, timeoutMs);   // nothing on the unix socket: the loopback TCP route
     }
 
     /** Runs one allow-listed job (ShellProtocol.RUN) and returns its output, or null. */
@@ -135,7 +166,7 @@ public final class ShellHelper {
     }
 
     /** CG1f: the text of {@code dumpsys meminfo com.android.launcher3} as the shell user sees it (an app uid is refused), or null when the helper cannot be reached. Blocking: call off the main thread. */
-    public static String stockMeminfo() { return askLong("STOCKMEM", 25_000); }
+    public static String stockMeminfo() { return askLongAny("STOCKMEM", 25_000); }
 
     /** AA3: removes exactly these Recents tasks (the helper re-checks the deny-list per id). @return how many were removed, or -1 if the helper could not be reached. Blocking. */
     public static int removeTasks(Collection<Integer> ids) {

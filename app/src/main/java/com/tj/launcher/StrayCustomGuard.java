@@ -59,4 +59,14 @@ public final class StrayCustomGuard {
         if (now < standDownUntil || StrayHomeGuard.countInWindow(recent, now) >= MAX) return "stood down after " + MAX + " redirects: left alone";
         return "redirecting to the stock home";
     }
+
+    /**
+     * CG1 review C (privacy): what the lock log and the tablet report (both end up in a PUBLIC repository) say about the window that was in front before the custom home appeared. The system's own packages are kept
+     * (they say WHICH screen it was: the stock launcher, Settings, SystemUI); any other app is only "another app".
+     */
+    public static String beforeLabel(String pkg) {
+        if (pkg == null || pkg.isEmpty()) return "?";
+        if ("android".equals(pkg) || pkg.startsWith("com.android.")) return pkg;
+        return "another app";
+    }
 }

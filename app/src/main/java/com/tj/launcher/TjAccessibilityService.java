@@ -3137,14 +3137,14 @@ public class TjAccessibilityService extends AccessibilityService {
         if (now - lastCustomLogMs >= 2000) {   // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it, at most every 2 s
             lastCustomLogMs = now;
             LockLog.add(getApplicationContext(), "STRAYCUSTOM", "custom home in front while the mode is quickstep (via " + via + ", locked=" + locked + ", screenOn=" + screenOn + ", last unlock "
-                    + (lastUnlockAt > 0 ? (now - lastUnlockAt) + " ms ago" : "none") + ", mode " + (modeAt > 0 ? (now - modeAt) / 1000 + " s old" : "age unknown") + ", before it: " + (lastOtherPkg.isEmpty() ? "?" : lastOtherPkg) + "): "
+                    + (lastUnlockAt > 0 ? (now - lastUnlockAt) + " ms ago" : "none") + ", mode " + (modeAt > 0 ? (now - modeAt) / 1000 + " s old" : "age unknown") + ", before it: " + StrayCustomGuard.beforeLabel(lastOtherPkg) + "): "
                     + StrayCustomGuard.why(on, locked, screenOn, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist));
         }
         if (!fire || now - lastCustomActMs < 700) return;   // one appearance can raise two events
         lastCustomActMs = now;
         customGuardHist[customGuardIdx++ % customGuardHist.length] = now;
         int n = bump(StrayCustomGuard.COUNT_KEY);
-        Features.setStringAsync(this, StrayCustomGuard.LAST_KEY, new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date(now)) + " before it: " + (lastOtherPkg.isEmpty() ? "?" : lastOtherPkg));
+        Features.setStringAsync(this, StrayCustomGuard.LAST_KEY, new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date(now)) + " before it: " + StrayCustomGuard.beforeLabel(lastOtherPkg));
         Log.i(TAG, "STRAYCUSTOM custom home shown in Quickstep mode -> the stock home through the router (#" + n + ")");
         startRouter("stock");   // prearm "stock" = not a Home press: it can never count as a double Home
     }

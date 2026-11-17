@@ -252,8 +252,9 @@ final class QsMemory {
         int dGfx = (last.graphicsKb < 0 || first.graphicsKb < 0) ? 0 : last.graphicsKb - first.graphicsKb;
         int dJava = (last.javaKb < 0 || first.javaKb < 0) ? 0 : last.javaKb - first.javaKb;
         int dNat = (last.nativeKb < 0 || first.nativeKb < 0) ? 0 : last.nativeKb - first.nativeKb;
+        // objects first: a pinned-Activity leak shows in the counts long before it is 4 MB (CG1 review C)
+        if (dAct >= 2 || dViews >= 200) return "more stock Activities / Views are alive (" + signed(dAct) + " / " + signed(dViews) + "): the stock launcher was re-created and the old screens were never freed (R1: the Go Recents view's listener pins every Activity)." + (dPss < 4096 ? " The memory itself has grown by less than 4 MB so far." : "");
         if (dPss < 4096) return "no real growth (under 4 MB).";
-        if (dAct >= 2 || dViews >= 200) return "more stock Activities / Views are alive (" + signed(dAct) + " / " + signed(dViews) + "): the stock launcher was re-created and the old screens were never freed (R1: the Go Recents view's listener pins every Activity).";
         if (dGfx >= dPss / 2) return "mostly graphics memory (" + signed(dGfx) + " kB of " + signed(dPss) + "), objects flat: GPU / EGL buffers that are never trimmed (R2).";
         if (dJava + dNat >= dPss / 2) return "mostly heap (java " + signed(dJava) + ", native " + signed(dNat) + " kB), objects flat: memory the runtime keeps instead of returning (R3).";
         return "grew by " + signed(dPss) + " kB without one dominant part: look at the parts above.";
@@ -278,7 +279,8 @@ final class QsMemory {
     /** Pure: the status line for Launcher control and the report, in plain words ("ok ..." or "no reading: why and what would help"). */
     static String statusText(boolean found, String how, boolean helperUp, boolean dumpOk, String firstLine, int processesChars) {
         if (found) return "the shell helper".equals(how) ? "ok via the shell helper" : "meminfo".equals(how) ? "ok" : "ok via " + how;
-        if (helperUp) return "no reading: the shell helper answered but its dump holds no stock launcher process (" + firstLine + ")";
+        if (helperUp && firstLine != null && firstLine.contains("unknown command")) return "no reading: the shell helper that is running is older than this app (it does not know the memory command): start the helper again with the adb setup line";
+        if (helperUp) return "no reading: the shell helper answered but gave no stock launcher process (" + firstLine + ")";
         if (!dumpOk) return "no reading: the shell helper is not running and the app has no DUMP grant (the adb setup gives it); the stock launcher can only be read by the helper";
         return "no reading: the shell helper is not running, and Android refuses the stock launcher's memory to an app (" + firstLine + (processesChars >= 0 ? "; activity processes: " + processesChars + " chars" : "") + "); start the helper to record";
     }
@@ -305,14 +307,14 @@ final class QsMemory {
                         boolean helperUp = false;
                         try { helperUp = ShellHelper.running(); } catch (Throwable ignored) { }
                         boolean dumpOk = app.checkSelfPermission(android.Manifest.permission.DUMP) == PackageManager.PERMISSION_GRANTED;
-                        String dump = "";
                         Sample s = new Sample();
                         String how = "the shell helper";
-                        if (helperUp) { String h = ShellHelper.stockMeminfo(); dump = h == null ? "" : h; s = parse(dump, now); }
-                        if (!s.found && dumpOk) { dump = read(PACKAGE, LIMIT_MS); s = parse(dump, now); how = "meminfo"; }
+                        String why = "";   // the first line that explains a failure: the HELPER's own when it was asked (the app's refusal used to overwrite it: CG1 review C), else the app's
+                        if (helperUp) { String h = ShellHelper.stockMeminfo(); s = parse(h == null ? "" : h, now); why = firstLine(h == null ? String.valueOf(ShellHelper.lastError) : h); }
+                        if (!s.found && dumpOk) { String d1 = read(PACKAGE, LIMIT_MS); s = parse(d1, now); how = "meminfo"; if (!helperUp) why = firstLine(d1); }
                         int procChars = -1;
                         if (!s.found && dumpOk) { String d2 = read(new String[] { "dumpsys", "activity", "processes" }, LIMIT_MS); s = parseProcesses(d2, now); procChars = d2.length(); if (s.found) how = "activity processes (PSS only)"; }
-                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, helperUp, dumpOk, firstLine(dump), procChars));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
+                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, helperUp, dumpOk, why, procChars));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
