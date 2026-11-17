@@ -4517,11 +4517,12 @@ public class TjAccessibilityService extends AccessibilityService {
      * BE1: a finger went down somewhere on the lock screen while the patch RESTS (menu closed): the patch is gone in the next frame, before a pull-up for the PIN can darken the wallpaper under it. It returns
      * {@link #TOUCH_AWAY_MS} later unless the PIN pad's first sign (pinPadCameUp) pushes the return out. While the stock menu is open this does nothing (the close / PIN cases follow the stock fade-out).
      */
-    private void onOutsideTouch() {
+    private void onOutsideTouch(long touchEventMs) {
         try {
             if (patchView == null || !patchLockMode || overlayShown || pinHide) return;
             if (!patchResting && patchHomeMode) return;      // (the home flavour has its own finger rule: homeTouchDown)
             long now = android.os.SystemClock.uptimeMillis();
+            final long touchAge = Math.max(0, now - touchEventMs);   // CG1d L2: how long the finger's DOWN waited for this thread (node scans share it)
             lastTouchDownMs = now;
             final long away = patchHomeMode ? TOUCH_AWAY_MS : LOCK_TOUCH_AWAY_MS;   // BN3: the lock screen holds the patch away longer (see LOCK_TOUCH_AWAY_MS)
             touchAwayUntilMs = now + away;                   // BT1a: recorded EVEN when the patch is not resting yet: a patch that becomes restable during the pull-up must find the finger's DOWN in its books
