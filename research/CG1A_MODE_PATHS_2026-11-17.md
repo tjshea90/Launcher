@@ -169,7 +169,7 @@ leave X (Back)    : Android resumes the top HOME task = the custom home; no HOME
 | Battery-saver / dark-theme, font, density, locale, wallpaper changes | `configChanges` omits uiMode / fontScale / density / locale (`AndroidManifest.xml:208`), so a RUNNING Launcher is recreated, but a stopped one is not brought to the front by a configuration change [I]. `Mode.set` side effects do not restart anything: the Settings alias toggle uses `DONT_KILL_APP` (`SettingsSpoof.java:119`) [V] |
 | Crash-loop breaker | goes the other way: `Mode.set(QUICKSTEP)` (`CrashGuard.java:65`); `markFailOpen` (`RouterActivity.java:102`) only after a failed custom start [V] |
 | Stray-home guard | custom mode only (`TAS:3064`) [V] |
-| `onNewIntent` of the Launcher (`Launcher.java:1356-1410`) | handles `EXTRA_HOME_WHILE_ON_HOME` only; no mode check, no start of anything [V (earlier read)] |
+| `onNewIntent` of the Launcher (`launcher3/src/com/android/launcher3/Launcher.java:1356-1410`) | handles `EXTRA_HOME_WHILE_ON_HOME` only; no mode check, no start of anything [V: contents read earlier in this investigation; the hooks are called from `Launcher.java:325` (created) and `:949` (resumed)] |
 | Process death of our app | the mode survives (`commit()`, `Mode.java:66`); after the restart the router reads it; the cold start only feeds A1 [V + I] |
 | Entrances / Konami / Solitaire hotspot | custom -> Quickstep only (`ProfileSession.java:139-145`; callers `TAS:1743, 3267`, `EntranceWatcher.java:109`) [V] |
 | `ControlActivity` | `:123` "Switch to the custom launcher" is deliberate; `:395` Restore everything goes to Quickstep; its Quickstep-only screens finish themselves when the mode becomes custom [V] |
