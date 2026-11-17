@@ -114,4 +114,15 @@ public class DexoptStateTest {
         assertSame(DexoptState.NONE, DexoptState.of("", "install"));
         assertSame(DexoptState.NONE, DexoptState.of(null, "install"));
     }
+
+    @Test public void aLookThatGaveNothingIsNotRepeatedAtEveryStart() {   // CG1 review C
+        long fail = 2L * 3600_000L, forced = 30_000L, now = 10_000_000_000L;
+        assertTrue("a reading for this version: the age rule decides elsewhere", DexoptState.tryDue(true, now - 1, now, false, fail, forced));
+        assertTrue("never tried", DexoptState.tryDue(false, 0, now, false, fail, forced));
+        assertFalse("tried a minute ago, nothing found, a plain start", DexoptState.tryDue(false, now - 60_000, now, false, fail, forced));
+        assertTrue("two hours later", DexoptState.tryDue(false, now - fail, now, false, fail, forced));
+        assertFalse("Launcher control opened twice within 30 s", DexoptState.tryDue(false, now - 10_000, now, true, fail, forced));
+        assertTrue("Launcher control opened after 30 s", DexoptState.tryDue(false, now - forced, now, true, fail, forced));
+        assertTrue("the clock went backwards", DexoptState.tryDue(false, now + 5_000, now, false, fail, forced));
+    }
 }

@@ -89,4 +89,15 @@ public class StrayCustomGuardTest {
         for (int i = 0; i < StrayCustomGuard.MAX; i++) hist[i] = NOW - 1000L * (i + 1);
         assertTrue(StrayCustomGuard.why(true, false, true, false, NOW, NOW - 60_000, 0, 0, 0, hist).startsWith("stood down"));
     }
+
+    @Test public void onlySystemPackagesAreNamedInTheLogAndTheReport() {   // CG1 review C: both go to a public repository
+        assertEquals("?", StrayCustomGuard.beforeLabel(null));
+        assertEquals("?", StrayCustomGuard.beforeLabel(""));
+        assertEquals("com.android.launcher3", StrayCustomGuard.beforeLabel("com.android.launcher3"));
+        assertEquals("com.android.settings", StrayCustomGuard.beforeLabel("com.android.settings"));
+        assertEquals("android", StrayCustomGuard.beforeLabel("android"));
+        assertEquals("another app", StrayCustomGuard.beforeLabel("org.telegram.messenger"));
+        assertEquals("another app", StrayCustomGuard.beforeLabel("com.anthropic.claude"));
+        assertEquals("another app", StrayCustomGuard.beforeLabel("com.google.android.inputmethod.latin"));
+    }
 }

@@ -167,6 +167,14 @@ public class QsMemoryTest {
         assertTrue(QsMemory.reading(a, b).startsWith("no real growth"));
     }
 
+    @Test public void aPinnedActivityLeakIsNamedBeforeItIsFourMegabytes() {   // CG1 review C: the size test used to come first and said "no real growth" over three extra Activities
+        QsMemory.Sample a = QsMemory.fromLine(line(0, 10, 100_000, 10_000, 20_000, 30_000, 1, 200));
+        QsMemory.Sample b = QsMemory.fromLine(line(600, 10, 102_000, 10_500, 20_500, 30_500, 4, 260));
+        String r = QsMemory.reading(a, b);
+        assertTrue(r, r.contains("R1") && r.contains("+3") && r.contains("less than 4 MB"));
+        assertFalse(r, r.startsWith("no real growth"));
+    }
+
     @Test public void aNewProcessStartsTheCountAgain() {
         String ring = line(0, 10, 400_000, 1, 1, 1, 9, 2000) + "\n" + line(300, 11, 60_000, 1, 1, 1, 1, 200) + "\n" + line(360, 11, 62_000, 1, 1, 1, 1, 210);
         String d = QsMemory.describe(ring, at(400));
@@ -234,6 +242,8 @@ public class QsMemoryTest {
         assertTrue(noGrant, noGrant.contains("no DUMP grant") && noGrant.startsWith("no reading"));
         String empty = QsMemory.statusText(false, "the shell helper", true, true, "No process found", -1);
         assertTrue(empty, empty.startsWith("no reading: the shell helper answered") && empty.contains("No process found"));
+        String oldHelper = QsMemory.statusText(false, "the shell helper", true, true, "refused: ERR unknown command", -1);
+        assertTrue(oldHelper, oldHelper.startsWith("no reading") && oldHelper.contains("older than this app") && oldHelper.contains("start the helper again"));
         assertTrue("every failure text starts with 'no reading' (retryDue keys on it)", noHelper.startsWith("no reading") && noGrant.startsWith("no reading") && empty.startsWith("no reading"));
     }
 
