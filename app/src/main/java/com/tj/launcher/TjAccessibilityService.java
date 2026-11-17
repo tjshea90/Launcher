@@ -4536,6 +4536,19 @@ public class TjAccessibilityService extends AccessibilityService {
     /** A keyguard PIN-pad view announced itself less than 1.5 s ago: the pad is (about to be) up even if the scan has not confirmed it yet. */
     private boolean padSignFresh() { return lastPadSignMs > 0 && android.os.SystemClock.uptimeMillis() - lastPadSignMs < 1500; }
 
+    /** CG1d: the hidden switch for "a patch prepared in the dark is settled at once, and the finger / PIN-pad holds end with the screen" (default ON in every build; the emulator section lg writes false for its control run). */
+    private boolean darkSettleOn() { return Features.get(this, PatchRest.DARK_SETTLE_KEY, true); }
+
+    /**
+     * CG1d (L1 / L2): every gate the resting lock patch waits on, as ONE compact text for the lock log, so the tablet report says why the patch was visible or away at a given moment. Times are uptime ms
+     * (they stop in deep sleep); rt is elapsedRealtime (it keeps counting), so the two together show how long the CPU slept between two lines.
+     */
+    private String patchGateText(long now) {
+        long shadeUntil = LockShade.holdUntil(lockShadeOpen, lockShadeClosedMs);
+        return "restable=" + patchRestable + " settled=" + PatchRest.settled(now, restableSinceMs) + " finger=" + Math.max(0, touchAwayUntilMs - now) + " pad=" + Math.max(0, pinHiddenUntilMs - now) + " padUp=" + lastBouncer
+                + " shade=" + (lockShadeOpen || now < shadeUntil) + " dark=" + screenDarkNow + " up=" + now + " rt=" + android.os.SystemClock.elapsedRealtime();
+    }
+
     private boolean isScreenOn() {
         try { android.os.PowerManager pm = (android.os.PowerManager) getSystemService(POWER_SERVICE); return pm != null && pm.isInteractive(); } catch (Throwable t) { return true; }
     }
