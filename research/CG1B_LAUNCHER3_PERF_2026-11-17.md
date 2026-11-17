@@ -162,6 +162,18 @@ call plus `ViewRootImpl` teardown, ~3-8 ms INFERRED) during the first frames of 
 from the finger-down (A7 said the same). Deferring that removal to the transition's end is invisible. This is lock-safety / home-patch code: it
 belongs to slice B's B7, needs the films of sections `hp` / `hf`, and should be measured first (log the ms of `refreshLayers` at transition start).
 
+**G8  A reload request that creates what it wants to reload.** `HiddenApps.reloadLauncher` (`HiddenApps.java:113-115`) calls
+`LauncherAppState.getInstance(c).getModel().forceReload()`; `getInstance` CONSTRUCTS the whole Launcher3 app state (`LauncherAppState.java:70-114`:
+IDP, `IconCache`, model, LauncherApps callback, receivers) when it does not exist yet. Its callers are `SettingsSpoof.postReload` (custom mode: the
+Launcher exists) and the Hidden apps screen, which opens only in Quickstep mode (`HiddenAppsActivity.java:45, 119, 52`). A process that was started
+while Quickstep was on never ran `Launcher.onCreate` (the only other place that builds the state, `Launcher.java:310`), so the first edit on that
+screen builds ~1-3 MB of Launcher3 state and registers the package callback for the rest of the process life (from then on every alias flip runs
+`PackageUpdatedTask` and re-renders our own icons, ~10-30 ms of worker time each). The `forceReload` itself does nothing there (no callbacks, the
+model is just marked unloaded). Fix: `LauncherAppState s = LauncherAppState.getInstanceNoCreate(); if (s != null) s.getModel().forceReload();`
+(`LauncherAppState.java:62`). The first custom launch loads with the new preferences anyway. Risk: none. Proof: emulator check "force-stop, Quickstep
+mode, open Hidden apps, flip one switch: logcat has no `LauncherAppState inited`", and the existing `ss` / `mu` Hidden-apps checks still pass.
+Rare action (a few times a week), so marginal; it is also a reminder that in a Quickstep-only process the Launcher3 share of section 6.2 is zero.
+
 **G7  `IconShape.init` in the provider's onCreate.** `MainProcessInitializer.java:31-41` runs on the main thread BEFORE `Application.onCreate`;
 `IconShape.pickBestShape` (`IconShape.java:439-476`) rasterises 7 shapes into 200x200 regions, XORs them with the system mask and adds
 `IconNormalizer.normalizeAdaptiveIcon`: ~10-20 ms per process start (INFERRED), 2 starts a day. Could move to the loader thread (the result is
