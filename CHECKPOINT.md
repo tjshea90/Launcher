@@ -1,13 +1,13 @@
-# CHECKPOINT 1383 — read me first, then TASKS.md
+# CHECKPOINT 1384 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T19:17:43Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `cc70a841` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T19:26:53Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `4fd2c291` (this checkpoint is the commit after it)
 
 ## Just done
-CG1: ro run = #617 id 44156308504 (started 19:13Z, head 0da1d72b, shots=true); baseline-prof.txt written (app/src/main, wildcard HSP rules), profileinstaller 1.3.0 already on the classpath via androidx deps (no manifest removal)
+CG1c: DexoptState/DexoptWatch wired (Control, report, Setup, intake), unit test DexoptStateTest green; CG1e: ro run #617 id 44156308504 = overlay install REFUSED by PackageManager (Overlay tj.ro.fw and target android..., same for systemui), pencil pixels unchanged (0), overlays left 0
 
 ## Do this next
-read run 44156308504: actions_list list_workflow_jobs resource_id=44156308504 -> job id -> get_job_logs tail_lines ~90 (RESULTS block, INFO 'RO ...' lines). Local: bash tools/gradle.sh :app:compileReleaseArtProfile was started (log scratchpad art.txt, read GRADLE_EXIT=) to prove the wildcard rules parse; then check assets/dexopt/baseline.prof size; then DexoptState parser (pure, JVM test) + Launcher control / tablet report line + Setup auto-compile. Reviewers' reports: research/CG1*_2026-11-17.md. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+CG1e: rerun ro with the FULL pm install failure text + variants (android:targetName, targetSdk 28) via tools/make_overlay_apk.sh; read research/CG1E_OVERLAY_AOSP10_SOURCE_2026-11-17.md for the rule. Then reviewer reports research/CG1*_2026-11-17.md (CG1A, CG1B x3, CG1D, CG1F). heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read run 44156308504: actions_list list_workflow_jobs resource_id=44156308504 ->
 
 ## Last ten checkpoints
 ```
+  35dd7fe1 ckpt 1383: CG1: ro run = #617 id 44156308504 (started 19:13Z, head 0da1d72b, shots=true
   d6a7c074 ckpt 1382: CG1: emulator.yml sections=ro (shots=true) DISPATCHED on ccr-16772798-h13w43
   0da1d72b ckpt 1381: CG1e: section ro (RRO acceptance experiment: tools/make_overlay_apk.sh + emu
   7361a436 ckpt 1380: CG1: heartbeat armed trig_01EzvMtE44ag8oMav4DqoqHZ; 7 read-only reviewers la
@@ -25,8 +26,7 @@ read run 44156308504: actions_list list_workflow_jobs resource_id=44156308504 ->
   659d20ad ckpt 1376: CE1: v0.9.11 RELEASED and RECORDED (android.yml #52 id 43772718433, publishe
   39dc3055 ckpt 1375: CE1a-c ticked, HANDOFF 0y updated; android.yml full_build dispatched on dcea
   dceaa412 ckpt 1374: gated v0.9.11 (code 50) and pushed it: the handoff self-test, the full unit 
-  858ec985 ckpt 1373: pre-ship: v0.9.11: no VPN on the lock screen, with the screen off or in the 
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(11 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
