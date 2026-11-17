@@ -240,4 +240,52 @@ public class PatchRestTest {
     @Test public void noDepartureNoCancel() {
         assertFalse(PatchRest.padCancelled(99_000, 0, 0, false, true, 0));
     }
+
+    // ---- CG1d: a patch prepared in the dark is settled at once (uptime stops in deep sleep) ----
+
+    @Test public void theDarkSettleKeyIsStable() { assertEquals("patch_dark_settle", PatchRest.DARK_SETTLE_KEY); }
+
+    @Test public void aRestablePatchInTheDarkIsSettledAtOnce() {
+        long now = 500_000;
+        long since = PatchRest.restableSinceFor(now, now, true, true);                 // the window was made this very moment
+        assertTrue(PatchRest.settled(now, since));
+        assertEquals(0, PatchRest.settleLeftMs(now, since));
+        assertEquals(0, PatchRest.returnInMs(now, since, 0, 0));                       // nothing else holds it
+    }
+
+    @Test public void aHalfSettledPatchInTheDarkIsSettledToo() {
+        long now = 500_000;
+        assertTrue(PatchRest.settled(now, PatchRest.restableSinceFor(now, now - 300, true, true)));   // 300 ms of uptime before the CPU fell asleep
+    }
+
+    @Test public void withTheDisplayLitTheSettleTimeStillRuns() {
+        long now = 500_000;
+        long since = PatchRest.restableSinceFor(now, now, false, true);                // BT1a: a window made while lit waits the whole settle time
+        assertEquals(now, since);
+        assertFalse(PatchRest.settled(now, since));
+        assertEquals(PatchRest.SETTLE_MS, PatchRest.settleLeftMs(now, since));
+        assertFalse(PatchRest.settled(now + PatchRest.SETTLE_MS - 1, since));
+        assertTrue(PatchRest.settled(now + PatchRest.SETTLE_MS, since));
+    }
+
+    @Test public void theSwitchOffKeepsTheOldBehaviourInTheDarkToo() {
+        long now = 500_000;
+        assertEquals(now, PatchRest.restableSinceFor(now, now, true, false));
+        assertEquals(0, PatchRest.restableSinceFor(now, 0, true, false));
+    }
+
+    @Test public void anOldTimeIsKeptAndZeroNeverComesBack() {
+        long now = 500_000;
+        assertEquals(now - 5000, PatchRest.restableSinceFor(now, now - 5000, true, true));       // already old enough: left alone (the log still says the truth)
+        assertEquals(now - PatchRest.SETTLE_MS, PatchRest.restableSinceFor(now, now - PatchRest.SETTLE_MS, true, true));
+        assertEquals(1, PatchRest.restableSinceFor(300, 300, true, true));                       // a boot moments ago: clamped, 0 would mean "not restable"
+        assertTrue(PatchRest.restableSinceFor(1, 1, true, true) > 0);
+    }
+
+    @Test public void theDarkSettleDoesNotTouchTheFingerOrPadHold() {
+        long now = 500_000;
+        long since = PatchRest.restableSinceFor(now, now, true, true);
+        assertEquals(700, PatchRest.returnInMs(now, since, now + 700, 0));             // a pad hold still waits (the service clears the holds itself when the screen goes off)
+        assertEquals(1500, PatchRest.returnInMs(now, since, 0, now + 1500));
+    }
 }
