@@ -3285,6 +3285,7 @@ public class TjAccessibilityService extends AccessibilityService {
         String pk = e.getPackageName().toString();
         if ("com.android.systemui".equals(pk) || pk.startsWith("com.google.android.inputmethod") || pk.contains("inputmethod") || pk.contains("keyboard") || pk.contains("swiftkey")) return;
         noteUnlockSpeed(pk);
+        if (resumedPkg != null && pk.equals(resumedPkg)) resumedSeenAt = System.currentTimeMillis();   // CG1a review A: the app the gesture started has appeared (before the same-package return below: it is often the package that was in front before the lock)
         if (pk.equals(fgPkg)) return;
         fgPkg = pk;
         noteHiddenForSweep(pk);   // BE2
