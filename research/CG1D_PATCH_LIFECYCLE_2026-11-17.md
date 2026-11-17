@@ -49,7 +49,7 @@ the patch is visible or slow and improve it based on the findings."
   Removed by `removePatch` (1626-1633) from `refreshLayers` (1457, 1467), `wallpaperReceiver` (605), and the service teardown (`onInterrupt` / `onUnbind` /
   `onDestroy`, 3557-3582).
 - Type TYPE_ACCESSIBILITY_OVERLAY, flags NOT_FOCUSABLE | LAYOUT_IN_SCREEN | LAYOUT_NO_LIMITS | NOT_TOUCHABLE (until the menu has been open 350 ms), plus
-  FLAG_WATCH_OUTSIDE_TOUCH for the lock flavour (TAS 4296-4303, 1559); format TRANSLUCENT (1560, an OPAQUE window ignores alpha 0).
+  FLAG_WATCH_OUTSIDE_TOUCH for the lock flavour (`overlayParams` TAS 4293-4303, 1559); format TRANSLUCENT (1560, an OPAQUE window ignores alpha 0).
 - Rectangle = the Screenshot slot below the learned card plus a fringe (`patchRect` 1286-1295, `PatchRest.slotWindow`, extra bottom 24 dp + 4 dp fringe).
   Pixels = the stored real-pixel crop of the lock screen (`loadStoredShot` at creation, 1487) or the helper's fresh photo; two soft masks built at creation (1485).
 - Everything below runs on the service's **main thread** (the accessibility service's Looper): events, timers (`handler`), broadcasts, node scans, the patch's
