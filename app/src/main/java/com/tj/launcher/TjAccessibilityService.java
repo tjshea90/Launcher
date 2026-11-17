@@ -3297,6 +3297,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private long qsAppAt = 0;
     private String resumedPkg = null;     // the app started for the current gesture (so "is Quickstep in front?" accepts it too)
     private long resumedAt = 0;           // ... and only for a few seconds: a stale value must never decide a LATER unlock
+    private long resumedSeenAt = 0;       // CG1a review A: when a window of that app was last seen; older than resumedAt = it has not appeared yet (its launch is still in flight: the stray-home guard waits)
 
     private String stockPkg() { ComponentName s = stockCached(); return s == null ? null : s.getPackageName(); }
 
