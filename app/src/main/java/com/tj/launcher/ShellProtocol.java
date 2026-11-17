@@ -164,6 +164,15 @@ public final class ShellProtocol {
     /** AB3: "NOTIFPKGS" -> the helper answers with one package per line: every app that has a notification in the shade right now (read-only). */
     public static boolean isNotifPkgs(String line) { return line != null && line.trim().equals("NOTIFPKGS"); }
 
+    /** CG1f: the stock launcher, the ONLY package "STOCKMEM" ever reads. */
+    public static final String STOCK_PKG = "com.android.launcher3";
+
+    /**
+     * CG1f: "STOCKMEM" -> the helper answers with the text of {@code dumpsys meminfo com.android.launcher3} (read-only; the command is a constant, nothing from the line is ever put into it). An app uid is refused
+     * ("Can't find service: meminfo", emulator runs #621-623), the shell uid reads it: the Quickstep memory recorder asks the helper.
+     */
+    public static boolean isStockMem(String line) { return line != null && line.trim().equals("STOCKMEM"); }
+
     private static final Pattern NOTIF_RECORD = Pattern.compile("NotificationRecord\\(0x[0-9a-fA-F]+: pkg=([A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+) user=UserHandle\\{(\\d+)\\}");
 
     /**
