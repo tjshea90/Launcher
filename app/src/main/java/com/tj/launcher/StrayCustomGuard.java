@@ -66,7 +66,7 @@ public final class StrayCustomGuard {
         if (!screenOn) return DARK;
         if (lockLeftover) return LEFTOVER;
         if (unlockUndecided) return UNDECIDED;
-        if (resumingSince > 0 && now - resumingSince >= 0 && now - resumingSince < RESUME_QUIET_MS) return RESUMING;
+        if (resumingSince > 0 && now - resumingSince < RESUME_QUIET_MS) return RESUMING;   // a negative difference (the clock stepped back) counts as "still launching": fails safe
         if (now - modeChangedAt < MODE_QUIET_MS) return MODE_YOUNG;
         if (now < pausedUntil) return PAUSED;
         if (now < failOpenUntil) return FAIL_OPEN;
