@@ -22,6 +22,8 @@ final class QsMemory {
     /** Switch (hidden): ON in the shipped build, OFF in a debug build (older emulator sections must not see extra dumpsys calls); the section {@code qm} switches it on. */
     static final String KEY = "qs_memory_log";
     static final String RING_KEY = "qs_mem_ring", LAST_AT_KEY = "qs_mem_last_at";
+    static final String STATUS_KEY = "qs_mem_status";
+    static String firstLine(String d) { if (d == null) return "(null)"; String t = d.trim(); int nl = t.indexOf('\n'); if (nl >= 0) t = t.substring(0, nl); return t.length() > 120 ? t.substring(0, 120) : t; }
     static final String PACKAGE = "com.android.launcher3";
     static final long GAP_MS = 25L * 60_000L;          // a sample every 25 minutes at most (the process grows over hours and days)
     static final long FORCED_GAP_MS = 30_000L;         // opening Launcher control twice in a row does not call dumpsys twice
@@ -228,7 +230,7 @@ final class QsMemory {
     static String ring(Context c) { try { return Features.getString(c, RING_KEY, ""); } catch (Throwable t) { return ""; } }
 
     /** One sentence for Launcher control and the tablet report. */
-    static String describe(Context c) { return describe(ring(c), System.currentTimeMillis()); }
+    static String describe(Context c) { String st = ""; try { st = Features.getString(c, STATUS_KEY, ""); } catch (Throwable ignored) { } String d = describe(ring(c), System.currentTimeMillis()); return st.isEmpty() || "ok".equals(st) ? d : d + " [last look: " + st + "]"; }
 
     /** Takes a reading on a background thread when the switch is on, the DUMP grant is there and the gap since the last one allows it. Never throws, never blocks the caller. */
     static void refreshAsync(final Context c, final boolean forced) {
@@ -243,7 +245,9 @@ final class QsMemory {
                     try {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
                         long now = System.currentTimeMillis();
-                        Sample s = parse(read(PACKAGE, LIMIT_MS), now);
+                        String dump = read(PACKAGE, LIMIT_MS);
+                        Sample s = parse(dump, now);
+                        Features.setStringAsync(app, STATUS_KEY, s.found ? "ok" : "no reading: " + dump.length() + " chars, first line: " + firstLine(dump));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
