@@ -1,13 +1,13 @@
-# CHECKPOINT 1396 — read me first, then TASKS.md
+# CHECKPOINT 1397 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T21:28:17Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `6b4bc206` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T21:29:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `f7f43a9a` (this checkpoint is the commit after it)
 
 ## Just done
-qm run #621 id 44178666208 (head f6b552cc): 5 PASS 2 FAIL (QM2 no sample stored, QM3 no PSS/pid); ring EMPTY after opening Launcher control; shell dumpsys meminfo works (Activities 1)
+QsMemory: store why a look gave nothing (qs_mem_status, shown in describe) + qm prints it with DUMP count and avc lines; compiles, QsMemoryTest green
 
 ## Do this next
-next: read QsMemory.java + the qm section (tools/emulator scenario) to see why no sample is stored (DUMP grant on emulator? trigger on Control open? async not done in time?), fix, rerun qm. then CG1d L1-L4, lg, review, gate. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
+next: dispatch emulator.yml sections=qm again, read QM status INFO: if the dump is refused (SELinux) the recorder cannot work app-only: then design the fallback (ShellHelper when running, or ActivityManager.getProcessMemoryInfo for stock pid via UsageStats? no) and say so plainly to Tj. then CG1d logging, lg, review, gate. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ next: read QsMemory.java + the qm section (tools/emulator scenario) to see why n
 
 ## Last ten checkpoints
 ```
+  c5042815 ckpt 1396: qm run #621 id 44178666208 (head f6b552cc): 5 PASS 2 FAIL (QM2 no sample sto
   2a86eb80 ckpt 1395: CG1b batch a unit tests green; dispatched emulator.yml sections=qm on main a
   f6b552cc ckpt 1394: CG1b batch a (E3 E4 E5 G2: scan-by-trigger counters, Screenshot lookup only 
   81fd7345 ckpt 1393: CG1a PROVEN on emulator: ad run #620 id 44164339591 (head 9d37c438): 13 PASS
