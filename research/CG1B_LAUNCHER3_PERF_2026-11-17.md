@@ -256,4 +256,5 @@ The JIT-cold factor dominates every step; CG1c's profile is the right lever. No 
 2. **G1** (its own `ss` + round-trip proof). Count Quickstep sessions per day from the lock log to size the gain.
 3. **G3** (small, independent).
 4. Decide the rest from G2: Graphics / native dominates -> overlay windows and allocator (slices B / D), Code dominates -> CG1c result,
-   Launcher3 marginals (G5, G7, M4, M3) only if Tj wants the last 0.5-1 MB and 30-60 ms per start.
+   Launcher3 marginals (G5, G7, G8, M4, M3) only if Tj wants the last 0.5-1 MB and 30-60 ms per start (G8 is a one-line change and can ride along
+   with G1).
