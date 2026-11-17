@@ -1992,3 +1992,7 @@
 ## 2026-11-17T22:05:04Z
 > Stood down for the 22:03 UTC heartbeat. The other session's `ckpt 1400` is only 16 minutes old, so I changed nothing, and the timer stays on for 00:03 UTC.
 <!-- sha:f34078a30877 -->
+
+## 2026-11-17T22:16:47Z
+> I'm watching session B and saving my own state; nothing of B's has been touched. B has been silent since 21:48 UTC (about 28 minutes) and has no CI run in flight. A watcher and a backup timer will wake me at about 22:20 and 22:28 UTC. If B is still silent then, I take over and run the release.
+<!-- sha:88fb6eacd6b1 -->
