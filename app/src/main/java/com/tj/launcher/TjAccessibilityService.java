@@ -478,6 +478,7 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
         return false;
     }
+    private final Runnable qsMemRun = new Runnable() { @Override public void run() { try { QsMemory.refreshAsync(getApplicationContext(), false); } catch (Throwable ignored) { } } };   // CG1f: 30 s after a wake (the tablet is in use) one reading of the stock launcher's memory, at most every 25 min, off the main thread
     private long restableSinceMs = 0;               // BT1a: uptime of the moment the LOCK patch became restable (0 = it is not); it rests visibly only after PatchRest.SETTLE_MS
     private final Runnable settleRun = new Runnable() { @Override public void run() { try { if (patchView != null && patchLockMode && !patchHomeMode && !overlayShown) { updateLockNumber(); showWithCause("settle"); } } catch (Throwable ignored) { } } };   // review B #1: a FRESH look at the PIN pad first (as touchBack and padBack do: lastBouncer is a scan result and can lag), then decide
     private final Runnable touchBack = new Runnable() { @Override public void run() {
@@ -2914,7 +2915,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act) || android.content.Intent.ACTION_SCREEN_ON.equals(act) || android.content.Intent.ACTION_USER_PRESENT.equals(act))
                 LockLog.add(getApplicationContext(), android.content.Intent.ACTION_SCREEN_OFF.equals(act) ? "SCREEN_OFF" : android.content.Intent.ACTION_SCREEN_ON.equals(act) ? "SCREEN_ON" : "USER_PRESENT", "locked=" + keyguardLocked() + " mode=" + Mode.get(getApplicationContext()));
             if (android.content.Intent.ACTION_SCREEN_OFF.equals(act)) {
-                screenDarkNow = true; AnimationSpeedup.forgetGrant();   // CA1 S3; S6 review MED2: the lock decisions read the grant fresh
+                screenDarkNow = true; handler.removeCallbacks(qsMemRun); AnimationSpeedup.forgetGrant();   // CA1 S3; S6 review MED2: the lock decisions read the grant fresh
                 homeCalInterrupted("the screen went off");   // BI1
                 try { if (patchHomeMode && patchView != null) { patchRestable = false; patchResting = false; patchView.setAlpha(0f); } } catch (Throwable ignored) { }   // BI1 (review 2026-11-08): the home patch is a copy of the HOME screen's pixels; with the screen dark it is hidden and stale, and the wake decides again (the lock screen's own patch, or this one rebuilt) so it can never show over the lock screen for the moments before the layer refresh
                 shadeLookedDark = false;   // BY1 review LOW2: the next dark look reads the panel again
@@ -2934,7 +2935,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
                 handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
             }
-            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
+            if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; handler.removeCallbacks(qsMemRun); handler.postDelayed(qsMemRun, 30_000L); AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) VpnOff.onUnlocked();   // CB2: a new lock counts its VPN stops from zero (nothing turns the VPN back on)
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) { lastKeyguardUpMs = android.os.SystemClock.uptimeMillis(); lastUserPresentMs = lastKeyguardUpMs; lockShadeOpen = false; lockShadeClosedMs = 0; handler.removeCallbacks(lockPrepareLater); startUnlockSpeed(); sumNotePresent(); handler.post(unlockApply); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_POWER_CONNECTED.equals(act) || android.content.Intent.ACTION_POWER_DISCONNECTED.equals(act)) {
