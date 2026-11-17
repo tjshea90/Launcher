@@ -2024,3 +2024,7 @@
 >
 > The helper has to be running for any reading to be taken. All of this is written into `TASKS.md` under CG1f and checkpointed. I sent a push notification with the summary. I did not check on the auto-resume heartbeat.
 <!-- sha:a78d0cf99ea6 -->
+
+## 2026-11-17T22:20:09Z
+> I'm watching session B and saving my own state; nothing of B's has been touched. B has been silent since 21:48 UTC (about 28 minutes) and has no CI run in flight. A watcher and a backup timer will wake me at about 22:20 and 22:28 UTC. If B is still silent then, I take over and run the release.
+<!-- sha:88fb6eacd6b1 -->
