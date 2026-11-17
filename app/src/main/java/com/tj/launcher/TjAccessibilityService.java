@@ -147,9 +147,13 @@ public class TjAccessibilityService extends AccessibilityService {
         if (menuSeenMs == 0) menuSeenMs = now;
         menuUpAtMs = now;
         if (!patchResting && !patchHomeMode) logPatch("menu opened while the patch was away (touch " + (touchAwayUntilMs > now) + ", PIN guard " + (pinHiddenUntilMs > now) + "): shown at the dialog's own event");   // BE1: the lock log shows the case behind a Screenshot flash
+        final boolean wasResting = patchResting;                                   // CG1d L2: what the patch was doing at the dialog's own event, read BEFORE the guards below are cleared
+        final String gateText = patchHomeMode ? null : patchGateText(now);
         touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0;   // a sign of the PIN pad a moment ago is NOT forgotten (code review 2026-11-07: the scan is ~120 ms slower than the first sign)
         Log.i(TAG, "PATCH fast open: the dialog's window event is " + Math.max(0, now - event.getEventTime()) + " ms old, " + Math.max(0, event.getEventTime() - winBurstStartMs) + " ms after the first window event of the burst t=" + now);   // BY1b: t= puts it on the film's timeline (section fl 'seq')
+        fastOpenAtMs = now;                                                        // CG1d L2: showStock must not write its own opening line for this one
         showOverlay(cached);
+        if (gateText != null) logPatch("menu opened (fast path, the dialog's event " + Math.max(0, now - event.getEventTime()) + " ms old): patch " + (wasResting ? "RESTING" : "AWAY") + " [" + gateText + "]");   // CG1d L2: after the frame, never before it
         if (fading) deferScan(now); else deferWork(now, 60);   // the patch is drawn (and, while it fades, redrawn every frame) before any heavy work of this burst runs
     }
 
