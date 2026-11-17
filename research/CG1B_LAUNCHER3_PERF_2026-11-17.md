@@ -35,6 +35,7 @@ that is still interpreted or JIT-cold is another 2-3x slower (CG1c's baseline pr
 | G5 | marginal | AllAppsContainerView.java:121-123; AlphabeticalAppsList.java:159 | second adapter holder builds a 2nd ICU index + collator for a work profile that cannot exist | 5-25 ms + 0.1-0.3 MB per Launcher creation (INFERRED) | no |
 | G6 | marginal | TjHooks.java:175-186 | state hook requests a layer refresh on unchanged state; start-of-open removes the patch window inside the animation | 2 of 4 refreshes per drawer cycle are no-ops; one WM binder call (~3-8 ms) in the first frames of each open | pointer: A7 / B7 (NEXT) |
 | G7 | marginal | MainProcessInitializer.java:41; IconShape.java:439-476 | `IconShape.init` (7 region rasterisations) on the main thread in the provider's onCreate | 10-20 ms per process start, 2 a day | no |
+| G8 | marginal | HiddenApps.java:114; HiddenAppsActivity.java:45, 119 | the Hidden apps screen (Quickstep only) builds the whole Launcher3 app state just to call `forceReload` | once per process that never ran the custom Launcher: ~30-60 ms + 1-3 MB + permanent package callbacks | no |
 | M4 | marginal | BaseIconCache.java:249-269; IconCache.java:103-115 | icons of hidden apps can enter the memory cache | <= 0.5 MB steady | yes (M4) |
 | M3 | marginal | HomeLayer.java:33-37 | full-window PixelCopy per curtain build | ~1-2 ms/s on the render thread, 2.4 MB transient | yes (M3 / D3) |
 | M5 | no | TjAccessibilityService.java:1361, 1443, 1623 | ARGB_8888 masks | <= 0.1 MB | yes (M5 / D4) |
