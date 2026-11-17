@@ -207,7 +207,7 @@ So **every creation of the fallback `RecentsActivity` inflates one new `IconRece
     }
 ```
 `RecentsActivityTracker` (`quickstep/src/com/android/quickstep/RecentsActivityTracker.java`, L= 33-131): `sCurrentActivity` is a `WeakReference<BaseRecentsActivity>`, cleared in `onRecentsActivityDestroy`; the pending tracker is also a `WeakReference`. No leak there (VERIFIED).
-Note: `BaseRecentsActivity.onStop` calls `onTrimMemory(TRIM_MEMORY_UI_HIDDEN)` on the ACTIVITY object only, which reaches `UiFactory.onTrimMemory` -> `RecentsModel.onTrimMemory` (section 1.5). It does not go through `ActivityThread.handleTrimMemory`, so it does not reach `WindowManagerGlobal.trimMemory` / HWUI (see 3.x).
+Note: `BaseRecentsActivity.onStop` calls `onTrimMemory(TRIM_MEMORY_UI_HIDDEN)` on the ACTIVITY object only, which reaches `UiFactory.onTrimMemory` -> `RecentsModel.onTrimMemory` (section 1.5). It does not go through `ActivityThread.handleTrimMemory`, so it does not reach `WindowManagerGlobal.trimMemory` / HWUI (see 2.5 and 3.2).
 
 ### 1.5 KEY FINDING: the Go `IconRecentsView` registers a listener in a process-wide singleton and nothing removes it (VERIFIED code; magnitude INFERRED)
 `go/quickstep/src/com/android/quickstep/views/IconRecentsView.java` (about 900 lines; constructor L~221-259, `onFinishInflate` L~262-350; two counts of the fetch model disagree by 60 lines, locate by name):
