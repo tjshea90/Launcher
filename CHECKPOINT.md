@@ -1,13 +1,13 @@
-# CHECKPOINT 1391 — read me first, then TASKS.md
+# CHECKPOINT 1392 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T19:56:06Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `f2e7f8aa` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T20:03:56Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `68e0b18d` (this checkpoint is the commit after it)
 
 ## Just done
-CG1a: ad run #619 id 44161930288: 12 PASS 1 FAIL=AD5b (custom home in front after Back, mode quickstep; B1 REPRODUCED, picture 152 = custom home) guard did NOT redirect, STRAYCUSTOM line text pending. CG1d: PatchRest.restableSinceFor + dark holds cleared + L1/L2 lock-log lines coded, PatchRestTest+StrayCustomGuardTest green
+CG1f: QsMemory recorder (dumpsys meminfo of the stock launcher via DUMP grant, ring of 96 samples, reading R1/R2/R3) wired into wake/Control/report; QsMemoryTest 15 green. CG1a: guard now also called from Launcher.onResume (run #619 had no window event), AD5b INFO rewritten. ad run #620 id 44164339591 (head 9d37c438, shots) in progress
 
 ## Do this next
-read STRAYCUSTOM why text (subagent ae38111a053c5d010 on job 134317754213); fix the guard (leftover/armed/paused?), re-run ad; then CG1d section lg. ci-shots of run 619 saved in scratchpad cishots-ad. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+read run 44164339591 job 134326264819 (AD5b STRAYCUSTOM INFO + check); then section qm (recorder proof), CG1b batch a, section lg. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read STRAYCUSTOM why text (subagent ae38111a053c5d010 on job 134317754213); fix 
 
 ## Last ten checkpoints
 ```
+  5ff672be ckpt 1391: CG1a: ad run #619 id 44161930288: 12 PASS 1 FAIL=AD5b (custom home in front 
   12775bb7 ckpt 1390: CG1a: ad run #619 id 44161930288 started 19:45Z head 5d936924 shots=true (un
   5d936924 ckpt 1389: CG1a P0+P1: StrayCustomGuard (pure, 13 tests) + guardStrayCustom in the serv
   7b0f5893 ckpt 1388: CG1: TASKS holds the reviewer findings (CG1A B1 stray-custom, CG1B x2, CG1D 
@@ -25,8 +26,7 @@ read STRAYCUSTOM why text (subagent ae38111a053c5d010 on job 134317754213); fix 
   bccc1f1e ckpt 1384: CG1c: DexoptState/DexoptWatch wired (Control, report, Setup, intake), unit t
   35dd7fe1 ckpt 1383: CG1: ro run = #617 id 44156308504 (started 19:13Z, head 0da1d72b, shots=true
   d6a7c074 ckpt 1382: CG1: emulator.yml sections=ro (shots=true) DISPATCHED on ccr-16772798-h13w43
-  0da1d72b ckpt 1381: CG1e: section ro (RRO acceptance experiment: tools/make_overlay_apk.sh + emu
 ```
 
-(13 automatic checkpoint(s) since the last deliberate one — the
+(9 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
