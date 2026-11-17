@@ -5454,6 +5454,30 @@ info "RO verdict: overlay APKs ACCEPTED by the package manager (1 = yes): fw pla
 info "RO end: overlays left: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | grep -c 'tj.ro') (0 = cleaned up); SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
 ensurehome; setmode custom; rebind; home
 fi # section ro
+
+if want qm; then # section qm
+beat "before QM"
+# ---- QM (TASKS CG1f; Tj, 2026-11-17: "investigate why and how the quickstep launcher slowly builds in ram usage over time ... Figure out what features in the custom launcher app can add to the quickstep ram usage").
+#      The recorder of the stock launcher's memory works on a real Android 10: with the DUMP grant the APP itself runs `dumpsys meminfo com.android.launcher3` (no cable) when Launcher control opens (the switch is
+#      ON in the shipped build and OFF in debug: this section turns it on) and keeps a compact sample in its preferences. Premise checks only: the grant is there (QM1), a sample was stored (QM2) and it holds a real
+#      PSS (QM3). The numbers are INFO: the emulator's stock launcher is small, what grows on the tablet is measured THERE (the tablet report prints the ring and a reading of it).
+ensurehome
+adb shell pm grant "$PKG" android.permission.DUMP >/dev/null 2>&1
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+hpinit false; hpkey qs_memory_log true
+setmode quickstep; ensurehome; rebind; home; sleep 2
+check "QM1: the app holds the DUMP grant (the adb setup gives it on the tablet)" sh -c "adb shell dumpsys package $PKG | grep -q 'android.permission.DUMP: granted=true'"
+QM_STOCK="$(adb shell dumpsys meminfo com.android.launcher3 2>/dev/null | grep -E 'MEMINFO in pid|TOTAL:|Activities:|Views:' | head -4 | cut -c1-110 | tr '\n' '|')"
+info "QM stock launcher as the SHELL sees it: ${QM_STOCK:-nothing (no stock launcher process on this image)}"
+adb shell am start -n "$PKG/.ControlActivity" >/dev/null 2>&1; sleep 14
+QM_RING="$(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="qs_mem_ring">[^<]*' | sed 's/.*>//; s/&#10;/ | /g')"
+info "QM ring after opening Launcher control: ${QM_RING:-EMPTY}"
+check "QM2: opening Launcher control stored a sample of the stock launcher" test -n "$QM_RING"
+check "QM3: the sample holds a real PSS and a pid" sh -c "echo '$QM_RING' | grep -Eq 'pid=[0-9]+;pss=[0-9]{4,}'"
+QM_ACT="$(echo "$QM_RING" | grep -o 'act=[0-9]*' | tail -1)"; QM_VW="$(echo "$QM_RING" | grep -o 'views=[0-9]*' | tail -1)"
+info "QM objects in the stock launcher: ${QM_ACT:-act=?} ${QM_VW:-views=?}"
+setmode custom; rebind; home; sleep 2
+fi # section qm
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
