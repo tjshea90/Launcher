@@ -1,0 +1,21 @@
+# Baseline profile (TASKS CG1c; Tj, 2026-11-17: "make android compile/precompile it fully on install or update, so that it is as
+# fast and efficient as possible, even if this makes the update or install slower or a bigger file").
+#
+# WHY: Android 10 has no manifest switch for "compile this app fully at install". A sideloaded APK is only VERIFIED at install; its
+# code then runs in the interpreter / JIT until the idle maintenance job (device idle + charging) has seen a profile of the app and
+# compiles the profiled methods ("speed-profile"). Every update throws the compiled code away. A profile that SHIPS INSIDE the APK
+# (assets/dexopt/baseline.prof, built from this file by the Android Gradle plugin for release builds, installed by
+# androidx.profileinstaller at the first start of every version) lets that compile happen without waiting for the JIT to learn it.
+#
+# WHAT: H = hot (compile), S = startup (compile and lay out first), P = post-startup (compile). The wildcard patterns are expanded
+# by profgen against the dex files of THIS APK at build time, so the binary profile lists every method of the launcher's own code
+# (com.tj.launcher, the Launcher3 fork, the icon library, the wallpaper picker) and of RecyclerView / DynamicAnimation, which the
+# drawer scrolls through. The result is "speed" quality for our own code with the rest of the libraries left to the JIT: a bigger
+# oat file (a few MB) and a slower idle compile, in exchange for no interpreter time in the unlock path, the accessibility
+# service's tree walks and the drawer. If the build says a pattern is not understood, replace the wildcards by a list made from an
+# emulator run (cmd package dump-profiles com.tj.launcher) rather than dropping the profile.
+HSPLcom/tj/launcher/**;->**(**)**
+HSPLcom/android/launcher3/**;->**(**)**
+HSPLcom/android/wallpaperpicker/**;->**(**)**
+HSPLandroidx/recyclerview/**;->**(**)**
+HSPLandroidx/dynamicanimation/**;->**(**)**
