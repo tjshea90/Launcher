@@ -1817,8 +1817,8 @@ adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>
 #      AD5's premise is "the apps are still open at the lock", so this section switches the clean-up OFF explicitly instead of depending on whether a helper happens to be alive.
 adfeat(){ # adfeat none|true|false: the resume switch (none = nothing stored = the default, ON); profile_preclean is always written OFF here
   case "$1" in
-    none) adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><string name=\\\"return_app_label\\\">Calendar</string><string name=\\\"power_mode\\\">hide_screenshot</string><boolean name=\\\"profile_preclean\\\" value=\\\"false\\\" /></map>\" > shared_prefs/tj_features.xml'";;
-    *)    adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><string name=\\\"return_app_label\\\">Calendar</string><string name=\\\"power_mode\\\">hide_screenshot</string><boolean name=\\\"resume_qs_app\\\" value=\\\"$1\\\" /><boolean name=\\\"profile_preclean\\\" value=\\\"false\\\" /></map>\" > shared_prefs/tj_features.xml'";;
+    none) adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><string name=\\\"return_app_label\\\">Calendar</string><string name=\\\"power_mode\\\">hide_screenshot</string><boolean name=\\\"profile_preclean\\\" value=\\\"false\\\" /><boolean name=\\\"guard_stray_custom\\\" value=\\\"true\\\" /></map>\" > shared_prefs/tj_features.xml'";;
+    *)    adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><string name=\\\"return_app_label\\\">Calendar</string><string name=\\\"power_mode\\\">hide_screenshot</string><boolean name=\\\"resume_qs_app\\\" value=\\\"$1\\\" /><boolean name=\\\"profile_preclean\\\" value=\\\"false\\\" /><boolean name=\\\"guard_stray_custom\\\" value=\\\"true\\\" /></map>\" > shared_prefs/tj_features.xml'";;
   esac; }
 adopen(){ adb shell monkey -p com.android.contacts -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 3; }   # an app opened IN Quickstep
 adb shell locksettings set-pin 1234 > "$OUT/ad-setpin.txt" 2>&1
@@ -1833,6 +1833,14 @@ adb logcat -d -s TjA11y:I > "$OUT/ad-r1-log.txt" 2>&1
 info "AD5 r1 evidence: in front: $(grep -m1 -E 'mResumedActivity' $OUT/ad-r1.txt | cut -c1-140) | log: $(grep -E 'ROUTER|PROFILE|resume|HANDSHAKE|remember' $OUT/ad-r1-log.txt | tail -10 | cut -c25-170 | tr '\n' '|' | cut -c1-1100)"
 check "AD5: after the gesture the app that was open (Contacts) is back in front, not the Quickstep home" grep -q 'com.android.contacts' "$OUT/ad-r1.txt"
 check "AD5: the helper says it brought that app back" grep -q 'ROUTER resume com.android.contacts' "$OUT/ad-r1-log.txt"
+# ---------------- AD5b (TASKS CG1a, path B1): the custom home was put in front behind the lock screen and the app came back ABOVE it. Leaving the app with Back must not reveal our custom home inside a Quickstep session
+# (guard_stray_custom is switched on in this section's preferences: the shipped build has it ON, a debug build OFF). The INFO line says whether the custom home showed at all (a STRAYCUSTOM line) and what the guard did.
+adb shell input keyevent KEYCODE_BACK; sleep 5
+resumed > "$OUT/ad-r1-back.txt"; shot 152-ad-back-after-resume
+AD_SC="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -E 'STRAYCUSTOM|LAUNCHER +resumed while' | tail -4 | cut -c1-300 | tr '\n' '|')"
+info "AD5b: after Back from the resumed app: $(cut -c1-150 "$OUT/ad-r1-back.txt"); mode $(getmode); lock log: ${AD_SC:-no STRAYCUSTOM line (the custom home never showed under the app)}"
+check "AD5b: after Back the custom home is not what shows in the Quickstep session" test -z "$(grep -m1 'com.tj.launcher/com.android.launcher3.Launcher' "$OUT/ad-r1-back.txt")"
+check "AD5b: the stored mode is still quickstep (the guard changed no mode)" test "$(getmode)" = quickstep
 # ---------------- AD7a: lock again from this Quickstep session: the cover must still work on the lock screen
 getmode > "$OUT/ad-mode-at-lock.txt"
 lockpad; adb logcat -c
