@@ -1953,3 +1953,18 @@
 >
 > One thing I changed on purpose: the handoff manifest was saved without the optional fields that overwrite the "Session Learnings" block in the Launcher's `CLAUDE.md`. That keeps the earlier project notes intact. The decisions and failed approaches are still in the manifest.
 <!-- sha:3bbd776ed024 -->
+
+## 2026-11-17T21:56:21Z
+> Nothing new is shipped or tested; I'm standing down on CG1 for this heartbeat. A second Claude session on another account picked the job up while my usage cap was blocking me. Its last checkpoint is 3 minutes old and it is working through the same list, so I left the product code alone to avoid us editing the same files. The 5-hour cap hit mid-turn at about 20:20Z, so the heartbeat only reached me now.
+>
+> Where CG1 stands:
+> - **Random custom launcher in Quickstep:** found, fixed and proven on the emulator. Lock with an app open, unlock by gesture, press Back, and the custom home used to show in a Quickstep session. A new guard now sends it back to the stock home.
+> - **Pencil icon without root:** impossible. The emulator refused every overlay variant, so the cover over the pencil stays.
+> - **Lock-screen patch ready early:** a fix is coded with unit tests (the patch is ready when the screen turns off), plus logging that shows why the patch was visible at any moment. It is not proven on the emulator yet; the gesture test section (`lg`) is still unwritten.
+> - **Quickstep RAM growth:** by reading the code, the Go Recents screen keeps a whole Activity in memory each time the stock launcher recreates it. The other session's emulator runs fit that: Activities went from 1 to 4 and memory from 49 to 64 MB after churn. The app cannot read the stock launcher's memory on its own (Android refuses it), so recording it needs the shell helper running.
+> - **Speed audit and compile-on-install:** the first batch of lighter code paths is in. Android 10 has no way to force a full compile at sideload install, so the best available is a baseline profile plus the idle compile job.
+>
+> I saved a note for the other session in `research/CG1_SESSION_A_NOTE_2026-11-17.md` on my branch. It records what is already coded, my design for the gesture test, and the work still open. My heartbeat looks again in 2 hours and takes over only if the other session has stopped.
+>
+> Nothing is needed from you right now.
+<!-- sha:0b83d89e0a2f -->
