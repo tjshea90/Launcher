@@ -1,13 +1,13 @@
-# CHECKPOINT 1409 — read me first, then TASKS.md
+# CHECKPOINT 1410 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T23:10:15Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `69040f69` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T23:13:10Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `f14ff6d9` (this checkpoint is the commit after it)
 
 ## Just done
-lg #625 id 44194958128 job 134433835995 head 46153e5b: 12 PASS 0 FAIL 66 INFO (LG1-LG7 pass); C0 on=RESTING off=AWAY, C1 on=RESTING off=RESTING, C2 on=RESTING, C3 on=RESTING off=AWAY, void-in-dark C3 on=1 off=0, C5 no early rest ON. Reviewer-A stray-guard fixes in the tree, not yet compiled
+stray guard review A part 1 compiled+green: StrayCustomGuard.reason() codes (UNDECIDED, RESUMING, ROUTER_BUSY), retryInMs, verdict-first logText; service re-check + customHomeGone + noteOtherWindow + async bump; TjHooks null-helper line; StrayCustomGuardTest 28 green
 
 ## Do this next
-compile + run StrayCustomGuardTest (scratchpad scg1.log), then fix the ad scenario AD5b/sed + new AD5a negative control, full suite + lint, rerun lg+ad, heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+ad scenario: sed for new STRAYCUSTOM format, non-vacuous AD5b, AD5a negative control (no redirect at first gesture); then full suite + lint; rerun lg + ad; then 4 gate runs; heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ compile + run StrayCustomGuardTest (scratchpad scg1.log), then fix the ad scenar
 
 ## Last ten checkpoints
 ```
+  3e1bff85 ckpt 1409: lg #625 id 44194958128 job 134433835995 head 46153e5b: 12 PASS 0 FAIL 66 INF
   606d1157 ckpt 1408: full suite 1116 tests 0 fail + lint green (full1.log GRADLE_EXIT=0); lg reru
   f1a1fbfe ckpt 1407: reviews B+C fixed: gate text clocks first, RESTING label = really visible, p
   3c3c09d9 ckpt 1406: HANDOFF 0z (live state of v0.9.12) written; B still silent (tip 69453515), b
@@ -25,8 +26,7 @@ compile + run StrayCustomGuardTest (scratchpad scg1.log), then fix the ad scenar
   2702c070 ckpt 1402: QsMemory via helper STOCKMEM + 2h backoff: QsMemoryTest/TaskOriginTest green
   171cc637 ckpt 1401: TAKEOVER done 22:25Z (CG3b): B silent since 21:48Z (31 min), no CI in flight
   63330b2e ckpt 1398: takeover prepared (read-only): git merge-tree dry run of origin/main into my
-  497a0215 ckpt 1397: CG3d done: research/CG1F_CONFIG_CHANGES_2026-11-17.md = prime suspect for th
 ```
 
-(10 automatic checkpoint(s) since the last deliberate one — the
+(5 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
