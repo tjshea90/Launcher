@@ -152,7 +152,7 @@ list's index and comparator, or create the WORK holder on first need. Risk: low;
 alphabet fast-scroller section letters. Per day it saves well under 0.1 s (2 starts + the G4 count), so it is marginal unless G4 shows many
 re-creations.
 
-**G6  The state hook asks for a layer refresh it does not need.** `TjHooks.java:155-158`: `setNormal(v)` calls `refreshLayersSoon()` at every
+**G6  The state hook asks for a layer refresh it does not need.** `TjHooks.java:175-186` (`watchState`, `setNormal`): `setNormal(v)` calls `refreshLayersSoon()` at every
 transition start AND complete, also when `launcherNormal` did not change (2 of the 4 calls in one drawer open + close are no-ops, ~0.1-0.5 ms each:
 nothing). The real cost is the one that changes state: at the START of a drawer open the refresh removes the patch window (a WindowManager binder
 call plus `ViewRootImpl` teardown, ~3-8 ms INFERRED) during the first frames of the open animation, although the patch is already at alpha 0
