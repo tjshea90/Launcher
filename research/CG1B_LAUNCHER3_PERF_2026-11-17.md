@@ -79,8 +79,8 @@ flipped while in Quickstep (the `reloadOwed` case), and logcat shows no "loading
 **What is known (MEASURED).** Tablet reports 2026-11-09 / 10 / 10-2: total PSS 68 / 71 / 69 MB, Java heap 6 / 8 / 5 MB (`research/tablet/*/tablet-report.txt`
 line 626-627). So 60+ MB are code, native heap, graphics or runtime. CI runs `cd2` / `cd2h` (`research/CD2_EMULATOR_GROWTH_2026-11-14.md`): OUR
 process 38.1 -> 44.4 MB over 18 Quickstep sessions without the helper (+0.35 MB per session; flat with the helper), and 44.4 -> **69.6 MB after 30
-Recents open / close cycles**. That note says "may be GC timing; not investigated". The tablet's 69 MB looks like the same plateau (the tablet runs
-without the helper and Tj opens Recents often). Nothing in the repo splits our process's memory, so nobody can say what grew.
+Recents open / close cycles**. That note says "may be GC timing; not investigated". The tablet's 69 MB may be the same plateau (the tablet runs
+without the helper, HLP1; how often Recents is scanned there is not recorded). Nothing in the repo splits our process's memory, so nobody can say what grew.
 **Change.** (1) In `costLines` add the rows of `Debug.MemoryInfo.getMemoryStats()` on the object it already fetches (no extra call): summary
 java-heap, native-heap, code, stack, graphics, private-other, system, total-pss, total-swap, printed in the same words as `dumpsys meminfo` "App
 Summary" so `tablet_intake.py:212` parses it with the same pattern. (2) Once per report, on its worker thread, read `/proc/self/smaps` and add up Pss
