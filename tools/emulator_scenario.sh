@@ -5492,7 +5492,6 @@ ensurehome
 adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
 lgfeat(){ # lgfeat <patch_dark_settle true|false>
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch_always\\\" value=\\\"true\\\" /><boolean name=\\\"patch_rest_model\\\" value=\\\"true\\\" /><boolean name=\\\"patch_dark_settle\\\" value=\\\"$1\\\" /><int name=\\\"patch_test_skew\\\" value=\\\"0\\\" /><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
-}
 lglock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 4; }       # the lock screen, screen on, the resting patch settled
 lgunlock(){ adb shell input swipe 300 900 300 300 300; sleep 2; adb shell input text 1234; sleep 1; adb shell input keyevent KEYCODE_ENTER; sleep 4; }   # a plain PIN: the custom home, the PIN stays set
 lgnow(){ adb shell date +%H:%M:%S | tr -d '\r\n'; }
