@@ -5434,13 +5434,13 @@ ro_try(){ # ro_try <tag> <overlay pkg> <target> <res dir> <targetName or -> <tar
     fi
     adb shell cmd overlay disable --user 0 "$pkg" >/dev/null 2>&1; sleep 2; adb uninstall "$pkg" >/dev/null 2>&1; sleep 3
   fi
-  echo "$ok"
+  RO_OK="$ok"   # a global, not echo: info / check must run in THIS shell (their output and the FAIL counter would be lost in $( ))
 }
-RO_R1="$(ro_try fw1 tj.ro.fw1 android "$ROW/res_fw" - 29 1 | tail -1)"
-RO_R2="$(ro_try fw2 tj.ro.fw2 android "$ROW/res_fw" TjTest 29 1 | tail -1)"
-RO_R3="$(ro_try fw3 tj.ro.fw3 android "$ROW/res_fw" TjTest 28 1 | tail -1)"
-RO_R4="$(ro_try ui1 tj.ro.ui1 com.android.systemui "$ROW/res_ui" - 29 0 | tail -1)"
-RO_R5="$(ro_try ui2 tj.ro.ui2 com.android.systemui "$ROW/res_ui" TjTest 29 0 | tail -1)"
+ro_try fw1 tj.ro.fw1 android "$ROW/res_fw" - 29 1; RO_R1="$RO_OK"
+ro_try fw2 tj.ro.fw2 android "$ROW/res_fw" TjTest 29 1; RO_R2="$RO_OK"
+ro_try fw3 tj.ro.fw3 android "$ROW/res_fw" TjTest 28 1; RO_R3="$RO_OK"
+ro_try ui1 tj.ro.ui1 com.android.systemui "$ROW/res_ui" - 29 0; RO_R4="$RO_OK"
+ro_try ui2 tj.ro.ui2 com.android.systemui "$ROW/res_ui" TjTest 29 0; RO_R5="$RO_OK"
 info "RO verdict: overlay APKs ACCEPTED by the package manager (1 = yes): fw plain $RO_R1, fw targetName $RO_R2, fw targetName+sdk28 $RO_R3, systemui plain $RO_R4, systemui targetName $RO_R5"
 info "RO end: overlays left: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | grep -c 'tj.ro') (0 = cleaned up); SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
 ensurehome; setmode custom; rebind; home
