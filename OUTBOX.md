@@ -1957,3 +1957,7 @@
 ## 2026-11-17T21:21:01Z
 > The wait ends at 21:27. I'll end this turn and read the result when the timer fires.
 <!-- sha:301efd5fff27 -->
+
+## 2026-11-17T21:29:55Z
+> Second `qm` run dispatched. The timer fires in about 7 minutes, and I'll read the QM status line then.
+<!-- sha:c473632d89d7 -->
