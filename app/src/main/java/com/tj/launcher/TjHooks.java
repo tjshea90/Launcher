@@ -87,7 +87,8 @@ public final class TjHooks {
             if (!Mode.isCustom(c)) {
                 LockLog.add(c.getApplicationContext(), "LAUNCHER", "resumed while the mode is " + Mode.get(c) + " (CG1a: the custom home in front in a Quickstep session; the STRAYCUSTOM line says what the helper made of it)");
                 TjAccessibilityService sg = TjAccessibilityService.get();
-                if (sg != null) sg.customHomeAppeared("the Launcher's own onResume");   // CG1a: the window event of this appearance is not always delivered (run #619), the resume always is
+                if (sg != null) sg.customHomeAppeared("onResume");   // CG1a: the Launcher's own resume is the ONE signal of this appearance (a window event of our own package never reaches the guard; run #619 saw none either)
+                else LockLog.add(c.getApplicationContext(), "STRAYCUSTOM", "no accessibility helper connected: the custom home is in front in a Quickstep session and nothing can send it back | via onResume");   // CG1 review A: say so instead of staying silent
             }
         } catch (Throwable ignored) { }
         try { if (c instanceof com.android.launcher3.Launcher) { launcherRef = new java.lang.ref.WeakReference<>((com.android.launcher3.Launcher) c); watchHomeDraw((com.android.launcher3.Launcher) c); } } catch (Throwable ignored) { }   // BI1
