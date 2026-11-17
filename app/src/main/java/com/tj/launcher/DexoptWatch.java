@@ -42,8 +42,8 @@ final class DexoptWatch {
                         if (s.found) {   // a failed look keeps the old reading (and its age), so the next start tries again
                             Features.setStringAsyncIfChanged(app, K_STATUS, s.status);
                             Features.setStringAsyncIfChanged(app, K_REASON, s.reason);
-                            Features.setLong(app, K_AT, System.currentTimeMillis());
-                            Features.setInt(app, K_CODE, versionCode(app));
+                            Features.setLongAsync(app, K_AT, System.currentTimeMillis());
+                            Features.setIntAsync(app, K_CODE, versionCode(app));
                         }
                     } catch (Throwable ignored) {
                     } finally { RUNNING.set(false); }
