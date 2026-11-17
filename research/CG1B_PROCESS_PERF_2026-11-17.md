@@ -35,7 +35,7 @@ release package was built locally; the tablet report predates the VPN work (CB2 
    intermediate dex is 5.93 MB); `kotlin-stdlib` alone is 24 % of the code although the repo has 0 Kotlin sources. No native libs; no assets of ours.
 6. **AOT: whether the app is compiled on the tablet is UNKNOWN** (`LATEST.md:35` "Compiled ahead of time? (not in the report)"). Version 1 said a baseline profile needed a new
    `androidx.profileinstaller` dependency: **wrong**. `profileinstaller 1.3.0` and `startup-runtime 1.1.1` are ALREADY in the APK (core -> lifecycle-runtime -> profileinstaller), so the APK
-   has always installed a library-only profile (672 androidx rules) and will install the app's own once `baseline-prof.txt` is built in. Wildcard rules DO expand with R8 off (section 6.3).
+   very probably already installed a library-only profile (672 androidx rules in today's merge; INFERRED for the shipped APKs) and will install the app's own once `baseline-prof.txt` is built in. Wildcard rules DO expand with R8 off (section 6.3).
 
 ## 1. Idle cost table
 
