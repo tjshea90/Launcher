@@ -2028,3 +2028,40 @@
 ## 2026-11-17T22:20:09Z
 > I'm watching session B and saving my own state; nothing of B's has been touched. B has been silent since 21:48 UTC (about 28 minutes) and has no CI run in flight. A watcher and a backup timer will wake me at about 22:20 and 22:28 UTC. If B is still silent then, I take over and run the release.
 <!-- sha:88fb6eacd6b1 -->
+
+## 2026-11-17T22:46:26Z
+> **Status:** the emulator gesture test for the lock-screen patch has run. With the new fix on, the patch is already resting when the side-key menu opens in the two cases that matter. With it off, the patch shows over the Screenshot entry in both. Three read-only reviewers are going through the release diff. I'll fix whatever they find, rerun the test on the final code, then run the gate and build. The release is **not built yet**.
+>
+> 📌 **Chat checkpoint: 🔴 Red**
+>
+> **Goal:** Finish and build Launcher v0.9.12 (Tj's CG1 asks, plus CG3: "Monitor the other session and make sure to finish and build the release").
+>
+> **Decisions made:**
+> - Took over from the idle session B at 22:25Z (merge `aa4fd5e2`); `main` equals my branch tip.
+> - Scope: stray-custom guard, dark-settle patch fix with logging, safe CG1b batch, baseline profile plus compile state, Quickstep memory recorder via the helper. CG1b E1/G1/G3 are skipped.
+> - Gate by diff in 4 parallel runs, only after the review fixes and one more `lg` run.
+>
+> **Changed / rejected:** the `LG1` premise moved from the prelude menu to the first hold with a learned menu place, and a control check `LG7` was added.
+>
+> **Key details:** branch `ccr-16772798-h13w43`, ckpt 1405, heartbeat `trig_01EzvMtE44ag8oMav4DqoqHZ`, run #624 id 44190767040 (10 PASS, 1 FAIL, 65 INFO), unit tests green, handoff test 53/0.
+>
+> **Done so far:**
+> - Guard proven (#620).
+> - Pencil icon: not possible without root (#618).
+> - Dark-settle fix proven A/B (#624).
+> - Recorder via helper tested; answer draft written.
+>
+> **Open / next steps:**
+> 1. Collect the 3 reviews and fix.
+> 2. Run unit tests.
+> 3. Rerun `lg`.
+> 4. Run the 4 gate runs.
+> 5. Run `ship.sh`, `android.yml` full build, `record-release.sh`, then answer Tj.
+> 6. Disable the heartbeat.
+>
+> **Rules to remember:** checkpoint after every step; no secrets or photos in the repo; claim only what a run proved; measured vs reasoned kept apart; the Release link goes on its own plain-text line; never push to B's branch.
+>
+> 🔴 **Health:** the exchange count (35) says Red, but the chat was auto-compacted so the real context is small, and everything is saved in ckpt 1405. This repo's rule is that compaction is normal and a fresh session starts only on the `ctxwatch` alarm, so I'm not asking for one.
+>
+> 💡 The code word is off in this chat. Type `/amcodeword` and I'll start every reply with "Yes Boss!".
+<!-- sha:6e584e34970f -->
