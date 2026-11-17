@@ -1968,3 +1968,23 @@
 >
 > Nothing is needed from you right now.
 <!-- sha:0b83d89e0a2f -->
+
+## 2026-11-17T21:58:17Z
+> **CG1 status as of about 22:00 UTC: nothing is released.** The newest release is still v0.9.11, so none of this is in any APK yet.
+>
+> For this check I only read things: git, the other session's checkpoint, the CI run list and my own timer. I didn't merge, push to its branch or `main`, start a CI run, or message it. My only writes are on my own branch (a handoff note for the other session), and `main` is untouched.
+>
+> **Who is working:** a second Claude session on the other account (branch `ccr-b6bbb365-txbcep`) has been working on CG1 since about 21:20 UTC. Its last checkpoint was at 21:47 and no CI run is in flight. I can't see whether it is mid-turn or between turns, so I'm staying out to avoid editing the same files. My auto-resume timer fires at 22:03 and 00:03 UTC. It stays out while the other session's work is under an hour old, so at 00:03 it takes over if that session has gone quiet.
+>
+> Your six asks:
+> 1. **Random custom launcher in Quickstep: fixed and proven on the emulator, not shipped.** Lock with an app open, unlock by gesture, press Back, and the custom home showed inside a Quickstep session. The emulator reproduced it (run #619), and the new guard sends it back to the stock home (run #620: 13 pass, 0 fail). Other possible paths are reasoned only.
+> 2. **Speed and RAM audit: started.** A first small batch (fewer window scans, an off-thread write, counters) is coded and its unit tests pass. No before/after numbers yet.
+> 3. **Compile on install: not possible as asked.** Android 10 gives an app no way to force a full compile when it is sideloaded. The plan is a baseline profile (rules are in the repo), the idle-time compile, and a compile command run through the helper. Nothing is measured on a tablet.
+> 4. **Lock-screen patch: coded, not proven.** My best explanation is that the patch's settle timer stopped while the CPU slept, so the first side-key hold after a wake met an away patch. That is reasoned, not seen on your tablet. The fix and extra logging are in. The emulator gesture test isn't written yet.
+> 5. **Pencil without root: impossible.** Five ways of replacing the icon were refused or did nothing without root (run #618, 9 pass), and accessibility can't repaint another app's icon. The cover stays.
+> 6. **Quickstep RAM growth: cause found by reading AOSP code, partly confirmed.** The Go Recents screen registers a listener that is never removed, so every time Android recreates the stock launcher a whole screen stays in memory. On the emulator, after churn, the stock launcher's screens went from 1 to 4 and its memory from 49 to 64 MB (runs #621-623). The app can't read that number itself because Android refuses it, so the recorder has to go through the helper. The size on your tablet is not measured. Which of our features cause the recreations is still unchecked: that check was cut off by the usage cap.
+>
+> Nothing is needed from you right now. Once there is a release, I'll ask for two tablet checks: the first side-key hold after waking the lock screen, and a tablet report after a day.
+>
+> One decision for you: if you'd rather I take over now than wait for the 00:03 UTC check, tell me and I'll merge the other session's work first. Otherwise I leave it alone, as you asked.
+<!-- sha:e5c51a03dc33 -->
