@@ -1,13 +1,13 @@
-# CHECKPOINT 1407 — read me first, then TASKS.md
+# CHECKPOINT 1408 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T22:55:48Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `f2e3a4ea` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T22:58:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `46153e5b` (this checkpoint is the commit after it)
 
 ## Just done
-reviews B+C fixed: gate text clocks first, RESTING label = really visible, pad sign ignored in the dark; STOCKMEM unix-first (askLongAny) + read cap, helper's own failure text, small-leak reading order, DexoptWatch 2h backoff (tryDue), beforeLabel privacy (only com.android.* named), CI profile check can fail; QsMemory 21 / DexoptState 15 / StrayCustomGuard 14 / PatchRest 46 tests green
+full suite 1116 tests 0 fail + lint green (full1.log GRADLE_EXIT=0); lg rerun #625 id 44194958128 dispatched 22:57Z on head 46153e5b (B/C fixes in); reviewer A (stray guard) still running
 
 ## Do this next
-wait for reviewer A (stray guard, a68da281eadd8933b) notification, fix, full unit suite (bash tools/gradle.sh :app:testDebugUnitTest :app:lintDebug), rerun lg, 4 gate runs; heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+read #625 (list_workflow_jobs 44194958128, get_job_logs tail 112; 404 = not ended) expect LG1..LG7 PASS; collect reviewer A, fix, rerun suite; then 4 gate runs; heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ wait for reviewer A (stray guard, a68da281eadd8933b) notification, fix, full uni
 
 ## Last ten checkpoints
 ```
+  f1a1fbfe ckpt 1407: reviews B+C fixed: gate text clocks first, RESTING label = really visible, p
   3c3c09d9 ckpt 1406: HANDOFF 0z (live state of v0.9.12) written; B still silent (tip 69453515), b
   9381967d ckpt 1405: lg: LG1 premise moved to the first learned-menu hold + control check LG7 (OF
   24543478 ckpt 1404: lg #624 id 44190767040 job 134419239929 (head 2702c070): 10 PASS 1 FAIL 65 I
@@ -25,8 +26,7 @@ wait for reviewer A (stray guard, a68da281eadd8933b) notification, fix, full uni
   63330b2e ckpt 1398: takeover prepared (read-only): git merge-tree dry run of origin/main into my
   497a0215 ckpt 1397: CG3d done: research/CG1F_CONFIG_CHANGES_2026-11-17.md = prime suspect for th
   7336b488 ckpt 1396: CG3 (Tj 22:06Z: monitor the other session, finish and build the release) wri
-  c6e2ebb8 ckpt 1395: heartbeat 22:04Z: stood down again (rule 2): session B ckpt 1400 (21:47Z, br
 ```
 
-(3 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
