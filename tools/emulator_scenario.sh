@@ -5469,7 +5469,7 @@ setmode quickstep; ensurehome; rebind; home; sleep 2
 check "QM1: the app holds the DUMP grant (the adb setup gives it on the tablet)" sh -c "adb shell dumpsys package $PKG | grep -q 'android.permission.DUMP: granted=true'"
 QM_STOCK="$(adb shell dumpsys meminfo com.android.launcher3 2>/dev/null | grep -E 'MEMINFO in pid|TOTAL:|Activities:|Views:' | head -4 | cut -c1-110 | tr '\n' '|')"
 info "QM stock launcher as the SHELL sees it: ${QM_STOCK:-nothing (no stock launcher process on this image)}"
-adb shell am start -n "$PKG/.ControlActivity" >/dev/null 2>&1; sleep 14
+adb shell am start -n "$PKG/com.tj.launcher.ControlActivity" >/dev/null 2>&1; sleep 14
 QM_RING="$(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="qs_mem_ring">[^<]*' | sed 's/.*>//; s/&#10;/ | /g')"
 info "QM ring after opening Launcher control: ${QM_RING:-EMPTY}"
 check "QM2: opening Launcher control stored a sample of the stock launcher" test -n "$QM_RING"
