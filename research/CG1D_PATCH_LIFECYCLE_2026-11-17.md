@@ -147,7 +147,8 @@ any --refreshLayers sees keyguard unlocked / rect, rotation, flavour change / wa
 - [V] SCREEN_OFF broadcast (`lockReceiver`, TAS 2895-2932): `layerRefresh` posted at once (a no-op if the window exists), `lockEval` now and +400, `screenDarkNow`, home patch hidden,
   `lastBouncer = false`, `patchShow(overlayShown)` (2919: a patch whose books are clear is made visible NOW, with the display dark), `lockPrepareLater` +700 and +6500.
 - [V] `lockPrepare` (1844): `LockLog LOCKPREP`, quiet rules, one dark look at the panel (`noteShade(shadeLevel(), ...)` 1867, a node scan), `refreshLayers()` (1868).
-- [V, numbers from the report] With the power key or a timeout lock, the window already exists at SCREEN_OFF (4.1 A) and settles 0.45-0.58 s later.
+- [V, numbers from the report] In all three samples the window already existed at SCREEN_OFF (4.1 A; the report does not say whether the power key or the screen timeout turned the screen off)
+  and would settle 0.45-0.58 s later under the BT1a rule (the report is from v0.9.1, before it).
 - [I] **No vsync reaches an app while the display is off**, so a `setAlpha(1f)` + `invalidate()` made after SCREEN_OFF (the settle completes then) is recorded but not drawn until the first
   vsync after the wake. Before BT1a the first RESTING frame (and with it `warmOpenLookOnce`, 1516) was drawn at window creation, while the display was still on; since BT1a it falls after the display is off.
 - [I] **Handler timers use uptime, which stops in deep sleep.** `settleRun`, `restRecheck`, `lockPrepareLater` (+700 / +6500) are `postDelayed`. If the CPU suspends soon after SCREEN_OFF, whatever
