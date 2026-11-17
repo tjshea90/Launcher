@@ -1614,3 +1614,9 @@ The weird thing is every time I look at the quickstep ram it is a little lower. 
 ```
 When you are finished and all releases and work is complete, review the launcher app and tell me what would continue to work and what would break if I restart the tablet and do not have a cable for adb
 ```
+
+## 2026-11-17T18:47:28Z
+```
+Sometimes the launcher randomly shows the custom launcher, even though i was in quickstep. It isn't a big deal but a little annoying. 
+1) do an overall audit of this app's coding and design and improve the efficiency, cpu, ram use, and speed as much as possible. Make sure it is optimal for android 10 go mt8168 2gb ram. If it will make it any faster, make android compile/precompile it fully on install or update, so that it is as fast and efficient as possible, even if this makes the update or install slower or a bigger file. Sometimes the wallpaper patch shows up on the lock screen when i pull up the pin pad or when i first go to the lock screen and hold the side key. Make it prepare immediately when the lock screen is open or when the screen turns off, so the screenshot button is always hidden with no flashing of the wallpaper patch over it. If it helps, run a github emulator with various simulated presses and gestures on the lockscreen and see when the patch is visible or slow and improve it based on the findings. Is it possible to change the icons in the notification panel using accessibility or any other method without root? Investigate this, because if you can change the pencil icon to a simple block of color which matches the notification panel color, it will stay hidden without the need for the overlay currently in place. If this is possible, build it. Finally, investigate why and how the quickstep launcher slowly builds in ram usage over time. This wasn't a problem before the custom launcher. Figure out what features in the custom launcher app can add to the quickstep ram usage, even if indirectly
+```
