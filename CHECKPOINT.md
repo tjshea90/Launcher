@@ -1,13 +1,13 @@
-# CHECKPOINT 1397 — read me first, then TASKS.md
+# CHECKPOINT 1398 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T21:29:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `f7f43a9a` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T21:38:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `70d15b80` (this checkpoint is the commit after it)
 
 ## Just done
-QsMemory: store why a look gave nothing (qs_mem_status, shown in describe) + qm prints it with DUMP count and avc lines; compiles, QsMemoryTest green
+qm run #622 id 44180402866: app-uid 'dumpsys meminfo' = Can't find service: meminfo (QM2/QM3 FAIL, DUMP granted); so the full recorder (objects) cannot work app-only
 
 ## Do this next
-next: dispatch emulator.yml sections=qm again, read QM status INFO: if the dump is refused (SELinux) the recorder cannot work app-only: then design the fallback (ShellHelper when running, or ActivityManager.getProcessMemoryInfo for stock pid via UsageStats? no) and say so plainly to Tj. then CG1d logging, lg, review, gate. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
+next: add fallback in QsMemory: dumpsys activity processes -> lastPss + pid of com.android.launcher3 (PSS only, no object counts), pure parser + test, rerun qm. Tell Tj plainly object counts need the helper/adb. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ next: dispatch emulator.yml sections=qm again, read QM status INFO: if the dump 
 
 ## Last ten checkpoints
 ```
+  cf88ec38 ckpt 1397: QsMemory: store why a look gave nothing (qs_mem_status, shown in describe) +
   c5042815 ckpt 1396: qm run #621 id 44178666208 (head f6b552cc): 5 PASS 2 FAIL (QM2 no sample sto
   2a86eb80 ckpt 1395: CG1b batch a unit tests green; dispatched emulator.yml sections=qm on main a
   f6b552cc ckpt 1394: CG1b batch a (E3 E4 E5 G2: scan-by-trigger counters, Screenshot lookup only 
