@@ -96,6 +96,7 @@ public class TjAccessibilityService extends AccessibilityService {
         trackUnlockKey(event);
         if (probeWanted()) { try { probeEvent(event); } catch (Throwable t) { Log.e(TAG, "probe failed", t); } }
         if (event != null) { try { guardStrayHome(event); } catch (Throwable t) { Log.e(TAG, "guard failed", t); } }
+        if (event != null) { try { guardStrayCustom(event); } catch (Throwable t) { Log.e(TAG, "custom guard failed", t); } }   // CG1a
         if (!coverOn) {
             if (overlay != null || overlayShown) removeOverlay();
             return;   // nothing to do and nothing scanned: zero cost when the feature is off
