@@ -1965,3 +1965,20 @@
 ## 2026-11-17T21:40:34Z
 > Third `qm` run is in flight. I'll read it when the timer fires in about 6 minutes.
 <!-- sha:e03334b935dd -->
+
+## 2026-11-17T21:48:06Z
+> This run finished the change that the usage cut-off interrupted, and found that the Quickstep memory recorder can't work from the app alone. Nothing is shipped yet.
+>
+> - **Interrupted change:** the CG1b batch (scan counters, the lighter Screenshot lookup, the async report write and the memory breakdown in the report) compiles and the app's unit tests pass. It is pushed.
+> - **Memory recorder:** on the emulator, the app's own `dumpsys meminfo com.android.launcher3` fails with "Can't find service: meminfo" (runs #621, #622, #623, section `qm`). The fallback through `dumpsys activity processes` returned nothing either, so `QM2` and `QM3` still fail. The fallback is not wired to the helper yet.
+> - **Leak theory:** the shell can read the stock launcher. After the test churn its Activities rose from 1 to 4 and its memory from 49 to 64 MB, which fits the leak theory.
+> - **Same limit, unchecked:** the app's `dumpsys package` look for the compile state may be refused the same way. That needs checking on the tablet.
+>
+> **Next:**
+> - Route the recorder through the shell helper (and the compile-state look if it is refused too).
+> - Add the lock-patch logging and the `lg` section.
+> - Run `/code-review`.
+> - Run the gate against v0.9.11, then release.
+>
+> The helper has to be running for any reading to be taken. All of this is written into `TASKS.md` under CG1f and checkpointed. I sent a push notification with the summary. I did not check on the auto-resume heartbeat.
+<!-- sha:a78d0cf99ea6 -->
