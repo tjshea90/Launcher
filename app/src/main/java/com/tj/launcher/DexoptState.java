@@ -53,6 +53,23 @@ final class DexoptState {
         return NONE;
     }
 
+    /**
+     * Should the stored reading be taken again? Yes when none was ever stored, when it belongs to another version (an update throws the compiled
+     * code away, so an old "speed" says nothing), when it is older than {@code maxAgeMs} (the idle job may have compiled since) or when the clock
+     * went backwards. Pure (JVM test).
+     */
+    static boolean stale(int storedCode, long storedAtMs, int currentCode, long nowMs, long maxAgeMs) {
+        if (storedAtMs <= 0 || storedCode != currentCode) return true;
+        long age = nowMs - storedAtMs;
+        return age < 0 || age > maxAgeMs;
+    }
+
+    /** Rebuilds a reading from the two stored words (see DexoptWatch). */
+    static DexoptState of(String status, String reason) {
+        if (status == null || status.isEmpty()) return NONE;
+        return new DexoptState(true, status, reason == null ? "" : reason);
+    }
+
     /** True when the profiled (hot) code is compiled: speed-profile, speed or everything. verify / quicken / run-from-apk are not. */
     boolean compiled() { return found && (status.equals("speed-profile") || status.equals("speed") || status.equals("everything")); }
 
