@@ -185,7 +185,7 @@ threads (`TjDexopt`, `TjDexoptWatch`, at most 10 s, section 10).
   (+ `tracing 1.0.0`, `concurrent-futures 1.1.0`, `listenablefuture 1.0`). The manifest merger report names it: `app/build/outputs/logs/manifest-merger-release-report.txt:698-701` ("ADDED from
   [androidx.profileinstaller:profileinstaller:1.3.0] ... MERGED from [androidx.startup:startup-runtime:1.1.1]").
 - The merged release manifest therefore holds the provider and the receiver of 2.3. The initializer is the ONLY entry of the provider (no `lifecycle-process` initializer, no emoji2).
-- The earlier APKs (v0.9.11 and before) were built from the same dependency graph, so they already carried this machinery and a library-only profile (below).
+- The earlier APKs very probably carried the same machinery and a library-only profile (INFERRED: the dependency declarations are unchanged; the shipped APK, read by W3, would show it).
 
 ## 6. Ahead-of-time compile (Android 10 only)
 
