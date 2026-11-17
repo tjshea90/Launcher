@@ -1837,8 +1837,9 @@ check "AD5: the helper says it brought that app back" grep -q 'ROUTER resume com
 # (guard_stray_custom is switched on in this section's preferences: the shipped build has it ON, a debug build OFF). The INFO line says whether the custom home showed at all (a STRAYCUSTOM line) and what the guard did.
 adb shell input keyevent KEYCODE_BACK; sleep 5
 resumed > "$OUT/ad-r1-back.txt"; shot 152-ad-back-after-resume
-AD_SC="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -E 'STRAYCUSTOM|LAUNCHER +resumed while' | tail -4 | cut -c1-300 | tr '\n' '|')"
-info "AD5b: after Back from the resumed app: $(cut -c1-150 "$OUT/ad-r1-back.txt"); mode $(getmode); lock log: ${AD_SC:-no STRAYCUSTOM line (the custom home never showed under the app)}"
+AD_SC="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep 'STRAYCUSTOM' | tail -2 | sed -E 's/^[0-9:. -]* *STRAYCUSTOM +custom home in front while the mode is quickstep //' | cut -c1-210 | tr '\n' '|')"
+AD_LC="$(adb logcat -d -s TjA11y:I 2>/dev/null | grep -E 'CG1a|STRAYCUSTOM' | tail -3 | sed -E 's/^.* I TjA11y *: //' | cut -c1-110 | tr '\n' '|')"
+info "AD5b: STRAYCUSTOM ${AD_SC:-NO STRAYCUSTOM LINE (the guard never ran)} || logcat ${AD_LC:-none} || front $(cut -c1-90 "$OUT/ad-r1-back.txt") mode $(getmode)"
 check "AD5b: after Back the custom home is not what shows in the Quickstep session" test -z "$(grep -m1 'com.tj.launcher/com.android.launcher3.Launcher' "$OUT/ad-r1-back.txt")"
 check "AD5b: the stored mode is still quickstep (the guard changed no mode)" test "$(getmode)" = quickstep
 # ---------------- AD7a: lock again from this Quickstep session: the cover must still work on the lock screen
