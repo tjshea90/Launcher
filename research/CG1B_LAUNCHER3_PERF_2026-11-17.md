@@ -200,6 +200,8 @@ needed by `FolderIcon` / `IconNormalizer` consumers, so every reader would need 
 | SQLite connections (`launcher.db`, `app_icons.db`) | 0.3-1.0 MB | page caches; `Launcher.onStop` -> `onTrimMemory(UI_HIDDEN)` -> `SQLiteDatabase.releaseMemory()` (`Launcher.java:890, 1867-1881`) |
 | Threads: `launcher-loader`, UiThreadHelper looper, 0-2 pool threads (`Utilities.java:157-169`; users: `Workspace.java:1163`, `SessionCommitReceiver.java:110`) | 0.15-0.3 MB resident | ~50-80 KB each; the 5-core pool never fills |
 | Total | about 3-6 MB (5-9 % of 69) | |
+These exist only after the first custom Launcher creation in the process (`Launcher.java:310`, or G8's call). A process that was started while
+Quickstep was on and has not been in custom since holds none of it.
 
 ### 6.3 The three biggest consumers (likely, INFERRED; G2 turns this into numbers)
 1. **Native heap plus graphics buffers and caches** (bursty bitmap work, HWUI / Skia caches, window buffers of the service's overlays). Evidence: native
