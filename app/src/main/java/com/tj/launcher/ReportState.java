@@ -61,6 +61,9 @@ public final class ReportState {
 
     private static String yes(boolean v) { return v ? "yes" : "no"; }
 
+    /** kB text from Debug.MemoryInfo.getMemoryStats() -> whole MB, "?" when it is missing. */
+    private static String mbOf(String kb) { try { return String.valueOf(Integer.parseInt(kb.trim()) >> 10); } catch (Throwable t) { return "?"; } }
+
     /**
      * AD8 (Tj, 2026-11-06: "optimized for my tablet": MT8168, 2 GB, Android 10 Go): what this launcher COSTS on the device, as numbers the next session can act on instead of guesses. Memory of this process
      * (PSS from the activity manager), how long the last start took, how long the Control screen took to build, and how busy the accessibility helper is. Never throws.
@@ -70,12 +73,20 @@ public final class ReportState {
         try {
             Runtime rt = Runtime.getRuntime();
             long pssMb = -1;
+            String parts = "";
             android.app.ActivityManager am = (android.app.ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
             if (am != null) {
                 android.os.Debug.MemoryInfo[] mi = am.getProcessMemoryInfo(new int[] { android.os.Process.myPid() });
-                if (mi != null && mi.length > 0) pssMb = mi[0].getTotalPss() >> 10;   // kB -> MB
+                if (mi != null && mi.length > 0) {
+                    pssMb = mi[0].getTotalPss() >> 10;   // kB -> MB
+                    try {   // CG1b G2: the same split dumpsys prints (what the 69 MB is made of: java / native / code / graphics ...)
+                        java.util.Map<String, String> st = mi[0].getMemoryStats();
+                        parts = " [java " + mbOf(st.get("summary.java-heap")) + ", native " + mbOf(st.get("summary.native-heap")) + ", code " + mbOf(st.get("summary.code")) + ", graphics " + mbOf(st.get("summary.graphics"))
+                                + ", stack " + mbOf(st.get("summary.stack")) + ", private other " + mbOf(st.get("summary.private-other")) + ", system " + mbOf(st.get("summary.system")) + " MB]";
+                    } catch (Throwable ignored) { }
+                }
             }
-            b.append("process memory (AD8): total PSS ").append(pssMb < 0 ? "?" : String.valueOf(pssMb)).append(" MB, java heap ")
+            b.append("process memory (AD8): total PSS ").append(pssMb < 0 ? "?" : String.valueOf(pssMb)).append(" MB").append(parts).append(", java heap ")
                     .append((rt.totalMemory() - rt.freeMemory()) >> 20).append(" of ").append(rt.maxMemory() >> 20).append(" MB\n");
         } catch (Throwable t) { b.append("process memory (AD8): (unreadable)\n"); }
         try {
