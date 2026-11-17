@@ -14,12 +14,17 @@ public class StrayCustomGuardTest {
     /** The one case that must redirect: Quickstep, unlocked, lit, not after an unlock, mode old, nothing running. */
     private static boolean redirect(boolean enabled, boolean quickstep, boolean locked, boolean screenOn, boolean home, boolean leftover,
                                     long modeAgeMs, long pausedFor, long failOpenFor, long standDownFor, long[] recent) {
-        return StrayCustomGuard.shouldRedirect(enabled, quickstep, locked, screenOn, home, leftover, false, 0, NOW, NOW - modeAgeMs, NOW + pausedFor, NOW + failOpenFor, NOW + standDownFor, recent);
+        return StrayCustomGuard.shouldRedirect(enabled, quickstep, locked, screenOn, home, leftover, false, 0, 0, NOW, NOW - modeAgeMs, NOW + pausedFor, NOW + failOpenFor, NOW + standDownFor, recent);
     }
 
     private static int reasonOf(boolean enabled, boolean locked, boolean screenOn, boolean leftover, boolean undecided, long resumingSince,
                                 long modeAgeMs, long pausedFor, long failOpenFor, long standDownFor, long[] recent) {
-        return StrayCustomGuard.reason(enabled, true, locked, screenOn, true, leftover, undecided, resumingSince, NOW, NOW - modeAgeMs, NOW + pausedFor, NOW + failOpenFor, NOW + standDownFor, recent);
+        return reasonWithRouter(enabled, locked, screenOn, leftover, undecided, resumingSince, 0, modeAgeMs, pausedFor, failOpenFor, standDownFor, recent);
+    }
+
+    private static int reasonWithRouter(boolean enabled, boolean locked, boolean screenOn, boolean leftover, boolean undecided, long resumingSince, long routerStartedAt,
+                                        long modeAgeMs, long pausedFor, long failOpenFor, long standDownFor, long[] recent) {
+        return StrayCustomGuard.reason(enabled, true, locked, screenOn, true, leftover, undecided, resumingSince, routerStartedAt, NOW, NOW - modeAgeMs, NOW + pausedFor, NOW + failOpenFor, NOW + standDownFor, recent);
     }
 
     private static boolean plain() { return redirect(true, true, false, true, true, false, 60_000, 0, 0, 0, NONE); }
@@ -85,7 +90,7 @@ public class StrayCustomGuardTest {
 
     @Test public void anUnlockThatIsStillBeingDecidedIsLeftAlone() {   // a plain PIN flips the stored mode a moment AFTER the Launcher resumed: until then the mode still reads Quickstep
         assertEquals(StrayCustomGuard.UNDECIDED, reasonOf(true, false, true, false, true, 0, 60_000, 0, 0, 0, NONE));
-        assertFalse(StrayCustomGuard.shouldRedirect(true, true, false, true, true, false, true, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));
+        assertFalse(StrayCustomGuard.shouldRedirect(true, true, false, true, true, false, true, 0, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));
         assertEquals(StrayCustomGuard.LOCKED, reasonOf(true, true, true, false, true, 0, 60_000, 0, 0, 0, NONE));      // the older reasons come first
         assertEquals(StrayCustomGuard.LEFTOVER, reasonOf(true, false, true, true, true, 0, 60_000, 0, 0, 0, NONE));
     }
@@ -110,8 +115,8 @@ public class StrayCustomGuardTest {
         assertEquals(StrayCustomGuard.PAUSED, reasonOf(true, false, true, false, false, 0, 60_000, 5_000, 5_000, 0, NONE));
         assertEquals(StrayCustomGuard.FAIL_OPEN, reasonOf(true, false, true, false, false, 0, 60_000, 0, 5_000, 0, NONE));
         assertEquals(StrayCustomGuard.STOOD_DOWN, reasonOf(true, false, true, false, false, 0, 60_000, 0, 0, 5_000, NONE));
-        assertEquals(StrayCustomGuard.NOT_STRAY, StrayCustomGuard.reason(true, false, false, true, true, false, false, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));   // the custom mode is the normal case
-        assertEquals(StrayCustomGuard.NOT_STRAY, StrayCustomGuard.reason(true, true, false, true, false, false, false, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));    // not the custom home window
+        assertEquals(StrayCustomGuard.NOT_STRAY, StrayCustomGuard.reason(true, false, false, true, true, false, false, 0, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));   // the custom mode is the normal case
+        assertEquals(StrayCustomGuard.NOT_STRAY, StrayCustomGuard.reason(true, true, false, true, false, false, false, 0, 0, NOW, NOW - 60_000, 0, 0, 0, NONE));    // not the custom home window
     }
 
     @Test public void theLogLineNamesTheReasonInTheSameOrderAsTheRule() {

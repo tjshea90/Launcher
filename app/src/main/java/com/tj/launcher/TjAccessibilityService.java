@@ -1818,7 +1818,10 @@ public class TjAccessibilityService extends AccessibilityService {
         if (keyguardLocked()) prearmCustom("handshake withdrawn");
     }
 
+    private long lastRouterStartMs = 0;   // CG1 review A: when the service last started the router (the stray custom home guard leaves a custom home alone while what was just started is on its way)
+
     private void startRouter(String which) {
+        lastRouterStartMs = System.currentTimeMillis();
         Log.i(TAG, "ROUTER start " + which);
         LockLog.add(this, "START", "router " + which);
         try {
@@ -3136,7 +3139,7 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean undecided = !locked && screenOn && AnimationSpeedup.lockCycleOpen();   // a plain PIN flips the stored mode a moment AFTER the Launcher resumed
         long resumingSince = resumedPkg != null && resumedSeenAt < resumedAt ? resumedAt : 0;   // the app the gesture started has been asked for and has not appeared yet
         long modeAt = Mode.changedAt(this), failOpen = Mode.failOpenUntil(this);
-        int reason = StrayCustomGuard.reason(on, true, locked, screenOn, true, leftover, undecided, resumingSince, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist);
+        int reason = StrayCustomGuard.reason(on, true, locked, screenOn, true, leftover, undecided, resumingSince, lastRouterStartMs, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist);
         boolean fire = reason == StrayCustomGuard.REDIRECT;
         if (!fire && StrayHomeGuard.countInWindow(customGuardHist, now) >= StrayCustomGuard.MAX) customStandDownUntil = now + StrayCustomGuard.COOLDOWN_MS;
         boolean firstLook = customDeferFirstMs == 0;
@@ -3149,7 +3152,7 @@ public class TjAccessibilityService extends AccessibilityService {
         lastCustomReason = reason;
         if (fire) customDeferFirstMs = 0;
         else {
-            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, modeAt, guardPausedUntil, failOpen, firstLook ? 0 : now - customDeferFirstMs);
+            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, lastRouterStartMs, modeAt, guardPausedUntil, failOpen, firstLook ? 0 : now - customDeferFirstMs);
             handler.removeCallbacks(customRecheck);
             if (again > 0) { if (firstLook) customDeferFirstMs = now; handler.postDelayed(customRecheck, again); }
             else customDeferFirstMs = 0;
