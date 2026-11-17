@@ -134,6 +134,9 @@ public final class ShellHelper {
         return out;
     }
 
+    /** CG1f: the text of {@code dumpsys meminfo com.android.launcher3} as the shell user sees it (an app uid is refused), or null when the helper cannot be reached. Blocking: call off the main thread. */
+    public static String stockMeminfo() { return askLong("STOCKMEM", 25_000); }
+
     /** AA3: removes exactly these Recents tasks (the helper re-checks the deny-list per id). @return how many were removed, or -1 if the helper could not be reached. Blocking. */
     public static int removeTasks(Collection<Integer> ids) {
         if (ids == null || ids.isEmpty()) return 0;
