@@ -4658,6 +4658,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (rest && wasHidden) noteReturn();
         if (!on) setPatchTouchable(false);   // review of v0.8.0: whenever our menu is NOT open the patch can never swallow a touch, whichever path closed the menu (no disk write and no extra binder call in this time-critical path any more)
         if (changed || opening) { patchView.invalidate(); if (changed) Log.i(TAG, "PATCH rest " + (rest ? "on" : "off") + (lastBouncer ? " (PIN pad up)" : "") + " top=" + patchRestTop); }
+        if (changed && !patchHomeMode) logPatch("rest " + (rest ? "ON" : "off") + (on ? " (menu open)" : "") + (patchShowCause.isEmpty() ? "" : " (" + patchShowCause + ")") + " [" + patchGateText(android.os.SystemClock.uptimeMillis()) + "]");   // CG1d L1: every change of the resting patch with every gate it waits on
     }
 
     /**
