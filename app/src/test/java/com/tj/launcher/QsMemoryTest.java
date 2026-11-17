@@ -128,8 +128,11 @@ public class QsMemoryTest {
         assertTrue(QsMemory.due(now - QsMemory.FORCED_GAP_MS, now, true));
     }
 
+    private static final long BASE_S = 1_700_000_000L;
+    private static long at(long tMin) { return (BASE_S + tMin * 60) * 1000L; }
+
     private static String line(long tMin, int pid, int pss, int java, int nat, int gfx, int act, int views) {
-        return "t=" + (tMin * 60) + ";pid=" + pid + ";pss=" + pss + ";java=" + java + ";nat=" + nat + ";gfx=" + gfx + ";act=" + act + ";views=" + views;
+        return "t=" + (BASE_S + tMin * 60) + ";pid=" + pid + ";pss=" + pss + ";java=" + java + ";nat=" + nat + ";gfx=" + gfx + ";act=" + act + ";views=" + views;
     }
 
     @Test public void noSampleYetSaysHowItStarts() {
@@ -139,7 +142,7 @@ public class QsMemoryTest {
 
     @Test public void aGrowthWithMoreActivitiesPointsAtThePinnedActivities() {
         String ring = line(0, 10, 100_000, 10_000, 20_000, 30_000, 1, 200) + "\n" + line(600, 10, 180_000, 20_000, 30_000, 60_000, 6, 900);
-        String d = QsMemory.describe(ring, 600L * 60_000L);
+        String d = QsMemory.describe(ring, at(600));
         assertTrue(d, d.contains("2 samples"));
         assertTrue(d, d.contains("PSS +80000 kB"));
         assertTrue(d, d.contains("Activities +5, Views +700"));
@@ -166,20 +169,20 @@ public class QsMemoryTest {
 
     @Test public void aNewProcessStartsTheCountAgain() {
         String ring = line(0, 10, 400_000, 1, 1, 1, 9, 2000) + "\n" + line(300, 11, 60_000, 1, 1, 1, 1, 200) + "\n" + line(360, 11, 62_000, 1, 1, 1, 1, 210);
-        String d = QsMemory.describe(ring, 400L * 60_000L);
+        String d = QsMemory.describe(ring, at(400));
         assertTrue(d, d.contains("3 samples"));
         assertTrue(d, d.contains("stock launcher process 11"));
         assertTrue(d, d.contains("PSS +2000 kB"));            // measured from the first sample of pid 11, not of pid 10
         assertFalse(d, d.contains("R1"));
-        String only = QsMemory.describe(line(0, 10, 400_000, 1, 1, 1, 9, 2000) + "\n" + line(300, 11, 60_000, 1, 1, 1, 1, 200), 400L * 60_000L);
+        String only = QsMemory.describe(line(0, 10, 400_000, 1, 1, 1, 9, 2000) + "\n" + line(300, 11, 60_000, 1, 1, 1, 1, 200), at(400));
         assertTrue(only, only.contains("restarted"));
     }
 
     @Test public void thePerHourRateNeedsAtLeastHalfAnHour() {
         String shortRing = line(0, 10, 100_000, 1, 1, 1, 1, 1) + "\n" + line(20, 10, 110_000, 1, 1, 1, 1, 1);
-        assertFalse(QsMemory.describe(shortRing, 30L * 60_000L).contains("per hour"));
+        assertFalse(QsMemory.describe(shortRing, at(30)).contains("per hour"));
         String longRing = line(0, 10, 100_000, 1, 1, 1, 1, 1) + "\n" + line(120, 10, 110_000, 1, 1, 1, 1, 1);
-        assertTrue(QsMemory.describe(longRing, 130L * 60_000L).contains("+5000 kB per hour"));
+        assertTrue(QsMemory.describe(longRing, at(130)).contains("+5000 kB per hour"));
     }
 
     @Test public void theSwitchIsOnInTheShippedBuildAndOffInDebug() {
