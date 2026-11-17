@@ -16,7 +16,8 @@ that is still interpreted or JIT-cold is another 2-3x slower (CG1c's baseline pr
 - The fork is lean at idle (VERIFIED by grep over `launcher3/src`, `go/src`, `iconloaderlib`, `wallpaperpicker/src`): no timer, alarm, job,
   WorkManager or repeating Handler; one INFINITE animator (`CellLayout.java:2031`, the reorder hint while an icon is dragged); one hardware layer
   (`CellLayout.java:360`, only while a page moves or an icon is dragged); no software layer; widgets off, shortcuts stubbed; the drawer filter runs
-  before any icon lookup (`AllAppsList.java:77`, lookup at :83); the three databases open lazily on the loader / worker thread.
+  before any icon lookup (`AllAppsList.java:77`, lookup at :83); the three databases (`launcher.db`, `app_icons.db`, `widgetpreviews.db`) open
+  lazily on the loader / worker thread, never in a constructor (`SQLiteCacheHelper.java:24-31`, `LauncherProvider.java:156-170`).
 - Launcher3's own data at idle is about 3-6 MB of the 69 MB PSS (INFERRED, section 6). Even a perfect Launcher3 diet moves PSS by at most about
   3 MB (4 %). The RAM question is not in this slice; section 6 says where it probably is and G2 measures it.
 - Recurring CPU that is still left here: one full model reload per return to custom (G1) and the Hidden apps screen build (G3). Both are small in
