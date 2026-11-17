@@ -104,7 +104,7 @@ leave X (Back)    : Android resumes the top HOME task = the custom home; no HOME
 
 ### A3. RECONCILE when the helper (re)connects [rank 3]
 - **Where:** `TAS:328` (`reconcileAfterGap("the helper (re)connected")`, 1500 ms after `onServiceConnected`; `TAS:325` writes `SERVICE connected, mode <mode>`) -> `TAS:2011-2022` (`Mode.set(CUSTOM)` `:2017`, `startRouter("custom")` `:2018`, `ReturnReset.run` `:2019`) [V].
-- **Trigger / preconditions:** as A2, evaluated at every (re)connect (2-10 process starts in the report windows, section 3.5) with the tablet unlocked and awake [V]. At a reconnect while the tablet is locked it returns false (`UsageGap.java:69`) [V].
+- **Trigger / preconditions:** as A2, evaluated at every (re)connect (2 to 6 process starts in 24 h in the two reports that record it, section 3.5) with the tablet unlocked and awake [V]. At a reconnect while the tablet is locked it returns false (`UsageGap.java:69`) [V].
 - **How common / sees:** as A2; can fire with no user action at all (the custom home appears by itself a second or two after the helper comes back) [I].
 - **Log today:** `RECONCILE the helper (re)connected: the keyguard was shown after the Quickstep session began and no handshake was confirmed: ending the session like a plain unlock` (`TAS:2015`) [V].
 
