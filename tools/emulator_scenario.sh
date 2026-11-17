@@ -5515,8 +5515,8 @@ LG_T="$(lgnow)"
 adb shell input keyevent --longpress KEYCODE_POWER; sleep 3        # the first menu on the lock screen: the app learns where the card sits
 adb shell input keyevent KEYCODE_BACK; sleep 6
 LG_PRE="$(lgstate "$LG_T")"
-lgcase "prelude (the first menu)" "$LG_T"
-check "LG1: the first menu on the lock screen logged its patch state (the CG1d line 'menu opened (...): patch RESTING|AWAY')" test -n "$LG_PRE"
+lgcase "prelude (the very first menu: lgfeat wiped the learned menu place, so it goes through the node scan; the patch window is made AT the press = the cold case, never the fast path)" "$LG_T"
+info "LG prelude: the CG1d fast-path line for the very first menu: ${LG_PRE:-none (expected: the geometry is not learned yet)}"
 for LG_DS in true false; do
   lgfeat "$LG_DS"; adb shell am force-stop "$PKG"; sleep 1; rebind; lglock
   adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 5      # the card is learned again after the preferences were rewritten
@@ -5544,10 +5544,12 @@ info "LG summary (patch state when the menu opened; empty = the menu did not ope
 lgexpect(){ # lgexpect <name> <state or empty>
   if [ -z "$2" ]; then info "LG: $1: NOT CHECKED (the menu did not open)"; else check "$1" test "$2" = RESTING; fi
 }
+check "LG1: with the menu place learned, the first hold logged its patch state (the CG1d line 'menu opened (...): patch RESTING|AWAY')" test -n "${LG_C1_true:-}"
 lgexpect "LG2: with the CG1d fix on, a short dark and the hold at the wake finds the patch RESTING (C1)" "${LG_C1_true:-}"
 lgexpect "LG3: ... a finger hold that was running when the screen went off does not keep the patch away after the wake (C3)" "${LG_C3_true:-}"
 lgexpect "LG4: ... the first lock after unlocked use (C0)" "${LG_C0_true:-}"
 lgexpect "LG5: ... the typical case (C2)" "${LG_C2_true:-}"
+check "LG7 (control): with the switch OFF the old behaviour shows the patch AWAY in C0 or C3 (else this test cannot tell the fix from nothing)" bash -c "[ '${LG_C0_false:-}' = AWAY ] || [ '${LG_C3_false:-}' = AWAY ]"
 if [ -n "${LG_C3_true:-}" ]; then check "LG6: C3 with the fix on logged 'screen off: the finger / PIN-pad hold ... void in the dark'" test "${LG_V3_true:-0}" -ge 1; fi
 # C4 / C5: the PIN pad (data only; the fix is ON from here)
 lgfeat true; adb shell am force-stop "$PKG"; sleep 1; rebind; lglock
