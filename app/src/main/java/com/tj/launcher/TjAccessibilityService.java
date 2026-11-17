@@ -3134,7 +3134,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (!fire && StrayHomeGuard.countInWindow(customGuardHist, now) >= StrayCustomGuard.MAX) customStandDownUntil = now + StrayCustomGuard.COOLDOWN_MS;
         if (now - lastCustomLogMs >= 2000) {   // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it, at most every 2 s
             lastCustomLogMs = now;
-            LockLog.add(getApplicationContext(), "STRAYCUSTOM", "custom home in front while the mode is quickstep (locked=" + locked + ", screenOn=" + screenOn + ", last unlock "
+            LockLog.add(getApplicationContext(), "STRAYCUSTOM", "custom home in front while the mode is quickstep (via " + via + ", locked=" + locked + ", screenOn=" + screenOn + ", last unlock "
                     + (lastUnlockAt > 0 ? (now - lastUnlockAt) + " ms ago" : "none") + ", mode " + (modeAt > 0 ? (now - modeAt) / 1000 + " s old" : "age unknown") + ", before it: " + (lastOtherPkg.isEmpty() ? "?" : lastOtherPkg) + "): "
                     + StrayCustomGuard.why(on, locked, screenOn, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist));
         }
