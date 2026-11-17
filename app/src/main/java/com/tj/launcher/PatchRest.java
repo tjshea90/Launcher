@@ -192,4 +192,26 @@ public final class PatchRest {
     public static boolean padCancelled(long nowMs, long padLeftMs, long lastPadSignMs, boolean padUpNow, boolean lockedNow, long userPresentMs) {
         return padLeftMs > 0 && nowMs - padLeftMs >= PAD_CANCEL_MS && nowMs - lastPadSignMs >= PAD_SIGN_QUIET_MS && !padUpNow && lockedNow && userPresentMs < padLeftMs;
     }
+
+    // ------------------------------------------------------------------------------------------------------------------------------------------------
+    // CG1d (Tj, 2026-11-17: "Sometimes the wallpaper patch shows up on the lock screen when i pull up the pin pad or when i first go to the lock screen and hold the side key. Make it prepare immediately when the
+    // lock screen is open or when the screen turns off, so the screenshot button is always hidden with no flashing of the wallpaper patch over it"; research/CG1D_PATCH_LIFECYCLE_2026-11-17.md, H3).
+    // Every clock the resting patch waits on (the settle time above, the finger hold, the PIN-pad hold) runs in UPTIME, and uptime does not advance while the CPU is in deep sleep. A patch prepared in the dark
+    // (the screen goes off, the window is made 0.7 s later) has only a fraction of its 1.2 s settle behind it when the CPU falls asleep; the tablet wakes at the key's DOWN and the stock menu follows about half a second
+    // later, so the FIRST hold of the side key after a wake met a patch that was still "settling" (away) and the stock Screenshot entry showed until the dialog's own window event brought the patch back. Nothing
+    // can touch a dark screen, so the reason for the settle time (a finger that is already pulling up when the window appears, BT1a) does not exist there: in the dark a restable patch counts as settled at once.
+    // ------------------------------------------------------------------------------------------------------------------------------------------------
+
+    /** Hidden switch, default ON in every build (the gate tests the shipped behaviour; the emulator section {@code lg} writes false for its control run). */
+    public static final String DARK_SETTLE_KEY = "patch_dark_settle";
+
+    /**
+     * The "restable since" time to keep: with the display dark (and the switch on) a restable patch has been settled for as long as it takes, so {@link #settled} is true at once; otherwise the stored time is kept as it is.
+     * Never moves a time that is already old enough (it stays the truth for the logs), never returns 0 (0 means "not restable").
+     */
+    public static long restableSinceFor(long nowMs, long storedSinceMs, boolean displayDark, boolean darkSettle) {
+        if (!darkSettle || !displayDark) return storedSinceMs;
+        long settledSince = Math.max(1, nowMs - SETTLE_MS);
+        return storedSinceMs > 0 && storedSinceMs <= settledSince ? storedSinceMs : settledSince;
+    }
 }
