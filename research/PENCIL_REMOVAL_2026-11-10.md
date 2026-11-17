@@ -21,3 +21,11 @@ What is VERIFIED and what is not is marked on every line. Sources read this sess
 - Keep the cover. Wait for Tj's tablet report on the v0.9.2 white-box fix (BQ1b).
 - If Tj later wants it truly gone, the only candidate is lever 3, to be tried FIRST on the CI emulator (a small overlay APK built against the emulator's SystemUI, enabled with `cmd overlay`, a crash-loop recovery step written down before it is ever sent to the tablet). Ask first; it is a separate project.
 - BR1 (the gear opens the look-alike) is compatible with the cover and with every lever except 1 (which removes the gear).
+
+## CG1e (2026-11-17): lever 3 (RRO) tried on the CI emulator: NOT possible without root
+Emulator section `ro` (tools/make_overlay_apk.sh builds a throw-away-signed overlay, installed as the shell user, exactly what any user-installed overlay looks like). Android 10 userdebug image; runs #617 (id 44156308504) and #618 (id 44159446669, 9 PASS 0 FAIL).
+- Plain overlay for `android` or `com.android.systemui`: refused at INSTALL: `Overlay tj.ro.fw1 and target android signed with different certificates, and the overlay lacks <overlay android:targetName>`.
+- With `android:targetName`: installs (Success), `cmd overlay enable --user 0` answers with no output, but idmap2d refuses every resource: `overlay ".../base.apk" is not allowed to overlay resource "android:drawable/ic_mode_edit": overlay must be preinstalled or signed with the same signature as the target` (and the same for `com.android.systemui:color/...`). `dumpsys overlay`: `mTargetOverlayableName: TjTest, mState: STATE_NO_IDMAP, mIsEnabled: true`: enabled but with no idmap, so nothing is replaced.
+- targetSdkVersion 28 (to dodge the overlayable enforcement): refused: `Overlay tj.ro.fw3 must target Q or later, or be signed with the platform certificate`.
+- Neither framework-res nor SystemUI of this image declares an `<overlayable>` the shell/user policy could use. Verdict: the pencil cannot be replaced by an overlay without a platform signature or a system install (root). The tablet runs the same AOSP package-manager and idmap2 code; a vendor build that declared `public` overlayables for these resources would be the only difference and is not expected.
+- Everything else (accessibility, settings, demo mode) is lever 1, 2, 4, 5 above. The cover window stays; its steadiness is TASKS CG1d / BQ1.
