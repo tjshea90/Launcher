@@ -3101,28 +3101,30 @@ public class TjAccessibilityService extends AccessibilityService {
     private final long[] customGuardHist = new long[StrayCustomGuard.MAX];
     private int customGuardIdx = 0;
     private long customStandDownUntil = 0, lastCustomLogMs = 0, lastCustomActMs = 0;
-    private String lastOtherPkg = "";   // the last window package that was neither ours nor SystemUI: "what was in front before the custom home appeared"
+    private long customDeferFirstMs = 0;     // CG1 review A: when this appearance was first looked at while a "left alone" verdict was waiting for a second look (0 = nothing waiting)
+    private int lastCustomReason = -1;       // the verdict of the previous look of this appearance (a re-check is only logged when it says something new)
+    private String lastOtherPkg = "";        // the last window package that was neither ours nor SystemUI: "what was in front before the custom home appeared"
 
-    private void guardStrayCustom(AccessibilityEvent e) {
+    /**
+     * Remembers which window was in front before ours ("before=" in the lock log). Our own windows never get here (onAccessibilityEvent returns for them first, which is also why a window event of the custom
+     * home can never trigger the guard); the trigger is the Launcher's own onResume ({@link #customHomeAppeared}).
+     */
+    private void noteOtherWindow(AccessibilityEvent e) {
         if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
-        CharSequence pk = e.getPackageName(), cl = e.getClassName();
-        if (pk == null || cl == null) return;
+        CharSequence pk = e.getPackageName();
+        if (pk == null) return;
         String p = pk.toString();
-        if (!StrayCustomGuard.isCustomHome(p, cl.toString(), getPackageName())) {
-            if (!p.equals(getPackageName()) && !"com.android.systemui".equals(p)) lastOtherPkg = p;
-            else if (p.equals(getPackageName()) && !Mode.isCustom(this)) Log.i(TAG, "CG1a window event of our own package: " + cl);   // logcat only: which of our windows the service is told about in a Quickstep session
-            return;
-        }
-        customHomeAppeared("window event");
+        if (!p.equals(getPackageName()) && !"com.android.systemui".equals(p)) lastOtherPkg = p;
     }
 
     /**
-     * CG1a: OUR custom home came to the front. Called by the window event above AND by the Launcher's own onResume ({@link TjHooks#onLauncherResumed}): emulator run #619 (section ad) showed the Launcher resuming
-     * after Back in a Quickstep session (the lock log had "LAUNCHER resumed while the mode is quickstep" four times) while the helper was told of NO window event for it, so the guard never ran. The Launcher's own
-     * onResume is the one signal that cannot be missed. Runs on the main thread (the Launcher and this service share it); everything is throttled, a second call for the same appearance changes nothing.
+     * CG1a: OUR custom home came to the front. Called by the Launcher's own onResume ({@link TjHooks#onLauncherResumed}) and by the re-check below. Emulator run #619 (section ad) showed the Launcher resuming
+     * after Back in a Quickstep session (the lock log had "LAUNCHER resumed while the mode is quickstep" four times) while the helper was told of NO window event for it, so the resume is the signal. Runs on the
+     * main thread (the Launcher and this service share it). CG1 review A: a verdict that only time can change ("just after an unlock", "the app is still launching", "mode changed 1 s ago") is looked at AGAIN
+     * ({@link StrayCustomGuard#retryInMs}) while the Launcher stays in front; a Launcher that pauses cancels the wait ({@link #customHomeGone}).
      */
     void customHomeAppeared(String via) {
-        if (Mode.isCustom(this)) return;   // the normal case: our own Launcher in the custom mode ends here (one preference read)
+        if (Mode.isCustom(this)) { customDeferFirstMs = 0; return; }   // the normal case: our own Launcher in the custom mode ends here (one preference read)
         // The stored mode is Quickstep and OUR Launcher window just appeared: rare, and exactly what Tj saw ("randomly shows the custom launcher although I was in Quickstep").
         long now = System.currentTimeMillis();
         KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
@@ -3131,16 +3133,28 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean screenOn = pwr == null || pwr.isInteractive();
         boolean on = Features.get(this, StrayCustomGuard.KEY, StrayCustomGuard.defaultOn(ReturnReset.isDebuggable(this)));
         boolean leftover = ProfileSession.windowIsLockLeftover(locked, unlock.armedMethod() != null, now, lastUnlockAt);
+        boolean undecided = !locked && screenOn && AnimationSpeedup.lockCycleOpen();   // a plain PIN flips the stored mode a moment AFTER the Launcher resumed
+        long resumingSince = resumedPkg != null && resumedSeenAt < resumedAt ? resumedAt : 0;   // the app the gesture started has been asked for and has not appeared yet
         long modeAt = Mode.changedAt(this), failOpen = Mode.failOpenUntil(this);
-        boolean fire = StrayCustomGuard.shouldRedirect(on, true, locked, screenOn, true, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist);
+        int reason = StrayCustomGuard.reason(on, true, locked, screenOn, true, leftover, undecided, resumingSince, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist);
+        boolean fire = reason == StrayCustomGuard.REDIRECT;
         if (!fire && StrayHomeGuard.countInWindow(customGuardHist, now) >= StrayCustomGuard.MAX) customStandDownUntil = now + StrayCustomGuard.COOLDOWN_MS;
-        if (now - lastCustomLogMs >= 2000) {   // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it, at most every 2 s
+        boolean firstLook = customDeferFirstMs == 0;
+        // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it; a re-check only when its verdict differs from the last look's (no flood while it waits)
+        if (fire || (firstLook ? now - lastCustomLogMs >= 2000 : reason != lastCustomReason)) {
             lastCustomLogMs = now;
-            LockLog.add(getApplicationContext(), "STRAYCUSTOM", "custom home in front while the mode is quickstep (via " + via + ", locked=" + locked + ", screenOn=" + screenOn + ", last unlock "
-                    + (lastUnlockAt > 0 ? (now - lastUnlockAt) + " ms ago" : "none") + ", mode " + (modeAt > 0 ? (now - modeAt) / 1000 + " s old" : "age unknown") + ", before it: " + StrayCustomGuard.beforeLabel(lastOtherPkg) + "): "
-                    + StrayCustomGuard.why(on, locked, screenOn, leftover, now, modeAt, guardPausedUntil, failOpen, customStandDownUntil, customGuardHist));
+            LockLog.add(getApplicationContext(), "STRAYCUSTOM", StrayCustomGuard.logText(StrayCustomGuard.why(reason, now, modeAt), via, locked, screenOn,
+                    lastUnlockAt > 0 ? now - lastUnlockAt : -1, modeAt > 0 ? now - modeAt : -1, StrayCustomGuard.beforeLabel(lastOtherPkg)));
         }
-        if (!fire || now - lastCustomActMs < 700) return;   // one appearance can raise two events
+        lastCustomReason = reason;
+        if (fire) customDeferFirstMs = 0;
+        else {
+            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, modeAt, guardPausedUntil, failOpen, firstLook ? 0 : now - customDeferFirstMs);
+            handler.removeCallbacks(customRecheck);
+            if (again > 0) { if (firstLook) customDeferFirstMs = now; handler.postDelayed(customRecheck, again); }
+            else customDeferFirstMs = 0;
+        }
+        if (!fire || now - lastCustomActMs < 700) return;   // one appearance can raise two looks
         lastCustomActMs = now;
         customGuardHist[customGuardIdx++ % customGuardHist.length] = now;
         int n = bump(StrayCustomGuard.COUNT_KEY);
@@ -3149,10 +3163,22 @@ public class TjAccessibilityService extends AccessibilityService {
         startRouter("stock");   // prearm "stock" = not a Home press: it can never count as a double Home
     }
 
+    /** The second look: only while the Launcher is still in front (level-triggered: what is true NOW decides, not what was true when the look was planned). */
+    private final Runnable customRecheck = new Runnable() { @Override public void run() {
+        try {
+            if (!TjHooks.launcherInFront()) { customDeferFirstMs = 0; return; }   // paused in the meantime: the app came up, or the stock home did
+            customHomeAppeared("re-check +" + (System.currentTimeMillis() - customDeferFirstMs) + "ms");
+        } catch (Throwable t) { Log.e(TAG, "custom re-check failed", t); }
+    } };
+
+    /** The Launcher paused: whatever was waiting for a second look is moot (called from {@link TjHooks#onLauncherPaused}). */
+    void customHomeGone() { handler.removeCallbacks(customRecheck); customDeferFirstMs = 0; }
+
+    /** A counter in the preferences: the new value is visible at once, the file is written in the background (no fsync on the main thread, which the Launcher shares). */
     private int bump(String key) {
         int n = 1;
         try { n = Integer.parseInt(Features.getString(this, key, "0")) + 1; } catch (NumberFormatException ignored) { }
-        Features.setString(this, key, String.valueOf(n));
+        Features.setStringAsync(this, key, String.valueOf(n));
         return n;
     }
 
