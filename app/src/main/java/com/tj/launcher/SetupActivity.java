@@ -149,7 +149,7 @@ public class SetupActivity extends Activity {
                 case "OP_BG": return op("android:run_in_background");
                 case "OP_ANYBG": return op("android:run_any_in_background");
                 case "IDLE_WL": return ((PowerManager) getSystemService(POWER_SERVICE)).isIgnoringBatteryOptimizations(getPackageName());
-                case "COMPILE_SELF": return Features.getInt(this, "compile_done_code", 0) == getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+                case "COMPILE_SELF": return Features.getInt(this, "compile_done_code", 0) == getPackageManager().getPackageInfo(getPackageName(), 0).versionCode || DexoptWatch.full(this);   // CG1c: or Android reports speed / everything for this version
                 case "A11YON": return TjAccessibilityService.get() != null;
                 default: return false;
             }

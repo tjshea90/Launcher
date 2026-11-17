@@ -26,6 +26,7 @@ public class TjApplication extends Application {
         try { if (main) EntranceWatcher.start(this); } catch (Throwable ignored) { }   // AD4: the rotation-tile and charger entrances (the page flick is fed by the Launcher touch hook)
         try { if (main) LockQuiet.applyNotificationsAsync(this); } catch (Throwable ignored) { }   // AK1: the lock screen shows no app notifications (setting written / put back by the switch)
         try { if (main) BatterySaverGuard.start(this); } catch (Throwable ignored) { }   // AC3: watch battery saver for the life of the MAIN process (one observer, no polling)
+        try { if (main) DexoptWatch.refreshSoon(this); } catch (Throwable ignored) { }   // CG1c: how has Android compiled this app? one look 20 s after a start when the stored one is stale (background thread, dumpsys package)
         try { if (main) LockQuiet.applyLockRulesEarly(this); } catch (Throwable ignored) { }   // AW2 / AW3: the first lock screen after a restart is quiet before the accessibility helper has bound (about 1.5 min after boot)
         try {
             startMs = android.os.SystemClock.uptimeMillis() - t0;
