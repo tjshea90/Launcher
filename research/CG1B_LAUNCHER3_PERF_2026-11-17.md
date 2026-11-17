@@ -115,7 +115,7 @@ and the row / switch checks) already drive the real screen; add the counter to t
 `uiMode` night and the wallpaper colours); `app/src/main/AndroidManifest.xml:208` (the Launcher's `configChanges` has no `uiMode`, `fontScale`,
 `density` or `locale`); `app/.../TjHooks.java:167-173`.
 **What happens.** The Launcher activity is destroyed and re-created (full `setupViews` inflate at :335, then `startLoader` takes the "model already
-loaded" branch and binds workspace + all apps synchronously, `LauncherModel.java:359-368`) whenever uiMode night flips, font scale / density /
+loaded" branch and binds workspace + all apps synchronously, `LauncherModel.java:358-366`) whenever uiMode night flips, font scale / density /
 locale changes, or the wallpaper colours change the theme resource. A stopped activity (Quickstep in front) defers it to its next resume, so the
 re-creation falls at the unlock into custom, on the main thread the service and the loader also use. This user has more night flips than most:
 battery saver forces the dark theme (Android 10 `UiModeManager` power-save rule, from memory) and the app switches the saver off and on around the
