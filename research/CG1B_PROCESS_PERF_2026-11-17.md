@@ -67,7 +67,7 @@ is by far the larger background cost and belongs to reviewer B.
    `IconShape.init`; fork area, reviewer A), and **`androidx.startup.InitializationProvider`** (VERIFIED(build), 2.3): `AppInitializer.discoverAndInitialize` reads the provider's meta-data through
    PackageManager (one binder call), instantiates `ProfileInstallerInitializer` by reflection and posts a Choreographer frame callback (INFERRED from the library; est. 2-5 ms, part of the 76 ms).
    The other two providers are `android:enabled="false"` (`:169-173`, `:190-196`): free.
-3. `TjApplication.onCreate` (`TjApplication.java:16-37`; lines 20-30 are the `try` blocks), main process only after line 21 (the `:wallpaper_picker` / `:wallpaper_chooser` processes stop at
+3. `TjApplication.onCreate` (`TjApplication.java:16-35`; lines 20-30 are the `try` blocks and all but line 21 are guarded by `if (main)`, so the `:wallpaper_picker` / `:wallpaper_chooser` processes stop after
    `CrashGuard.clearIfNewer`): `CrashGuard.install` (:20, a handler, no I/O) -> `CrashGuard.clearIfNewer` (:21, **blocks on loading `tj_crash`**, `CrashGuard.java:112`) -> `ProcessLife.noteStart`
    (:22, **blocks on `tj_life`**, then `apply()`, `ProcessLife.java:111-116`) -> `AnimationSpeedup.reconcileAsync` (:23, starts thread `tj-anim-start`, which creates the `tj-anim` HandlerThread,
    `AnimationSpeedup.java:197-208`) -> `SettingsSpoof.syncSoon` (:24, creates HandlerThread `TjSsSync`, 3 s delayed) -> `SwitchMigration.run` (:25, **blocks on `tj_features`**,
