@@ -5389,47 +5389,59 @@ ro_state(){ # ro_state <tag> <overlay package> <target>: everything Android says
 RO_BOX_RAW="$(ro_pencil base)"; set -- $RO_BOX_RAW; RO_L="${1:-}"; RO_T="${2:-}"; RO_R="${3:-}"; RO_BT="${4:-}"
 info "RO base: pencil node bounds [${RO_BOX_RAW:-not found in the uiautomator dump}]; crop stddev,mean x1000: $([ -n "$RO_BT" ] && ro_stat "$OUT/ro-base.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT")"
 info "RO base: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r'), SDK $(adb shell getprop ro.build.version.sdk | tr -d '\r'), build $(adb shell getprop ro.build.type | tr -d '\r')"
-# ---- Q1/Q2 for target `android`: ic_mode_edit replaced by a fully transparent shape
+# ---- the experiment: five overlay variants, each built, installed (as the shell user), reported with the package manager's OWN refusal text, and, if one is accepted, enabled and measured.
+#      fw1 plain (target android)      fw2 + android:targetName      fw3 + targetName + targetSdk 28 (Android 10 enforces <overlayable> for overlays that target 29+)
+#      ui1 plain (SystemUI colours)    ui2 + android:targetName
 cat > "$ROW/res_fw/drawable/ic_mode_edit.xml" <<'ROEOF'
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
     <solid android:color="#00000000" />
     <size android:width="24dp" android:height="24dp" />
 </shape>
 ROEOF
-bash tools/make_overlay_apk.sh "$ROW/fw.apk" tj.ro.fw android "$ROW/res_fw" 1 > "$ROW/build-fw.txt" 2>&1
-check "RO0: the framework overlay APK builds (premise of the experiment)" test -s "$ROW/fw.apk"
-adb install -r "$ROW/fw.apk" > "$ROW/install-fw.txt" 2>&1
-check "RO0: the shell user can install an overlay APK (premise of the experiment)" grep -q Success "$ROW/install-fw.txt"
-info "RO fw: install: $(tr -d '\r' < "$ROW/install-fw.txt" | tr '\n' ' ' | cut -c1-160); build: $(tail -1 "$ROW/build-fw.txt" | cut -c1-160)"
-ro_state fw0 tj.ro.fw android
-RO_EN="$(adb shell cmd overlay enable --user 0 tj.ro.fw 2>&1 | tr -d '\r' | tr '\n' ' ' | cut -c1-200)"
-info "RO fw: cmd overlay enable -> '${RO_EN:-<no output>}'"
-sleep 8
-ro_state fw1 tj.ro.fw android
-RO_AFTER_RAW="$(ro_pencil afterfw)"
-info "RO fw: after enable: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r'); pencil node bounds [${RO_AFTER_RAW:-not found}]; crop stddev,mean x1000: $([ -n "$RO_BT" ] && ro_stat "$OUT/ro-afterfw.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT"); pixels changed vs base inside the pencil box: $([ -n "$RO_BT" ] && ro_diff "$OUT/ro-base.png" "$OUT/ro-afterfw.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT")"
-adb shell cmd overlay disable --user 0 tj.ro.fw >/dev/null 2>&1; sleep 2; adb uninstall tj.ro.fw >/dev/null 2>&1; sleep 3
-# ---- Q1 for target com.android.systemui: some of SystemUI's own colours (names read from its APK), set to magenta
-RO_SUI="$(adb shell pm path com.android.systemui | tr -d '\r' | head -1 | sed 's/^package://')"
-adb pull "$RO_SUI" "$ROW/SystemUI.apk" >/dev/null 2>&1
 RO_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
 RO_AAPT2="$(ls -d "$RO_SDK"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)"
+# what do the two targets DECLARE as overlayable (aapt2 dump overlayable of the device's own APKs)?
+adb pull /system/framework/framework-res.apk "$ROW/framework-res.apk" >/dev/null 2>&1
+RO_SUI="$(adb shell pm path com.android.systemui | tr -d '\r' | head -1 | sed 's/^package://')"
+adb pull "$RO_SUI" "$ROW/SystemUI.apk" >/dev/null 2>&1
+for RO_T in framework-res SystemUI; do
+  "$RO_AAPT2" dump overlayable "$ROW/$RO_T.apk" > "$ROW/ovl-$RO_T.txt" 2>&1
+  info "RO overlayable $RO_T: $(wc -l < "$ROW/ovl-$RO_T.txt") lines, ic_mode_edit mentioned $(grep -c ic_mode_edit "$ROW/ovl-$RO_T.txt") times, first lines: $(head -5 "$ROW/ovl-$RO_T.txt" | tr -s ' ' | tr '\n' '|' | cut -c1-230)"
+done
 "$RO_AAPT2" dump resources "$ROW/SystemUI.apk" > "$ROW/sysui-resources.txt" 2>&1
 RO_COLORS="$(grep -E 'resource 0x[0-9a-f]+ .*color/' "$ROW/sysui-resources.txt" | sed -E 's#.*color/##' | awk '{print $1}' | grep -E 'qs_|status_bar|keyguard|icon' | head -6)"
-info "RO sysui: SystemUI apk $RO_SUI ($(stat -c %s "$ROW/SystemUI.apk" 2>/dev/null) bytes), colour names chosen: $(echo $RO_COLORS | cut -c1-200)"
-if [ -n "$RO_COLORS" ]; then
-  { echo '<resources>'; for RO_C in $RO_COLORS; do echo "  <color name=\"$RO_C\">#FFFF00FF</color>"; done; echo '</resources>'; } > "$ROW/res_ui/values/colors.xml"
-  bash tools/make_overlay_apk.sh "$ROW/ui.apk" tj.ro.ui com.android.systemui "$ROW/res_ui" 1 > "$ROW/build-ui.txt" 2>&1
-  adb install -r "$ROW/ui.apk" > "$ROW/install-ui.txt" 2>&1
-  info "RO ui: install: $(tr -d '\r' < "$ROW/install-ui.txt" | tr '\n' ' ' | cut -c1-160); build: $(tail -1 "$ROW/build-ui.txt" | cut -c1-160)"
-  ro_state ui0 tj.ro.ui com.android.systemui
-  RO_EN2="$(adb shell cmd overlay enable --user 0 tj.ro.ui 2>&1 | tr -d '\r' | tr '\n' ' ' | cut -c1-200)"
-  info "RO ui: cmd overlay enable -> '${RO_EN2:-<no output>}'"
-  sleep 8
-  ro_state ui1 tj.ro.ui com.android.systemui
-  info "RO ui: after enable: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
-  adb shell cmd overlay disable --user 0 tj.ro.ui >/dev/null 2>&1; sleep 2; adb uninstall tj.ro.ui >/dev/null 2>&1
-fi
+{ echo '<resources>'; for RO_C in $RO_COLORS; do echo "  <color name=\"$RO_C\">#FFFF00FF</color>"; done; echo '</resources>'; } > "$ROW/res_ui/values/colors.xml"
+ro_try(){ # ro_try <tag> <overlay pkg> <target> <res dir> <targetName or -> <targetSdk> <measure pencil 0|1>
+  local tag="$1" pkg="$2" tgt="$3" res="$4" tn="$5" sdk="$6" pen="$7" apk="$ROW/$1.apk" ok=0 fail="" en="" after=""
+  [ "$tn" = "-" ] && tn=""
+  bash tools/make_overlay_apk.sh "$apk" "$pkg" "$tgt" "$res" 1 "$tn" "$sdk" > "$ROW/build-$tag.txt" 2>&1
+  check "RO0 $tag: the overlay APK builds (premise of the experiment)" test -s "$apk"
+  adb install -r "$apk" > "$ROW/install-$tag.txt" 2>&1
+  grep -q Success "$ROW/install-$tag.txt" && ok=1
+  fail="$(tr -d '\r' < "$ROW/install-$tag.txt" | grep -E 'Success|Failure|Exception|failed' | tr '\n' ' ' | cut -c1-300)"
+  info "RO $tag: $(tail -1 "$ROW/build-$tag.txt" | sed 's#.*(\([0-9]* bytes\)).*#\1#'); install -> ${fail:-<nothing printed>}"
+  command adb logcat -d -b all 2>/dev/null | grep -E "PackageManager|OverlayManager|idmap" | grep -F "$pkg" | tail -3 | sed -E 's/^[0-9-]+ [0-9:.]+ +[0-9]+ +[0-9]+ //' > "$ROW/pmlog-$tag.txt"
+  info "RO $tag: package manager / overlay log: $(cut -c1-260 "$ROW/pmlog-$tag.txt" | tr '\n' '|' | cut -c1-330)"
+  if [ "$ok" = 1 ]; then
+    ro_state "$tag-a" "$pkg" "$tgt"
+    en="$(adb shell cmd overlay enable --user 0 "$pkg" 2>&1 | tr -d '\r' | tr '\n' ' ' | cut -c1-160)"
+    info "RO $tag: cmd overlay enable -> '${en:-<no output>}'"
+    sleep 8
+    ro_state "$tag-b" "$pkg" "$tgt"
+    if [ "$pen" = 1 ]; then
+      after="$(ro_pencil "after$tag")"
+      info "RO $tag: after enable: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r'); pencil bounds [${after:-not found}]; pixels changed vs base inside the pencil box: $([ -n "$RO_BT" ] && ro_diff "$OUT/ro-base.png" "$OUT/ro-after$tag.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT")"
+    fi
+    adb shell cmd overlay disable --user 0 "$pkg" >/dev/null 2>&1; sleep 2; adb uninstall "$pkg" >/dev/null 2>&1; sleep 3
+  fi
+  echo "$ok"
+}
+RO_R1="$(ro_try fw1 tj.ro.fw1 android "$ROW/res_fw" - 29 1 | tail -1)"
+RO_R2="$(ro_try fw2 tj.ro.fw2 android "$ROW/res_fw" TjTest 29 1 | tail -1)"
+RO_R3="$(ro_try fw3 tj.ro.fw3 android "$ROW/res_fw" TjTest 28 1 | tail -1)"
+RO_R4="$(ro_try ui1 tj.ro.ui1 com.android.systemui "$ROW/res_ui" - 29 0 | tail -1)"
+RO_R5="$(ro_try ui2 tj.ro.ui2 com.android.systemui "$ROW/res_ui" TjTest 29 0 | tail -1)"
+info "RO verdict: overlay APKs ACCEPTED by the package manager (1 = yes): fw plain $RO_R1, fw targetName $RO_R2, fw targetName+sdk28 $RO_R3, systemui plain $RO_R4, systemui targetName $RO_R5"
 info "RO end: overlays left: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | grep -c 'tj.ro') (0 = cleaned up); SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
 ensurehome; setmode custom; rebind; home
 fi # section ro
