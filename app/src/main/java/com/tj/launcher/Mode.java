@@ -63,11 +63,40 @@ public final class Mode {
 
     public static boolean isCustom(Context c) { return CUSTOM.equals(get(c)); }
 
+    /** CG1a: the last mode changes, newest first, each "HH:mm:ss from>to by Class.method:line" (six entries): a Features key, so the tablet report keeps them far longer than the 100-line lock log. */
+    public static final String FLIPS_KEY = "mode_flips";
+    private static final int FLIPS_KEEP = 6;
+
+    /** CG1a (pure): puts {@code entry} in front of the stored list and keeps the newest {@code keep}. */
+    static String pushFlip(String stored, String entry, int keep) {
+        StringBuilder b = new StringBuilder(entry);
+        if (stored != null && !stored.isEmpty()) {
+            String[] old = stored.split(" ; ");
+            for (int i = 0; i < old.length && i < keep - 1; i++) b.append(" ; ").append(old[i]);
+        }
+        return b.toString();
+    }
+
+    /** CG1a: who changed the mode (the first stack frame outside this class), one lock-log line and one report key per REAL change. The cost (a stack walk and a log line) is paid at a change, a few a day. */
+    private static void noteFlip(Context c, String from, String to) {
+        try {
+            String who = "?";
+            for (StackTraceElement f : new Throwable().getStackTrace()) {
+                if (!Mode.class.getName().equals(f.getClassName())) { who = f.getClassName().substring(f.getClassName().lastIndexOf('.') + 1) + "." + f.getMethodName() + ":" + f.getLineNumber(); break; }
+            }
+            String entry = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + " " + from + ">" + to + " by " + who;
+            LockLog.add(c, "MODE", from + " -> " + to + " by " + who);
+            Features.setStringAsync(c, FLIPS_KEY, pushFlip(Features.getString(c, FLIPS_KEY, ""), entry, FLIPS_KEEP));
+        } catch (Throwable ignored) { }
+    }
+
     /** commit() (not apply): the router reads this a moment later, possibly after our process is killed. */
     public static void set(Context c, String mode) {
         String m = QUICKSTEP.equals(mode) ? QUICKSTEP : CUSTOM;
-        boolean quickstepBegins = QUICKSTEP.equals(m) && CUSTOM.equals(get(c));
-        boolean quickstepEnds = CUSTOM.equals(m) && QUICKSTEP.equals(get(c));
+        String before = get(c);
+        boolean quickstepBegins = QUICKSTEP.equals(m) && CUSTOM.equals(before);
+        boolean quickstepEnds = CUSTOM.equals(m) && QUICKSTEP.equals(before);
+        if (!m.equals(before)) noteFlip(c, before, m);
         long nowMs = System.currentTimeMillis();
         SharedPreferences.Editor ed = prefs(c).edit().putString(KEY, m).putLong("changedAt", nowMs);
         if (quickstepBegins) ed.putLong("qsStartAt", nowMs);   // AI1: the Quickstep session's own start and end (changedAt moves at EVERY change): the clean-up asks Android's usage log what was used in between

@@ -350,6 +350,7 @@ public class ControlActivity extends Activity {
 
         group("safety", "Safety & secret ways to Quickstep", false);
         toggle("Keep Quickstep away unless I use a handshake", "Quickstep opens ONLY after a secret unlock handshake (Lock screen section). If its home screen appears any other way in custom mode, send me back.", Features.get(this, StrayHomeGuard.KEY, true), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, StrayHomeGuard.KEY, v); } });
+        toggle("Keep the custom home away while I am in Quickstep", "If the custom launcher's home screen shows up in the middle of a Quickstep session (for example when you leave an app with Back after unlocking with the handshake), the Quickstep home screen is shown instead. It never acts on the lock screen, right after an unlock, or while the tablet is dark.", Features.get(this, StrayCustomGuard.KEY, StrayCustomGuard.defaultOn(ReturnReset.isDebuggable(this))), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, StrayCustomGuard.KEY, v); } });
         note("Safety: if the Accessibility helper is OFF no handshake can work, so three quick Home presses in the custom launcher let you out to Quickstep. With the helper ON that does nothing.");
         note("Hidden ways to leave the custom launcher for Quickstep, tablet unlocked. No hardware button and no motion sensor is used; each one is made to be hard to trigger by accident, and each can be switched off here. (The lock-screen handshakes, in their own group, and the ladder below are separate.)");
         for (final SecretEntrances.Method m : SecretEntrances.Method.values()) {
@@ -384,6 +385,8 @@ public class ControlActivity extends Activity {
         note("Last unlock, start to finish (BK1c): " + Features.getString(this, TjAccessibilityService.UNLOCK_SUM_KEY, "(unlock once to measure)"));
         note("Lock screen log (newest last):\n" + (LockLog.tail(this, 8).isEmpty() ? "(nothing yet: lock and unlock the tablet once)" : LockLog.tail(this, 8)));
         note("Stray stock home screens sent back: " + Features.getString(this, StrayHomeGuard.COUNT_KEY, "0") + " (last " + Features.getString(this, StrayHomeGuard.LAST_KEY, "never") + ")"
+                + "\nStray custom home screens sent back (CG1a): " + Features.getString(this, StrayCustomGuard.COUNT_KEY, "0") + " (last " + Features.getString(this, StrayCustomGuard.LAST_KEY, "never") + ")"
+                + "\nLast mode changes (CG1a): " + Features.getString(this, Mode.FLIPS_KEY, "none recorded")
 
                 + "\nWill open: " + describeTarget());
 

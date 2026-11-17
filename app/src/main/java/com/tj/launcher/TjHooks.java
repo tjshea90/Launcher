@@ -83,6 +83,7 @@ public final class TjHooks {
 
     public static void onLauncherResumed(final Context c) {
         launcherResumed = true; lastResumeMs = android.os.SystemClock.uptimeMillis();
+        try { if (!Mode.isCustom(c)) LockLog.add(c.getApplicationContext(), "LAUNCHER", "resumed while the mode is " + Mode.get(c) + " (CG1a: the custom home in front in a Quickstep session; the STRAYCUSTOM line says what the helper made of it)"); } catch (Throwable ignored) { }
         try { if (c instanceof com.android.launcher3.Launcher) { launcherRef = new java.lang.ref.WeakReference<>((com.android.launcher3.Launcher) c); watchHomeDraw((com.android.launcher3.Launcher) c); } } catch (Throwable ignored) { }   // BI1
         try { TjAccessibilityService s0 = TjAccessibilityService.get(); if (launcherHidden && (s0 == null || !s0.homeCalRunning())) setLauncherHidden(false); } catch (Throwable ignored) { }   // BI1: a hidden Launcher without a running calibration is a leftover
         try { if (c instanceof com.android.launcher3.Launcher) launcherNormal = ((com.android.launcher3.Launcher) c).isInState(com.android.launcher3.LauncherState.NORMAL); } catch (Throwable ignored) { }
@@ -167,7 +168,7 @@ public final class TjHooks {
     public static void onLauncherCreated(android.app.Activity a) {
         try {
             android.app.KeyguardManager km = (android.app.KeyguardManager) a.getSystemService(Context.KEYGUARD_SERVICE);
-            LockLog.add(a.getApplicationContext(), "LAUNCHER", "created (locked=" + (km != null && km.isKeyguardLocked()) + ", process up " + (android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()) + " ms)");
+            LockLog.add(a.getApplicationContext(), "LAUNCHER", "created (mode=" + Mode.get(a) + ", locked=" + (km != null && km.isKeyguardLocked()) + ", process up " + (android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis()) + " ms)");
         } catch (Throwable ignored) { }
     }
 
