@@ -54,7 +54,7 @@ the first seconds of the custom session. Only ONE drawer row depends on the mode
 **Evidence.** VERIFIED (all lines above read). New facts compared with A1:
 - The cheap shortcut `LauncherModel.onPackageChanged("com.android.settings", user)` would NOT work. `AllAppsList.updatePackage`
   (`AllAppsList.java:178-215`) never re-applies the filter to an entry that is already in `data`; the filter runs only in `add` (:77). A targeted
-  task must call `removePackage` / `addPackage` explicitly (`AllAppsList.java:125-150`), as A1 said.
+  task must call `removePackage` / `addPackage` explicitly (`AllAppsList.java:127-150`), as A1 said.
 - The alias flip itself already reaches Launcher3 incrementally through the system's package-changed callback -> `PackageUpdatedTask` OP_UPDATE
   (`PackageUpdatedTask.java:114-120`), which also re-renders and rewrites the 2-3 icons of our own package (`IconCache.java:103-115`): about 10-30 ms
   of worker time per flip. Not worth touching.
