@@ -189,8 +189,7 @@ public class StrayCustomGuardTest {
     @Test public void aCustomHomeRevealedJustAfterAnUnlockIsSentBackOnceTheMomentIsOver() {
         long at = firstRedirectAfter(-100, Long.MIN_VALUE, 60_000, false);          // unlock handled 100 ms before the look
         assertTrue("redirected after " + at, at > 0 && at <= 1_000);
-        assertEquals(-1, firstRedirectAfter(Long.MIN_VALUE, Long.MIN_VALUE, 60_000, false) < 0 ? -1 : 0);   // control: nothing waits when nothing is wrong: redirect at once (0)
-        assertEquals(0, firstRedirectAfter(Long.MIN_VALUE, Long.MIN_VALUE, 60_000, false));
+        assertEquals("control: nothing waits when nothing is wrong, the first look redirects", 0, firstRedirectAfter(Long.MIN_VALUE, Long.MIN_VALUE, 60_000, false));
     }
 
     @Test public void aYoungModeChangeIsWaitedOut() {
