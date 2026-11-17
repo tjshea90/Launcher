@@ -189,4 +189,20 @@ public class QsMemoryTest {
         assertTrue(QsMemory.defaultOn(false));
         assertFalse(QsMemory.defaultOn(true));
     }
+
+    @Test public void theProcessListFallbackReadsTheStockLaunchersLastPss() {
+        String dump = "  *APP* UID 10001 ProcessRecord{1a2b3c4 1234:com.other/u0a1}\n    lastPss=12MB lastSwapPss=0\n"
+                + "  *APP* UID 10010 ProcessRecord{9f8e7d6 2515:com.android.launcher3/u0a10}\n    pssProcState=3 lastPssTime=-5m lastPss=48MB lastSwapPss=0 lastCachedPss=0\n";
+        QsMemory.Sample s = QsMemory.parseProcesses(dump, 5000);
+        assertTrue(s.found);
+        assertEquals(2515, s.pid);
+        assertEquals(48 * 1024, s.pssKb);
+        assertEquals(-1, s.activities);
+    }
+
+    @Test public void theFallbackIsNotAReadingWhenTheStockLauncherIsMissingOrHasNoPss() {
+        assertFalse(QsMemory.parseProcesses("ProcessRecord{1a2 1234:com.other/u0a1}\n lastPss=9MB", 1).found);
+        assertFalse(QsMemory.parseProcesses("ProcessRecord{9f8 2515:com.android.launcher3/u0a10}\n nothing here", 1).found);
+        assertFalse(QsMemory.parseProcesses(null, 1).found);
+    }
 }

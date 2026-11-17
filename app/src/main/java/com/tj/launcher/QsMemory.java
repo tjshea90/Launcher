@@ -22,12 +22,14 @@ final class QsMemory {
     /** Switch (hidden): ON in the shipped build, OFF in a debug build (older emulator sections must not see extra dumpsys calls); the section {@code qm} switches it on. */
     static final String KEY = "qs_memory_log";
     static final String RING_KEY = "qs_mem_ring", LAST_AT_KEY = "qs_mem_last_at";
+    static final String STATUS_KEY = "qs_mem_status";
+    static String firstLine(String d) { if (d == null) return "(null)"; String t = d.trim(); int nl = t.indexOf('\n'); if (nl >= 0) t = t.substring(0, nl); return t.length() > 120 ? t.substring(0, 120) : t; }
     static final String PACKAGE = "com.android.launcher3";
     static final long GAP_MS = 25L * 60_000L;          // a sample every 25 minutes at most (the process grows over hours and days)
     static final long FORCED_GAP_MS = 30_000L;         // opening Launcher control twice in a row does not call dumpsys twice
     static final int KEEP = 96;                        // about two days of use
     private static final long LIMIT_MS = 10_000L;      // a hung dumpsys costs one thread for 10 s, never more
-    private static final int MAX_CHARS = 96 * 1024;
+    private static final int MAX_CHARS = 512 * 1024;
     private static final java.util.concurrent.atomic.AtomicBoolean RUNNING = new java.util.concurrent.atomic.AtomicBoolean(false);
     private static final Object RING_LOCK = new Object();
 
@@ -97,6 +99,38 @@ final class QsMemory {
             }
         }
         s.found = s.pssKb >= 0;   // a dump without the total is not a reading (the process is gone, or the layout is not the one this reads)
+        return s;
+    }
+
+    private static final Pattern REC = Pattern.compile("ProcessRecord\\{[0-9a-f]+ (\\d+):com\\.android\\.launcher3/");
+    private static final Pattern LAST_PSS = Pattern.compile("lastPss=(\\d+(?:\\.\\d+)?)\\s*(KB|MB|GB|B)");
+
+    /**
+     * Fallback when {@code dumpsys meminfo} is refused (an app-uid shell cannot find that service: emulator run #622): the activity manager's own process list keeps the last PSS it sampled
+     * ({@code lastPss=49MB}) for every process. Coarse (the manager samples now and then) and without object counts, but enough for a growth curve over hours. {@code found} is false when the stock launcher is not in the dump.
+     */
+    static Sample parseProcesses(String dump, long atMs) {
+        Sample s = new Sample();
+        s.atMs = atMs;
+        if (dump == null) return s;
+        Matcher m = REC.matcher(dump);
+        while (m.find()) {
+            int end = Math.min(dump.length(), m.end() + 6000);
+            String body = dump.substring(m.end(), end);
+            int next = body.indexOf("ProcessRecord{");
+            if (next >= 0) body = body.substring(0, next);
+            Matcher p = LAST_PSS.matcher(body);
+            if (!p.find()) continue;
+            double v;
+            try { v = Double.parseDouble(p.group(1)); } catch (NumberFormatException e) { continue; }
+            double kb;
+            switch (p.group(2)) { case "GB": kb = v * 1048576d; break; case "MB": kb = v * 1024d; break; case "KB": kb = v; break; default: kb = v / 1024d; break; }
+            if (kb <= 0) continue;
+            s.pid = toInt(m.group(1));
+            s.pssKb = (int) Math.round(kb);
+            s.found = true;
+            return s;
+        }
         return s;
     }
 
@@ -228,7 +262,7 @@ final class QsMemory {
     static String ring(Context c) { try { return Features.getString(c, RING_KEY, ""); } catch (Throwable t) { return ""; } }
 
     /** One sentence for Launcher control and the tablet report. */
-    static String describe(Context c) { return describe(ring(c), System.currentTimeMillis()); }
+    static String describe(Context c) { String st = ""; try { st = Features.getString(c, STATUS_KEY, ""); } catch (Throwable ignored) { } String d = describe(ring(c), System.currentTimeMillis()); return st.isEmpty() || "ok".equals(st) ? d : d + " [last look: " + st + "]"; }
 
     /** Takes a reading on a background thread when the switch is on, the DUMP grant is there and the gap since the last one allows it. Never throws, never blocks the caller. */
     static void refreshAsync(final Context c, final boolean forced) {
@@ -243,7 +277,11 @@ final class QsMemory {
                     try {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
                         long now = System.currentTimeMillis();
-                        Sample s = parse(read(PACKAGE, LIMIT_MS), now);
+                        String dump = read(PACKAGE, LIMIT_MS);
+                        Sample s = parse(dump, now);
+                        String how = "meminfo";
+                        if (!s.found) { String d2 = read(new String[] { "dumpsys", "activity", "processes" }, LIMIT_MS); s = parseProcesses(d2, now); if (s.found) how = "activity processes (PSS only)"; else dump = dump + " | activity processes: " + d2.length() + " chars"; }
+                        Features.setStringAsync(app, STATUS_KEY, s.found ? (how.equals("meminfo") ? "ok" : "ok via " + how) : "no reading: " + dump.length() + " chars, first line: " + firstLine(dump));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
@@ -258,11 +296,13 @@ final class QsMemory {
     }
 
     /** Runs {@code dumpsys meminfo <pkg>}; blocks up to {@code limitMs}; "" when it fails. Never throws. */
-    static String read(String pkg, long limitMs) {
+    static String read(String pkg, long limitMs) { return read(new String[] { "dumpsys", "meminfo", pkg }, limitMs); }
+
+    static String read(String[] cmd, long limitMs) {
         Process proc = null;
         final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
         try {
-            proc = new ProcessBuilder("dumpsys", "meminfo", pkg).redirectErrorStream(true).start();
+            proc = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             final Process p = proc;
             final long end = SystemClock.elapsedRealtime() + limitMs;
             Thread watchdog = new Thread(new Runnable() {

@@ -1,29 +1,33 @@
-# CHECKPOINT 1398 — read me first, then TASKS.md
+# CHECKPOINT 1400 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T22:16:36Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `497a0215` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T21:47:56Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-b6bbb365-txbcep` · **builds on:** `9d692fe3` (this checkpoint is the commit after it)
 
 ## Just done
-takeover prepared (read-only): git merge-tree dry run of origin/main into my branch conflicts ONLY in CHECKPOINT.md and OUTBOX.md (TASKS/INBOX/code auto-merge); B idle since 21:48Z, last emulator run #623 (21:44Z) done, no CI in progress; backup wake send_later trig_01BMccPN2w2Qh3tb3n942Ft9 at 22:28Z
+CG1f verdict: app-uid dumpsys meminfo + activity processes refused (qm runs 621-623); shell sees stock launcher Activities 1->4, PSS 49->64MB after churn; TASKS written
 
 ## Do this next
-at QUIET / 22:28Z backup / 00:03Z heartbeat: if B has no new commit and no CI in flight, take over in ONE bash call: git merge --no-commit --no-ff origin/main; for CHECKPOINT.md take theirs (git checkout --theirs); for OUTBOX.md keep both (git show :1:/:2:/:3: into 3 files, git merge-file --union); git add -A; git commit; then bash tools/ckpt.sh; then B's list: route QsMemory via ShellHelper, rerun qm, lg, qf, /code-review high vs v0.9.11, gate.sh v0.9.11, ship.sh, android.yml full_build, record-release. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+next: route QsMemory.read via ShellHelper when connected (look at ShellHelper.run + DexoptWatch.read), keep refused status; rerun qm; then CG1d L1-L4 logging, lg, /code-review, gate vs v0.9.11, release. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (unchecked)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M TASKS.md
 
 ## Last ten checkpoints
 ```
-  497a0215 ckpt 1397: CG3d done: research/CG1F_CONFIG_CHANGES_2026-11-17.md = prime suspect for th
-  7336b488 ckpt 1396: CG3 (Tj 22:06Z: monitor the other session, finish and build the release) wri
-  c6e2ebb8 ckpt 1395: heartbeat 22:04Z: stood down again (rule 2): session B ckpt 1400 (21:47Z, br
-  6214dc56 ckpt 1394: heartbeat 21:55Z: STOOD DOWN (rule 2): session B (account B, branch ccr-b6bb
+  45d8a44d ckpt 1399: QsMemory fallback: dumpsys activity processes -> lastPss+pid of stock launch
+  0919635b ckpt 1398: qm run #622 id 44180402866: app-uid 'dumpsys meminfo' = Can't find service: 
+  cf88ec38 ckpt 1397: QsMemory: store why a look gave nothing (qs_mem_status, shown in describe) +
+  c5042815 ckpt 1396: qm run #621 id 44178666208 (head f6b552cc): 5 PASS 2 FAIL (QM2 no sample sto
+  2a86eb80 ckpt 1395: CG1b batch a unit tests green; dispatched emulator.yml sections=qm on main a
+  f6b552cc ckpt 1394: CG1b batch a (E3 E4 E5 G2: scan-by-trigger counters, Screenshot lookup only 
   81fd7345 ckpt 1393: CG1a PROVEN on emulator: ad run #620 id 44164339591 (head 9d37c438): 13 PASS
   38a7ec46 ckpt 1392: CG1f: QsMemory recorder (dumpsys meminfo of the stock launcher via DUMP gran
   5ff672be ckpt 1391: CG1a: ad run #619 id 44161930288: 12 PASS 1 FAIL=AD5b (custom home in front 
   12775bb7 ckpt 1390: CG1a: ad run #619 id 44161930288 started 19:45Z head 5d936924 shots=true (un
-  5d936924 ckpt 1389: CG1a P0+P1: StrayCustomGuard (pure, 13 tests) + guardStrayCustom in the serv
-  7b0f5893 ckpt 1388: CG1: TASKS holds the reviewer findings (CG1A B1 stray-custom, CG1B x2, CG1D 
 ```
+
+(1 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)

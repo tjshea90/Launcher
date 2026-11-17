@@ -5472,6 +5472,7 @@ info "QM stock launcher as the SHELL sees it: ${QM_STOCK:-nothing (no stock laun
 adb shell am start -n "$PKG/com.tj.launcher.ControlActivity" >/dev/null 2>&1; sleep 14
 QM_RING="$(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="qs_mem_ring">[^<]*' | sed 's/.*>//; s/&#10;/ | /g')"
 info "QM ring after opening Launcher control: ${QM_RING:-EMPTY}"
+info "QM status: $(adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="qs_mem_status">[^<]*' | sed 's/.*>//') ; DUMP granted: $(adb shell dumpsys package $PKG | grep -c 'android.permission.DUMP: granted=true'); logcat: $(adb logcat -d 2>/dev/null | grep -i -E 'avc:.*dump|TjQsMem' | tail -3 | cut -c1-200 | tr '\n' '|')"
 check "QM2: opening Launcher control stored a sample of the stock launcher" test -n "$QM_RING"
 check "QM3: the sample holds a real PSS and a pid" sh -c "echo '$QM_RING' | grep -Eq 'pid=[0-9]+;pss=[0-9]{4,}'"
 QM_ACT="$(echo "$QM_RING" | grep -o 'act=[0-9]*' | tail -1)"; QM_VW="$(echo "$QM_RING" | grep -o 'views=[0-9]*' | tail -1)"
