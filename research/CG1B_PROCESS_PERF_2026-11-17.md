@@ -218,7 +218,7 @@ threads (`TjDexopt`, `TjDexoptWatch`, at most 10 s, section 10).
 - **One dex** (`classes.dex`, 54,734 method ids: the same one as in 5.2), **8,643 method entries and only 4 class entries.**
 - The merged text it came from (`merged_art_profile/.../baseline-prof.txt`, 689 lines) holds 672 explicit androidx rules (recyclerview, lifecycle, startup, core ...: the libraries' own profiles) and **ONE app rule,
   `HSPLcom/android/launcher3/**;->**(**)**`**, not the five rules of the current `app/src/main/baseline-prof.txt`. So these artifacts come from an uncommitted intermediate state of that file (the committed versions are 19:15:52 five rules, 19:18:40 none, 19:18:53 five; none has one rule).
-  no rule, and 19:18:53 with five). Do not read sizes from them for the final profile; rebuild first.
+  Do not read sizes from them for the final profile; rebuild first.
 - **What it proves:** a single wildcard rule produced 8,643 method entries (the fork's 6,482 methods + icon library + the library rules): **wildcards expand with R8 off.**
 - **What is missing:** the rules are method rules (`HSPL...;->**(**)**`), so the profile lists almost no classes. Class lines (`Lcom/tj/launcher/**;`, `Lcom/android/launcher3/**;`, `Lcom/android/wallpaperpicker/**;`) add the class list
   that dex2oat uses for class verification and the app image of a `speed-profile` compile (INFERRED from the ART design; cheap, no downside seen).
