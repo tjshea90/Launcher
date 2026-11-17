@@ -1,21 +1,23 @@
-# CHECKPOINT 1416 — read me first, then TASKS.md
+# CHECKPOINT 1417 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T23:29:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `1c135985` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T23:30:45Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `08955e96` (this checkpoint is the commit after it)
 
 ## Just done
-gate dispatched 23:27-23:28Z on head 1c135985 (product code = 725270ed): #628 id 44199573646 [n6,o,x,ad,ae,pa,uf,cs2,hp,cu,last]; #629 id 44199579604 [base,y2,n,ac,bs,se,fp,rt,gear,fl]; #630 id 44199585576 [x1,e1,b6,t,v,bl,ps,an,nq,rb,ss]; #631 id 44199590509 [pt]. Section names confirmed from each log's 'INFO sections:' line at read time
+version bump only: app/build.gradle.kts versionCode 51, versionName 0.9.12 (the gate in flight runs on 1c135985 = the same code without the bump)
 
 ## Do this next
-read #631 pt at ~23:46Z and #628-#630 at ~00:08Z (list_workflow_jobs <id> latest perPage 1 -> get_job_logs tail ~60-112; 404 = not ended); ckpt the raw verdicts BEFORE analysing; triage solo on head and tag v0.9.11; no product-code edits while the gate runs. Then ship.sh. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (next 00:03Z)
+read #631 pt at ~23:46Z and #628-#630 at ~00:08Z; then ship.sh. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (next 00:03Z)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M app/build.gradle.kts
 
 ## Last ten checkpoints
 ```
+  08955e96 ckpt 1416: gate dispatched 23:27-23:28Z on head 1c135985 (product code = 725270ed): #62
   1c135985 ckpt 1415: VERDICT head 725270ed: ad #626 id 44197894744 job 134444040237 = 14 PASS 0 F
   45127751 ckpt 1414: context ~334K: ad #626 id 44197894744 + lg #627 id 44197899465 (head 725270e
   35ae1d99 ckpt 1413: HANDOFF 0z + answer draft updated (lg #625 result, guard re-look text); ad #
@@ -25,5 +27,4 @@ read #631 pt at ~23:46Z and #628-#630 at ~00:08Z (list_workflow_jobs <id> latest
   3e1bff85 ckpt 1409: lg #625 id 44194958128 job 134433835995 head 46153e5b: 12 PASS 0 FAIL 66 INF
   606d1157 ckpt 1408: full suite 1116 tests 0 fail + lint green (full1.log GRADLE_EXIT=0); lg reru
   f1a1fbfe ckpt 1407: reviews B+C fixed: gate text clocks first, RESTING label = really visible, p
-  3c3c09d9 ckpt 1406: HANDOFF 0z (live state of v0.9.12) written; B still silent (tip 69453515), b
 ```
