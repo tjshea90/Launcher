@@ -4689,12 +4689,17 @@ public class TjAccessibilityService extends AccessibilityService {
      * Screenshot spot, resting there since the lock screen came up, only switches to its open-menu brightness and swallows a tap on the hidden Screenshot spot (a tap there closes the menu, like a tap outside).
      * The "CARD area" log line is kept: the emulator sections parse it for the geometry.
      */
+    private long fastOpenAtMs = 0;   // CG1d L2: uptime of the last fast-path opening (that path writes its own lock-log line)
     private void showStock(Rect full) {
         ensurePatch();
         final boolean first = !overlayShown;
+        final boolean slowLine = first && patchLockMode && !patchHomeMode && android.os.SystemClock.uptimeMillis() - fastOpenAtMs > 400;   // CG1d L2: this opening came through the node scan = the dialog's own event did NOT bring the patch in time
+        final boolean wasResting = patchResting;
+        final String gateText = slowLine ? patchGateText(android.os.SystemClock.uptimeMillis()) : null;
         if (first) { touchAwayUntilMs = 0; if (!padSignFresh()) pinHiddenUntilMs = 0; }   // BE1: a menu that opens through the scan path also ends every away guard (the PIN pad, if it comes up over the menu, sets its own latch)
         overlayShown = true;
         patchShow(true);   // AZ1: the patch is the time-critical part: it is drawn at the next frame, so nothing slower (a log line, a preferences write) may come before it in this message
+        if (gateText != null) logPatch("menu opened (scan path, " + Math.max(0, android.os.SystemClock.uptimeMillis() - winBurstStartMs) + " ms after the first window event of the burst): patch " + (wasResting ? "RESTING" : "AWAY") + " [" + gateText + "]");   // CG1d L2
         if (first) {
             Log.i(TAG, "CARD area=" + cardAreaGeom(full).toShortString() + " full=" + full.toShortString() + " lockPatch=" + patchLockMode + " stock=true");
             cardShownMs = android.os.SystemClock.uptimeMillis(); recordLatency();
