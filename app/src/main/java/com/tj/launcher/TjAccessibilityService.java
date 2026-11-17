@@ -3143,20 +3143,18 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean fire = reason == StrayCustomGuard.REDIRECT;
         if (!fire && StrayHomeGuard.countInWindow(customGuardHist, now) >= StrayCustomGuard.MAX) customStandDownUntil = now + StrayCustomGuard.COOLDOWN_MS;
         boolean firstLook = customDeferFirstMs == 0;
+        long again = fire ? -1 : StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, lastRouterStartMs, modeAt, guardPausedUntil, failOpen, firstLook ? 0 : now - customDeferFirstMs);
+        boolean gaveUp = !fire && !firstLook && again <= 0;   // the waiting is over and the custom home is still in front: say so once
         // the line IS the answer to "why was the custom home shown": written whether or not anything is done about it; a re-check only when its verdict differs from the last look's (no flood while it waits)
-        if (fire || (firstLook ? now - lastCustomLogMs >= 2000 : reason != lastCustomReason)) {
+        if (fire || gaveUp || (firstLook ? now - lastCustomLogMs >= 2000 : reason != lastCustomReason)) {
             lastCustomLogMs = now;
-            LockLog.add(getApplicationContext(), "STRAYCUSTOM", StrayCustomGuard.logText(StrayCustomGuard.why(reason, now, modeAt), via, locked, screenOn,
+            LockLog.add(getApplicationContext(), "STRAYCUSTOM", StrayCustomGuard.logText(StrayCustomGuard.why(reason, now, modeAt), gaveUp ? via + " (last look)" : via, locked, screenOn,
                     lastUnlockAt > 0 ? now - lastUnlockAt : -1, modeAt > 0 ? now - modeAt : -1, StrayCustomGuard.beforeLabel(lastOtherPkg)));
         }
         lastCustomReason = reason;
-        if (fire) customDeferFirstMs = 0;
-        else {
-            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, lastRouterStartMs, modeAt, guardPausedUntil, failOpen, firstLook ? 0 : now - customDeferFirstMs);
-            handler.removeCallbacks(customRecheck);
-            if (again > 0) { if (firstLook) customDeferFirstMs = now; handler.postDelayed(customRecheck, again); }
-            else customDeferFirstMs = 0;
-        }
+        handler.removeCallbacks(customRecheck);
+        if (again > 0) { if (firstLook) customDeferFirstMs = now; handler.postDelayed(customRecheck, again); }
+        else customDeferFirstMs = 0;
         if (!fire || now - lastCustomActMs < 700) return;   // one appearance can raise two looks
         lastCustomActMs = now;
         customGuardHist[customGuardIdx++ % customGuardHist.length] = now;
