@@ -202,9 +202,12 @@ public final class TjHooks {
         launcherResumed = false;
         if (launcherHidden) setLauncherHidden(false);   // BI1: never leave the home screen invisible (a calibration that was cut off by a pause)
         try { TjAccessibilityService s1 = TjAccessibilityService.get(); if (s1 != null) s1.homeCalInterrupted("the Launcher was paused"); } catch (Throwable ignored) { }
-        try { TjAccessibilityService s = TjAccessibilityService.get(); if (s != null) s.refreshLayersSoon(); } catch (Throwable ignored) { }
+        try { TjAccessibilityService s = TjAccessibilityService.get(); if (s != null) { s.refreshLayersSoon(); s.customHomeGone(); } } catch (Throwable ignored) { }   // CG1 review A: a pending second look at a custom home in a Quickstep session is moot once the Launcher paused
         lastLauncherPauseMs = System.currentTimeMillis();
     }
+
+    /** CG1 review A: is the custom Launcher activity resumed right now? (the stray-home guard looks again only while it is) */
+    public static boolean launcherInFront() { return launcherResumed; }
 
     /** True when Home was pressed while our launcher was the visible screen (it paused a moment ago because the router appeared). */
     public static boolean launcherWasForeground() {
