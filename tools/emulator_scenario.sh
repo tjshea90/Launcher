@@ -5479,6 +5479,97 @@ QM_ACT="$(echo "$QM_RING" | grep -o 'act=[0-9]*' | tail -1)"; QM_VW="$(echo "$QM
 info "QM objects in the stock launcher: ${QM_ACT:-act=?} ${QM_VW:-views=?}"
 setmode custom; rebind; home; sleep 2
 fi # section qm
+if want lg; then # section lg
+beat "before LG"
+ensurehome
+# ---- LG (TASKS CG1d; Tj, 2026-11-17: "Sometimes the wallpaper patch shows up on the lock screen when I pull up the pin pad or when I first go to the lock screen and hold the side key ... run a github emulator with various simulated
+#      presses and gestures on the lockscreen and see when the patch is visible or slow and improve it based on the findings").
+#      A DATA section (not in the gate): the gestures run on the REAL emulator lock screen, no helper (the model patch is enough, only its TIMING is looked at). Every case prints the lock-log lines the service wrote
+#      (PATCH / SCREEN_*): "menu opened (...): patch RESTING|AWAY [gates]" = was the Screenshot entry hidden from the first frame (RESTING) or did it flash (AWAY); "rest ON|off"; "resting patch hidden at the finger's DOWN, N ms after
+#      the touch event"; "screen off: the finger / PIN-pad hold with N ms left is void in the dark". The A/B is inside ONE build: the same cases with the switch patch_dark_settle ON (the CG1d fix) and OFF (the old behaviour).
+#      Every `adb shell input` starts a JVM (0.15-0.3 s on the CI emulator): a gesture whose parts must be close together is ONE adb call, otherwise the old logic's 1.2 s settle is over before the menu opens and the A/B shows nothing.
+#      A case whose menu did not open prints NOT CHECKED (never a silent pass). The PIN is ALWAYS cleared again at the end.
+adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
+lgfeat(){ # lgfeat <patch_dark_settle true|false>
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"power_card\\\" value=\\\"true\\\" /><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch_always\\\" value=\\\"true\\\" /><boolean name=\\\"patch_rest_model\\\" value=\\\"true\\\" /><boolean name=\\\"patch_dark_settle\\\" value=\\\"$1\\\" /><int name=\\\"patch_test_skew\\\" value=\\\"0\\\" /><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
+}
+lglock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 4; }       # the lock screen, screen on, the resting patch settled
+lgunlock(){ adb shell input swipe 300 900 300 300 300; sleep 2; adb shell input text 1234; sleep 1; adb shell input keyevent KEYCODE_ENTER; sleep 4; }   # a plain PIN: the custom home, the PIN stays set
+lgnow(){ adb shell date +%H:%M:%S | tr -d '\r\n'; }
+lgsince(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | awk -v t="$1" '$1 >= t'; }   # the lock log is a 48 KB ring: select by TIME, not by line count
+lgshort(){ sed -E 's/^[0-9]+:[0-9]+:([0-9.]+) /\1 /; s/restable=/r=/; s/settled=/s=/; s/finger=/f=/; s/ pad=/ p=/; s/padUp=/pu=/; s/ shade=[a-z]+//; s/dark=/d=/; s/ up=[0-9]+( rt=[0-9]+)?\]?/]/'; }
+lgcase(){ # lgcase <label> <start time>: the lock-log lines of the case that decide whether the patch was visible, one compact INFO line each
+  local L; L="$(lgsince "$2" | grep -E ' (PATCH|SCREEN_OFF|SCREEN_ON) ' | lgshort)"
+  info "LG $1: $(echo "$L" | grep -c .) line(s)"
+  echo "$L" | head -10 | while IFS= read -r l; do [ -n "$l" ] && info "LG   $(echo "$l" | cut -c1-220)"; done
+}
+lgstate(){ lgsince "$1" | grep -m1 'menu opened (' | grep -o 'patch \(RESTING\|AWAY\)' | head -1 | cut -d' ' -f2; }
+lgvoid(){ lgsince "$1" | grep -c 'void in the dark'; }
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+lgfeat true; adb shell am force-stop "$PKG"; sleep 1
+setmode quickstep; rebind; home
+adb shell am start -n "$PKG/.SetupActivity" --ez test_lock_wallpaper true >/dev/null 2>&1; sleep 6
+setmode custom; rebind; home
+adb shell locksettings set-pin 1234 > "$OUT/lg-setpin.txt" 2>&1
+lglock
+LG_T="$(lgnow)"
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3        # the first menu on the lock screen: the app learns where the card sits
+adb shell input keyevent KEYCODE_BACK; sleep 6
+LG_PRE="$(lgstate "$LG_T")"
+lgcase "prelude (the first menu)" "$LG_T"
+check "LG1: the first menu on the lock screen logged its patch state (the CG1d line 'menu opened (...): patch RESTING|AWAY')" test -n "$LG_PRE"
+for LG_DS in true false; do
+  lgfeat "$LG_DS"; adb shell am force-stop "$PKG"; sleep 1; rebind; lglock
+  adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 5      # the card is learned again after the preferences were rewritten
+  # C1: a SHORT dark (the screen off for ~0.3 s + the JVM starts) and the hold at once: the case the 1.2 s settle gate loses without the CG1d fix
+  T="$(lgnow)"; adb shell 'input keyevent KEYCODE_POWER; sleep 0.3; input keyevent KEYCODE_WAKEUP; input keyevent --longpress KEYCODE_POWER' >/dev/null 2>&1; sleep 3
+  lgcase "C1 dark_settle=$LG_DS: short dark, hold at the wake" "$T"; eval "LG_C1_$LG_DS=\"\$(lgstate \"$T\")\""
+  adb shell input keyevent KEYCODE_BACK; sleep 4
+  # C3: a finger DOWN (the 1.5 s hold begins), the screen goes off inside it, 0.3 s dark, wake, hold: the hold must not run on after the wake
+  T="$(lgnow)"; adb shell 'input tap 300 200; input keyevent KEYCODE_POWER; sleep 0.3; input keyevent KEYCODE_WAKEUP; input keyevent --longpress KEYCODE_POWER' >/dev/null 2>&1; sleep 3
+  lgcase "C3 dark_settle=$LG_DS: finger down, screen off inside the hold, hold at the wake" "$T"; eval "LG_C3_$LG_DS=\"\$(lgstate \"$T\")\""; eval "LG_V3_$LG_DS=\"\$(lgvoid \"$T\")\""
+  adb shell input keyevent KEYCODE_BACK; sleep 4
+  # C0: the FIRST lock after unlocked use (the window is made now), the hold at the wake
+  lgunlock
+  T="$(lgnow)"; adb shell 'input keyevent KEYCODE_POWER; sleep 0.3; input keyevent KEYCODE_WAKEUP; input keyevent --longpress KEYCODE_POWER' >/dev/null 2>&1; sleep 3
+  lgcase "C0 dark_settle=$LG_DS: first lock from the unlocked home, hold at the wake" "$T"; eval "LG_C0_$LG_DS=\"\$(lgstate \"$T\")\""
+  adb shell input keyevent KEYCODE_BACK; sleep 4
+  if [ "$LG_DS" = true ]; then   # C2: the typical case (a 2.5 s dark, the hold 0.5 s after the wake), once
+    T="$(lgnow)"; adb shell input keyevent KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_WAKEUP; sleep 0.5; adb shell input keyevent --longpress KEYCODE_POWER; sleep 3
+    lgcase "C2 dark_settle=$LG_DS: typical, 2.5 s dark, hold 0.5 s after the wake" "$T"; eval "LG_C2_$LG_DS=\"\$(lgstate \"$T\")\""
+    adb shell input keyevent KEYCODE_BACK; sleep 4
+  fi
+done
+info "LG summary (patch state when the menu opened; empty = the menu did not open): C0 on=${LG_C0_true:-none} off=${LG_C0_false:-none} | C1 on=${LG_C1_true:-none} off=${LG_C1_false:-none} | C2 on=${LG_C2_true:-none} | C3 on=${LG_C3_true:-none} off=${LG_C3_false:-none}; 'void in the dark' lines C3 on=${LG_V3_true:-?} off=${LG_V3_false:-?}"
+# the CG1d fix must find the patch RESTING; a menu that did not open is NOT CHECKED (an INFO line above), never a pass
+lgexpect(){ # lgexpect <name> <state or empty>
+  if [ -z "$2" ]; then info "LG: $1: NOT CHECKED (the menu did not open)"; else check "$1" test "$2" = RESTING; fi
+}
+lgexpect "LG2: with the CG1d fix on, a short dark and the hold at the wake finds the patch RESTING (C1)" "${LG_C1_true:-}"
+lgexpect "LG3: ... a finger hold that was running when the screen went off does not keep the patch away after the wake (C3)" "${LG_C3_true:-}"
+lgexpect "LG4: ... the first lock after unlocked use (C0)" "${LG_C0_true:-}"
+lgexpect "LG5: ... the typical case (C2)" "${LG_C2_true:-}"
+if [ -n "${LG_C3_true:-}" ]; then check "LG6: C3 with the fix on logged 'screen off: the finger / PIN-pad hold ... void in the dark'" test "${LG_V3_true:-0}" -ge 1; fi
+# C4 / C5: the PIN pad (data only; the fix is ON from here)
+lgfeat true; adb shell am force-stop "$PKG"; sleep 1; rebind; lglock
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 5
+T="$(lgnow)"
+adb shell 'input swipe 300 900 300 300 150' >/dev/null 2>&1; sleep 1.5
+adb shell input keyevent KEYCODE_BACK; sleep 0.8
+adb shell 'input swipe 300 900 300 300 150' >/dev/null 2>&1; sleep 1.5
+adb shell input keyevent KEYCODE_BACK; sleep 4
+lgcase "C4 PIN pad up, cancel, up again, cancel" "$T"
+T="$(lgnow)"; adb shell 'input swipe 300 900 300 300 2200' >/dev/null 2>&1; LG_TEND="$(lgnow)"; sleep 2
+info "LG C5 slow pull-up: the finger was down from $T to $LG_TEND (a 'rest ON' before $LG_TEND = the patch came back while the finger was still down: H2)"
+lgcase "C5 slow pull-up, finger down 2.2 s" "$T"
+adb shell input keyevent KEYCODE_BACK; sleep 4
+lgunlock
+adb shell locksettings clear --old 1234 > "$OUT/lg-clearpin.txt" 2>&1
+adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
+check "LG: the PIN used for the test was cleared again" bash -c "! grep -qiE 'fail|error|exception' $OUT/lg-clearpin.txt"
+adb logcat -c
+setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
+fi # section lg
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
