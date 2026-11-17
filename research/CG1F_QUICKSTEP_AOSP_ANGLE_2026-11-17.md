@@ -305,4 +305,321 @@ Conclusion: every bounded structure is small (12 icons, 3 thumbnails, <= 6 rows)
 ### 1.7 What a Recents open does in the Go fallback path (VERIFIED, `go/.../OverviewCommandHelper.java` L= 52-177)
 `onOverviewToggle()` -> `mMainThreadExecutor.execute(new RecentsActivityCommand<>())`; the command constructor does `mRecentsModel.getTasks(null)` ("Preload the plan"); `run()` -> `mHelper.switchToRecentsIfVisible(null)` (the Go `FallbackActivityControllerHelper` returns `false`) -> `mListener = mHelper.createActivityInitListener(provider::onActivityReady); mListener.registerAndStartActivity(mOverviewComponentObserver.getOverviewIntent(), provider, mContext, mMainThreadExecutor.getHandler(), provider.getRecentsLaunchDuration());` i.e. `RecentsActivityTracker.register()` + `context.startActivity(intent, options)` where the intent is `ACTION_MAIN` + `CATEGORY_DEFAULT` + component `RecentsActivity` + `FLAG_ACTIVITY_NEW_TASK` (1.2). `mListener.unregister()` runs only in `onWindowAnimationCreated`; the tracker holds only weak references, so a missed unregister leaks nothing. The activity is `singleTask` + `stateNotNeeded` + `excludeFromRecents` (`CD2_AOSP_Q_LAUNCHER3_FACTS` Q1): the second and later opens deliver `onNewIntent` + `onResume` to the SAME instance; a new instance (a new leaked `IconRecentsView`) appears only when the system recreates it.
 
-<!-- CG1F-Q2 -->
+## 2. Q2: what keeps the process from being trimmed (oom_adj, home process, trim levels, ART)
+
+Fetch limit worth knowing: the fetch tool delivers only the first 86,267 characters of a page, so `ActivityManagerService.java`, `ActivityThread.java` (after `scheduleTrimMemory`) and `Activity.java` could NOT be read past their first ~2000 lines. Statements that depend on those bodies are marked INFERRED.
+
+### 2.1 SystemUI binds the Launcher3 service for ever (VERIFIED)
+`frameworks/base/packages/SystemUI/src/com/android/systemui/recents/OverviewProxyService.java`, android10-release, `internalConnectToCurrentUser()`:
+```java
+mBound = mContext.bindServiceAsUser(launcherServiceIntent,
+mOverviewServiceConnection,
+Context.BIND_AUTO_CREATE | Context.BIND_FOREGROUND_SERVICE_WHILE_AWAKE,
+UserHandle.of(mDeviceProvisionedController.getCurrentUser()));
+...
+private static final long BACKOFF_MILLIS = 1000;
+private static final long MAX_BACKOFF_MILLIS = 10 * 60 * 1000;
+private static final long DEFERRED_CALLBACK_MILLIS = 5000;
+```
+(the intent is `ACTION_QUICKSTEP` with the package of `config_recentsComponentName`, i.e. `com.android.launcher3`, whatever the default home is; failures retry with exponential backoff up to 10 minutes; summary of the rest from the fetch tool, quote refused). So on the friend's tablet AND on Tj's tablet the stock process hosts a service bound by the persistent SystemUI. This is NOT the structural difference; the difference is what runs inside that process (section 1).
+
+### 2.2 What the binding does to the process class (VERIFIED code; the arithmetic is INFERRED)
+`frameworks/base/services/core/java/com/android/server/am/OomAdjuster.java`, android10-release, `computeOomAdjLocked`, service-connection loop (about 1/3 into the file; listing numbers are restarted at 072 by the fetch):
+```java
+    ProcessRecord client = cr.binding.client;
+    computeOomAdjLocked(client, cachedAdj, TOP_APP, doingAll, now, cycleReEval);
+    ...
+    int clientAdj = client.getCurRawAdj();
+    int clientProcState = client.getCurRawProcState();
+    if (clientProcState >= PROCESS_STATE_CACHED_ACTIVITY) {
+        // If the other app is cached for any reason, for purposes here
+        // we are going to consider it empty. The specific cached state
+        // doesn't propagate except under certain conditions.
+        clientProcState = PROCESS_STATE_CACHED_EMPTY;
+    }
+    ...
+    if (adj > clientAdj) {
+        // If this process has recently shown UI, and
+        // the process that is binding to it is less
+        // important than being visible, then we don't
+        // care about the binding as much as we care
+        // about letting this process get into the LRU
+        // list to be killed and restarted if needed for
+        // memory.
+        if (app.hasShownUi && !wpc.isHomeProcess()
+                && clientAdj > ProcessList.PERCEPTIBLE_APP_ADJ) {
+            if (adj >= ProcessList.CACHED_APP_MIN_ADJ) {
+                adjType = "cch-bound-ui-services";
+            }
+        } else {
+            int newAdj;
+            if ((cr.flags&(Context.BIND_ABOVE_CLIENT
+                    |Context.BIND_IMPORTANT)) != 0) {
+                ...
+            } else if ((cr.flags & Context.BIND_NOT_PERCEPTIBLE) != 0
+                    && clientAdj < ProcessList.PERCEPTIBLE_APP_ADJ
+                    && adj > ProcessList.PERCEPTIBLE_LOW_APP_ADJ) {
+                newAdj = ProcessList.PERCEPTIBLE_LOW_APP_ADJ;
+            } else if ((cr.flags&Context.BIND_NOT_VISIBLE) != 0
+                    && clientAdj < ProcessList.PERCEPTIBLE_APP_ADJ
+                    && adj > ProcessList.PERCEPTIBLE_APP_ADJ) {
+                newAdj = ProcessList.PERCEPTIBLE_APP_ADJ;
+            } else if (clientAdj >= ProcessList.PERCEPTIBLE_APP_ADJ) {
+                newAdj = clientAdj;
+            } else {
+                if (adj > ProcessList.VISIBLE_APP_ADJ) {
+                    // TODO: Is this too limiting for apps bound from TOP?
+                    newAdj = Math.max(clientAdj, ProcessList.VISIBLE_APP_ADJ);
+                } else {
+                    newAdj = adj;
+                }
+            }
+            if (!client.cached) {
+                app.cached = false;
+            }
+            if (adj > newAdj) {
+                adj = newAdj;
+                app.setCurRawAdj(adj);
+                adjType = "service";
+            }
+        }
+    }
+    ...
+    if ((cr.flags & (Context.BIND_NOT_FOREGROUND
+            | Context.BIND_IMPORTANT_BACKGROUND)) == 0) {
+        ...
+        if (clientProcState < PROCESS_STATE_TOP) {
+            // Special handling for above-top states (persistent
+            // processes). These should not bring the current process
+            // into the top state, since they are not on top. Instead
+            // give them the best bound state after that.
+            final int bestState = cr.hasFlag(Context.BIND_INCLUDE_CAPABILITIES)
+                    ? PROCESS_STATE_FOREGROUND_SERVICE_LOCATION
+                    : PROCESS_STATE_BOUND_FOREGROUND_SERVICE;
+            if ((cr.flags & Context.BIND_FOREGROUND_SERVICE) != 0) {
+                clientProcState = bestState;
+            } else if (mService.mWakefulness
+                    == PowerManagerInternal.WAKEFULNESS_AWAKE
+                    && (cr.flags & Context.BIND_FOREGROUND_SERVICE_WHILE_AWAKE)
+                    != 0) {
+                clientProcState = bestState;
+            } else {
+                clientProcState =
+                    PROCESS_STATE_IMPORTANT_FOREGROUND;
+            }
+        } else if ...
+```
+`ProcessList.java` constants (android10-release, verbatim): `PERSISTENT_PROC_ADJ = -800`, `SYSTEM_ADJ = -900`, `PERSISTENT_SERVICE_ADJ = -700`, `FOREGROUND_APP_ADJ = 0`, `VISIBLE_APP_ADJ = 100`, `PERCEPTIBLE_APP_ADJ = 200`, `PERCEPTIBLE_LOW_APP_ADJ = 250`, `BACKUP_APP_ADJ = 300`, `HEAVY_WEIGHT_APP_ADJ = 400`, `SERVICE_ADJ = 500`, `HOME_APP_ADJ = 600`, `PREVIOUS_APP_ADJ = 700`, `SERVICE_B_ADJ = 800`, `CACHED_APP_MIN_ADJ = 900`, `CACHED_APP_MAX_ADJ = 999`, `TRIM_CRITICAL_THRESHOLD = 3`, `TRIM_LOW_THRESHOLD = 5`; the lmkd ladder `mOomAdj = { FOREGROUND_APP_ADJ, VISIBLE_APP_ADJ, PERCEPTIBLE_APP_ADJ, PERCEPTIBLE_LOW_APP_ADJ, CACHED_APP_MIN_ADJ, CACHED_APP_LMK_FIRST_ADJ }` with `mOomMinFreeLow = {12288, 18432, 24576, 36864, 43008, 49152}` KB and `mOomMinFreeHigh = {73728, 92160, 110592, 129024, 147456, 184320}` KB.
+Reading (INFERRED, arithmetic on the quoted code): the client is SystemUI (persistent, `clientAdj` far below `PERCEPTIBLE_APP_ADJ`, never cached); the flags `BIND_AUTO_CREATE | BIND_FOREGROUND_SERVICE_WHILE_AWAKE` match none of the special cases, so the process takes `newAdj = Math.max(clientAdj, VISIBLE_APP_ADJ)` = **100** and `app.cached = false`; the process state is `PROCESS_STATE_BOUND_FOREGROUND_SERVICE` while the device is awake and `PROCESS_STATE_IMPORTANT_FOREGROUND` while it is not. **The stock Launcher3 process is therefore never a cached process, never enters the LRU cached region, and lmkd only reaches it after every cached, perceptible and service process is gone (the `VISIBLE_APP_ADJ = 100` rung needs free memory below `mOomMinFree[1]`, 18 MB with the low table).** This holds on the friend's tablet as well; it explains why nothing ever shrinks the process from the outside, not why it grows.
+
+### 2.3 Home / previous process handling (VERIFIED) and the two HOME-type launchers
+`OomAdjuster.computeOomAdjLocked` (same file, earlier in the method):
+```java
+        if (wpc.isHomeProcess()) {
+            if (adj > ProcessList.HOME_APP_ADJ) {
+                // This process is hosting what we currently consider to be the
+                // home app, so we don't want to let it go into the background.
+                adj = ProcessList.HOME_APP_ADJ;
+                schedGroup = ProcessList.SCHED_GROUP_BACKGROUND;
+                app.cached = false;
+                app.adjType = "home";
+                ...
+            }
+            if (procState > ActivityManager.PROCESS_STATE_HOME) {
+                procState = ActivityManager.PROCESS_STATE_HOME;
+                app.adjType = "home";
+                ...
+            }
+        }
+
+        if (wpc.isPreviousProcess() && app.hasActivities()) {
+            if (adj > ProcessList.PREVIOUS_APP_ADJ) {
+                // This was the previous process that showed UI to the user.
+                // We want to try to keep it around more aggressively, to give
+                // a good experience around switching between two apps.
+                adj = ProcessList.PREVIOUS_APP_ADJ;
+                schedGroup = ProcessList.SCHED_GROUP_BACKGROUND;
+                app.cached = false;
+                app.adjType = "previous";
+                ...
+            }
+            if (procState > PROCESS_STATE_LAST_ACTIVITY) {
+                procState = PROCESS_STATE_LAST_ACTIVITY;
+                app.adjType = "previous";
+                ...
+            }
+        }
+```
+`frameworks/base/services/core/java/com/android/server/wm/WindowProcessController.java`: `public boolean isHomeProcess() { synchronized (mAtm.mGlobalLockWithoutBoost) { return this == mAtm.mHomeProcess; } }` (same shape for `isPreviousProcess()` with `mPreviousProcess`).
+`frameworks/base/services/core/java/com/android/server/wm/ActivityStackSupervisor.java`, `realStartActivityLocked`, and `updateHomeProcess`:
+```java
+        if (r.isActivityTypeHome()) {
+            // Home process is the root process of the task.
+            updateHomeProcess(task.mActivities.get(0).app);
+        }
+    ...
+    void updateHomeProcess(WindowProcessController app) {
+        if (app != null && mService.mHomeProcess != app) {
+            if (!mHandler.hasMessages(REPORT_HOME_CHANGED_MSG)) {
+                mHandler.sendEmptyMessage(REPORT_HOME_CHANGED_MSG);
+            }
+            mService.mHomeProcess = app;
+        }
+    }
+```
+and `cleanUpRemovedTaskLocked`: `if (proc == mService.mHomeProcess) { // Don't kill the home process along with tasks from the same package. continue;`.
+Our own start of the stock home (`app/src/main/java/com/tj/launcher/RouterActivity.java` L108-120, `startStock()`): `new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setPackage(stock.getPackageName()).addFlags(FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)` (no component on purpose: "An implicit HOME intent restricted to the stock package (no component) is a HOME-type task"). INFERRED (the `ActivityRecord` constructor rule was not fetched; the 2-category / no-component / NEW_TASK conditions are from AOSP memory): that task is `ACTIVITY_TYPE_HOME`, so every time a stock `Launcher` instance is really started in its process (`realStartActivityLocked`), `mHomeProcess` points at `com.android.launcher3`; every time our `RouterActivity` instance is started it points back at `com.tj.launcher`. Only ONE of the two processes is "the home process" at any moment, but (2.2) the stock process is held non-cached by the binding either way, so the flipping does not change its class; it does change whether the (never-fetched) `hasShownUi && !isHomeProcess()` exception applies, which needs `clientAdj > PERCEPTIBLE_APP_ADJ` and is false here.
+
+### 2.4 Trim levels the stock process does and does not receive (partly VERIFIED, mostly INFERRED)
+VERIFIED fragments: `OomAdjuster.updateOomAdjLocked` counts `if (app.getCurProcState() >= ActivityManager.PROCESS_STATE_HOME && !app.killedByAm) { numTrimming++; }` and calls `mService.updateLowMemStateLocked(numCached, numEmpty, numTrimming)` (so in Android 10 the trim ladder lives in AMS, not in OomAdjuster); `ProcessList.TRIM_CRITICAL_THRESHOLD = 3`, `TRIM_LOW_THRESHOLD = 5`; `ActivityThread.ApplicationThread.scheduleTrimMemory` posts `handleTrimMemory` on the Choreographer commit callback ("to minimize jank-risk"). The body of `updateLowMemStateLocked` was NOT readable (AMS page truncated; one search hit, an e/OS Android 10 diff, shows `if (app.trimMemoryLevel < ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN && app.thread != null)` before `scheduleTrimMemory`).
+INFERRED from AOSP memory of that method: (a) processes with `curProcState >= PROCESS_STATE_HOME` receive the LRU ladder TRIM_MEMORY_BACKGROUND / MODERATE / COMPLETE; (b) every other process receives `TRIM_MEMORY_UI_HIDDEN` once, only `if ((app.curProcState >= PROCESS_STATE_IMPORTANT_BACKGROUND || app.systemNoUi) && app.pendingUiClean)`, and afterwards only `fgTrimLevel` = `TRIM_MEMORY_RUNNING_MODERATE / LOW / CRITICAL` chosen from `numCached + numEmpty` against the thresholds 3 and 5. With 2.2 (state 6 or 7, adj 100) the stock process is in class (b) but never satisfies its UI_HIDDEN condition, so **AMS never sends it UI_HIDDEN, BACKGROUND, MODERATE or COMPLETE; only RUNNING_*,** and RUNNING_CRITICAL only when the system has at most 3 cached+empty processes (plausible on a 2 GB Go tablet; not measured).
+What each level does in the stock process (VERIFIED code):
+- `RecentsModel.onTrimMemory` (1.5): UI_HIDDEN -> high-res flag off (already off on a low-RAM device); `== RUNNING_CRITICAL` -> clears the 3 thumbnails and the 12 icons; nothing for BACKGROUND / MODERATE / COMPLETE (equality tests).
+- `WindowManagerGlobal.trimMemory` (`core/java/android/view/WindowManagerGlobal.java`, reached from `ActivityThread.handleTrimMemory`, INFERRED):
+```java
+    public void trimMemory(int level) {
+        if (ThreadedRenderer.isAvailable()) {
+            if (shouldDestroyEglContext(level)) {
+                // Destroy all hardware surfaces and resources associated to
+                // known windows
+                synchronized (mLock) {
+                    for (int i = mRoots.size() - 1; i >= 0; --i) {
+                        mRoots.get(i).destroyHardwareResources();
+                    }
+                }
+                // Force a full memory flush
+                level = ComponentCallbacks2.TRIM_MEMORY_COMPLETE;
+            }
+
+            ThreadedRenderer.trimMemory(level);
+            if (ThreadedRenderer.sTrimForeground) {
+                doTrimForeground();
+            }
+        }
+    }
+
+    public static boolean shouldDestroyEglContext(int trimLevel) {
+        // On low-end gfx devices we trim when memory is moderate;
+        // on high-end devices we do this when low.
+        if (trimLevel >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE) {
+            return true;
+        }
+        if (trimLevel >= ComponentCallbacks2.TRIM_MEMORY_MODERATE
+                && !ActivityManager.isHighEndGfx()) {
+            return true;
+        }
+        return false;
+    }
+```
+- HWUI `libs/hwui/renderthread/CacheManager.cpp` (android10-release, L= 53-149): `#define SURFACE_SIZE_MULTIPLIER (12.0f * 4.0f)`, `#define BACKGROUND_RETENTION_PERCENTAGE (0.5f)`; `mMaxResourceBytes(mMaxSurfaceArea * SURFACE_SIZE_MULTIPLIER)` (600 x 1024 = 614,400 px -> about 29.5 MB Skia GPU cache cap; background cap half of it); `trimMemory(mode)`: `Complete` -> `freeGpuResources()` + `SkGraphics::PurgeAllCaches()`; `UiHidden` -> `purgeUnlockedResources(true)` and a limits toggle (the cache keeps up to the cap); `trimStaleResources()` -> `purgeResourcesNotUsedInMs(std::chrono::seconds(30))`. `CanvasContext::trimMemory`: `if (level >= TRIM_MEMORY_COMPLETE) { ... thread.destroyRenderingContext(); }` else `UiHidden` mode from `TRIM_MEMORY_UI_HIDDEN` (20) up; RUNNING_CRITICAL (15) is below both thresholds: **nothing**.
+=> In a process that AMS never sends UI_HIDDEN / MODERATE / COMPLETE to, the EGL context and the Skia GL cache (cap about 30 MB on this screen) live as long as the process; nothing releases the GL driver's per-context memory except the process dying (INFERRED).
+
+### 2.5 The activity-level "workaround" trims nothing of HWUI (INFERRED)
+`BaseRecentsActivity.onStop` and `Launcher.onStop` call `onTrimMemory(TRIM_MEMORY_UI_HIDDEN)` on the ACTIVITY (1.4, `CD2_AOSP_Q_LAUNCHER3_FACTS` Q5). `WindowManagerGlobal.trimMemory` is reached from `ActivityThread.handleTrimMemory` (not from the activity), so this self-trim reaches only `Launcher.onTrimMemory` (`SQLiteDatabase.releaseMemory()`) and `UiFactory.onTrimMemory` -> `RecentsModel.onTrimMemory`. The per-window path that does run on every stop is `ViewRootImpl.setWindowStopped(true)` (VERIFIED, `core/java/android/view/ViewRootImpl.java`):
+```java
+    void setWindowStopped(boolean stopped) {
+        checkThread();
+        if (mStopped != stopped) {
+            mStopped = stopped;
+            final ThreadedRenderer renderer = mAttachInfo.mThreadedRenderer;
+            if (renderer != null) {
+                if (DEBUG_DRAW) Log.d(mTag, "WindowStopped on " + getTitle() + " set to " + mStopped);
+                renderer.setStopped(mStopped);
+            }
+            if (!mStopped) {
+                mNewSurfaceNeeded = true;
+                scheduleTraversals();
+            } else {
+                if (renderer != null) {
+                    renderer.destroyHardwareResources(mView);
+                }
+            }
+            for (int i = 0; i < mWindowStoppedCallbacks.size(); i++) {
+                mWindowStoppedCallbacks.get(i).windowStopped(stopped);
+            }
+            if (mStopped) {
+                if (mSurfaceHolder != null && mSurface.isValid()) {
+                    notifySurfaceDestroyed();
+                }
+                destroySurface();
+            }
+        }
+    }
+    @AnyThread
+    void destroyHardwareResources() {
+        final ThreadedRenderer renderer = mAttachInfo.mThreadedRenderer;
+        if (renderer != null) {
+            // This is called by WindowManagerGlobal which may or may not be on the right thread
+            if (Looper.myLooper() != mAttachInfo.mHandler.getLooper()) {
+                mAttachInfo.mHandler.postAtFrontOfQueue(this::destroyHardwareResources);
+                return;
+            }
+            renderer.destroyHardwareResources(mView);
+            renderer.destroy();
+        }
+    }
+```
+So a stopped window drops its Surface (its BufferQueue buffers go with it) and its display lists; `renderer.destroy()` (the `CanvasContext`) only happens for the destroy-EGL-context trim level above or when the window is removed.
+
+### 2.6 ART: why a never-"background" process only grows (VERIFIED ART code, mapping INFERRED)
+`art/runtime/gc/heap.cc`, android10-release (verbatim, trimmed):
+```cpp
+void Heap::UpdateProcessState(ProcessState old_process_state, ProcessState new_process_state) {
+  if (old_process_state != new_process_state) {
+    const bool jank_perceptible = new_process_state == kProcessStateJankPerceptible;
+    ...
+    if (jank_perceptible) {
+      // Transition back to foreground right away to prevent jank.
+      RequestCollectorTransition(foreground_collector_type_, 0);
+    } else {
+      // Don't delay for debug builds since we may want to stress test the GC.
+      // If background_collector_type_ is kCollectorTypeHomogeneousSpaceCompact then we have
+      // special handling which does a homogenous space compaction once but then doesn't transition
+      // the collector. Similarly, we invoke a full compaction for kCollectorTypeCC but don't
+      // transition the collector.
+      RequestCollectorTransition(background_collector_type_,
+                                 kStressCollectorTransition
+                                 ? 0
+                                 : kCollectorTransitionWait);
+    }
+  }
+}
+void Heap::DoPendingCollectorTransition() {
+  CollectorType desired_collector_type = desired_collector_type_;
+  // Launch homogeneous space compaction if it is desired.
+  if (desired_collector_type == kCollectorTypeHomogeneousSpaceCompact) {
+    if (!CareAboutPauseTimes()) {
+      PerformHomogeneousSpaceCompact();
+    } else {
+      VLOG(gc) << "Homogeneous compaction ignored due to jank perceptible process state";
+    }
+  } else if (desired_collector_type == kCollectorTypeCCBackground) {
+    DCHECK(kUseReadBarrier);
+    if (!CareAboutPauseTimes()) {
+      // Invoke CC full compaction.
+      CollectGarbageInternal(collector::kGcTypeFull,
+                             kGcCauseCollectorTransition,
+                             /*clear_soft_references=*/false);
+    } else {
+      VLOG(gc) << "CC background compaction ignored due to jank perceptible process state";
+    }
+  } else {
+    TransitionCollector(desired_collector_type);
+  }
+}
+void Heap::Trim(Thread* self) {
+  Runtime* const runtime = Runtime::Current();
+  if (!CareAboutPauseTimes()) {
+    // Deflate the monitors, this can cause a pause but shouldn't matter since we don't care
+    // about pauses.
+    ...
+  }
+  TrimIndirectReferenceTables(self);
+  TrimSpaces(self);
+  // Trim arenas that may have been used by JIT or verifier.
+  runtime->GetArenaPool()->TrimMaps();
+}
+```
+INFERRED (not fetched, `ActivityThread.updateProcessState`): the framework tells ART "jank perceptible" for every `processState <= PROCESS_STATE_IMPORTANT_FOREGROUND`. 2.2 puts the stock process at BOUND_FOREGROUND_SERVICE / IMPORTANT_FOREGROUND, both inside that range, so `CareAboutPauseTimes()` stays true for the whole life of the process: the background compaction GC (low-RAM mode relies on it), the homogeneous compaction, monitor deflation and (from AOSP memory of `TrimSpaces`) the native-heap purge (`mallopt(M_PURGE)`, guarded by `!CareAboutPauseTimes()`) never run. Java heap and jemalloc native heap fragmentation can therefore only be reclaimed by ordinary GCs. This amplifies any retention bug (1.5), it does not create one.
+
+<!-- CG1F-Q3 -->
