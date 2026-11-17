@@ -1824,7 +1824,14 @@ adopen(){ adb shell monkey -p com.android.contacts -c android.intent.category.LA
 adb shell locksettings set-pin 1234 > "$OUT/ad-setpin.txt" 2>&1
 # ---------------- round 1: the switch has no stored value (default ON)
 adfeat none; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home; sleep 2
+AD_R0="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -c 'STRAYCUSTOM.*redirecting')"
 lockpad; pad d d 1 2 3 4 e; sleep 7                           # custom -> handshake -> a Quickstep session begins (the Quickstep home)
+# AD5a (CG1 review A, 2026-11-17): the guard looks AGAIN at a custom home it left alone (just after an unlock, a young mode change, the stock home still starting). The normal first gesture must never be undone
+#   by that second look: the Quickstep home is in front, and not one STRAYCUSTOM "redirecting" line was written for it.
+resumed > "$OUT/ad-g1.txt"
+AD_R1="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep -c 'STRAYCUSTOM.*redirecting')"
+info "AD5a: first gesture (custom -> Quickstep): front $(cut -c1-90 "$OUT/ad-g1.txt") | STRAYCUSTOM redirects before/after $AD_R0/$AD_R1 | $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep 'STRAYCUSTOM' | tail -3 | sed -E 's/^[0-9:. -]* *STRAYCUSTOM +//' | cut -c1-120 | tr '\n' '|')"
+check "AD5a: the first gesture (custom -> Quickstep) is not undone by the stray-home guard (something is resumed, it is not the custom home, no STRAYCUSTOM redirect was logged)" bash -c "grep -q 'ResumedActivity' '$OUT/ad-g1.txt' && ! grep -q 'com.tj.launcher/com.android.launcher3.Launcher' '$OUT/ad-g1.txt' && [ '$AD_R1' = '$AD_R0' ]"
 adopen; sleep 2
 adb logcat -c
 lockpad; pad d d 1 2 3 4 e; sleep 7                           # locked from Quickstep with an app open, the same gesture again
@@ -1837,10 +1844,10 @@ check "AD5: the helper says it brought that app back" grep -q 'ROUTER resume com
 # (guard_stray_custom is switched on in this section's preferences: the shipped build has it ON, a debug build OFF). The INFO line says whether the custom home showed at all (a STRAYCUSTOM line) and what the guard did.
 adb shell input keyevent KEYCODE_BACK; sleep 5
 resumed > "$OUT/ad-r1-back.txt"; shot 152-ad-back-after-resume
-AD_SC="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep 'STRAYCUSTOM' | tail -2 | sed -E 's/^[0-9:. -]* *STRAYCUSTOM +custom home in front while the mode is quickstep //' | cut -c1-210 | tr '\n' '|')"
+AD_SC="$(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | grep 'STRAYCUSTOM' | tail -2 | sed -E 's/^[0-9:. -]* *STRAYCUSTOM +//' | cut -c1-210 | tr '\n' '|')"
 AD_LC="$(adb logcat -d -s TjA11y:I 2>/dev/null | grep -E 'CG1a|STRAYCUSTOM' | tail -3 | sed -E 's/^.* I TjA11y *: //' | cut -c1-110 | tr '\n' '|')"
 info "AD5b: STRAYCUSTOM ${AD_SC:-NO STRAYCUSTOM LINE (the guard never ran)} || logcat ${AD_LC:-none} || front $(cut -c1-90 "$OUT/ad-r1-back.txt") mode $(getmode)"
-check "AD5b: after Back the custom home is not what shows in the Quickstep session" test -z "$(grep -m1 'com.tj.launcher/com.android.launcher3.Launcher' "$OUT/ad-r1-back.txt")"
+check "AD5b: after Back something IS resumed (the observation is real, not an empty file) and it is not the custom home" bash -c "grep -q 'ResumedActivity' '$OUT/ad-r1-back.txt' && ! grep -q 'com.tj.launcher/com.android.launcher3.Launcher' '$OUT/ad-r1-back.txt'"
 check "AD5b: the stored mode is still quickstep (the guard changed no mode)" test "$(getmode)" = quickstep
 # ---------------- AD7a: lock again from this Quickstep session: the cover must still work on the lock screen
 getmode > "$OUT/ad-mode-at-lock.txt"
