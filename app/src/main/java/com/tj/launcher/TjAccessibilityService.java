@@ -37,14 +37,14 @@ public class TjAccessibilityService extends AccessibilityService {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private View overlay;
-    private final Runnable recheck = new Runnable() { @Override public void run() { evaluate(); } };
+    private final Runnable recheck = new Runnable() { @Override public void run() { evaluate(EV_RECHECK); } };
 
     private boolean pending = false;
     private final Rect shownAt = new Rect();
     private final Runnable debounced = new Runnable() {
         @Override public void run() {
             pending = false;
-            try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
+            try { evaluate(EV_DEBOUNCED); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
         }
     };
 
@@ -113,7 +113,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (!EventNoise.needsPowerMenuScan(event == null ? 0 : event.getEventType(), overlayShown || now - menuUpAtMs < 2500, now < fullScanUntilMs, EventNoise.systemPackage(event == null ? null : event.getPackageName()), lastBouncer)) { evSkipped++; return; }   // CA1 U1: lastBouncer = a PIN key starts no scan
         if (now - lastEvalMs >= 40) {
             lastEvalMs = now;
-            try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
+            try { evaluate(EV_EVENT); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
         }
         if (!pending) { pending = true; handler.postDelayed(debounced, 80); }
     }
@@ -199,7 +199,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private final Runnable quietWork = new Runnable() { @Override public void run() {
         quietUntilMs = 0;
         try { scheduleLockUpdate(); scheduleLayerRefresh(); schedulePencil(null); } catch (Throwable t) { Log.e(TAG, "deferred event work failed", t); }
-        try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
+        try { evaluate(EV_QUIET); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
     } };
 
     /** AZ1: true while the heavy per-event work of the current window burst waits ({@link #deferWork}); the first window event of a burst on a resting lock-screen patch starts the wait ({@link #FAST_WAIT_MS}). */
@@ -312,7 +312,7 @@ public class TjAccessibilityService extends AccessibilityService {
         super.onServiceConnected();
         instance = this;
         try { screenDarkNow = !((android.os.PowerManager) getSystemService(POWER_SERVICE)).isInteractive(); } catch (Throwable ignored) { }   // review of CB2 LOW5: a new instance connected in the dark knows it is dark (was false until the next SCREEN_OFF)
-        connectedAtMs = android.os.SystemClock.elapsedRealtime(); evSeen = 0; evNoise = 0; scanCount = 0; scanTotalMs = 0; scanMaxMs = 0; evSkipped = 0; penFull = 0; penFullMs = 0; penFullMax = 0; penFast = 0;   // AD8: the report's load numbers count from this connect
+        connectedAtMs = android.os.SystemClock.elapsedRealtime(); evSeen = 0; evNoise = 0; scanCount = 0; scanTotalMs = 0; scanMaxMs = 0; evSkipped = 0; penFull = 0; penFullMs = 0; penFullMax = 0; java.util.Arrays.fill(scanWhyN, 0L); java.util.Arrays.fill(scanWhyMs, 0L); padPos = 0; padPosMs = 0; padNegMs = 0; penFullPad = 0; penFullShade = 0; penFullLock = 0; penFullOther = 0; penFast = 0;   // AD8: the report's load numbers count from this connect
         try { warmUp(); } catch (Throwable t) { Log.e(TAG, "warm failed", t); }
         try { startLockNumber(); } catch (Throwable t) { Log.e(TAG, "lock number failed", t); }
         try { updateKeyFilter(); } catch (Throwable t) { Log.e(TAG, "key filter failed", t); }
@@ -1790,7 +1790,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private String now() { return TimeFmt.hms(System.currentTimeMillis()); }   // CA1 M9: one formatter per thread
 
     private void profileNote(String s) {
-        Features.setString(this, ProfileSession.PREARM_REPORT_KEY, now() + "  " + s);
+        Features.setStringAsync(this, ProfileSession.PREARM_REPORT_KEY, now() + "  " + s);   // CG1b E4: a report line, was a commit() + fsync of the whole preferences file on the main thread (three per lock cycle, one at the handshake accept)
         Log.i(TAG, "PROFILE " + s);
     }
 
@@ -2554,7 +2554,7 @@ public class TjAccessibilityService extends AccessibilityService {
         penSearched = true;
         long t0 = android.os.SystemClock.uptimeMillis(); lastPenFullMs = t0;
         try { return findPencilFull(); }
-        finally { long d = android.os.SystemClock.uptimeMillis() - t0; penFull++; penFullMs += d; if (d > penFullMax) penFullMax = d; }
+        finally { long d = android.os.SystemClock.uptimeMillis() - t0; penFull++; penFullMs += d; if (d > penFullMax) penFullMax = d; if (lastBouncer) penFullPad++; else if (lockShadeOpen) penFullShade++; else if (keyguardLockedFast()) penFullLock++; else penFullOther++; }   // CG1b E5: in which state the whole-tree pencil searches run (pad up / panel open / lock screen with the panel closed / unlocked)
     }
 
     /** The whole-tree search: bounds of the visible Edit pencil (framework id android:id/edit, description "Edit order of settings."), or null. Remembers the node it found (see {@link #penNode}). */
@@ -2992,10 +2992,11 @@ public class TjAccessibilityService extends AccessibilityService {
     /** True when the PIN / password / pattern pad of the lock screen is visible (read-only look at SystemUI's windows). */
     private boolean bouncerShown() {
         long t0 = android.os.SystemClock.uptimeMillis();
-        try { return bouncerShownScan(); }
-        finally { long d = android.os.SystemClock.uptimeMillis() - t0; padChecks++; padChecksMs += d; if (d > padChecksMax) padChecksMax = d; }   // BY1a B3: counted for perfLine
+        boolean up = false;
+        try { up = bouncerShownScan(); return up; }
+        finally { long d = android.os.SystemClock.uptimeMillis() - t0; padChecks++; padChecksMs += d; if (d > padChecksMax) padChecksMax = d; if (up) { padPos++; padPosMs += d; } else { padNegMs += d; } }   // BY1a B3: counted for perfLine; CG1b E5: split by answer (a negative one walks every signal = the expensive and common one)
     }
-    private long padChecks = 0, padChecksMs = 0, padChecksMax = 0;
+    private long padChecks = 0, padChecksMs = 0, padChecksMax = 0, padPos = 0, padPosMs = 0, padNegMs = 0;
 
     private boolean bouncerShownScan() {
         List<AccessibilityWindowInfo> windows = getWindows();
@@ -3650,23 +3651,37 @@ public class TjAccessibilityService extends AccessibilityService {
     // ---------------------------------------------------------------- AD8: what the helper costs on THIS tablet (plain counters on the main thread; read by the report)
     private long connectedAtMs = 0, evSeen = 0, evNoise = 0, scanCount = 0, scanTotalMs = 0, scanMaxMs = 0;
     /** AN1: shade events that started NO scan; the pencil: full tree searches (count / total ms / slowest) and one-node refreshes; when a power menu was last seen up (uptime ms). */
+    private long penFullPad = 0, penFullShade = 0, penFullLock = 0, penFullOther = 0;   // CG1b E5
     private long evSkipped = 0, penFull = 0, penFullMs = 0, penFullMax = 0, penFast = 0, menuUpAtMs = -100_000, lastPenFullMs = -100_000;
+
+    private String scansByTrigger() {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < EV_NAMES.length; i++) if (scanWhyN[i] > 0) b.append(b.length() == 0 ? "" : ", ").append(EV_NAMES[i]).append(' ').append(scanWhyN[i]).append(" (avg ").append(scanWhyMs[i] / scanWhyN[i]).append(" ms)");
+        return b.length() == 0 ? "none yet" : b.toString();
+    }
 
     /** One line for the tablet report: how long the helper has been connected, how many events it got, how many were dropped at the door, and how long a power-menu scan takes here. A torn read is only a slightly stale number. */
     String perfLine() {
         long up = connectedAtMs == 0 ? 0 : (android.os.SystemClock.elapsedRealtime() - connectedAtMs) / 60_000;
         long n = scanCount;
         String pen = "; pencil cover: " + penFull + " tree searches" + (penFull == 0 ? "" : " (avg " + (penFullMs / penFull) + " ms, max " + penFullMax + " ms)") + ", " + penFast + " one-node refreshes"   // AN1
-                + "; PIN-pad checks: " + padChecks + (padChecks == 0 ? "" : " (avg " + (padChecksMs / padChecks) + " ms, max " + padChecksMax + " ms)");   // BY1a B3
+                + "; PIN-pad checks: " + padChecks + (padChecks == 0 ? "" : " (avg " + (padChecksMs / padChecks) + " ms, max " + padChecksMax + " ms; " + padPos + " found the pad" + (padPos == 0 ? "" : " avg " + (padPosMs / padPos) + " ms") + ", " + (padChecks - padPos) + " did not" + (padChecks - padPos == 0 ? "" : " avg " + (padNegMs / (padChecks - padPos)) + " ms") + ")")   // BY1a B3; CG1b E5
+                + (penFull == 0 ? "" : "; pencil tree searches by state (CG1b E5): pad up " + penFullPad + ", panel open " + penFullShade + ", lock screen " + penFullLock + ", unlocked " + penFullOther)
+                + "; scans by trigger (CG1b E5): " + scansByTrigger();
         String fade = "; patch fade (AZ1): " + (patchFadeOn() ? "on" : "off") + ", the last menu opening was noticed " + (fadeLagLast < 0 ? "(no opening yet)" : fadeLagLast + " ms after the stock fade began (" + (fadeLagLast >= PatchFade.OPEN_MS ? "no fade needed" : "the patch followed it") + ")") + "; last fade seen from the patch (BJ1): " + (fadeSummary.isEmpty() ? "(none yet)" : fadeSummary) + "; FIRST fade since this process started (BK1a): " + (fadeFirstSummary.isEmpty() ? "(none yet)" : fadeFirstSummary);
         return "connected " + up + " min, " + evSeen + " events (" + evNoise + " dropped as noise, " + evSkipped + " shade redraws without a scan), " + n + " power-menu scans" + (n == 0 ? "" : ", avg " + (scanTotalMs / n) + " ms, max " + scanMaxMs + " ms") + pen + fade;
     }
 
-    private void evaluate() {
+    /** CG1b E5: the callers of {@link #evaluate(int)}, for the report: which trigger starts how many power-menu scans and how long they take (the tablet's 984 scans in 121 min had no breakdown). */
+    private static final int EV_OTHER = 0, EV_EVENT = 1, EV_DEBOUNCED = 2, EV_RECHECK = 3, EV_QUIET = 4, EV_CLOSE = 5;
+    private static final String[] EV_NAMES = { "other", "window event", "debounced", "recheck", "after the stock fade", "menu close" };
+    private final long[] scanWhyN = new long[EV_NAMES.length], scanWhyMs = new long[EV_NAMES.length];
+    private void evaluate() { evaluate(EV_OTHER); }
+    private void evaluate(int why) {
         long t0 = android.os.SystemClock.uptimeMillis();
         try { evaluateScan(); }
         finally {
-            long d = android.os.SystemClock.uptimeMillis() - t0; scanCount++; scanTotalMs += d; if (d > scanMaxMs) scanMaxMs = d;
+            long d = android.os.SystemClock.uptimeMillis() - t0; scanCount++; scanTotalMs += d; if (d > scanMaxMs) scanMaxMs = d; scanWhyN[why]++; scanWhyMs[why] += d;
             if (d >= 15 && debuggable()) Log.i(TAG, "PATCH scan took " + d + " ms t=" + (t0 + d));   // BJ1 diagnostic (debug builds only, EVERY caller: the immediate scan, the deferred one, the recheck): how long the main thread was blocked, which delays the dialog's own event and the patch's redraw (review 2026-11-08: the deferred scan must be timed too)
         }
     }
@@ -3710,7 +3725,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     if (getPackageName().contentEquals(root.getPackageName() == null ? "" : root.getPackageName())) { root.recycle(); continue; }
                     try {
                         List<AccessibilityNodeInfo> off = root.findAccessibilityNodeInfosByText("Power off");
-                        List<AccessibilityNodeInfo> sc = root.findAccessibilityNodeInfosByText("Screenshot");
+                        List<AccessibilityNodeInfo> sc = (off != null && !off.isEmpty()) ? root.findAccessibilityNodeInfosByText("Screenshot") : null;   // CG1b E3: the menu needs BOTH entries, so a window without "Power off" (nearly every scan) pays one text walk, not two
                         if (off != null && !off.isEmpty() && sc != null && !sc.isEmpty()) {
                             menuOpen = true; menuUpAtMs = android.os.SystemClock.uptimeMillis();
                             // the card = the smallest ancestor of "Power off" that also contains the Screenshot entry
@@ -4418,7 +4433,7 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(closeFinishRun);
         if (!closing) return;
         Log.i(TAG, "PATCH close end (" + why + ") t=" + android.os.SystemClock.uptimeMillis());
-        try { evaluate(); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }   // `closing` is still set here, so no frame is drawn at the open brightness in between: a menu that is gone ends it (patchShow(false))
+        try { evaluate(EV_CLOSE); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }   // `closing` is still set here, so no frame is drawn at the open brightness in between: a menu that is gone ends it (patchShow(false))
         if (closing) { closing = false; if (patchView != null) patchView.invalidate(); }   // the scan says the menu is still open (the sign was wrong): the open look returns
     }
 
