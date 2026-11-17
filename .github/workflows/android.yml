@@ -124,6 +124,16 @@ jobs:
           bash tools/verify-apk.sh phoneguide/build/outputs/apk/release/phoneguide-release.apk
           bash tools/verify-apk.sh eleven/build/outputs/apk/release/eleven-release.apk
 
+      - name: Baseline profile inside the release APK (TASKS CG1c; a warning, never a blocker)
+        if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release == 'true'
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          if unzip -l "$APK" | grep -qE 'assets/dexopt/baseline\.prof$'; then
+            echo "Baseline profile in the APK: $(unzip -l "$APK" | grep -E 'assets/dexopt/baseline\.prof' | awk '{print $4 " " $1 " bytes"}' | tr '\n' ';') APK $(stat -c %s "$APK") bytes" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::no assets/dexopt/baseline.prof in the release APK: Android will not get a profile to compile from (CG1c)"
+          fi
+
       - name: Build the preview APK (no keystore yet)
         if: steps.mode.outputs.full == 'true' && steps.mode.outputs.release != 'true'
         run: ./gradlew :app:assembleDebug --console=plain
