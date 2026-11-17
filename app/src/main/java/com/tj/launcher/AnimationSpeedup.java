@@ -156,6 +156,13 @@ public final class AnimationSpeedup {
         syncNow(c, lockUp ? "screen on (lock screen)" : "screen on", Boolean.TRUE, Boolean.valueOf(lockUp), false);
     }
 
+    /**
+     * CG1a review A: a read-only look at "the lock cycle is still open" (the screen went off and the unlock choice has not been applied yet), for the stray custom home guard: a plain PIN flips the stored mode
+     * to custom a moment AFTER the Launcher resumed, and until then the mode still reads Quickstep. Unlike {@link #unlockUndecided} it never touches the safety-valve clock (only {@link #syncNow} does, so a
+     * handler that never answers is still released by the window heartbeat); the guard's own look is bounded by its retry budget as well.
+     */
+    static boolean lockCycleOpen() { return lockCycle; }
+
     /** The unlock choice was applied (plain PIN = custom, gesture = Quickstep): from here the stored mode is the truth. */
     public static void onUnlockDecided(Context c) {
         lockCycle = false; unlockSeenAt = 0;
