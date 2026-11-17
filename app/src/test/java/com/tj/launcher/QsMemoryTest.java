@@ -205,4 +205,45 @@ public class QsMemoryTest {
         assertFalse(QsMemory.parseProcesses("ProcessRecord{9f8 2515:com.android.launcher3/u0a10}\n nothing here", 1).found);
         assertFalse(QsMemory.parseProcesses(null, 1).found);
     }
+
+    // ---- CG1f (v0.9.12): the helper route and the failure backoff ----
+
+    @Test public void aLookThatGaveNothingWaitsTwoHoursBeforeTheNextTry() {
+        long now = 50_000_000L;
+        String none = "no reading: the shell helper is not running ...";
+        assertTrue("a good or unknown last look: the normal gap decides", QsMemory.retryDue("ok", now - 1, now, false));
+        assertTrue(QsMemory.retryDue("", now - 1, now, false));
+        assertTrue(QsMemory.retryDue(null, now - 1, now, false));
+        assertFalse("a failed look 10 min ago is not repeated on the next screen-on", QsMemory.retryDue(none, now - 10 * 60_000L, now, false));
+        assertFalse(QsMemory.retryDue(none, now - QsMemory.FAIL_GAP_MS + 1, now, false));
+        assertTrue(QsMemory.retryDue(none, now - QsMemory.FAIL_GAP_MS, now, false));
+        assertTrue("never tried: try", QsMemory.retryDue(none, 0, now, false));
+        assertTrue("the clock went backwards: try", QsMemory.retryDue(none, now + 5, now, false));
+        assertFalse("opening Launcher control twice in a row is still one try", QsMemory.retryDue(none, now - QsMemory.FORCED_GAP_MS + 1, now, true));
+        assertTrue("... but Launcher control may retry after the short gap", QsMemory.retryDue(none, now - QsMemory.FORCED_GAP_MS, now, true));
+    }
+
+    @Test public void theStatusSaysWhatHappenedAndWhatWouldHelp() {
+        assertEquals("ok via the shell helper", QsMemory.statusText(true, "the shell helper", true, true, "", -1));
+        assertEquals("ok", QsMemory.statusText(true, "meminfo", false, true, "", -1));
+        assertEquals("ok via activity processes (PSS only)", QsMemory.statusText(true, "activity processes (PSS only)", false, true, "", 900));
+        String noHelper = QsMemory.statusText(false, "meminfo", false, true, "Can't find service: meminfo", 32);
+        assertTrue(noHelper, noHelper.startsWith("no reading: the shell helper is not running"));
+        assertTrue(noHelper, noHelper.contains("Can't find service: meminfo") && noHelper.contains("32 chars") && noHelper.contains("start the helper"));
+        String noGrant = QsMemory.statusText(false, "meminfo", false, false, "", -1);
+        assertTrue(noGrant, noGrant.contains("no DUMP grant") && noGrant.startsWith("no reading"));
+        String empty = QsMemory.statusText(false, "the shell helper", true, true, "No process found", -1);
+        assertTrue(empty, empty.startsWith("no reading: the shell helper answered") && empty.contains("No process found"));
+        assertTrue("every failure text starts with 'no reading' (retryDue keys on it)", noHelper.startsWith("no reading") && noGrant.startsWith("no reading") && empty.startsWith("no reading"));
+    }
+
+    @Test public void theHelperCommandIsAConstantAndAcceptsNothingElse() {
+        assertTrue(ShellProtocol.isStockMem("STOCKMEM"));
+        assertTrue(ShellProtocol.isStockMem(" STOCKMEM \n"));
+        assertFalse(ShellProtocol.isStockMem("STOCKMEM com.android.systemui"));
+        assertFalse(ShellProtocol.isStockMem("stockmem"));
+        assertFalse(ShellProtocol.isStockMem("STOCKMEM; id"));
+        assertFalse(ShellProtocol.isStockMem(null));
+        assertEquals("com.android.launcher3", ShellProtocol.STOCK_PKG);
+    }
 }
