@@ -5349,6 +5349,90 @@ ensurehome; setfeat; setmode custom; rebind; home
 check "CD3u: the stock launcher was running at every measurement" bash -c "! grep -E 'INFO +CD3 [mu][0-9]+: pid=none' $OUT/results.txt"
 info "CD3u end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section cd3u
+if want ro; then # section ro
+beat "before RO"
+# ---- RO (TASKS CG1e; Tj, 2026-11-17: "Is it possible to change the icons in the notification panel using accessibility or any other method without root? ... if you can change the pencil icon to a simple
+#      block of color which matches the notification panel color, it will stay hidden without the need for the overlay currently in place. If this is possible, build it.")
+# RESEARCH section: three premise checks (the experiment really ran), everything else is INFO.
+#   Q1: does Android 10 accept a USER-installed runtime resource overlay (installed by the shell user: not preinstalled, not platform-signed) for the targets `android` (the pencil is the FRAMEWORK drawable
+#       ic_mode_edit, AOSP qs_footer_impl.xml) and `com.android.systemui`?
+#   Q2: if it does, does the pencil vanish from the quick-settings panel (pixels at the pencil's own bounds before / after), and does SystemUI survive?
+# Our accessibility service is switched OFF here so its own pencil cover cannot be in the pictures; the end of the section binds it again.
+ensurehome
+adb shell settings put secure enabled_accessibility_services ""; sleep 1
+b6unlock >/dev/null 2>&1; home
+ROW="$OUT/ro"; mkdir -p "$ROW/res_fw/drawable" "$ROW/res_ui/values"
+ro_pencil(){ # ro_pencil <tag>: open the quick-settings panel, dump the UI, shoot, close; prints "L T R B" of the node android:id/edit (the pencil) or nothing
+  adb shell cmd statusbar expand-settings; sleep 3
+  adb shell uiautomator dump /sdcard/ro.xml >/dev/null 2>&1
+  adb pull /sdcard/ro.xml "$ROW/ui-$1.xml" >/dev/null 2>&1
+  shot "ro-$1"
+  adb shell cmd statusbar collapse; sleep 2
+  grep -o 'resource-id="android:id/edit"[^>]*bounds="\[[0-9]*,[0-9]*\]\[[0-9]*,[0-9]*\]"' "$ROW/ui-$1.xml" 2>/dev/null | head -1 | grep -o 'bounds="[^"]*"' | grep -o '[0-9]*' | tr '\n' ' '
+}
+ro_stat(){ # ro_stat <png> <L> <T> <R> <B>: "stddev mean" (x1000, grey) of the crop: a drawn glyph has a clearly larger stddev than the flat panel behind it
+  convert "$1" -crop "$(( $4 - $2 ))x$(( $5 - $3 ))+$2+$3" +repage -colorspace Gray -format '%[fx:int(standard_deviation*1000)] %[fx:int(mean*1000)]' info:  2>/dev/null
+}
+ro_diff(){ # ro_diff <png a> <png b> <L> <T> <R> <B>: number of pixels (fuzz 6 %) that differ inside the box
+  convert "$1" -crop "$(( $5 - $3 ))x$(( $6 - $4 ))+$3+$4" +repage "$ROW/ca.png" 2>/dev/null; convert "$2" -crop "$(( $5 - $3 ))x$(( $6 - $4 ))+$3+$4" +repage "$ROW/cb.png" 2>/dev/null
+  compare -metric AE -fuzz 6% "$ROW/ca.png" "$ROW/cb.png" null: 2>&1 | head -1
+}
+ro_state(){ # ro_state <tag> <overlay package> <target>: everything Android says about one overlay, as INFO lines
+  adb shell dumpsys overlay > "$ROW/dumpsys-overlay-$1.txt" 2>&1
+  info "RO $1: cmd overlay list: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | grep -B3 -A1 "$2" | tr '\n' '|' | cut -c1-300)"
+  info "RO $1: dumpsys overlay: $(grep -A16 "$2" "$ROW/dumpsys-overlay-$1.txt" | grep -iE 'state|enabled|idmap|target|static|priority|version' | tr -s ' ' | tr '\n' '|' | cut -c1-330)"
+  command adb logcat -d -b all 2>/dev/null | grep -iE 'idmap|OverlayManager|overlay' | grep -iE "$2|fail|error|reject|not overlayable|signature|preinstalled" | tail -8 > "$ROW/logcat-overlay-$1.txt"
+  info "RO $1: logcat overlay/idmap lines: $(sed 's/^[0-9-]* //' "$ROW/logcat-overlay-$1.txt" | cut -c1-120 | tr '\n' '|' | cut -c1-330)"
+  adb shell dumpsys package "$3" 2>/dev/null | grep -iE 'overlay|resourceDirs|resourcePath' | head -4 > "$ROW/pkg-overlay-$1.txt"
+  info "RO $1: dumpsys package $3 overlay lines: $(tr -s ' ' < "$ROW/pkg-overlay-$1.txt" | cut -c1-110 | tr '\n' '|' | cut -c1-300)"
+}
+RO_BOX_RAW="$(ro_pencil base)"; set -- $RO_BOX_RAW; RO_L="${1:-}"; RO_T="${2:-}"; RO_R="${3:-}"; RO_BT="${4:-}"
+info "RO base: pencil node bounds [${RO_BOX_RAW:-not found in the uiautomator dump}]; crop stddev,mean x1000: $([ -n "$RO_BT" ] && ro_stat "$OUT/ro-base.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT")"
+info "RO base: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r'), SDK $(adb shell getprop ro.build.version.sdk | tr -d '\r'), build $(adb shell getprop ro.build.type | tr -d '\r')"
+# ---- Q1/Q2 for target `android`: ic_mode_edit replaced by a fully transparent shape
+cat > "$ROW/res_fw/drawable/ic_mode_edit.xml" <<'ROEOF'
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="#00000000" />
+    <size android:width="24dp" android:height="24dp" />
+</shape>
+ROEOF
+bash tools/make_overlay_apk.sh "$ROW/fw.apk" tj.ro.fw android "$ROW/res_fw" 1 > "$ROW/build-fw.txt" 2>&1
+check "RO0: the framework overlay APK builds (premise of the experiment)" test -s "$ROW/fw.apk"
+adb install -r "$ROW/fw.apk" > "$ROW/install-fw.txt" 2>&1
+check "RO0: the shell user can install an overlay APK (premise of the experiment)" grep -q Success "$ROW/install-fw.txt"
+info "RO fw: install: $(tr -d '\r' < "$ROW/install-fw.txt" | tr '\n' ' ' | cut -c1-160); build: $(tail -1 "$ROW/build-fw.txt" | cut -c1-160)"
+ro_state fw0 tj.ro.fw android
+RO_EN="$(adb shell cmd overlay enable --user 0 tj.ro.fw 2>&1 | tr -d '\r' | tr '\n' ' ' | cut -c1-200)"
+info "RO fw: cmd overlay enable -> '${RO_EN:-<no output>}'"
+sleep 8
+ro_state fw1 tj.ro.fw android
+RO_AFTER_RAW="$(ro_pencil afterfw)"
+info "RO fw: after enable: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r'); pencil node bounds [${RO_AFTER_RAW:-not found}]; crop stddev,mean x1000: $([ -n "$RO_BT" ] && ro_stat "$OUT/ro-afterfw.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT"); pixels changed vs base inside the pencil box: $([ -n "$RO_BT" ] && ro_diff "$OUT/ro-base.png" "$OUT/ro-afterfw.png" "$RO_L" "$RO_T" "$RO_R" "$RO_BT")"
+adb shell cmd overlay disable --user 0 tj.ro.fw >/dev/null 2>&1; sleep 2; adb uninstall tj.ro.fw >/dev/null 2>&1; sleep 3
+# ---- Q1 for target com.android.systemui: some of SystemUI's own colours (names read from its APK), set to magenta
+RO_SUI="$(adb shell pm path com.android.systemui | tr -d '\r' | head -1 | sed 's/^package://')"
+adb pull "$RO_SUI" "$ROW/SystemUI.apk" >/dev/null 2>&1
+RO_SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+RO_AAPT2="$(ls -d "$RO_SDK"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1)"
+"$RO_AAPT2" dump resources "$ROW/SystemUI.apk" > "$ROW/sysui-resources.txt" 2>&1
+RO_COLORS="$(grep -E 'resource 0x[0-9a-f]+ .*color/' "$ROW/sysui-resources.txt" | sed -E 's#.*color/##' | awk '{print $1}' | grep -E 'qs_|status_bar|keyguard|icon' | head -6)"
+info "RO sysui: SystemUI apk $RO_SUI ($(stat -c %s "$ROW/SystemUI.apk" 2>/dev/null) bytes), colour names chosen: $(echo $RO_COLORS | cut -c1-200)"
+if [ -n "$RO_COLORS" ]; then
+  { echo '<resources>'; for RO_C in $RO_COLORS; do echo "  <color name=\"$RO_C\">#FFFF00FF</color>"; done; echo '</resources>'; } > "$ROW/res_ui/values/colors.xml"
+  bash tools/make_overlay_apk.sh "$ROW/ui.apk" tj.ro.ui com.android.systemui "$ROW/res_ui" 1 > "$ROW/build-ui.txt" 2>&1
+  adb install -r "$ROW/ui.apk" > "$ROW/install-ui.txt" 2>&1
+  info "RO ui: install: $(tr -d '\r' < "$ROW/install-ui.txt" | tr '\n' ' ' | cut -c1-160); build: $(tail -1 "$ROW/build-ui.txt" | cut -c1-160)"
+  ro_state ui0 tj.ro.ui com.android.systemui
+  RO_EN2="$(adb shell cmd overlay enable --user 0 tj.ro.ui 2>&1 | tr -d '\r' | tr '\n' ' ' | cut -c1-200)"
+  info "RO ui: cmd overlay enable -> '${RO_EN2:-<no output>}'"
+  sleep 8
+  ro_state ui1 tj.ro.ui com.android.systemui
+  info "RO ui: after enable: SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
+  adb shell cmd overlay disable --user 0 tj.ro.ui >/dev/null 2>&1; sleep 2; adb uninstall tj.ro.ui >/dev/null 2>&1
+fi
+info "RO end: overlays left: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | grep -c 'tj.ro') (0 = cleaned up); SystemUI pid $(adb shell pidof com.android.systemui | tr -d '\r')"
+ensurehome; setmode custom; rebind; home
+fi # section ro
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
