@@ -1,13 +1,13 @@
-# CHECKPOINT 1415 — read me first, then TASKS.md
+# CHECKPOINT 1416 — read me first, then TASKS.md
 
-**Written:** 2026-11-17T23:27:37Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `45127751` (this checkpoint is the commit after it)
+**Written:** 2026-11-17T23:29:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `1c135985` (this checkpoint is the commit after it)
 
 ## Just done
-VERDICT head 725270ed: ad #626 id 44197894744 job 134444040237 = 14 PASS 0 FAIL 6 INFO (AD5a/AD5b pass; AD5b line verdict first: redirecting to the stock home | via onResume, lock=n, screen=on, unlock=7509ms, mode=31s, before=com.android.contacts; AD5a first gesture: front stock home, redirects 0/0, LOCKED left alone); lg #627 id 44197899465 job 134444057735 = 12 PASS 0 FAIL 66 INFO, same matrix as #625
+gate dispatched 23:27-23:28Z on head 1c135985 (product code = 725270ed): #628 id 44199573646 [n6,o,x,ad,ae,pa,uf,cs2,hp,cu,last]; #629 id 44199579604 [base,y2,n,ac,bs,se,fp,rt,gear,fl]; #630 id 44199585576 [x1,e1,b6,t,v,bl,ps,an,nq,rb,ss]; #631 id 44199590509 [pt]. Section names confirmed from each log's 'INFO sections:' line at read time
 
 ## Do this next
-dispatch the 4 gate runs now (ref ccr-16772798-h13w43; sections n6,o,x,ad,ae,pa,uf,cs2,hp,cu,last | base,y2,n,ac,bs,se,fp,rt,gear,fl | x1,e1,b6,t,v,bl,ps,an,nq,rb,ss | pt), then ckpt their run ids; heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
+read #631 pt at ~23:46Z and #628-#630 at ~00:08Z (list_workflow_jobs <id> latest perPage 1 -> get_job_logs tail ~60-112; 404 = not ended); ckpt the raw verdicts BEFORE analysing; triage solo on head and tag v0.9.11; no product-code edits while the gate runs. Then ship.sh. heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ (next 00:03Z)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch the 4 gate runs now (ref ccr-16772798-h13w43; sections n6,o,x,ad,ae,pa,
 
 ## Last ten checkpoints
 ```
+  1c135985 ckpt 1415: VERDICT head 725270ed: ad #626 id 44197894744 job 134444040237 = 14 PASS 0 F
   45127751 ckpt 1414: context ~334K: ad #626 id 44197894744 + lg #627 id 44197899465 (head 725270e
   35ae1d99 ckpt 1413: HANDOFF 0z + answer draft updated (lg #625 result, guard re-look text); ad #
   c8fc7fe2 ckpt 1412: dispatched 23:16Z on head 725270ed: ad #626 id 44197894744 (likely), lg #627
@@ -25,5 +26,4 @@ dispatch the 4 gate runs now (ref ccr-16772798-h13w43; sections n6,o,x,ad,ae,pa,
   606d1157 ckpt 1408: full suite 1116 tests 0 fail + lint green (full1.log GRADLE_EXIT=0); lg reru
   f1a1fbfe ckpt 1407: reviews B+C fixed: gate text clocks first, RESTING label = really visible, p
   3c3c09d9 ckpt 1406: HANDOFF 0z (live state of v0.9.12) written; B still silent (tip 69453515), b
-  9381967d ckpt 1405: lg: LG1 premise moved to the first learned-menu hold + control check LG7 (OF
 ```
