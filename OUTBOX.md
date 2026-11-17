@@ -1953,3 +1953,7 @@
 >
 > One thing I changed on purpose: the handoff manifest was saved without the optional fields that overwrite the "Session Learnings" block in the Launcher's `CLAUDE.md`. That keeps the earlier project notes intact. The decisions and failed approaches are still in the manifest.
 <!-- sha:3bbd776ed024 -->
+
+## 2026-11-17T21:21:01Z
+> The wait ends at 21:27. I'll end this turn and read the result when the timer fires.
+<!-- sha:301efd5fff27 -->
