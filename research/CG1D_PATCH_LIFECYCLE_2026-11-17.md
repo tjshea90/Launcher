@@ -118,15 +118,15 @@ the patch is visible or slow and improve it based on the findings."
 
 ### 4.0 The states and their arcs [V]
 ```
-NONE ──addPatch──> NEW-HIDDEN (alpha 0, restable, settling 1220)
-NEW-HIDDEN ──settleRun / restRecheck / patchShow, books clear──> RESTING (alpha 1, invisible because it equals the lock screen)
-RESTING ──finger DOWN (onOutsideTouch 4486) / pad sign (4463) / panel open (4441)──> AWAY (alpha 0, still restable)
-AWAY ──touchBack (+1520) / padBack (+2600) / padCancelCheck (+720 after pad left) / settleRun / shade close +400──> RESTING   (hard 0 to 1, 4596)
-RESTING or AWAY ──dialog window event, fastDecline() == null (fastMenuOpen 127)──> OPEN (alpha 1, open look follows the stock fade)
-RESTING or AWAY ──dialog event, fastDecline() != null──> slow path: evaluateScan finds the menu text (100-560 ms) ──showStock──> OPEN
-OPEN ──click / CLOSE_SYSTEM_DIALOGS / own BACK (startClose 4338)──> CLOSING ──dialog window removed (dialogGone 4360) / timer──> RESTING (or AWAY if a hold is on)
-OPEN ──pad sign over the menu (pinPadCameUp, overlayShown)──> OPEN but away (pinHide, untouchable) ──menu gone──> RESTING/AWAY
-any ──refreshLayers sees keyguard unlocked / rect, rotation, flavour change / wallpaper change / service teardown──> removePatch ──> NONE (then maybe NEW-HIDDEN again)
+NONE --addPatch--> NEW-HIDDEN (alpha 0, restable, settling 1220)
+NEW-HIDDEN --settleRun / restRecheck / patchShow, books clear--> RESTING (alpha 1, invisible because it equals the lock screen)
+RESTING --finger DOWN (onOutsideTouch 4486) / pad sign (4463) / panel open (4441)--> AWAY (alpha 0, still restable)
+AWAY --touchBack (+1520) / padBack (+2600) / padCancelCheck (+720 after pad left) / settleRun / shade close +400--> RESTING   (hard 0 to 1, 4596)
+RESTING or AWAY --dialog window event, fastDecline() == null (fastMenuOpen 127)--> OPEN (alpha 1, open look follows the stock fade)
+RESTING or AWAY --dialog event, fastDecline() != null--> slow path: evaluateScan finds the menu text (100-560 ms) --showStock--> OPEN
+OPEN --click / CLOSE_SYSTEM_DIALOGS / own BACK (startClose 4338)--> CLOSING --dialog window removed (dialogGone 4360) / timer--> RESTING (or AWAY if a hold is on)
+OPEN --pad sign over the menu (pinPadCameUp, overlayShown)--> OPEN but away (pinHide, untouchable) --menu gone--> RESTING / AWAY
+any --refreshLayers sees keyguard unlocked / rect, rotation, flavour change / wallpaper change / service teardown--> removePatch --> NONE (then maybe NEW-HIDDEN again)
 ```
 
 ### 4.1 Where the window is created (all at alpha 0 since BT1a) [V unless marked]
