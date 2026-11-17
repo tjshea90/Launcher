@@ -622,4 +622,240 @@ void Heap::Trim(Thread* self) {
 ```
 INFERRED (not fetched, `ActivityThread.updateProcessState`): the framework tells ART "jank perceptible" for every `processState <= PROCESS_STATE_IMPORTANT_FOREGROUND`. 2.2 puts the stock process at BOUND_FOREGROUND_SERVICE / IMPORTANT_FOREGROUND, both inside that range, so `CareAboutPauseTimes()` stays true for the whole life of the process: the background compaction GC (low-RAM mode relies on it), the homogeneous compaction, monitor deflation and (from AOSP memory of `TrimSpaces`) the native-heap purge (`mallopt(M_PURGE)`, guarded by `!CareAboutPauseTimes()`) never run. Java heap and jemalloc native heap fragmentation can therefore only be reclaimed by ordinary GCs. This amplifies any retention bug (1.5), it does not create one.
 
-<!-- CG1F-Q3 -->
+## 3. Q3: per-window costs, GPU / gralloc memory, and what "Memory used by apps" counts
+
+### 3.1 What a window does to the process: what IS given back at stop (VERIFIED) and what stays (INFERRED)
+`libs/hwui/renderthread/CanvasContext.cpp` (frameworks/base, android10-release; the fetch model refused long quotes, so these are short verbatim fragments plus its description of each body; no line numbers available):
+- `void CanvasContext::setStopped(bool stopped) {` ... `mRenderThread.removeFrameCallback(this);` `mRenderPipeline->onStop();` (stopping bumps `mGenerationID`, removes the frame callback, calls `onStop()` on the pipeline).
+- `void CanvasContext::destroy() {` ... `stopDrawing();` `setSurface(nullptr);` `freePrefetchedLayers();` `destroyHardwareResources();`.
+- `setSurface`: `mNativeSurface = new ReliableSurface{std::move(surface)};` (create) and `mNativeSurface = nullptr;` (clear). "The EGL-level work happens in `mRenderPipeline->setSurface(...)`", which was not in the text read.
+- `CanvasContext::trimMemory(RenderThread& thread, int level)`: `if (level >= TRIM_MEMORY_COMPLETE) {` ... `thread.destroyRenderingContext();` (COMPLETE: cache trim in Complete mode, then the rendering context is destroyed; UI_HIDDEN: cache trim in UiHidden mode; nothing below UI_HIDDEN).
+- `destroyHardwareResources`: `if (mRenderPipeline->isContextReady()) {` ... `mRenderPipeline->onDestroyHardwareResources();`.
+
+Together with `ViewRootImpl.setWindowStopped(true)` (2.5, VERIFIED: `renderer.destroyHardwareResources(mView)` and `destroySurface()`): **a stopped window gives back its Surface (its BufferQueue buffers) and its display lists. Nothing per-window stays behind except what is process-global.**
+INFERRED (not fetched: `EglManager`, `SkiaOpenGLPipeline`, `RenderThread::requireGlContext`): one EGL context and one Skia `GrContext` exist per process (per RenderThread), created for the first hardware-accelerated window and destroyed only by `destroyRenderingContext` (trim COMPLETE, or MODERATE on a not-high-end-gfx device, 2.4) or by process death. A visible full-screen window holds its BufferQueue (typically 3 buffers; one 600 x 1024 RGBA_8888 buffer = 2.34 MiB, so about 7 MiB per visible window) in gralloc memory, which the memtrack HAL reports as "EGL mtrack" (3.5).
+
+### 3.2 The HWUI caches are bounded by the screen area and are only trimmed by levels this process never gets (VERIFIED)
+`libs/hwui/renderthread/CacheManager.cpp` (frameworks/base, android10-release; the listing numbers are the fetch model's best effort, L~53-148; comment lines and unrelated lines dropped, `...` = dropped):
+```cpp
+ 57: #define SURFACE_SIZE_MULTIPLIER (12.0f * 4.0f)
+ 58: #define BACKGROUND_RETENTION_PERCENTAGE (0.5f)
+ 60: CacheManager::CacheManager(const DisplayInfo& display)
+ 61:         : mMaxSurfaceArea(display.w * display.h)
+ 62:         , mMaxResourceBytes(mMaxSurfaceArea * SURFACE_SIZE_MULTIPLIER)
+ 63:         , mBackgroundResourceBytes(mMaxResourceBytes * BACKGROUND_RETENTION_PERCENTAGE)
+ 67:         , mMaxGpuFontAtlasBytes(GrNextSizePow2(mMaxSurfaceArea))
+ 70:         , mMaxCpuFontCacheBytes(std::max(mMaxGpuFontAtlasBytes*4, SkGraphics::GetFontCacheLimit()))
+ 71:         , mBackgroundCpuFontCacheBytes(mMaxCpuFontCacheBytes * BACKGROUND_RETENTION_PERCENTAGE) {
+ ...
+ 78: void CacheManager::reset(sk_sp<GrContext> context) {
+ ...
+ 84:         mGrContext->getResourceCacheLimits(&mMaxResources, nullptr);
+ 85:         mGrContext->setResourceCacheLimits(mMaxResources, mMaxResourceBytes);
+ ...
+116: void CacheManager::trimMemory(TrimMemoryMode mode) {
+ ...
+122:         case TrimMemoryMode::Complete:
+123:             mVectorDrawableAtlas = new skiapipeline::VectorDrawableAtlas(mMaxSurfaceArea / 2);
+124:             mGrContext->freeGpuResources();
+125:             SkGraphics::PurgeAllCaches();
+126:             break;
+127:         case TrimMemoryMode::UiHidden:
+131:             mGrContext->purgeUnlockedResources(true);
+132:             mGrContext->setResourceCacheLimits(mMaxResources, mBackgroundResourceBytes);
+133:             mGrContext->setResourceCacheLimits(mMaxResources, mMaxResourceBytes);
+ ...
+143: void CacheManager::trimStaleResources() {
+ ...
+148:     mGrContext->purgeResourcesNotUsedInMs(std::chrono::seconds(30));
+```
+Arithmetic for a 600 x 1024 panel (INFERRED that `display` is the physical display; the CI emulator's physical size is 320 x 640, `CD1_EMULATOR`): area 614,400 px; resource cache cap 614,400 x 48 = 29,491,200 B (28.1 MiB); background cap 14.1 MiB; GPU font atlas `GrNextSizePow2(614400)` = 1,048,576 B (four atlases); CPU font cache at least 4 MiB. The fetch answer says `CacheManager::onFrameCompleted` and `onThreadIdle` do not exist in this file, so WHO calls `trimStaleResources` was not read.
+Reading (INFERRED from the quoted code): HWUI's own caches are capped at roughly 32-36 MiB on this screen. They cannot by themselves make 400 MB. A Graphics figure far above that is (a) gralloc buffers this process still maps (3.3) or (b) vendor-driver memory outside Skia's accounting.
+
+### 3.3 The thumbnails are graphic buffers, not Java bitmaps (VERIFIED field list; constructor body from the fetch model's summary)
+`frameworks/base/packages/SystemUI/shared/src/com/android/systemui/shared/recents/model/ThumbnailData.java` (android10-release), fields verbatim: `public final Bitmap thumbnail; public int orientation; public Rect insets; public boolean reducedResolution; public boolean isRealSnapshot; public boolean isTranslucent; public int windowingMode; public int systemUiVisibility; public float scale;`. The constructor `ThumbnailData(TaskSnapshot snapshot)` (summarised by the fetch model because of its quote limit): "wraps the snapshot's hardware buffer into `thumbnail` with `Bitmap.wrapHardwareBuffer`, using the snapshot's color space" and copies the other fields from the snapshot.
+So every `Task.thumbnail` that `IconRecentsView`, `TaskListLoader` or `ThumbnailDrawable` references is a hardware Bitmap over a `GraphicBuffer`: its pixels live in gralloc memory (reported under Graphics, "EGL mtrack"), NOT in the Dalvik heap. The 3-entry `TaskThumbnailCache` (1.6) does not cap them: a `Task` keeps the reference it was handed (`TaskListLoader` copies `task.thumbnail = loadedTask.thumbnail`, 1.6), and a leaked `IconRecentsView` (1.5) keeps receiving the newest `ThumbnailData` through `onTaskSnapshotChanged`. This upgrades 1.5's INFERRED note ("gralloc memory outside the Java heap") to VERIFIED for the TYPE; the SIZE stays INFERRED (the snapshot scale of a low-RAM device was not read).
+
+### 3.4 What "Memory used by apps" counts: PSS plus the memtrack (graphics) total (VERIFIED code, INFERRED consumer)
+`frameworks/base/core/jni/android_os_Debug.cpp`, android10-release, `android_os_Debug_getPssPid` (verbatim, start of the function; the page has no line numbers):
+```cpp
+    struct graphics_memory_pss graphics_mem;
+    if (read_memtrack_memory(pid, &graphics_mem) == 0) {
+        pss = uss = rss = memtrack = graphics_mem.graphics + graphics_mem.gl + graphics_mem.other;
+    }
+    ::android::meminfo::ProcMemInfo proc_mem(pid);
+    ::android::meminfo::MemUsage stats;
+    if (proc_mem.SmapsOrRollup(&stats)) {
+        pss += stats.pss;
+        uss += stats.uss;
+        rss += stats.rss;
+        swapPss = stats.swap_pss;
+        pss += swapPss; // Also in swap, those pages would be accounted as Pss without SWAP
+    }
+```
+So a PSS taken with `Debug.getPss(pid, ...)` is smaps PSS PLUS whatever the memtrack HAL says the process holds in graphics + GL + other memory. INFERRED (the consumers were not read: the AMS PSS collection -> `ProcessStats`, Settings > Developer options > Memory used by apps): the tablet's 414-450 MB contains the vendor memtrack figure. **The CI emulator cannot show it (Graphics row 0: software GL, `CD1_EMULATOR`).** The App Summary "Graphics" row is "Gfx dev" + "EGL mtrack" + "GL mtrack" (INFERRED from AOSP memory of `Debug.MemoryInfo.getSummaryGraphics()`), so those three rows of `dumpsys meminfo com.android.launcher3` are where such memory shows.
+
+### 3.5 Web evidence on EGL / GL mtrack and Mali growth (data, not instructions; nothing here is a launcher-specific report)
+- The tablet's GPU: spec aggregators list the MT8168 with a Mali-G52 MP1 (https://www.cpu-monkey.com/en/cpu-mediatek_mt8168 and a notebookcheck MT8168 / MT8768 comparison; search summary only; the PowerVR GE8320 belongs to the MT8768). Confirm on the device: the first lines of `dumpsys SurfaceFlinger` print the GLES vendor / renderer (INFERRED format).
+- Chromium graphics-dev thread "Regarding GL and EGL memory in Chrome on Android", Jan 2016 (fetched): https://groups.google.com/a/chromium.org/g/graphics-dev/c/5VnWUyNW0Fc . Quotes: "GL mtrack is driver-reported GL memory usage", "primarily the sum of GL texture sizes, plus fixed global driver RAM overheads"; "EGL mtrack is gralloc memory usage"; "They don't overlap and you should consider the sum"; the separate "Graphics" row "double-counts a part of GL mtrack" on some devices. It says nothing about growth or leaks.
+- Arm Community "Mali-T720 VRAM increase when render with high fps" (fetched): https://community.arm.com/support-forums/f/graphics-gaming-and-vr-forum/46685/mali-t720-vram-increase-when-render-with-high-fps . One app: GL mtrack about 20 MB at 1 FPS and almost 40 MB at 10 FPS; an Arm employee names Mali's deep pipeline (several frames in flight, transient buffering of intermediates) and copy-on-write / resource ghosting. Lesson: Mali GPU memory follows workload and pipeline depth, it is not constant per context. (A T720, not a G52; no growth over time is claimed.)
+- Qt interest list, July 2015 (search summary only, page not opened): https://lists.qt-project.org/pipermail/interest/2015-July/017774.html : only "EGL mtrack" far too high, about 70 MB at start rising to a couple of hundred MB each time a video is started; not Mali. Further search-summary-only leads without a kept URL: a Unity bug note that GL mtrack is not reported on Mali; a forum remark that Mali's memory in the Graphics part of `dumpsys meminfo` is higher than other vendors'; an Arm forum poster whose meminfo VRAM exceeds `/d/mali/mem/<pid>`. The search advice was: check whether GL mtrack is reported at all on the device, else track EGL mtrack.
+- NOT FOUND after three searches: any published report of MediaTek / Mali per-surface memory growth in a launcher or Recents process. That is a statement about the search, not about the platform.
+
+### 3.6 Q3 in one paragraph
+VERIFIED: stopping a window destroys its Surface and display lists (2.5); HWUI's own GPU caches are capped by the screen area (3.2); Q's `Debug.getPss` adds the memtrack total to PSS (3.4); the stock thumbnails are hardware bitmaps (3.3). INFERRED: per-window costs do not accumulate by themselves; what CAN accumulate in graphics memory is (a) hardware-bitmap thumbnails pinned by the 1.5 leak and (b) vendor GL-driver memory that follows the number and size of surfaces and textures and is never released because the process never gets a trim above RUNNING_* (2.4).
+
+## 4. Q4: events that rebuild UI or model in the stock process, and known leaks
+
+### 4.1 `Launcher.onNewIntent` (the HOME intent) is a state reset: no creation, no registration (VERIFIED)
+`src/com/android/launcher3/Launcher.java` (platform/packages/apps/Launcher3, android10-release; the page has no line numbers, locate by method name), verbatim, trimmed (`...` = dropped):
+```java
+    protected void onNewIntent(Intent intent) {
+        ...
+        boolean alreadyOnHome = hasWindowFocus() && ((intent.getFlags() &
+                Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT)
+                != Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+        // Check this condition before handling isActionMain, as this will get reset.
+        boolean shouldMoveToDefaultScreen = alreadyOnHome && isInState(NORMAL)
+                && AbstractFloatingView.getTopOpenView(this) == null;
+        boolean isActionMain = Intent.ACTION_MAIN.equals(intent.getAction());
+        boolean internalStateHandled = InternalStateHandler
+                .handleNewIntent(this, intent, isStarted());
+        if (isActionMain) {
+            if (!internalStateHandled) {
+                // In all these cases, only animate if we're already on home
+                AbstractFloatingView.closeAllOpenViews(this, isStarted());
+                if (!isInState(NORMAL)) {
+                    mStateManager.goToState(NORMAL);
+                }
+                // Reset the apps view
+                if (!alreadyOnHome) {
+                    mAppsView.reset(isStarted() /* animate */);
+                }
+                if (shouldMoveToDefaultScreen && !mWorkspace.isHandlingTouch()) {
+                    mWorkspace.post(mWorkspace::moveToDefaultScreen);
+                }
+            }
+            // Handle HOME_INTENT
+            ... UiThreadHelper.hideKeyboardAsync(this, v.getWindowToken());
+            if (mLauncherCallbacks != null) { mLauncherCallbacks.onHomeIntent(internalStateHandled); }
+        }
+    }
+```
+A HOME intent delivered to a live `Launcher` (singleTask) is a reset of the existing instance. So a "stock-home start" costs memory only when it creates a NEW instance (4.4).
+
+### 4.2 When a `Launcher` instance is destroyed and re-created (VERIFIED for Launcher; the Go panel is 1.5)
+Same file, verbatim, trimmed. `onStop`: `mAppWidgetHost.setListenIfResumed(false); NotificationListener.removeNotificationsChangedListener(); getStateManager().moveToRestState(); UiFactory.onLauncherStateOrResumeChanged(this); // Workaround for b/78520668, explicitly trim memory once UI is hidden` then `onTrimMemory(TRIM_MEMORY_UI_HIDDEN);`. `onTrimMemory`: `if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) { SQLiteDatabase.releaseMemory(); ... } ... UiFactory.onTrimMemory(this, level);`. `onConfigurationChanged`: `if ((diff & CONFIG_LOCALE) != 0) { Folder.setLocaleDependentFields(getResources(), true /* force */); } if ((diff & (CONFIG_ORIENTATION | CONFIG_SCREEN_SIZE)) != 0) { onIdpChanged(mDeviceProfile.inv); }` (fontScale, density and uiMode are not handled: the system recreates the activity for them, `CD2_AOSP_Q_LAUNCHER3_FACTS` Q1 / Q5). `onDestroy`:
+```java
+    public void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(mScreenOffReceiver);
+        mWorkspace.removeFolderListeners();
+        if (mCancelTouchController != null) {
+            mCancelTouchController.run();
+            mCancelTouchController = null;
+        }
+        if (mModel.isCurrentCallbacks(this)) {
+            mModel.stopLoader();
+            LauncherAppState.getInstance(this).setLauncher(null);
+        }
+        mRotationHelper.destroy();
+        try { mAppWidgetHost.stopListening(); } catch (NullPointerException ex) { ... }
+        TextKeyListener.getInstance().release();
+        clearPendingBinds();
+        LauncherAppState.getIDP(this).removeOnChangeListener(this);
+        if (mLauncherCallbacks != null) { mLauncherCallbacks.onDestroy(); }
+    }
+```
+Registration audit (the fetch model matched every registration in `onCreate` / `setupViews` against its undo): the IDP listener, the screen-off receiver, `setLauncher`, the widget host, the rotation helper, the callbacks and the `enableLiveUIChanges` closure ALL have an undo in `onDestroy`; only `mStateManager.addStateListener(...)` and `mDragController.addDragListener(mWorkspace)` have none, and both objects belong to the activity (they die with it). **The stock `Launcher` activity does not leak through its own registrations.** What the Go build adds is the `IconRecentsView` of 1.5, whose registration sits in a process singleton (INFERRED that the Go `Launcher` inflates one, 1.4).
+`UiFactory` (`quickstep/src/com/android/launcher3/uioverrides/UiFactory.java`, listing L= 85-98): `onEnterAnimationComplete(Context)` -> `RecentsModel.INSTANCE.get(context).getThumbnailCache().getHighResLoadingState().setVisible(true);` (irrelevant on a low-RAM device, 1.6) and `onTrimMemory(Context, int)` -> `model.onTrimMemory(level)` (equality tests only, 1.6).
+
+### 4.3 The non-Go `RecentsView` is symmetric: the contrast that explains the emulator (VERIFIED; supersedes the INFERRED note in 1.5)
+`quickstep/recents_ui_overrides/src/com/android/quickstep/views/RecentsView.java`, android10-release, verbatim (no line numbers on the page):
+```java
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        updateTaskStackListenerState();
+        mModel.getThumbnailCache().getHighResLoadingState().addCallback(this);
+        mActivity.addMultiWindowModeChangedListener(mMultiWindowModeChangedListener);
+        ActivityManagerWrapper.getInstance().registerTaskStackListener(mTaskStackListener);
+        mSyncTransactionApplier = new SyncRtSurfaceTransactionApplierCompat(this);
+        RecentsModel.INSTANCE.get(getContext()).addThumbnailChangeListener(this);
+        mIdp.addOnChangeListener(this);
+    }
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        updateTaskStackListenerState();
+        mModel.getThumbnailCache().getHighResLoadingState().removeCallback(this);
+        mActivity.removeMultiWindowModeChangedListener(mMultiWindowModeChangedListener);
+        ActivityManagerWrapper.getInstance().unregisterTaskStackListener(mTaskStackListener);
+        mSyncTransactionApplier = null;
+        RecentsModel.INSTANCE.get(getContext()).removeThumbnailChangeListener(this);
+        mIdp.removeOnChangeListener(this);
+    }
+```
+Every line of the file that contains `ThumbnailChangeListener` (fetch answer): the import, the `implements ... TaskThumbnailChangeListener`, the add above, the remove above. **The plain-AOSP view that the CI emulator runs removes its registration at detach; the Go view of 1.5 does not.** The 80 relaunches of section cd3u (Activities 2, Views flat) therefore say nothing about the Go class.
+`go/quickstep/src/com/android/quickstep/fallback/GoRecentsActivityRootView.java` (listing L= 1-31, whole file): a `BaseDragLayer` subclass that only handles insets; no registrations.
+
+### 4.4 Events that make the stock process work, and which of them add memory for good
+Cited from `CD2_AOSP_Q_LAUNCHER3_FACTS_2026-11-14.md` (Q2, Q6, Q7; not re-fetched here), plus one INFERRED rule:
+- Package added / changed / removed for the DEFAULT HOME package (our alias flips, app updates): `OverviewComponentObserver` re-runs `updateOverviewTargets()` (small helper objects, no list); `LauncherModel.onPackageChanged` enqueues `PackageUpdatedTask(OP_UPDATE)` for ANY package (re-decodes that package's icons, rewrites its icon-cache rows; same keys, replaced not added). Bounded.
+- `ACTION_PREFERRED_ACTIVITY_CHANGED` (default home changed): the same observer path. Bounded.
+- `ConfigMonitor` on fontScale / density: `InvariantDeviceProfile.onConfigChanged` in process (`APPLY_CONFIG_AT_RUNTIME` true), no process kill. Bounded.
+- A HOME intent or a Recents open delivered to a live singleTask instance: `onNewIntent` + `onResume` (4.1, 1.7). No creation.
+- **Configuration changes that are NOT in `configChanges`** (uiMode, fontScale, density for `Launcher` and `RecentsActivity`; locale for `RecentsActivity`): the system recreates the activity. INFERRED (AOSP `ActivityRecord.ensureActivityConfiguration`, not fetched): a stopped, invisible activity is not relaunched at the moment of the change but once, when it next becomes visible; the number of new instances is therefore "number of shows after at least one change", at most one per Recents open / Quickstep session. Each new instance of the Go build inflates a new `IconRecentsView` (1.4) and registers it (1.5). This is the one event class of which every occurrence adds permanent memory.
+- Process restart (force-stop, kill, crash) empties `RecentsModel.INSTANCE` and everything it pinned. This fits "about 90 MB after several force-stops".
+
+### 4.5 Known leaks and leads (what was opened, what is only a search summary)
+| Item | Status |
+| :- | :- |
+| Go `IconRecentsView` thumbnail listener never removed (1.5) | VERIFIED in android10-release code; no upstream bug number found |
+| e/OS BlissLauncher3 commits https://gitlab.e.foundation/e/os/BlissLauncher3/-/commit/025799ba9c3b38b9c5dd613d81bf0cff062dfa86 and .../de6770a2ec88ee11c89b46fe3bd7dc0f3fba4cb9 | search summary only (gitlab answered 429, not opened). Summary: `IconRecentsView` registers `addThumbnailChangeListener(listener)` at the end of its constructor with no matching removal (the pre-fix state); a later commit makes it implement `TaskVisualsChangeListener` and adds `removeThumbnailChangeListener(this)`. Consistent with 1.5, unverified. The same summary says `TaskListLoader`'s constructor registered a listener too in that fork; in android10-release it does NOT (read: its constructor only stores `RecentsModel.INSTANCE.get(context)`) |
+| OmniROM Launcher3 merge "Remove listener in destroy() that caused a memory leak" | search summary only; the summary itself says it concerns a thumbnail view, not `IconRecentsView`; host not reachable |
+| AOSP 60f21a8 "Fix ViewTreeObserver crash on Recents Go" (2019-04-12, Bug 130740246) | OPENED: `go/quickstep/src/com/android/quickstep/views/IconRecentsView.java`, `scheduleFadeInLayoutAnimation()` now asks `mTaskRecyclerView.getViewTreeObserver()` again before `removeOnGlobalLayoutListener(this)`. Not a leak fix; shows the Go view was still being patched during the Q cycle |
+| AOSP a035646ea8 (TaskbarOverlayContext leak, 2025) and fb2affac5f (LauncherWidgetHolder NPE, 2023) | OPENED because a search listed them: unrelated |
+| "Destroy dep tree on RecentsView detached. This prevents leaks." (Launcher3) and a framework change "references to thumbnails so things can be freed ... Test: Go Recents, go home, take heapdump" (https://android.googlesource.com/platform/frameworks/base/+/3e966e2996bd) | search-summary hits, not opened |
+| android11-release `IconRecentsView` | path answered 404: whether upstream fixed the Go leak later could not be read |
+
+## 5. Ranked mechanisms for a never-cached stock process that grows slowly, and how to CONFIRM each on the tablet
+
+### 5.0 Reading protocol (all read-only, run by the shell helper or over the cable; "A" to "D" are used below)
+- **A** `dumpsys meminfo com.android.launcher3`: App Summary (Java Heap, Native Heap, Graphics, Private Other, System, TOTAL); the table rows `Dalvik Heap`, `Native Heap`, `Gfx dev`, `EGL mtrack`, `GL mtrack`, `Ashmem` with their Heap Size / Alloc / Free columns; the `Objects` block (Views, ViewRootImpl, AppContexts, Activities).
+- **B** `dumpsys gfxinfo com.android.launcher3`: the HWUI cache lines ("Caches" / "Total memory usage" in third-party samples; Q's Skia field names may differ) and the "View hierarchy" counts (Total ViewRootImpl / Views / DisplayList).
+- **C** `dumpsys activity processes` (the ProcessRecord block of the package: adj, process state, cached flag, `trimMemoryLevel`, `lastPss`; field names INFERRED) and `dumpsys activity activities` (the system's real ActivityRecords of the package, to be compared with `Objects: Activities` of A).
+- **D** `dumpsys procstats --hours 24 com.android.launcher3` (the numbers of the Settings screen).
+- **Protocol:** (1) force-stop the stock launcher once; enter a Quickstep session, open Recents once; take A + B + C = t0. (2) Do 10 plain Recents open / close cycles with NO setting change; A = t1. (3) Change ONE uiMode / font setting, open Recents once, repeat 5 times; A + C = t2. t0 -> t1 is "per open", t1 -> t2 is "per relaunch", and A's Graphics rows against B's cache totals separate "HWUI cache" from "driver / gralloc". Garbage of a just-destroyed activity can still be counted until the next GC: a count that stays raised across two readings with activity in between is a leak.
+
+### 5.1 Ranking
+| Rank | Mechanism | Evidence | Scales with |
+| :- | :- | :- | :- |
+| R1 | Go `IconRecentsView` listener pins every created `Launcher` / `RecentsActivity` instance (view tree, adapter, icons, hardware-bitmap thumbnails) for the life of the process (1.5, 3.3, 4.3) | VERIFIED code; magnitude INFERRED | stock activity CREATIONS (relaunch on uiMode / font / density / locale change at the next show, process-internal recreation), not Recents opens |
+| R2 | Graphics-side memory (gralloc buffers of pinned thumbnails, vendor GL-driver memory) that is never trimmed because AMS keeps the process at foreground-like state (2.1-2.5) and `Debug.getPss` counts it (3.4) | partly VERIFIED, mapping INFERRED | surfaces / textures created (Recents opens, stock-home starts); bounded by what the driver keeps, so it plateaus |
+| R3 | Java and native heap retention in the "jank perceptible" ART state: no background compaction, no `Heap::Trim`, no native purge (2.6) | VERIFIED ART code, mapping INFERRED | any allocation churn; amplifier of R1 / R2, creates no growth by itself |
+| R4 | Task objects keep their icon / thumbnail beyond the 12 / 3 entry caches (`TaskListLoader` copy-over, 1.6) | VERIFIED code | list size, at most 6 rows + 1; bounded, small |
+| R5 | Per-flip package-changed rebuilds (`PackageUpdatedTask`, `updateOverviewTargets`, 4.4) | VERIFIED by `CD2` facts | number of alias flips; replaced not added, bounded |
+| R6 | MediaTek changes to the Go build (`MtkLauncher3GoIconRecents`) | UNKNOWN (sources not public) | unknown |
+Not it (VERIFIED): a Recents open does not create an activity (singleTask: `onNewIntent`, 1.7); the HOME intent is a state reset (4.1); the caches are bounded (1.6); AMS never kills the process (2.1-2.2).
+
+### 5.2 How to confirm or refute each
+- **R1.** Expect in A: `Objects: Activities` and `Views` (and `AppContexts`) rise in steps at t2 (about +1 Activity and +100..140 Views per pinned instance, the per-activity numbers of `CD1` / `CD2` tables; `ViewRootImpl` may not rise because its parent link is cleared at detach, INFERRED), while C lists only 1-2 live ActivityRecords of the package: the difference IS the leak. Java Heap Private Dirty rises a few MB per step; Graphics rises if thumbnails are pinned. REFUTED if Activities stays at 1-2 after the 5 changes at t2. Sanity on magnitude: the emulator showed about +12-15 MB PSS for creating one stock `Launcher` activity (`CD1_EMULATOR`); a pinned instance probably weighs a few MB, so tens of instances would be needed for hundreds of MB. R1 alone fits a STEP pattern, not a flat plateau at 414-450 MB.
+- **R2.** Expect the growth in A's `EGL mtrack` / `GL mtrack` / `Gfx dev` rows while `Objects` stay flat (t0 -> t1, no relaunch involved). In B the HWUI cache total should stay near or below the 3.2 cap (about 30 MB); a Graphics row of hundreds of MB then lies OUTSIDE HWUI = gralloc buffers or driver memory. In C the ProcessRecord should show adj 100 (VISIBLE) and no trim level above the RUNNING_* ones; `trimMemoryLevel` absent or 0 supports "never trimmed". A plateau at the observed 414-450 MB is the signature of a bounded, never-trimmed structure (R2 / R3), not of a leak (R1). Cheap experiment: `am send-trim-memory com.android.launcher3 HIDDEN` and `... RUNNING_CRITICAL` (the second reaches `RecentsModel.onTrimMemory`'s cache clear, 1.6) then A again: the delta says how much is purgeable by trims the process does receive on its own. INFERRED from a search summary of AMS `setProcessMemoryTrimLevel` (android10-release) and two issue reports: a COMPLETE / BACKGROUND / MODERATE request on a process in foreground-like state is refused ("Unable to set a background trim level on a foreground process"), HIDDEN is accepted. A refusal would itself confirm that AMS treats the process as foreground, which is R2's premise.
+- **R3.** In A, the `Dalvik Heap` and `Native Heap` rows: Heap Free large against Heap Alloc (retained but unused) while PSS stays high; in C `curProcState` at or below IMPORTANT_FOREGROUND (INFERRED mapping to ART's "jank perceptible"). If Heap Free is small, R3 is not the explanation.
+- **R4.** A: Java Heap and Graphics move with the number of Recents rows (open Recents with 1 task, then with 7 tasks): a step of a few MB, not growth over time.
+- **R5.** Count the alias flips between t1 and t2 and compare A's TOTAL: a flat reading refutes it (the emulator showed flat counts).
+- **R6.** Cannot be tested from outside. If R1-R5 are all refuted by the readings above and the growth persists, the cause is in the MediaTek build or in the driver (R2 mechanism).
+
+## 6. What was NOT read or verified (so nobody re-derives it or trusts it)
+- AMS `updateLowMemStateLocked` (the trim ladder), `ActivityThread.updateProcessState` / `handleTrimMemory` (only `scheduleTrimMemory` was read, in `core/java/android/app/ActivityThread.java`), `Activity.onTrimMemory`; the pages are cut at 86,267 characters by the fetch tool.
+- `ActivityRecord.ensureActivityConfiguration` (the "relaunch when next visible" rule in 4.4), the rule that makes an implicit HOME intent a HOME-type task (only the `ActivityStackSupervisor` `isActivityTypeHome` block was read), `EglManager`, `SkiaOpenGLPipeline`, the consumers of `Debug.getPss` (AMS PSS collection, procstats, Settings), the scale of low-RAM `TaskSnapshot`s, Go `res/layout/launcher.xml` (so "the Go `Launcher` inflates an `IconRecentsView`" is INFERRED).
+- MediaTek's changes (the `MtkLauncher3GoIconRecents` sources are not public) and every file after android10-release; android11-release `IconRecentsView` (404).
+- `am send-trim-memory` rules: only a search summary of the AMS page plus two issue reports; the AMS body was not read.
+- Unreachable from this session: GitHub mirrors (404 through the proxy), aospxref, androidxref (503), gitiles `+log` / `+blame` (403 / 401), Gerrit REST message searches (empty), gitlab.e.foundation (429), gerrit.omnirom.org (not resolvable). Their content appears here only as search-summary leads and is marked so.
+- Line numbers: see section 0. Excerpts of sections 3 and 4 come from pages without a line gutter; only `CacheManager.cpp`, `UiFactory.java` and `GoRecentsActivityRootView.java` carried listing numbers, and those are the fetch model's own counts.
+- Nothing in this report was MEASURED on the tablet. The three readings of 5.0 are what turns R1-R5 into a verdict.
+
+## 7. What the readings would change (suggestions, not decided here)
+- If R1 holds: the trigger is the number of stock activity creations, so the controllable side is how many configuration changes reach the stock activities while they exist (a uiMode flip while the stock `Launcher` / `RecentsActivity` instance is alive) and when the stock process is restarted for free (not inside a Quickstep session). A per-session recorder line `Activities= Views= Graphics=` from reading A at every Quickstep session start and end would show the staircase directly.
+- If R2 / R3 hold: nothing in the stock code releases the memory in this state; only a process restart or a trim the AMS refuses to send does. The `HIDDEN` / `RUNNING_CRITICAL` experiment of 5.2 sizes what the trims the process can still receive are worth.
+- If all are refuted: ask for the 5.0 readings plus `dumpsys SurfaceFlinger` (GLES line) before building anything.
+
