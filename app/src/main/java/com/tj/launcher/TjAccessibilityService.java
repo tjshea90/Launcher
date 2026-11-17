@@ -4643,7 +4643,7 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean can = PatchRest.visible(false, lockPatchAlways(), true, lastBouncer);
             patchRestable = can;                                                                  // BE1: the fast open path asks THIS, not "is it visible right now"
             long nowMs = android.os.SystemClock.uptimeMillis();
-            if (can) { if (restableSinceMs == 0) restableSinceMs = nowMs; } else if (!lastBouncer) restableSinceMs = 0;   // BT1a: since when it has been restable (a PIN pad does not reset it: its own return rule, padBack, waits already)
+            if (can) { if (restableSinceMs == 0) restableSinceMs = nowMs; restableSinceMs = PatchRest.restableSinceFor(nowMs, restableSinceMs, screenDarkNow, darkSettleOn()); } else if (!lastBouncer) restableSinceMs = 0;   // CG1d: in the dark a restable patch is settled at once (uptime stops in deep sleep)   // BT1a: since when it has been restable (a PIN pad does not reset it: its own return rule, padBack, waits already)
             boolean settled = PatchRest.settled(nowMs, restableSinceMs);
             long shadeUntil = LockShade.holdUntil(lockShadeOpen, lockShadeClosedMs);              // BY1c F1: away while the notification panel is open, back LockShade.SETTLE_MS after it closed
             vis = can && nowMs >= pinHiddenUntilMs && nowMs >= touchAwayUntilMs && settled && nowMs >= shadeUntil;       // BE1: away for a PIN pad or a finger = not visible, but still restable; BT1a: and not for the first PatchRest.SETTLE_MS after it became restable
