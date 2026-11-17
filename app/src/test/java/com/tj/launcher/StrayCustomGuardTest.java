@@ -139,35 +139,35 @@ public class StrayCustomGuardTest {
 
     @Test public void onlyWhatTimeCanChangeIsLookedAtAgain() {
         for (int r : new int[]{StrayCustomGuard.REDIRECT, StrayCustomGuard.SWITCH_OFF, StrayCustomGuard.DARK, StrayCustomGuard.STOOD_DOWN, StrayCustomGuard.NOT_STRAY})
-            assertEquals("reason " + r, -1, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, NOW - 100, NOW + 100, NOW + 100, 0));
+            assertEquals("reason " + r, -1, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, 0, NOW - 100, NOW + 100, NOW + 100, 0));
         for (int r : new int[]{StrayCustomGuard.LOCKED, StrayCustomGuard.LEFTOVER, StrayCustomGuard.UNDECIDED, StrayCustomGuard.RESUMING, StrayCustomGuard.MODE_YOUNG, StrayCustomGuard.PAUSED, StrayCustomGuard.FAIL_OPEN})
-            assertTrue("reason " + r, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, NOW - 100, NOW + 100, NOW + 100, 0) > 0);
+            assertTrue("reason " + r, StrayCustomGuard.retryInMs(r, NOW, NOW - 100, NOW - 100, 0, NOW - 100, NOW + 100, NOW + 100, 0) > 0);
     }
 
     @Test public void theStepsFollowTheEndOfTheWaitedForWindow() {
-        assertEquals(650, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, NOW - 300, 0, NOW - 60_000, 0, 0, 0));        // 800 - 300 + 150
-        assertEquals(700, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, NOW - 5_000, 0, NOW - 60_000, 0, 0, 0));      // an armed handshake: the unlock is still to come
-        assertEquals(700, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, 0, 0, NOW - 60_000, 0, 0, 0));                // no unlock handled yet
-        assertEquals(1000, StrayCustomGuard.retryInMs(StrayCustomGuard.LOCKED, NOW, 0, 0, NOW - 60_000, 0, 0, 0));
-        assertEquals(500, StrayCustomGuard.retryInMs(StrayCustomGuard.UNDECIDED, NOW, 0, 0, NOW - 60_000, 0, 0, 0));
-        assertEquals(1650, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, NOW - 1_000, 0, 0, 0));              // 2500 - 1000 + 150
-        assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 14_900, NOW - 60_000, 0, 0, 0));     // 15000 - 14900 + 150
-        assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.PAUSED, NOW, 0, 0, NOW - 60_000, NOW + 100, 0, 0));          // never shorter than the minimum step
+        assertEquals(650, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, NOW - 300, 0, 0, NOW - 60_000, 0, 0, 0));        // 800 - 300 + 150
+        assertEquals(700, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, NOW - 5_000, 0, 0, NOW - 60_000, 0, 0, 0));      // an armed handshake: the unlock is still to come
+        assertEquals(700, StrayCustomGuard.retryInMs(StrayCustomGuard.LEFTOVER, NOW, 0, 0, 0, NOW - 60_000, 0, 0, 0));                // no unlock handled yet
+        assertEquals(1000, StrayCustomGuard.retryInMs(StrayCustomGuard.LOCKED, NOW, 0, 0, 0, NOW - 60_000, 0, 0, 0));
+        assertEquals(500, StrayCustomGuard.retryInMs(StrayCustomGuard.UNDECIDED, NOW, 0, 0, 0, NOW - 60_000, 0, 0, 0));
+        assertEquals(1650, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW - 1_000, 0, 0, 0));              // 2500 - 1000 + 150
+        assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 14_900, 0, NOW - 60_000, 0, 0, 0));     // 15000 - 14900 + 150
+        assertEquals(250, StrayCustomGuard.retryInMs(StrayCustomGuard.PAUSED, NOW, 0, 0, 0, NOW - 60_000, NOW + 100, 0, 0));          // never shorter than the minimum step
     }
 
     @Test public void aFarAwayEndTimeOrAClockThatStoppedBackNeverSchedulesALongTimer() {
         long max = StrayCustomGuard.RETRY_STEP_MAX_MS;
-        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.PAUSED, NOW, 0, 0, NOW - 60_000, NOW + 3_600_000, 0, 0));
-        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.FAIL_OPEN, NOW, 0, 0, NOW - 60_000, 0, NOW + 3_600_000, 0));
-        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, NOW + 3_600_000, 0, 0, 0));          // the mode was "changed" in the future
-        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW + 3_600_000, NOW - 60_000, 0, 0, 0));
-        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 1_000, NOW - 60_000, 0, 0, 0));
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.PAUSED, NOW, 0, 0, 0, NOW - 60_000, NOW + 3_600_000, 0, 0));
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.FAIL_OPEN, NOW, 0, 0, 0, NOW - 60_000, 0, NOW + 3_600_000, 0));
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW + 3_600_000, 0, 0, 0));          // the mode was "changed" in the future
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW + 3_600_000, 0, NOW - 60_000, 0, 0, 0));
+        assertEquals(max, StrayCustomGuard.retryInMs(StrayCustomGuard.RESUMING, NOW, 0, NOW - 1_000, 0, NOW - 60_000, 0, 0, 0));
     }
 
     @Test public void theLooksEndAtTheBudget() {
-        assertTrue(StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, NOW, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS - 1) > 0);
-        assertEquals(-1, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, NOW, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS));
-        assertEquals(-1, StrayCustomGuard.retryInMs(StrayCustomGuard.LOCKED, NOW, 0, 0, NOW - 60_000, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS + 1));
+        assertTrue(StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS - 1) > 0);
+        assertEquals(-1, StrayCustomGuard.retryInMs(StrayCustomGuard.MODE_YOUNG, NOW, 0, 0, 0, NOW, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS));
+        assertEquals(-1, StrayCustomGuard.retryInMs(StrayCustomGuard.LOCKED, NOW, 0, 0, 0, NOW - 60_000, 0, 0, StrayCustomGuard.RETRY_BUDGET_MS + 1));
         assertTrue("the launch window of the app fits in the budget", StrayCustomGuard.RETRY_BUDGET_MS >= StrayCustomGuard.RESUME_QUIET_MS);
     }
 
@@ -184,7 +184,7 @@ public class StrayCustomGuardTest {
             long modeAt = NOW - modeAgeAtStart;
             int reason = StrayCustomGuard.reason(true, true, false, true, true, leftover, undecided, resumingSince, now, modeAt, 0, 0, 0, NONE);
             if (reason == StrayCustomGuard.REDIRECT) return t;
-            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, modeAt, 0, 0, waited);
+            long again = StrayCustomGuard.retryInMs(reason, now, lastUnlockAt, resumingSince, 0, modeAt, 0, 0, waited);
             if (again <= 0) return -1;
             t += again; waited += again;
         }
@@ -220,7 +220,7 @@ public class StrayCustomGuardTest {
             long now = NOW + t;
             int reason = StrayCustomGuard.reason(true, true, false, true, true, false, false, 0, now, NOW + 10_000_000L, 0, 0, 0, NONE);
             if (reason == StrayCustomGuard.REDIRECT) return t;
-            long again = StrayCustomGuard.retryInMs(reason, now, 0, 0, NOW + 10_000_000L, 0, 0, waited);
+            long again = StrayCustomGuard.retryInMs(reason, now, 0, 0, 0, NOW + 10_000_000L, 0, 0, waited);
             if (again <= 0) return -1;
             t += again; waited += again;
         }
