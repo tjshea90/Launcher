@@ -1640,3 +1640,8 @@ Tell me the status on this without breaking or interrupting any other session
 ```
 Monitor the other session and make sure to finish and build the release
 ```
+
+## 2026-11-18T00:18:59Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
