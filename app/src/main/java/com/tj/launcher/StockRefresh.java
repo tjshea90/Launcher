@@ -87,7 +87,7 @@ final class StockRefresh {
             final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
             if (!switchOn(app)) return;
             if (!PENDING.compareAndSet(false, true)) return;
-            final long delay = Features.getLong(app, DELAY_KEY, AFTER_RETURN_DELAY_MS);
+            final long delay = Features.getInt(app, DELAY_KEY, (int) AFTER_RETURN_DELAY_MS);   // an int key: the scenario writes it by hand
             Thread t = new Thread(new Runnable() {
                 @Override public void run() {
                     try {
