@@ -318,6 +318,7 @@ final class QsMemory {
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
+                            StockRefresh.consider(app, s, helperUp && "the shell helper".equals(how));   // CI1 (SR1): a big stock launcher is restarted where nobody uses it (switch, helper, custom home in front, cooldown)
                         }
                     } catch (Throwable ignored) {
                     } finally { RUNNING.set(false); }
