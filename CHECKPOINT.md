@@ -1,13 +1,13 @@
-# CHECKPOINT 1460 — read me first, then TASKS.md
+# CHECKPOINT 1461 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T20:32:33Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `d9861646` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T20:55:41Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `b84a7972` (this checkpoint is the commit after it)
 
 ## Just done
-release answer draft written (research/CH1_RELEASE_MESSAGE_DRAFT_2026-11-18.md)
+GATE read 20:55Z: #662 rg GREEN; #660 (x1,y2,b4,n,o,cs2,an,rt,ss,vo) GREEN; #659 (base,e1,t,x,ac,cs,fp,bt,pk) RED job 135107987526 FAIL names pending; #661 (b6,n6,lq,uf,pf,rb,wf,fl,last) NO results.txt (stopped 20:30Z, job 135108035709: emulator start?)
 
 ## Do this next
-wait gate #659-#662 until ~20:58Z, read; trig_01CxhtUYmpxg1H1vMi1NgFbF
+get FAIL names of #659 and why #661 stopped (agent ad5b0b17922eb151d running); rerun failing sections SOLO + #661 whole; NO product change; trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ wait gate #659-#662 until ~20:58Z, read; trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 ## Last ten checkpoints
 ```
+  335e54fe ckpt 1460: release answer draft written (research/CH1_RELEASE_MESSAGE_DRAFT_2026-11-18.
   b29a5adc ckpt 1459: CH1 TASKS ticks a-f + HANDOFF 0za written (docs only)
   870e023c ckpt 1458: pk #658 GREEN. GATE DISPATCHED on head a31f6e05 at 20:25Z: #659 id 443909122
   a31f6e05 ckpt 1457: CH1 code complete + review fixes (unit 1167/0, lint green). pk run #658 id 4
@@ -25,7 +26,6 @@ wait gate #659-#662 until ~20:58Z, read; trig_01CxhtUYmpxg1H1vMi1NgFbF
   4d8ec662 ckpt 1453: CH1 review (code-review high, 10 findings): fixed 9 (OFF-path invisibleReady
   491be878 ckpt 1452: pk emulator run DISPATCHED on main (head 4508c197), sections=pk, at 19:59 UT
   4508c197 ckpt 1451: CH1f: emulator section pk written (OFF unchanged, ON ordered POCKET lines, W
-  76b5ea01 ckpt 1450: CH1c/d: PocketReturn glue, ReturnReset pocket variants, service lock-prep 0/
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
