@@ -356,7 +356,7 @@ public class ControlActivity extends Activity {
         } });
 
         // CH1 (Tj, 2026-11-18): "Pocket return": the tile / icon back to the custom launcher also puts the phone to sleep, closes every app and prepares the lock screen. OFF = the launcher exactly as before.
-        toggle("Pocket return (tile and icon)", "When you go back to the custom launcher with the \"Back to custom\" tile or icon: LinkMeter puts your phone to sleep (hotspot, Wi-Fi and airplane mode, battery saver, screen off), the tablet's Wi-Fi and VPN go off, every open app is force-stopped except LinkMeter and your keyboards, and the custom launcher and lock screen are made ready ahead of time. Double Home is not changed. OFF = nothing changes. Last run: " + PocketReturn.last(this), PocketReturn.on(this), new Chg() { public void on(boolean v) {
+        toggle("Pocket return (tile and icon)", "When you go back to the custom launcher with the \"Back to custom\" tile or icon: LinkMeter puts your phone to sleep (hotspot, Wi-Fi and airplane mode, battery saver, screen off), the tablet's Wi-Fi and VPN go off, every open app is force-stopped except LinkMeter and your keyboards, and the custom launcher and lock screen are made ready ahead of time. At the side key (lock) apps that have a notification are closed too, except while music plays. Double Home is not changed. OFF = nothing changes. Last run: " + PocketReturn.last(this), PocketReturn.on(this), new Chg() { public void on(boolean v) {
             Features.set(ControlActivity.this, PocketRules.KEY, v);
         } });
 
