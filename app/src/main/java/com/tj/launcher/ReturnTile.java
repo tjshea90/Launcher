@@ -19,7 +19,7 @@ public class ReturnTile extends TileService {
     @Override public void onClick() {
         try {
             if (Mode.isCustom(this) || !ReturnMethods.on(this, ReturnMethods.Method.TILE)) return;
-            startActivityAndCollapse(new Intent(this, BackToCustomActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            startActivityAndCollapse(new Intent(this, BackToCustomActivity.class).putExtra(BackToCustomActivity.EXTRA_VIA, PocketRules.VIA_TILE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (Throwable t) { android.util.Log.e("TjBack", "tile failed", t); }
     }
 }

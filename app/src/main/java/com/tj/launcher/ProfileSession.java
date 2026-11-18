@@ -124,15 +124,23 @@ public final class ProfileSession {
 
     // ------------------------------------------------------------------ the two actions every method ends in
     /** Quickstep -> custom (any "kill switch" method): same as the double-Home return. Safe to call from any thread with a context. */
-    public static void returnToCustom(Context c, String why) {
+    public static void returnToCustom(Context c, String why) { returnToCustom(c, why, null); }
+
+    /**
+     * CH1: {@code pocketVia} is PocketRules.VIA_TILE / VIA_ICON when the return came from the tile or the icon, else null. With the "Pocket return" switch ON that return also puts the phone to
+     * sleep through LinkMeter, switches the tablet's Wi-Fi off and force-stops every open app but LinkMeter and the keyboards; with the switch OFF (or null) this is the old method, unchanged.
+     */
+    public static void returnToCustom(Context c, String why, String pocketVia) {
         Context app = c.getApplicationContext();
         if (Mode.isCustom(app)) return;
+        final boolean pocket = PocketRules.active(PocketReturn.on(app), pocketVia);
+        if (pocket) PocketReturn.begin(app, pocketVia);   // CH1: the phone steps start FIRST and run beside the return (nothing waits on the phone)
         CrashGuard.clearTripped(app);
         Mode.set(app, Mode.CUSTOM);
         Features.setString(app, FailsafeKeys.LAST_KEY, "back to custom via " + why + " at " + new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()));
         app.startActivity(new android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_HOME).setPackage(app.getPackageName())
                 .putExtra(RouterActivity.EXTRA_PREARM, "custom").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION));
-        ReturnReset.run(app);
+        ReturnReset.run(app, pocket);
     }
 
     /** Custom -> Quickstep (the master failsafe). Not a Home press: the router must not read it as a double-Home. */
