@@ -129,4 +129,64 @@ public class KeyboardPolicyTest {
         assertEquals(Arrays.asList("Gboard"), KeyboardPolicy.visibleLabels(null, Arrays.asList("Gboard", "Microsoft SwiftKey keyboard", " ", null)));
         assertEquals(0, KeyboardPolicy.visibleLabels(Arrays.asList("x"), null).size());
     }
+
+    // ---- CH1e (Tj, 2026-11-18): "Make an option in the launcher settings to choose between the stock Android keyboard, gboard, or swoop for the quickstep launcher"
+    private static final KeyboardPolicy.Ime SWOOP = new KeyboardPolicy.Ime("app.swoop.keyboard/.KeysService", "app.swoop.keyboard", false);
+    private static final KeyboardPolicy.Ime SWOOP_DEBUG = new KeyboardPolicy.Ime("app.swoop.keyboard.debug/app.swoop.keyboard.KeysService", "app.swoop.keyboard.debug", false);
+
+    @Test public void theDefaultChoiceIsGboardAndTheOldRuleIsUnchanged() {
+        assertEquals(KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.normalizeChoice(null));
+        assertEquals(KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.normalizeChoice(""));
+        assertEquals(KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.normalizeChoice("SWOOP"));   // a damaged value changes nothing
+        assertEquals(KeyboardPolicy.CHOICE_STOCK, KeyboardPolicy.normalizeChoice("stock"));
+        assertEquals(KeyboardPolicy.CHOICE_SWOOP, KeyboardPolicy.normalizeChoice("swoop"));
+        List<KeyboardPolicy.Ime> all = Arrays.asList(LATIN, GBOARD_APP, SWOOP, SWIFT);
+        for (String orig : new String[] { null, LATIN.id, SWIFT.id, "gone/.Ime" }) {
+            assertEquals(KeyboardPolicy.target(Mode.QUICKSTEP, all, orig), KeyboardPolicy.target(Mode.QUICKSTEP, all, orig, KeyboardPolicy.CHOICE_GBOARD));
+            assertEquals(KeyboardPolicy.target(Mode.QUICKSTEP, all, orig), KeyboardPolicy.target(Mode.QUICKSTEP, all, orig, "garbage"));
+        }
+    }
+    @Test public void quickstepWithTheStockChoiceUsesTheStockKeyboard() {
+        assertEquals(LATIN.id, KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(GBOARD_APP, SWOOP, LATIN), GBOARD_APP.id, KeyboardPolicy.CHOICE_STOCK));
+        assertNull("no enabled stock keyboard: left as is, not Gboard", KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(GBOARD_APP, SWOOP), GBOARD_APP.id, KeyboardPolicy.CHOICE_STOCK));
+    }
+    @Test public void quickstepWithTheSwoopChoiceUsesSwoopAndNothingElse() {
+        assertEquals(SWOOP.id, KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(LATIN, GBOARD_APP, SWOOP), LATIN.id, KeyboardPolicy.CHOICE_SWOOP));
+        assertEquals("the release build wins over a debug build", SWOOP.id, KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(SWOOP_DEBUG, SWOOP), null, KeyboardPolicy.CHOICE_SWOOP));
+        assertEquals("a debug build alone is used", SWOOP_DEBUG.id, KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(LATIN, SWOOP_DEBUG), null, KeyboardPolicy.CHOICE_SWOOP));
+        assertNull("Swoop not enabled: left as is (never silently Gboard or the original)", KeyboardPolicy.target(Mode.QUICKSTEP, Arrays.asList(LATIN, GBOARD_APP), LATIN.id, KeyboardPolicy.CHOICE_SWOOP));
+        assertEquals(SWOOP.id, KeyboardPolicy.pickSwoop(Arrays.asList(OTHER, SWOOP)));
+        assertNull(KeyboardPolicy.pickSwoop(Arrays.<KeyboardPolicy.Ime>asList()));
+    }
+    @Test public void theCustomLauncherKeepsTheStockKeyboardWhateverTheChoice() {
+        List<KeyboardPolicy.Ime> all = Arrays.asList(SWOOP, GBOARD_APP, LATIN);
+        for (String choice : new String[] { KeyboardPolicy.CHOICE_STOCK, KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.CHOICE_SWOOP, null, "x" })
+            assertEquals(LATIN.id, KeyboardPolicy.target(Mode.CUSTOM, all, SWOOP.id, choice));
+    }
+    @Test public void swoopIsRecognisedByItsPackageOnly() {
+        assertTrue(KeyboardPolicy.isSwoop("app.swoop.keyboard"));
+        assertTrue(KeyboardPolicy.isSwoop("app.swoop.keyboard.debug"));
+        assertFalse(KeyboardPolicy.isSwoop("app.swoop.keyboard.other"));
+        assertFalse(KeyboardPolicy.isSwoop("com.swoop.keyboard"));
+        assertFalse(KeyboardPolicy.isSwoop(null));
+        assertFalse(KeyboardPolicy.isSwoop("com.google.android.inputmethod.latin"));
+    }
+    @Test public void theStatusLineNamesTheKeyboardThatWasAskedFor() {
+        assertEquals("Swoop is not an enabled keyboard (enabled: com.android.inputmethod.latin): left as is. Turn it on under Virtual keyboard > Manage keyboards.",
+                KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.asList(LATIN), KeyboardPolicy.CHOICE_SWOOP));
+        assertEquals("no enabled stock keyboard found: left as is", KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.asList(SWOOP), KeyboardPolicy.CHOICE_STOCK));
+        assertEquals("no enabled stock keyboard found: left as is", KeyboardPolicy.noTargetStatus(Mode.CUSTOM, Arrays.asList(SWOOP), KeyboardPolicy.CHOICE_SWOOP));
+        assertEquals(KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.asList(LATIN)), KeyboardPolicy.noTargetStatus(Mode.QUICKSTEP, Arrays.asList(LATIN), KeyboardPolicy.CHOICE_GBOARD));
+        assertEquals("Gboard", KeyboardPolicy.choiceName(null));
+        assertEquals("Swoop", KeyboardPolicy.choiceName("swoop"));
+        assertEquals("the stock keyboard", KeyboardPolicy.choiceName("stock"));
+    }
+    @Test public void theSettingsLookAlikeDoesNotNameSwoopEither() {
+        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard", "Swoop"));
+        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard.debug", "Swoop"));
+        assertFalse(KeyboardPolicy.isQuickstepSide("com.android.inputmethod.latin", "Android keyboard (AOSP)"));
+        assertEquals(Arrays.asList("Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard", "com.android.inputmethod.latin"), Arrays.asList("Swoop", "Android keyboard (AOSP)")));
+        assertEquals("when Swoop is the one and only keyboard the row names it instead of going blank", Arrays.asList("Swoop"),
+                KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard"), Arrays.asList("Swoop")));
+    }
 }
