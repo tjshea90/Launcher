@@ -2162,3 +2162,42 @@
 ## 2026-11-18T21:41:14Z
 > LinkMeter v0.2.190 is published and recorded. The four solo Launcher reruns (`wf` and `fl`, each on the current code and on v0.9.12) are still running, and I'll read them at 21:48Z.
 <!-- sha:f888c2b03688 -->
+
+## 2026-11-18T21:52:06Z
+> Short status first: the `wf` and `fl` reruns are all read except the current-code `fl` run (#670), which should finish about 21:59Z. Nothing in the product has changed since the gate started.
+>
+> 📌 **Chat checkpoint: 🟡 Yellow**
+>
+> **Goal:** Ship Tj's CH1 request: a "Pocket return" switch and a Quickstep keyboard choice (stock, Gboard or Swoop) in the Launcher, plus the matching LinkMeter half.
+>
+> **Decisions made:**
+> - The switch is OFF by default, and OFF is provably unchanged (pure rules, JVM tests).
+> - Double Home is unchanged.
+> - LinkMeter's half is released.
+> - `fl` red on both the tag and the head means the cause is not the diff.
+>
+> **Changed / rejected:**
+> - Gate run #661 (ffmpeg stall) → rerun as #663.
+> - #659's CS-B2 failure → rejected as a flake (the `cs` reruns on head and tag are green).
+>
+> **Key details:**
+> - Launcher branch `ccr-61fe5a34-fw0jax`; LinkMeter v0.2.190 (413b4f4, run #190, green).
+> - #663: 121 PASS, 5 FAIL.
+> - `wf` solo is green on main (#666) and on tag v0.9.12 (#668), so the #663 `wf` failures were an in-chain flake.
+> - `fl` on tag #669: FL2 menuW1 and FL2 menuP1 red.
+> - `fl` on head #667 produced no results; its rerun #670 (id 44405222990) is in flight.
+>
+> **Done so far:** all code, 1167 unit tests, lint, `pk` green, LinkMeter released, release draft updated.
+>
+> **Open / next steps:**
+> 1. Read #670 (failed_only, tail 45). Green means `fl` is flaky on both refs; red means grep the `fl` history and find out why before shipping.
+> 2. `bash ship.sh`, then `android.yml` with `full_build=true` (check for runs in flight first), then `get_release_by_tag`, then `record-release.sh`.
+> 3. Fill the Launcher link into the draft and send Tj the answer (measured versus reasoned).
+> 4. Disable or delete the heartbeat when shipped.
+>
+> **Rules to remember:** checkpoint after every step with short ckpt text; no product change during triage; wait on the clock, not on wrapper notices; Release links as plain text on their own lines; keep CI logs out of this context.
+>
+> ⚠️ **Health:** I'm at roughly 250K of the 392K compaction point and everything is saved in `CHECKPOINT.md`, so nothing is lost, but I'll stay terse.
+>
+> 💡 This chat is getting long. Consider `/amhandoff` at the next good stopping point.
+<!-- sha:12371b600bba -->
