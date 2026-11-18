@@ -5578,6 +5578,71 @@ check "LG: the PIN used for the test was cleared again" bash -c "! grep -qiE 'fa
 adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section lg
+if want pk; then # section pk
+ensurehome
+# ---- PK (CH1, Tj 2026-11-18): "Pocket return". Switch OFF = the old launcher (no POCKET line, the old single lock preparation at 700 ms); ON = the tile return writes the ordered POCKET lines,
+# switches the tablet's Wi-Fi off, opens no stand-in app; double Home is NOT a pocket return; the lock preparation also starts at 0 and 250 ms. LinkMeter is not installed on the emulator, so the
+# phone half is proven only up to "LinkMeter did not answer: the phone steps are skipped" (the phone job itself: LinkMeter's own tests, TASKS CH1g for the tablet).
+pklog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | awk -v t="$1" '$1>=t'; }
+pknow(){ adb shell date +%H:%M:%S | tr -d '\r'; }
+pkwifi(){ adb shell dumpsys wifi 2>/dev/null | grep -m1 -iE 'wi-?fi is (enabled|disabled)' | tr -d '\r'; }
+pkfeat(){ adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"pocket_return\\\" value=\\\"$1\\\" /><string name=\\\"return_app_label\\\">Calendar</string></map>\" > shared_prefs/tj_features.xml'"; }
+# A: switch OFF
+pkfeat false; setmode quickstep; rebind; home; sleep 2
+PK_A="$(pknow)"
+adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" > "$OUT/pk-a-start.txt" 2>&1; sleep 7
+getmode > "$OUT/pk-a-mode.txt"; pklog "$PK_A" > "$OUT/pk-a-log.txt"
+check "PK1: switch OFF: the icon still returns to the custom launcher" grep -q custom "$OUT/pk-a-mode.txt"
+check "PK1: switch OFF: not one POCKET line in the lock log" bash -c "! grep -q ' POCKET ' $OUT/pk-a-log.txt"
+home; sleep 1
+PK_A2="$(pknow)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
+pklog "$PK_A2" | grep -c ' LOCKPREP ' > "$OUT/pk-a-prep.txt"
+adb shell input keyevent KEYCODE_WAKEUP; sleep 1; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
+info "PK1: lock preparations in the first 1.6 s after the screen went off, switch OFF: $(tr -d ' \r\n' < "$OUT/pk-a-prep.txt") (the old code runs at 700 ms and 6.5 s)"
+check "PK1: switch OFF: exactly ONE lock preparation in the first 1.6 s (the old 700 ms)" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/pk-a-prep.txt)\" = 1 ]"
+# B: switch ON, the quick-settings tile's return
+pkfeat true; setmode quickstep; rebind; home; sleep 2
+adb shell svc wifi enable >/dev/null 2>&1; sleep 3
+PK_W0="$(pkwifi)"
+adb logcat -c
+PK_B="$(pknow)"
+adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pk-b-start.txt" 2>&1; sleep 12
+getmode > "$OUT/pk-b-mode.txt"; resumed > "$OUT/pk-b-resumed.txt"; pklog "$PK_B" > "$OUT/pk-b-log.txt"; PK_W1="$(pkwifi)"
+adb logcat -d -s TjReset:I > "$OUT/pk-b-reset.txt" 2>&1
+info "PK2: Wi-Fi before: '$PK_W0', after: '$PK_W1'; POCKET lines: $(grep ' POCKET ' "$OUT/pk-b-log.txt" | cut -c14-120 | tr '\n' '|' | cut -c1-600)"
+check "PK2: switch ON: the tile switches Quickstep to custom" grep -q custom "$OUT/pk-b-mode.txt"
+check "PK2: the custom launcher is in front, no stand-in app was opened" grep -q 'com.tj.launcher' "$OUT/pk-b-resumed.txt"
+check "PK2: the log says the return came from the tile" grep -q ' POCKET start via tile' "$OUT/pk-b-log.txt"
+check "PK2: LinkMeter is absent here and the log says the phone steps are skipped" grep -q ' POCKET phone: LinkMeter did not answer' "$OUT/pk-b-log.txt"
+check "PK2: the tablet step does not wait for the phone: Wi-Fi off is in the log" grep -qE ' POCKET tablet Wi-Fi (off -> true|was already off)' "$OUT/pk-b-log.txt"
+if echo "$PK_W0" | grep -qi enabled; then
+  check "PK2: the tablet's Wi-Fi is really off afterwards" bash -c "echo '$PK_W1' | grep -qi disabled"
+else
+  info "PK2: the emulator's Wi-Fi was not on before ('$PK_W0'): the real off state cannot be proven here"
+fi
+check "PK2: the keyboard step ran" grep -q ' POCKET keyboard:' "$OUT/pk-b-log.txt"
+check "PK2: the VPN step ran" grep -q ' POCKET VPN:' "$OUT/pk-b-log.txt"
+check "PK2: the preload step ran" grep -qE ' POCKET preload|POCKET preload' "$OUT/pk-b-log.txt"
+check "PK2: the steps are in order (start, phone, Wi-Fi)" bash -c "a=\$(grep -n ' POCKET start via' $OUT/pk-b-log.txt | head -1 | cut -d: -f1); b=\$(grep -n ' POCKET phone:' $OUT/pk-b-log.txt | head -1 | cut -d: -f1); c=\$(grep -nE ' POCKET tablet Wi-Fi' $OUT/pk-b-log.txt | head -1 | cut -d: -f1); [ -n \"\$a\" ] && [ -n \"\$b\" ] && [ -n \"\$c\" ] && [ \"\$a\" -lt \"\$b\" ] && [ \"\$b\" -lt \"\$c\" ]"
+check "PK2: the pocket return leaves the radios to the pocket steps (no Bluetooth off by the reset)" grep -q 'radios left to the pocket return' "$OUT/pk-b-reset.txt"
+# C: the double Home is NOT a pocket return, even with the switch ON
+pkfeat true; setmode quickstep; rebind; home; sleep 2
+PK_C="$(pknow)"
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 9
+getmode > "$OUT/pk-c-mode.txt"; pklog "$PK_C" > "$OUT/pk-c-log.txt"
+check "PK3: double Home with the switch ON still returns to custom" grep -q custom "$OUT/pk-c-mode.txt"
+check "PK3: and it is not a pocket return (no POCKET line)" bash -c "! grep -q ' POCKET ' $OUT/pk-c-log.txt"
+# D: the lock preparation starts at once with the switch ON (0, 250, 700 ms)
+home; sleep 1
+PK_D="$(pknow)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
+pklog "$PK_D" | grep -c ' LOCKPREP ' > "$OUT/pk-d-prep.txt"
+adb shell input keyevent KEYCODE_WAKEUP; sleep 1; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
+info "PK4: lock preparations in the first 1.6 s after the screen went off, switch ON: $(tr -d ' \r\n' < "$OUT/pk-d-prep.txt")"
+check "PK4: switch ON: at least THREE lock preparations in the first 1.6 s (0, 250, 700 ms)" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/pk-d-prep.txt)\" -ge 3 ]"
+adb shell svc wifi enable >/dev/null 2>&1
+setfeat; setmode custom; home
+
+fi # section pk
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
