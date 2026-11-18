@@ -313,7 +313,8 @@ public final class ReturnReset {
         }
         BluetoothAdapter bt = BluetoothAdapter.getDefaultAdapter();
         if (bt != null && bt.isEnabled()) {
-            if (keep) Log.i(TAG, "bluetooth left on (BS2: its symbol is hidden instead)");
+            if (PocketReturn.holdsBluetooth()) Log.i(TAG, "bluetooth left on (CH1: a pocket run is putting the phone to sleep over it)");   // review CH1: the lock rules run at the side key; LinkMeter's phone job needs Bluetooth for up to two minutes
+            else if (keep) Log.i(TAG, "bluetooth left on (BS2: its symbol is hidden instead)");
             else { boolean ok = bt.disable(); Log.i(TAG, "bluetooth off -> " + ok); }
         }
     }

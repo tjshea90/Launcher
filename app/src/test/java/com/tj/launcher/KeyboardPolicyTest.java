@@ -182,11 +182,20 @@ public class KeyboardPolicyTest {
         assertEquals("the stock keyboard", KeyboardPolicy.choiceName("stock"));
     }
     @Test public void theSettingsLookAlikeDoesNotNameSwoopEither() {
-        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard", "Swoop"));
-        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard.debug", "Swoop"));
-        assertFalse(KeyboardPolicy.isQuickstepSide("com.android.inputmethod.latin", "Android keyboard (AOSP)"));
-        assertEquals(Arrays.asList("Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard", "com.android.inputmethod.latin"), Arrays.asList("Swoop", "Android keyboard (AOSP)")));
+        final String sw = KeyboardPolicy.CHOICE_SWOOP;
+        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard", "Swoop", sw));
+        assertTrue(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard.debug", "Swoop", sw));
+        assertFalse(KeyboardPolicy.isQuickstepSide("com.android.inputmethod.latin", "Android keyboard (AOSP)", sw));
+        assertEquals(Arrays.asList("Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard", "com.android.inputmethod.latin"), Arrays.asList("Swoop", "Android keyboard (AOSP)"), sw));
         assertEquals("when Swoop is the one and only keyboard the row names it instead of going blank", Arrays.asList("Swoop"),
-                KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard"), Arrays.asList("Swoop")));
+                KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard"), Arrays.asList("Swoop"), sw));
+    }
+    @Test public void swoopIsAnOrdinaryKeyboardUnlessItIsTheQuickstepChoice() {   // review CH1: the defaults (choice Gboard, or the old two-argument calls) must not change what the look-alike shows
+        for (String choice : new String[] { KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.CHOICE_STOCK, null, "junk" }) {
+            assertFalse(choice, KeyboardPolicy.isQuickstepSide("app.swoop.keyboard", "Swoop", choice));
+            assertEquals(choice, Arrays.asList("Swoop", "Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard", "com.android.inputmethod.latin"), Arrays.asList("Swoop", "Android keyboard (AOSP)"), choice));
+        }
+        assertFalse(KeyboardPolicy.isQuickstepSide("app.swoop.keyboard", "Swoop"));
+        assertEquals(Arrays.asList("Swoop", "Android keyboard (AOSP)"), KeyboardPolicy.visibleLabels(Arrays.asList("app.swoop.keyboard", "com.android.inputmethod.latin"), Arrays.asList("Swoop", "Android keyboard (AOSP)")));
     }
 }

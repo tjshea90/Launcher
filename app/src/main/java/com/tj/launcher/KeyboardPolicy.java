@@ -85,21 +85,28 @@ public final class KeyboardPolicy {
     private static boolean mentionsSwiftKey(String s) { return s != null && s.toLowerCase(Locale.ROOT).contains("swiftkey"); }
 
     /** BX1: a keyboard of the Quickstep side that the look-alike should not name: SwiftKey (BT1e, still hidden if it is installed) or Gboard (the Quickstep keyboard since BX1). */
-    public static boolean isQuickstepSide(String pkg, String label) { return isSwiftKey(pkg, label) || isGboard(pkg) || isSwoop(pkg); }   // CH1e: Swoop can be the Quickstep side's keyboard too
+    public static boolean isQuickstepSide(String pkg, String label) { return isQuickstepSide(pkg, label, CHOICE_GBOARD); }
+
+    /** CH1e: Swoop counts as the Quickstep side's keyboard only when the choice is swoop. */
+    public static boolean isQuickstepSide(String pkg, String label, String choice) { return isSwiftKey(pkg, label) || isGboard(pkg) || (CHOICE_SWOOP.equals(choice) && isSwoop(pkg)); }
 
     /**
      * BT1e: the keyboard names the look-alike may show. {@code pkgs} and {@code labels} are parallel lists describing the ENABLED input methods (a missing package is fine, the label then decides); SwiftKey's entry and
      * blank labels are left out. BX1: Gboard is the Quickstep side's keyboard now, so it is left out the same way, but only while another keyboard is listed (on a device whose one and only keyboard is Gboard the
      * row names it instead of going blank). Never null; the order is kept.
      */
-    public static List<String> visibleLabels(List<String> pkgs, List<String> labels) {
+    public static List<String> visibleLabels(List<String> pkgs, List<String> labels) { return visibleLabels(pkgs, labels, CHOICE_GBOARD); }
+
+    /** CH1e: as above; Swoop is left out too, but ONLY when it is the Quickstep side's keyboard (the choice is swoop): otherwise it is an ordinary keyboard, as before CH1. */
+    public static List<String> visibleLabels(List<String> pkgs, List<String> labels, String choice) {
+        final boolean swoopHidden = CHOICE_SWOOP.equals(choice);
         List<String> out = new ArrayList<>(), gboard = new ArrayList<>();
         if (labels == null) return out;
         for (int i = 0; i < labels.size(); i++) {
             String label = labels.get(i);
             String pkg = pkgs != null && i < pkgs.size() ? pkgs.get(i) : null;
             if (label == null || label.trim().isEmpty() || isSwiftKey(pkg, label)) continue;
-            (isGboard(pkg) || isSwoop(pkg) ? gboard : out).add(label);   // CH1e: Swoop is left out like Gboard (named only when it is the one and only keyboard)
+            (isGboard(pkg) || (swoopHidden && isSwoop(pkg)) ? gboard : out).add(label);   // CH1e: with the choice swoop, Swoop is left out like Gboard (named only when it is the one and only keyboard)
         }
         return out.isEmpty() ? gboard : out;
     }

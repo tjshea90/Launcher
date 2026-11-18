@@ -1872,13 +1872,18 @@ public class TjAccessibilityService extends AccessibilityService {
             if (locked && !paused && !armed && !cleanedNow && !Mode.isCustom(app) && !ReturnReset.invisibleReady(app)) LockLog.add(app, "LOCKPREP", "no shell helper: Quickstep's apps stay until the unlock, which then cleans on screen behind the cover (start the helper with the adb line to make the unlock instant)");   // BE3: the report says WHY an unlock was slow
             // BE2 (Tj: "at no time ... an app that is hidden from the app drawer inside the recent apps"): while locked, in the custom launcher, every task of a non-drawer app is removed by id (helper running, invisible)
             if (locked && !paused && !cleanedNow && !armed && Mode.isCustom(app)) RecentsSweep.requestAsync(app, "lock", RecentsSweep.HIDDEN_ONLY, null, 4000);
-            if (PocketRules.lockNotificationClean(PocketReturn.on(app), Mode.isCustom(app), paused, locked, armed, ReturnReset.invisibleReady(app), pocketCleanedThisLock)) { pocketCleanedThisLock = true; ReturnReset.pocketCleanAtLock(app); }   // CH1 step 10: no notification waits on the lock screen
+            // CH1 step 10: no notification waits on the lock screen. The switch and the cheap flags come first (review: with the switch OFF the helper is not asked at all, `invisibleReady` can block the main thread for up to 0.7 s)
+            if (locked && !armed && !paused && !pocketCleanedThisLock && PocketReturn.on(app) && PocketRules.lockNotificationClean(true, Mode.isCustom(app), paused, locked, armed, ReturnReset.invisibleReady(app), pocketCleanedThisLock, musicPlaying(app))) { pocketCleanedThisLock = true; ReturnReset.pocketCleanAtLock(app); }
             if (locked && !paused && ReturnReset.cleanStart(app) && (!Mode.isCustom(app) || ReturnReset.bootCleanPending(app))) AppOrigin.refreshUsedCacheAsync(app);   // BE3: what the unlock needs to know about Recents is read now, not on the unlock path
             boolean dark = !isScreenOn();
             if (locked && !shadeLookedDark) { noteShade(shadeLevel(), "look at " + why); if (dark) shadeLookedDark = true; }   // CA1 S5: a SECOND dark run (6.5 s later) does not look again either: the panel cannot change while dark   // review LOW2: the wake (SystemUI busy) skips it when the dark look already read the panel   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
             if (locked) { try { refreshLayers(); } catch (Throwable t) { Log.e(TAG, "patch pre-creation failed", t); } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst
             if (ProfileSession.prearmCustomStackOnLockedWake(ProfileSession.prearm(app), locked, armed, preArmedThisLock, paused)) prearmCustom(why);
         } catch (Throwable t) { Log.e(TAG, "lock prepare failed", t); }
+    }
+
+    private static boolean musicPlaying(android.content.Context c) {
+        try { android.media.AudioManager am = (android.media.AudioManager) c.getSystemService(AUDIO_SERVICE); return am != null && am.isMusicActive(); } catch (Throwable t) { return false; }
     }
 
     /**

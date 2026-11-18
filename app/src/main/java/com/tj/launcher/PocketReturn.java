@@ -60,26 +60,39 @@ public final class PocketReturn {
 
     // ------------------------------------------------------------------------------------------------ steps 1-4: the phone (through LinkMeter) and the tablet's Wi-Fi
 
+    /** Review CH1: a bridge call that does not answer (LinkMeter starting, frozen, stuck in a Bluetooth call) must not keep the tablet's Wi-Fi on: each call waits this long at most. */
+    static final long CALL_MS = 6_000L;
+    private static volatile boolean btHeld;
+
+    /** True while a pocket run is going: the lock-screen rules must not switch Bluetooth off then (LinkMeter reaches the phone over it). Never true when the switch was never used. */
+    public static boolean holdsBluetooth() { return btHeld; }
+
     private static void phoneAndWifi(Context app) {
+        btHeld = true;
+        try { phoneAndWifiBody(app); } finally { btHeld = false; }
+    }
+
+    private static void phoneAndWifiBody(Context app) {
         final long t0 = SystemClock.elapsedRealtime();
         boolean wifiOff = false;
         String verdictText = "";
         String lastLook = "";
         try {
-            PocketRules.Verdict v = PocketRules.helloVerdict(parseHello(callBridge(app, "hello")));
+            PocketRules.Verdict v = PocketRules.helloVerdict(parseHello(callBridge(app, "hello", CALL_MS)));
             verdictText = v.text;
             LockLog.add(app, "POCKET", "phone: " + v.text + " (+" + (SystemClock.elapsedRealtime() - t0) + " ms)");
             if (v.start) {
-                PocketRules.Look look = parseLook(callBridge(app, "pocket_start"));
+                PocketRules.Look look = parseLook(callBridge(app, "pocket_start", CALL_MS));
+                String lastLogged = "";
                 while (true) {   // the deadline is the first thing PocketRules.next looks at; every round either ends or waits a positive time
                     long el = SystemClock.elapsedRealtime() - t0;
                     PocketRules.Step st = PocketRules.next(look, wifiOff, el);
-                    lastLook = look.answered ? (look.state + (look.text.isEmpty() ? "" : ": " + look.text)) : "no answer";
-                    LockLog.add(app, "POCKET", "phone job +" + el + " ms: " + (look.answered ? look.state + (look.sent ? " (sleep order sent)" : "") : "no answer") + " -> " + st.why);
+                    lastLook = look.answered ? look.state + (look.sent ? " (sleep order sent)" : "") : "no answer";   // state words only: what the phone said stays out of the public report
+                    if (!lastLook.equals(lastLogged) || st.finished || st.wifiOffNow) { LockLog.add(app, "POCKET", "phone job +" + el + " ms: " + lastLook + " -> " + st.why); lastLogged = lastLook; }   // one line per CHANGE, not per poll (the lock log is a small ring)
                     if (st.wifiOffNow) wifiOff = wifiOff(app, st.why);
                     if (st.finished) break;
                     try { Thread.sleep(st.nextMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
-                    look = parseLook(callBridge(app, "pocket_state"));
+                    look = parseLook(callBridge(app, "pocket_state", CALL_MS));
                 }
             }
         } catch (Throwable t) {
@@ -110,13 +123,21 @@ public final class PocketReturn {
     // ------------------------------------------------------------------------------------------------ the bridge client
 
     /** One call into LinkMeter's bridge; null = no answer (not installed, refused by the system, its process died). Blocking: never on the main thread. */
-    private static Bundle callBridge(Context app, String method) {
-        try {
-            ContentResolver cr = app.getContentResolver();
-            return cr.call(BRIDGE, method, null, null);
-        } catch (Throwable t) {
-            Log.w(TAG, "bridge " + method + " failed: " + t);
-            return null;
+    private static Bundle callBridge(final Context app, final String method, long timeoutMs) {
+        final Bundle[] out = { null };
+        Thread t = new Thread(new Runnable() { @Override public void run() {
+            try {
+                ContentResolver cr = app.getContentResolver();
+                Bundle b = cr.call(BRIDGE, method, null, null);
+                synchronized (out) { out[0] = b; }
+            } catch (Throwable e) { Log.w(TAG, "bridge " + method + " failed: " + e); }
+        } }, "tj-pocket-call");
+        t.setDaemon(true);
+        t.start();
+        try { t.join(timeoutMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        synchronized (out) {
+            if (out[0] == null && t.isAlive()) Log.w(TAG, "bridge " + method + " did not answer in " + timeoutMs + " ms");
+            return out[0];   // null = no answer (the abandoned thread ends whenever the call does)
         }
     }
 

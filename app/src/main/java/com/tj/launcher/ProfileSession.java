@@ -134,12 +134,12 @@ public final class ProfileSession {
         Context app = c.getApplicationContext();
         if (Mode.isCustom(app)) return;
         final boolean pocket = PocketRules.active(PocketReturn.on(app), pocketVia);
-        if (pocket) PocketReturn.begin(app, pocketVia);   // CH1: the phone steps start FIRST and run beside the return (nothing waits on the phone)
         CrashGuard.clearTripped(app);
         Mode.set(app, Mode.CUSTOM);
         Features.setString(app, FailsafeKeys.LAST_KEY, "back to custom via " + why + " at " + new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()));
         app.startActivity(new android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_HOME).setPackage(app.getPackageName())
                 .putExtra(RouterActivity.EXTRA_PREARM, "custom").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION));
+        if (pocket) PocketReturn.begin(app, pocketVia);   // CH1: after the mode switch and the home start went through (review): the phone steps run beside the clean-up, nothing waits on the phone
         ReturnReset.run(app, pocket);
     }
 

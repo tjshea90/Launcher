@@ -47,10 +47,10 @@ public final class PocketRules {
 
     /**
      * Pure: at the lock, in the custom launcher, close the apps that have a notification (force-stop: their notifications go with them)? Only with the
-     * switch ON, a custom session (the Quickstep case has its own clean-up), the keyguard up, no handshake armed, the helper there, and once per lock.
+     * switch ON, a custom session (the Quickstep case has its own clean-up), the keyguard up, no handshake armed, the helper there, once per lock, and not while music plays.
      */
-    public static boolean lockNotificationClean(boolean switchOn, boolean customMode, boolean automationOff, boolean keyguardLocked, boolean handshakeArmed, boolean helperReady, boolean alreadyDone) {
-        return switchOn && customMode && !automationOff && keyguardLocked && !handshakeArmed && helperReady && !alreadyDone;
+    public static boolean lockNotificationClean(boolean switchOn, boolean customMode, boolean automationOff, boolean keyguardLocked, boolean handshakeArmed, boolean helperReady, boolean alreadyDone, boolean musicPlaying) {
+        return switchOn && customMode && !automationOff && keyguardLocked && !handshakeArmed && helperReady && !alreadyDone && !musicPlaying;   // review CH1: a playing song (an ongoing notification) is not stopped by the side key
     }
 
     // ------------------------------------------------------------------------------------------------ which apps may be force-stopped (step 6)
@@ -64,8 +64,22 @@ public final class PocketRules {
      */
     public static boolean keepPackage(String pkg) {
         if (pkg == null) return false;
-        return LINKMETER_PKG.equals(pkg) || KeyboardPolicy.isGboard(pkg) || KeyboardPolicy.isSwoop(pkg) || KeyboardPolicy.isSwiftKey(pkg, null);
+        if (LINKMETER_PKG.equals(pkg) || KeyboardPolicy.isGboard(pkg) || KeyboardPolicy.isSwoop(pkg) || KeyboardPolicy.isSwiftKey(pkg, null)) return true;
+        for (String p : INFRASTRUCTURE) if (pkg.equals(p) || pkg.startsWith(p + ".")) return true;
+        return false;
     }
+
+    /**
+     * Review CH1: preinstalled apps that an update replaced (so they are no longer FLAG_SYSTEM) but that the tablet runs on: Google Play services and their framework pieces, the Play Store, the WebView, the
+     * installer and permission screens, the media / bluetooth / NFC providers. A force-stop puts them into the "stopped" state: pushes and background services stop until something starts them again.
+     * (Chrome, YouTube and the other apps Tj OPENS are not in this list: closing those is the point.)
+     */
+    static final String[] INFRASTRUCTURE = {
+        "com.google.android.gms", "com.google.android.gsf", "com.android.vending", "com.google.android.webview", "com.android.webview",
+        "com.google.android.packageinstaller", "com.android.packageinstaller", "com.google.android.permissioncontroller", "com.android.permissioncontroller",
+        "com.google.android.ext.services", "com.google.android.ext.shared", "com.google.android.setupwizard", "com.android.providers", "com.android.bluetooth",
+        "com.android.nfc", "com.android.settings", "com.google.android.configupdater", "com.google.android.syncadapters", "com.google.android.backuptransport", "com.google.android.printservice"
+    };
 
     /** What the real device is asked per package (the glue backs it with PackageManager); a fake in the tests. */
     public interface Facts {
@@ -78,22 +92,23 @@ public final class PocketRules {
     /**
      * Pure: the packages the pocket return force-stops. {@code origin} = what the old clean-up already decided (apps Quickstep opened); {@code taskPackages} =
      * the apps that have a card in Recents right now (they are OPEN); {@code notified} = apps with a notification in the shade. Every list may be null (the helper
-     * could not answer). Order: origin first, then the cards, then the notifications; no duplicates. The apps that are only INSTALLED are never added: a force-stop puts
+     * could not answer). Order: origin first, then the cards, then the notifications; no duplicates. {@code origin} was already decided by the old rule, which closes system apps Quickstep opened
+     * (Files, Calculator): only the packages ADDED from the cards and the notifications are also held back when they are system apps. The apps that are only INSTALLED are never added: a force-stop puts
      * an app into Android's "stopped" state, which silences its pushes until it is opened again (ReturnReset.runInvisible), so only what is open or notifying is stopped.
      */
     public static List<String> stopList(Collection<String> origin, Collection<String> taskPackages, Collection<String> notified, Facts facts) {
         Set<String> out = new LinkedHashSet<>();
-        add(out, origin, facts);
-        add(out, taskPackages, facts);
-        add(out, notified, facts);
+        add(out, origin, facts, false);
+        add(out, taskPackages, facts, true);
+        add(out, notified, facts, true);
         return new ArrayList<>(out);
     }
 
-    private static void add(Set<String> out, Collection<String> in, Facts facts) {
+    private static void add(Set<String> out, Collection<String> in, Facts facts, boolean holdBackSystem) {
         if (in == null) return;
         for (String p : in) {
             if (p == null || p.isEmpty() || out.contains(p)) continue;
-            if (keepPackage(p) || !facts.mayClose(p) || facts.isSystemApp(p)) continue;
+            if (keepPackage(p) || !facts.mayClose(p) || (holdBackSystem && facts.isSystemApp(p))) continue;
             out.add(p);
         }
     }
@@ -179,9 +194,15 @@ public final class PocketRules {
     public static String summary(String at, String verdictText, String lastLook, boolean wifiWasOff) {
         StringBuilder b = new StringBuilder();
         b.append(at == null || at.isEmpty() ? "no pocket return yet" : "last pocket return " + at);
-        if (verdictText != null && !verdictText.isEmpty()) b.append("; ").append(verdictText);
-        if (lastLook != null && !lastLook.isEmpty()) b.append("; phone: ").append(lastLook);
+        if (verdictText != null && !verdictText.isEmpty()) b.append("; ").append(cap(verdictText, 120));
+        if (lastLook != null && !lastLook.isEmpty()) b.append("; phone: ").append(cap(lastLook, 60));
         b.append(wifiWasOff ? "; tablet Wi-Fi off" : "; tablet Wi-Fi left as it was");
         return b.toString();
+    }
+
+    /** The summary goes into the public tablet report: one line, never longer than {@code max} characters per part (what LinkMeter says is not trusted to be short). */
+    static String cap(String s, int max) {
+        String t = s.replace('\r', ' ').replace('\n', ' ').trim();
+        return t.length() <= max ? t : t.substring(0, max - 1) + "…";
     }
 }

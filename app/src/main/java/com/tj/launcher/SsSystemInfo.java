@@ -44,7 +44,7 @@ final class SsSystemInfo {
         InputMethodManager imm = (InputMethodManager) c.getSystemService(Context.INPUT_METHOD_SERVICE);
         List<String> pkgs = new ArrayList<>(), labels = new ArrayList<>();
         if (imm != null) for (InputMethodInfo i : imm.getEnabledInputMethodList()) { pkgs.add(i.getPackageName()); labels.add(String.valueOf(i.loadLabel(c.getPackageManager()))); }
-        return KeyboardPolicy.visibleLabels(pkgs, labels);
+        return KeyboardPolicy.visibleLabels(pkgs, labels, KeyboardSwitch.choice(c));
     }
 
     /**
@@ -67,7 +67,7 @@ final class SsSystemInfo {
                 InputMethodInfo found = exact != null ? exact : samePackage;   // a package with two input methods: the first one only when the exact one is not listed
                 if (found != null) {
                     String label = String.valueOf(found.loadLabel(c.getPackageManager()));
-                    if (!KeyboardPolicy.isQuickstepSide(found.getPackageName(), label)) return label;
+                    if (!KeyboardPolicy.isQuickstepSide(found.getPackageName(), label, KeyboardSwitch.choice(c))) return label;
                     List<String> others = visibleKeyboardLabels(c);   // BT1e, BX1
                     return others.isEmpty() ? "" : others.get(0);
                 }
