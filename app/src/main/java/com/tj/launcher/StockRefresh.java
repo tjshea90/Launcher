@@ -34,6 +34,8 @@ final class StockRefresh {
     /** ... or this many Activity objects are alive (one launcher + one Recents is normal; each pinned re-creation adds one). */
     static final int MIN_ACTIVITIES = 6;
     static final long COOLDOWN_MS = 6L * 60 * 60 * 1000;
+    /** A restart the helper could not do (an older helper without the command, a refused call) is tried again after this, not after the full cooldown (review, 2026-11-18). */
+    static final long RETRY_AFTER_FAIL_MS = 30L * 60 * 1000;
     /** After the return to custom, wait this long (the clean-up of the return is finished and nobody is in Quickstep any more) before the reading that decides. */
     static final long AFTER_RETURN_DELAY_MS = 45_000L;
     /** After the restart, wait this long for the new process before the "after" reading. */
@@ -57,7 +59,7 @@ final class StockRefresh {
      * Pure: "" = go, else the reason in plain words (it goes into the status line and the lock log). The order is the order of the questions a reader asks: is the feature on, is there a trustworthy
      * reading, is it big, is it a safe moment (custom mode, the custom home in front), is it not too soon after the last one. {@code lastAtMs} 0 = never; a clock that went backwards allows it.
      */
-    static String blocker(boolean switchOn, boolean found, boolean viaHelper, int pssKb, int activities, boolean customMode, boolean customHomeInFront,
+    static String blocker(boolean switchOn, boolean found, boolean viaHelper, int pssKb, int activities, boolean customMode, boolean customHomeInFront, boolean screenOnUnlocked,
                           long lastAtMs, long nowMs, int minPssKb, int minActivities) {
         if (!switchOn) return "switch off";
         if (!found) return "no reading";
@@ -65,9 +67,16 @@ final class StockRefresh {
         if (!big(pssKb, activities, minPssKb, minActivities)) return "not big";
         if (!customMode) return "Quickstep is the active launcher";
         if (!customHomeInFront) return "the custom home is not on screen";
+        if (!screenOnUnlocked) return "the screen is off or locked";   // the "custom home resumed" flag can outlive a lock (review LOW 4): never restart the stock launcher behind the lock screen
         if (lastAtMs > 0 && nowMs >= lastAtMs && nowMs - lastAtMs < COOLDOWN_MS) return "restarted " + ((nowMs - lastAtMs) / 60_000L) + " min ago";
         return "";
     }
+
+    /** Pure: the time stored as "last restart". A restart that worked starts the full cooldown; one that did not is tried again after {@link #RETRY_AFTER_FAIL_MS} (still never in a loop). */
+    static long lastAtAfter(boolean restarted, long nowMs) { return restarted ? nowMs : nowMs - COOLDOWN_MS + RETRY_AFTER_FAIL_MS; }
+
+    /** Pure: the status line must keep the result of the last restart while the cooldown is what blocks the next one (review LOW 6). */
+    static boolean keepsLastResult(String blockerText) { return blockerText != null && blockerText.startsWith("restarted "); }
 
     private static int mb(int kb) { return kb < 0 ? -1 : Math.round(kb / 1024f); }
 
@@ -95,7 +104,10 @@ final class StockRefresh {
                         Thread.sleep(Math.max(0L, delay));
                     } catch (Throwable ignored) {
                     } finally { PENDING.set(false); }
-                    try { QsMemory.refreshAsync(app, true); } catch (Throwable ignored) { }
+                    try {
+                        if (!ShellHelper.running()) return;   // review LOW 1: no helper = no restart is possible, so no forced reading (its app-uid dumpsys fallbacks cost up to 10 s each)
+                        QsMemory.refreshAsync(app, true);
+                    } catch (Throwable ignored) { }
                 }
             }, "TjStockRefreshWait");
             t.setDaemon(true);
@@ -113,10 +125,10 @@ final class StockRefresh {
             long now = System.currentTimeMillis();
             int minKb = Features.getInt(app, MIN_MB_KEY, MIN_PSS_KB / 1024) * 1024;
             int minAct = Features.getInt(app, MIN_ACT_KEY, MIN_ACTIVITIES);
-            String why = blocker(switchOn(app), s.found, viaHelper, s.pssKb, s.activities, Mode.isCustom(app), TjHooks.launcherInFront(),
+            String why = blocker(switchOn(app), s.found, viaHelper, s.pssKb, s.activities, Mode.isCustom(app), TjHooks.launcherInFront(), screenOnUnlocked(app),
                     Features.getLong(app, LAST_AT_KEY, 0L), now, minKb, minAct);
             if (!why.isEmpty()) {
-                if (big(s.pssKb, s.activities, minKb, minAct)) Features.setStringAsync(app, STATUS_KEY, clock() + "  the stock launcher is big (" + fmt(s.pssKb, s.activities) + "), left alone: " + why);
+                if (big(s.pssKb, s.activities, minKb, minAct) && !keepsLastResult(why)) Features.setStringAsync(app, STATUS_KEY, clock() + "  the stock launcher is big (" + fmt(s.pssKb, s.activities) + "), left alone: " + why);
                 return;
             }
             if (!RUNNING.compareAndSet(false, true)) return;
@@ -126,6 +138,7 @@ final class StockRefresh {
                 Features.setLongAsync(app, LAST_AT_KEY, now);   // before the call: a helper that hangs must not be asked again in a loop
                 boolean ok = ShellHelper.stockRestart();
                 String err = ShellHelper.lastError;
+                if (!ok) Features.setLongAsync(app, LAST_AT_KEY, lastAtAfter(false, now));   // an older helper ("unknown command") must not block the next try for six hours
                 int afterKb = -1, afterAct = -1;
                 if (ok) {
                     try { Thread.sleep(AFTER_RESTART_MS); } catch (InterruptedException ignored) { }
@@ -139,6 +152,14 @@ final class StockRefresh {
                 Log.i(TAG, text);
             } finally { RUNNING.set(false); }
         } catch (Throwable t) { Log.e(TAG, "consider failed", t); }
+    }
+
+    private static boolean screenOnUnlocked(Context c) {
+        try {
+            android.os.PowerManager pm = (android.os.PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            android.app.KeyguardManager km = (android.app.KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+            return pm != null && pm.isInteractive() && km != null && !km.isKeyguardLocked();
+        } catch (Throwable t) { return false; }
     }
 
     /** One sentence for Launcher control and the tablet report. */

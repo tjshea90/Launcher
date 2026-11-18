@@ -125,6 +125,7 @@ public final class SettingsSpoof {
      * A line in the log says which way it went (emulator section ss reads it).
      */
     private static void postReloadChecked(final Context app, final boolean want, final String why) {
+        if (!want) { postReload(app); return; }   // review LOW 5: the real Settings must come back at once (the old path); only the alias-ON flip has a model that may already be right
         try {
             final com.android.launcher3.LauncherModel model = com.android.launcher3.LauncherAppState.getInstance(app).getModel();
             bg().postDelayed(new Runnable() {
@@ -138,6 +139,7 @@ public final class SettingsSpoof {
                             @Override public void run() {
                                 boolean needed = true;
                                 String why2 = "failed";
+                                if (!Mode.isCustom(app)) { reloadOwed = true; Log.i(TAG, "G1 check dropped: Quickstep came on meanwhile (the next custom sync reloads if it still needs to; " + why + ")"); return; }   // review LOW 5: no full reload while Quickstep is on (CA1 S2)
                                 try {
                                     boolean loaded = m.isModelLoaded();
                                     boolean real = false, alias = false;
