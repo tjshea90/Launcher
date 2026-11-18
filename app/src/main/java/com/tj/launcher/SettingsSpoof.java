@@ -104,6 +104,64 @@ public final class SettingsSpoof {
 
     private static void postReload(final Context app) { new Handler(Looper.getMainLooper()).post(new Runnable() { @Override public void run() { try { HiddenApps.reloadLauncher(app); } catch (Throwable ignored) { } } }); }
 
+    /** CI1 (G1): how long after an alias change the drawer model is looked at (the system's own package-changed callback reaches the model within tens of ms). */
+    static final long MODEL_CHECK_DELAY_MS = 1200;
+
+    /**
+     * CI1 (G1), pure: does the drawer model still need a FULL reload after the alias was switched ON? A full reload rebuilds the whole workspace and all-apps list on the main thread (est. 0.3-0.7 s of CPU on the
+     * tablet, the home icons blink about 3 s after every return to custom) and is only certain, never necessary, when the model already holds exactly the right rows: the alias flip itself reaches Launcher3
+     * incrementally through the package-changed callback ({@code PackageUpdatedTask} OP_UPDATE adds / drops the alias row), and the real Settings row is out of a model that was loaded in the custom mode.
+     * Reload when the model is not loaded (a loader is pending / was dropped: today's path), when the alias is NOT wanted (the real Settings must come back: kept as before), when the real Settings row is still
+     * in the model (the process loaded it in Quickstep) or when the alias row is missing (the callback has not arrived).
+     */
+    public static boolean reloadNeeded(boolean modelLoaded, boolean wantAlias, boolean realSettingsInModel, boolean aliasInModel) {
+        if (!modelLoaded) return true;
+        if (!wantAlias) return true;
+        return realSettingsInModel || !aliasInModel;
+    }
+
+    /**
+     * CI1 (G1): the checked reload. Looks at the model's own list on its worker thread {@link #MODEL_CHECK_DELAY_MS} later and reloads (the old, certain path) only when {@link #reloadNeeded}. Any failure = reload.
+     * A line in the log says which way it went (emulator section ss reads it).
+     */
+    private static void postReloadChecked(final Context app, final boolean want, final String why) {
+        try {
+            final com.android.launcher3.LauncherModel model = com.android.launcher3.LauncherAppState.getInstance(app).getModel();
+            bg().postDelayed(new Runnable() {
+                @Override public void run() {
+                    try {
+                        model.enqueueModelUpdateTask(new com.android.launcher3.LauncherModel.ModelUpdateTask() {
+                            private com.android.launcher3.LauncherModel m;
+                            private com.android.launcher3.AllAppsList list;
+                            @Override public void init(com.android.launcher3.LauncherAppState a, com.android.launcher3.LauncherModel mm, com.android.launcher3.model.BgDataModel d,
+                                                       com.android.launcher3.AllAppsList l, java.util.concurrent.Executor ui) { m = mm; list = l; }
+                            @Override public void run() {
+                                boolean needed = true;
+                                String why2 = "failed";
+                                try {
+                                    boolean loaded = m.isModelLoaded();
+                                    boolean real = false, alias = false;
+                                    if (loaded) {
+                                        for (int i = list.data.size() - 1; i >= 0; i--) {
+                                            android.content.ComponentName cn = list.data.get(i).componentName;
+                                            if (cn == null) continue;
+                                            if (REAL_SETTINGS_PACKAGE.equals(cn.getPackageName())) real = true;
+                                            if (ALIAS.equals(cn.getClassName())) alias = true;
+                                        }
+                                    }
+                                    needed = reloadNeeded(loaded, want, real, alias);
+                                    why2 = "loaded=" + loaded + " real=" + real + " alias=" + alias;
+                                } catch (Throwable t) { needed = true; }
+                                Log.i(TAG, "G1 drawer model " + (needed ? "needs the full reload" : "already right: NO full reload") + " (" + why2 + "; " + why + ")");
+                                if (needed) postReload(app);
+                            }
+                        });
+                    } catch (Throwable t) { Log.e(TAG, "G1 check failed, full reload", t); postReload(app); }
+                }
+            }, MODEL_CHECK_DELAY_MS);
+        } catch (Throwable t) { Log.e(TAG, "G1 check not possible, full reload", t); postReload(app); }
+    }
+
     public static synchronized boolean syncNow(Context c, String why) {
         try {
             Context app = c.getApplicationContext();
@@ -113,14 +171,14 @@ public final class SettingsSpoof {
             boolean is = pm.getComponentEnabledSetting(cn) == PackageManager.COMPONENT_ENABLED_STATE_ENABLED;   // DEFAULT = the manifest value = disabled
             if (is == want) {
                 Log.i(TAG, "alias already " + (want ? "on" : "off") + " (" + why + ")");
-                if (reloadOwed && Mode.isCustom(app)) { reloadOwed = false; postReload(app); Log.i(TAG, "the reload skipped in Quickstep is done now (" + why + ")"); }   // CA1 S2 review MED1: the switch went OFF during Quickstep (no alias change at the return), the drawer still needs the real Settings back
+                if (reloadOwed && Mode.isCustom(app)) { reloadOwed = false; postReloadChecked(app, want, why); Log.i(TAG, "the reload skipped in Quickstep is looked at now (" + why + ")"); }   // CA1 S2 review MED1: the switch went OFF during Quickstep (no alias change at the return), the drawer still needs the real Settings back
                 return false;
             }
             pm.setComponentEnabledSetting(cn, want ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
             String line = new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()) + "  Settings entry " + (want ? "ON" : "OFF") + " (" + why + ")";
             Log.i(TAG, line);
             Features.setStringAsync(app, STATUS_KEY, line);
-            if (want || Mode.isCustom(app)) { reloadOwed = false; postReload(app); }
+            if (want || Mode.isCustom(app)) { reloadOwed = false; postReloadChecked(app, want, why); }   // CI1 (G1): only when the model is not already right
             else { reloadOwed = true; Log.i(TAG, "no forced reload: Quickstep (the custom drawer is not on screen; the system's component-changed update drops the entry, the return to custom re-enables the alias and reloads)"); }   // CA1 S2: a full Launcher3 load + bind (est. 0.5-1.5 s of CPU on the tablet) ran at every switch to Quickstep, while Quickstep itself was starting; reloadOwed pays it at the next custom sync if the alias then does not change
             return true;
         } catch (Throwable t) {
