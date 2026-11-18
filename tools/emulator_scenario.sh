@@ -4056,6 +4056,9 @@ ssdrawer(){ # ssdrawer <dump file>: open the custom drawer and scroll until "Set
 ssfeat true; setmode custom; rebind; home; sleep 8     # the process starts at Home; SettingsSpoof flips the alias 3 s later on a background thread
 adb logcat -d -s TjSettingsSpoof:I > "$OUT/ss-log-on.txt" 2>&1
 check "SS1: the Settings entry (the manifest alias) was switched ON in the custom mode with the switch on" grep -q "Settings entry ON" "$OUT/ss-log-on.txt"
+SS_G1="$(grep 'G1 drawer model' "$OUT/ss-log-on.txt" | tail -n 1 | cut -c1-230)"
+info "SS1g (CI1 G1): the model check after the alias flip: ${SS_G1:-NO LINE}"
+check "SS1g: the alias flip was followed by the G1 drawer-model check (one line says 'already right' or 'needs the full reload', and why)" grep -q "G1 drawer model" "$OUT/ss-log-on.txt"
 ssdrawer "$OUT/ss-drawer.xml"; shot ss-01-drawer
 check "SS2: exactly ONE 'Settings' in the custom drawer (the look-alike; the real Settings is kept out)" bash -c "[ \"\$(tr '>' '\n' < $OUT/ss-drawer.xml | grep -c 'text=\"Settings\"')\" = 1 ]"
 SB=$(ssbounds "$OUT/ss-drawer.xml" Settings); set -- $SB; if [ "$#" -ge 4 ]; then adb shell input tap $(( ($1+$3)/2 )) $(( ($2+$4)/2 )); fi; sleep 4; shot ss-02-home; resumed > "$OUT/ss-resumed.txt"
