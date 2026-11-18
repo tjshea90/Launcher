@@ -355,6 +355,11 @@ public class ControlActivity extends Activity {
             KeyboardSwitch.apply(ControlActivity.this, Mode.get(ControlActivity.this));   // takes effect now if Quickstep is the active launcher
         } });
 
+        // CH1 (Tj, 2026-11-18): "Pocket return": the tile / icon back to the custom launcher also puts the phone to sleep, closes every app and prepares the lock screen. OFF = the launcher exactly as before.
+        toggle("Pocket return (tile and icon)", "When you go back to the custom launcher with the \"Back to custom\" tile or icon: LinkMeter puts your phone to sleep (hotspot, Wi-Fi and airplane mode, battery saver, screen off), the tablet's Wi-Fi and VPN go off, every open app is force-stopped except LinkMeter and your keyboards, and the custom launcher and lock screen are made ready ahead of time. Double Home is not changed. OFF = nothing changes. Last run: " + PocketReturn.last(this), PocketReturn.on(this), new Chg() { public void on(boolean v) {
+            Features.set(ControlActivity.this, PocketRules.KEY, v);
+        } });
+
         group("safety", "Safety & secret ways to Quickstep", false);
         toggle("Keep Quickstep away unless I use a handshake", "Quickstep opens ONLY after a secret unlock handshake (Lock screen section). If its home screen appears any other way in custom mode, send me back.", Features.get(this, StrayHomeGuard.KEY, true), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, StrayHomeGuard.KEY, v); } });
         toggle("Keep the custom home away while I am in Quickstep", "If the custom launcher's home screen shows up in the middle of a Quickstep session (for example when you leave an app with Back after unlocking with the handshake), the Quickstep home screen is shown instead. It never acts on the lock screen, right after an unlock, or while the tablet is dark.", Features.get(this, StrayCustomGuard.KEY, StrayCustomGuard.defaultOn(ReturnReset.isDebuggable(this))), new Chg() { public void on(boolean v) { Features.set(ControlActivity.this, StrayCustomGuard.KEY, v); } });

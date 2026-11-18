@@ -22,7 +22,7 @@ public final class ReportState {
     static final Set<String> SAFE_VALUES = new HashSet<>(Arrays.asList(
             "power_mode", "return_app_label", "qs_tiles_applied_mode", "qs_tiles_custom", "qs_tiles_quickstep",
             "unlock_pick_last", "unlock_speed", "unlock_sum", "home_curtain_state", "home_curtain_capture", "reset_last", "failsafe_last", "profile_last", "power_latency",
-            "guard_count", "guard_last", "guard_custom_count", "guard_custom_last", "mode_flips", "keyboard_status", "quickstep_keyboard", "wallpaper_patch_status", "lock_cal_status",
+            "guard_count", "guard_last", "guard_custom_count", "guard_custom_last", "mode_flips", "keyboard_status", "quickstep_keyboard", "pocket_return", "pocket_last", "wallpaper_patch_status", "lock_cal_status",
             "compile_done_code", "boot_count_seen", "keytest_summary", "keytest_output", "keytest_menu", "keytest_at", "keep_alive_blocked_why", "battery_saver_last", "migrate_note",
             // v0.7.6 (review of v0.7.5): the wallpaper kind was documented as "in the report" but never listed; the patch nudges are plain numbers (never the lock-screen number TEXT)
             "wallpaper_kind", "wallpaper_geometry", "patch_dx", "patch_dy", "patch_scale_pct", "patch_dim_pct", "patch_scrim_pct",
