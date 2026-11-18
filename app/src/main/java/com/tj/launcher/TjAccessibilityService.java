@@ -1842,6 +1842,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private boolean preCleanedThisLock = false;       // O4: Quickstep's apps were closed at lock during this lock
+    private boolean pocketCleanedThisLock = false;    // CH1: the notifying apps were closed at this lock (pocket return only)
     private final Runnable lockPrepareLater = new Runnable() { @Override public void run() { lockPrepare("screen off, locked"); } };
 
     /**
@@ -1871,12 +1872,27 @@ public class TjAccessibilityService extends AccessibilityService {
             if (locked && !paused && !armed && !cleanedNow && !Mode.isCustom(app) && !ReturnReset.invisibleReady(app)) LockLog.add(app, "LOCKPREP", "no shell helper: Quickstep's apps stay until the unlock, which then cleans on screen behind the cover (start the helper with the adb line to make the unlock instant)");   // BE3: the report says WHY an unlock was slow
             // BE2 (Tj: "at no time ... an app that is hidden from the app drawer inside the recent apps"): while locked, in the custom launcher, every task of a non-drawer app is removed by id (helper running, invisible)
             if (locked && !paused && !cleanedNow && !armed && Mode.isCustom(app)) RecentsSweep.requestAsync(app, "lock", RecentsSweep.HIDDEN_ONLY, null, 4000);
+            if (PocketRules.lockNotificationClean(PocketReturn.on(app), Mode.isCustom(app), paused, locked, armed, ReturnReset.invisibleReady(app), pocketCleanedThisLock)) { pocketCleanedThisLock = true; ReturnReset.pocketCleanAtLock(app); }   // CH1 step 10: no notification waits on the lock screen
             if (locked && !paused && ReturnReset.cleanStart(app) && (!Mode.isCustom(app) || ReturnReset.bootCleanPending(app))) AppOrigin.refreshUsedCacheAsync(app);   // BE3: what the unlock needs to know about Recents is read now, not on the unlock path
             boolean dark = !isScreenOn();
             if (locked && !shadeLookedDark) { noteShade(shadeLevel(), "look at " + why); if (dark) shadeLookedDark = true; }   // CA1 S5: a SECOND dark run (6.5 s later) does not look again either: the panel cannot change while dark   // review LOW2: the wake (SystemUI busy) skips it when the dark look already read the panel   // BY1c F1: the panel's real state BEFORE the patch is (re)shown: while dark it cannot change, so the wake shows the right thing (a missed event or a panel left open at screen-off)
             if (locked) { try { refreshLayers(); } catch (Throwable t) { Log.e(TAG, "patch pre-creation failed", t); } }   // BE1: the lock-screen patch window is created NOW, while the screen is dark, not in the wake-up burst
             if (ProfileSession.prearmCustomStackOnLockedWake(ProfileSession.prearm(app), locked, armed, preArmedThisLock, paused)) prearmCustom(why);
         } catch (Throwable t) { Log.e(TAG, "lock prepare failed", t); }
+    }
+
+    /**
+     * CH1 step 9: after a pocket return load what can be loaded NOW, so the next lock and wake find it ready: the patch / pencil layers (the same refresh the wake runs), once now and again after the
+     * custom home has settled in front. Only called by {@link PocketReturn}; harmless when nothing is wanted (the refresh removes what is not).
+     */
+    public void pocketPreload(final String why) {
+        handler.post(new Runnable() { @Override public void run() {
+            try {
+                refreshLayers();
+                handler.removeCallbacks(layerRefresh); handler.postDelayed(layerRefresh, 700);
+                LockLog.add(getApplicationContext(), "POCKET", "preload (" + why + "): layers refreshed, again in 0.7 s");
+            } catch (Throwable t) { Log.e(TAG, "pocket preload failed", t); }
+        } });
     }
 
     /** SCREEN_ON: the lock screen is what the screen shows (if it was not locked at screen-off, this is the first chance). */
@@ -2935,8 +2951,10 @@ public class TjAccessibilityService extends AccessibilityService {
                 } catch (Throwable ignored) { }
                 try { patchShow(overlayShown); } catch (Throwable ignored) { }   // v0.7.6 (review of v0.7.5): lastBouncer is reset here, so a resting patch that was hidden for the PIN pad must come back now; the next wake sees bouncer == lastBouncer and would never re-show it
                 handler.removeCallbacks(lockPrepareLater);
-                handler.postDelayed(lockPrepareLater, 700);      // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark
-                handler.postDelayed(lockPrepareLater, 6500);     // ... and after the default 5 s "lock after" delay
+                pocketCleanedThisLock = false;
+                // O3/O4: if the tablet locks at once, get everything ready while the screen is still dark (700 ms), and again after the default 5 s "lock after" delay (6.5 s).
+                // CH1: with "Pocket return" ON the preparation also starts at the side-key press itself (0 ms) and 250 ms later; the two old times stay. Switch OFF = exactly the old 700 / 6500.
+                for (long d : PocketRules.lockPrepDelaysMs(PocketReturn.on(getApplicationContext()))) { if (d <= 0) handler.post(lockPrepareLater); else handler.postDelayed(lockPrepareLater, d); }
             }
             if (android.content.Intent.ACTION_SCREEN_ON.equals(act)) { screenDarkNow = false; handler.removeCallbacks(qsMemRun); handler.postDelayed(qsMemRun, 30_000L); AnimationSpeedup.forgetGrant(); try { if (penView != null && penShown) startPenWatch(); } catch (Throwable ignored) { } /* CA1 S3: the cover is watched again from the wake */ screenOnEpoch = t; unlock.onScreen(true, t); handler.removeCallbacks(lockPrepareLater); handleLockedWake(); if (calibrating()) { autoShotTries = 0; handler.removeCallbacks(autoShot); handler.postDelayed(autoShot, 2500); } flurryChange(true, t); updateMotion(); handler.postDelayed(layerRefresh, 400); }
             if (android.content.Intent.ACTION_USER_PRESENT.equals(act)) VpnOff.onUnlocked();   // CB2: a new lock counts its VPN stops from zero (nothing turns the VPN back on)
