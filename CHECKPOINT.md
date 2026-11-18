@@ -1,13 +1,13 @@
-# CHECKPOINT 1472 — read me first, then TASKS.md
+# CHECKPOINT 1473 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T22:02:46Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `7ca5b228` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T22:05:20Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `002baea9` (this checkpoint is the commit after it)
 
 ## Just done
-fl: #670 head solo 18 PASS 1 FAIL (FL2 menuP1 5 frames 83ms); same tag red now but its own gate #629 had no FL2 FAIL = runner timing; SHIPPING; TASKS CH1h/CH1i written
+pre-ship: Pocket return switch (tile and icon, with LinkMeter) and Quickstep keyboard choice (stock, Gboard, Swoop)
 
 ## Do this next
-ship.sh running (log scratchpad/ship.log, marker SHIP_EXIT=); then android.yml full_build=true ref main (check runs in flight), get_release_by_tag, record-release.sh, fill Launcher link into draft, answer Tj; trig_01CxhtUYmpxg1H1vMi1NgFbF
+ship.sh gates and releases this
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ ship.sh running (log scratchpad/ship.log, marker SHIP_EXIT=); then android.yml f
 
 ## Last ten checkpoints
 ```
+  a071faa6 ckpt 1472: fl: #670 head solo 18 PASS 1 FAIL (FL2 menuP1 5 frames 83ms); same tag red n
   abc97842 ckpt 1471: fl HEAD solo #670 id 44405222990 job 135158542388 RED (FAIL names pending); 
   b5d580b3 ckpt 1470: fl TAG v0.9.12 #669 RED 17 PASS 2 FAIL (FL2 menuW1 flashA 6/4, FL2 menuP1 sc
   6c514553 ckpt 1469: SOLO reruns 21:48Z: wf main #666 GREEN, wf tag v0.9.12 #668 GREEN => #663 WF
@@ -25,7 +26,6 @@ ship.sh running (log scratchpad/ship.log, marker SHIP_EXIT=); then android.yml f
   4ccfc112 ckpt 1465: #663 id 44396161665 job 135126488976: 121 PASS 5 FAIL = WF2 WF2b WF3 WF2d (w
   636fbee5 ckpt 1464: cs rerun GREEN on head (#664 id 44396167699, job 135126506728) AND on tag v0
   1d3b2ab3 ckpt 1463: RERUN IDS (dispatched 20:56Z): #663 id 44396161665 = group3 whole (b6,n6,lq,
-  3149d576 ckpt 1462: #661 = ffmpeg apt stall (flake), #659 = 144 PASS 1 FAIL CS-B2 only (cs). RER
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
