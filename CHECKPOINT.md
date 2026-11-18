@@ -1,13 +1,13 @@
-# CHECKPOINT 1454 — read me first, then TASKS.md
+# CHECKPOINT 1455 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T20:10:45Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `d2205101` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T20:13:40Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `7ef71bfc` (this checkpoint is the commit after it)
 
 ## Just done
-pk run #656 (id 44386249311, head 4508c197): 20 PASS 1 FAIL (PK1 lock-prep count: OFF showed 2 in 1.6 s, a TEST premise; every POCKET step line, Wi-Fi off really disabled, double Home unchanged, ON 3 preps all PASS); check now measures first-start offset
+lint GREEN; review fixes in; pk run #657 id 44388274246 (head c7967b9c) in progress; design note updated
 
 ## Do this next
-re-dispatch emulator.yml sections=pk on main with the review fixes; heartbeat trig_01CxhtUYmpxg1H1vMi1NgFbF
+read run 44388274246 (get_job_logs run_id failed_only tail 60 = pass/fail probe), then gate: bash tools/gate.sh 1c135985 (4 runs), ship.sh, android.yml; heartbeat trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ re-dispatch emulator.yml sections=pk on main with the review fixes; heartbeat tr
 
 ## Last ten checkpoints
 ```
+  c7967b9c ckpt 1454: pk run #656 (id 44386249311, head 4508c197): 20 PASS 1 FAIL (PK1 lock-prep c
   4d8ec662 ckpt 1453: CH1 review (code-review high, 10 findings): fixed 9 (OFF-path invisibleReady
   491be878 ckpt 1452: pk emulator run DISPATCHED on main (head 4508c197), sections=pk, at 19:59 UT
   4508c197 ckpt 1451: CH1f: emulator section pk written (OFF unchanged, ON ordered POCKET lines, W
@@ -25,8 +26,7 @@ re-dispatch emulator.yml sections=pk on main with the review fixes; heartbeat tr
   32ea3990 ckpt 1447: CH1e: KeyboardPolicyTest+ReportStateTest GREEN (GRADLE_EXIT=0)
   96b8ecaa ckpt 1446: CH1b LinkMeter half DONE+pushed (b27a212: bridge, identity pin, job, PocketR
   a4335781 ckpt 1445: CH1b LinkMeter half in progress (3 files written, wip pushed on LinkMeter br
-  f0e9e60c ckpt 1444: CH1a design note written (research/CH1_POCKET_RETURN_DESIGN_2026-11-18.md)
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
