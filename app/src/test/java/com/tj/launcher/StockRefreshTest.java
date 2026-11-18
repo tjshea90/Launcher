@@ -13,7 +13,7 @@ public class StockRefreshTest {
     private static final long H = 3_600_000L;
 
     private static String go(boolean sw, boolean found, boolean helper, int pss, int act, boolean custom, boolean front, long last) {
-        return StockRefresh.blocker(sw, found, helper, pss, act, custom, front, last, NOW, MIN_KB, MIN_ACT);
+        return StockRefresh.blocker(sw, found, helper, pss, act, custom, front, true, last, NOW, MIN_KB, MIN_ACT);
     }
 
     @Test public void everythingRightGoes() {
@@ -43,6 +43,29 @@ public class StockRefreshTest {
         assertEquals("Quickstep is the active launcher", go(true, true, true, 400 * 1024, 9, false, true, 0));
         assertEquals("the custom home is not on screen", go(true, true, true, 400 * 1024, 9, true, false, 0));
         assertEquals("Quickstep is the active launcher", go(true, true, true, 400 * 1024, 9, false, false, 0));
+    }
+
+    @Test public void neverBehindTheLockScreenOrWithTheScreenOff() {
+        assertEquals("the screen is off or locked", StockRefresh.blocker(true, true, true, 400 * 1024, 9, true, true, false, 0, NOW, MIN_KB, MIN_ACT));
+        assertEquals("", StockRefresh.blocker(true, true, true, 400 * 1024, 9, true, true, true, 0, NOW, MIN_KB, MIN_ACT));
+        // the custom home flag is checked first: a clear reason for the common case
+        assertEquals("the custom home is not on screen", StockRefresh.blocker(true, true, true, 400 * 1024, 9, true, false, false, 0, NOW, MIN_KB, MIN_ACT));
+    }
+
+    @Test public void aFailedRestartIsTriedAgainSoonButASuccessfulOneWaitsTheCooldown() {
+        assertEquals(NOW, StockRefresh.lastAtAfter(true, NOW));
+        long failed = StockRefresh.lastAtAfter(false, NOW);
+        // right after a failure the blocker still says "restarted ..." until the short retry time has passed, then it goes again
+        assertTrue(go(true, true, true, 400 * 1024, 9, true, true, failed).startsWith("restarted "));
+        assertEquals("", StockRefresh.blocker(true, true, true, 400 * 1024, 9, true, true, true, failed, NOW + StockRefresh.RETRY_AFTER_FAIL_MS, MIN_KB, MIN_ACT));
+        assertTrue(failed < NOW && failed > NOW - StockRefresh.COOLDOWN_MS);
+    }
+
+    @Test public void theCooldownTextNeverOverwritesTheLastResult() {
+        assertTrue(StockRefresh.keepsLastResult("restarted 12 min ago"));
+        assertFalse(StockRefresh.keepsLastResult("not big"));
+        assertFalse(StockRefresh.keepsLastResult("the screen is off or locked"));
+        assertFalse(StockRefresh.keepsLastResult(null));
     }
 
     @Test public void atMostOncePerCooldown() {
