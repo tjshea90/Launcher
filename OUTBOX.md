@@ -2146,3 +2146,7 @@
 ## 2026-11-18T21:05:59Z
 > Gate status: of the four runs, `#660` and `#662` are green. `#659` had one red check (CS-B2), but its rerun is green on both the current code and the v0.9.12 tag, so that was an in-chain flake. `#661` was a CI install stall, so I reran it as `#663`, due about 21:28Z. When that is green I'll run `ship.sh`, build the release and publish LinkMeter's release.
 <!-- sha:6498bafa0c0e -->
+
+## 2026-11-18T21:33:10Z
+> Nothing more I can do on either run until they finish; I'll read LinkMeter's build result at about 21:39Z.
+<!-- sha:b21d89c53208 -->
