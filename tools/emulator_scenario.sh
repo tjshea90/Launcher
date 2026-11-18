@@ -5585,6 +5585,9 @@ ensurehome
 # phone half is proven only up to "LinkMeter did not answer: the phone steps are skipped" (the phone job itself: LinkMeter's own tests, TASKS CH1g for the tablet).
 pklog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | awk -v t="$1" '$1>=t'; }
 pknow(){ adb shell date +%H:%M:%S | tr -d '\r'; }
+pknowms(){ local t; t="$(adb shell date +%H:%M:%S.%N | tr -d '\r' | cut -c1-12)"; if echo "$t" | grep -qE '^[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}$'; then echo "$t"; else echo "$(pknow).000"; fi; }
+# pkoff <HH:MM:SS.mmm>: the offsets (ms after that time) of every LOCKPREP line in the lock log, oldest first (the key press itself is ~50-150 ms after the time: adb latency)
+pkoff(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | awk -v t="$1" 'function ms(s,  a,b){split(s,a,":");split(a[3],b,".");return ((a[1]*60+a[2])*60+b[1])*1000+b[2]} BEGIN{t0=ms(t)} $2=="LOCKPREP"{d=ms($1)-t0; if(d>=-200 && d<=2500) print d}'; }
 pkwifi(){ adb shell dumpsys wifi 2>/dev/null | grep -m1 -iE 'wi-?fi is (enabled|disabled)' | tr -d '\r'; }
 pkfeat(){ adb shell am force-stop "$PKG"; adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"pocket_return\\\" value=\\\"$1\\\" /><string name=\\\"return_app_label\\\">Calendar</string></map>\" > shared_prefs/tj_features.xml'"; }
 # A: switch OFF
@@ -5595,11 +5598,11 @@ getmode > "$OUT/pk-a-mode.txt"; pklog "$PK_A" > "$OUT/pk-a-log.txt"
 check "PK1: switch OFF: the icon still returns to the custom launcher" grep -q custom "$OUT/pk-a-mode.txt"
 check "PK1: switch OFF: not one POCKET line in the lock log" bash -c "! grep -q ' POCKET ' $OUT/pk-a-log.txt"
 home; sleep 1
-PK_A2="$(pknow)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
-pklog "$PK_A2" | grep -c ' LOCKPREP ' > "$OUT/pk-a-prep.txt"
+PK_A2="$(pknowms)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
+pkoff "$PK_A2" > "$OUT/pk-a-prep.txt"
 adb shell input keyevent KEYCODE_WAKEUP; sleep 1; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
-info "PK1: lock preparations in the first 1.6 s after the screen went off, switch OFF: $(tr -d ' \r\n' < "$OUT/pk-a-prep.txt") (the old code runs at 700 ms and 6.5 s)"
-check "PK1: switch OFF: exactly ONE lock preparation in the first 1.6 s (the old 700 ms)" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/pk-a-prep.txt)\" = 1 ]"
+info "PK1: lock preparations after the screen went off, switch OFF, ms after the key press (the old code runs at 700 ms and 6.5 s): $(tr '\n' ' ' < "$OUT/pk-a-prep.txt")"
+check "PK1: switch OFF: the first lock preparation is the old 700 ms one (nothing at the key press itself)" bash -c "awk 'NR==1{m=\$1} \$1<m{m=\$1} END{exit !(NR>0 && m>=450)}' $OUT/pk-a-prep.txt"
 # B: switch ON, the quick-settings tile's return
 pkfeat true; setmode quickstep; rebind; home; sleep 2
 adb shell svc wifi enable >/dev/null 2>&1; sleep 3
@@ -5634,11 +5637,11 @@ check "PK3: double Home with the switch ON still returns to custom" grep -q cust
 check "PK3: and it is not a pocket return (no POCKET line)" bash -c "! grep -q ' POCKET ' $OUT/pk-c-log.txt"
 # D: the lock preparation starts at once with the switch ON (0, 250, 700 ms)
 home; sleep 1
-PK_D="$(pknow)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
-pklog "$PK_D" | grep -c ' LOCKPREP ' > "$OUT/pk-d-prep.txt"
+PK_D="$(pknowms)"; adb shell input keyevent KEYCODE_SLEEP; sleep 1.6
+pkoff "$PK_D" > "$OUT/pk-d-prep.txt"
 adb shell input keyevent KEYCODE_WAKEUP; sleep 1; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
-info "PK4: lock preparations in the first 1.6 s after the screen went off, switch ON: $(tr -d ' \r\n' < "$OUT/pk-d-prep.txt")"
-check "PK4: switch ON: at least THREE lock preparations in the first 1.6 s (0, 250, 700 ms)" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/pk-d-prep.txt)\" -ge 3 ]"
+info "PK4: lock preparations after the screen went off, switch ON, ms after the key press: $(tr '\n' ' ' < "$OUT/pk-d-prep.txt")"
+check "PK4: switch ON: the first lock preparation starts at the key press (before 450 ms), and there are at least three in the first 1.6 s (0, 250, 700 ms)" bash -c "awk 'NR==1{m=\$1} \$1<m{m=\$1} END{exit !(NR>=3 && m<450)}' $OUT/pk-d-prep.txt"
 adb shell svc wifi enable >/dev/null 2>&1
 setfeat; setmode custom; home
 
