@@ -2122,3 +2122,23 @@
 >
 > Still open from you: these tablet checks (TASKS CG1h), plus the older waiting items (CE1d, CB2g, CD1/CD3).
 <!-- sha:75a669b5ba63 -->
+
+## 2026-11-18T20:41:28Z
+> Pocket return and the Quickstep keyboard choice are built in both apps, but nothing is released yet. The full emulator check is still running, due about 20:58Z, and I haven't touched the real phone or tablet.
+>
+> **What exists**
+> - **Pocket return:** a new Launcher control setting, off by default. When on, the Back to custom tile or drawer icon also asks LinkMeter to put the phone to sleep and switches the tablet's Wi-Fi off. It force-stops open apps (LinkMeter, keyboards, system and Google core apps spared) and prepares the lock screen at the side key. Double Home is untouched.
+> - **Quickstep keyboard choice:** Gboard (the default, as before), stock Android keyboard, or Swoop.
+> - **LinkMeter half:** already pushed and its build is green.
+>
+> **Checked so far**
+> - **Unit tests:** 1167 pass, 0 fail, lint is green, and LinkMeter's own tests pass.
+> - **Emulator `pk` test:** with the setting off nothing new happens. With it on, the tile return writes the steps in order and the tablet Wi-Fi really goes off. Double Home does not trigger it, and the lock preparation starts at the key press.
+> - **Code review:** ten findings, nine fixed. The main ones were a timeout so a stuck LinkMeter can't keep Wi-Fi on, and keeping Bluetooth up while the phone sleeps. The lock-time clean-up also now skips while music plays, and core Google apps are never stopped.
+>
+> **Still running:** the four-part emulator gate, runs #659 to #662. The short `rg` run, #662, finished with no failure. After the others pass I'll run `ship.sh`, build the release, record it, publish LinkMeter's release and send you the links.
+>
+> **Not proven here:** the phone going to sleep on a real phone, LinkMeter's door accepting the Launcher on the real tablet, and the Swoop and Gboard switching (the test emulator has neither keyboard). Those need your tablet and phone after install.
+>
+> I'll send the full answer, measured versus reasoned, with the Release links once the gate finishes.
+<!-- sha:cdbb782deeb2 -->
