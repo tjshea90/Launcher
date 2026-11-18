@@ -2073,3 +2073,7 @@
 ## 2026-11-18T00:24:10Z
 > The heartbeat message is the standing auto-resume, and I'm already on its rule 4. The job is mid-flight, session B has done no real work in the last 60 minutes, and INBOX has nothing unwritten. I'm continuing the triage and waiting for the reader's results.
 <!-- sha:cd48bce1573f -->
+
+## 2026-11-18T00:58:17Z
+> Waiting on the exact-chain rerun (#655, `cs2,hp,cu,last` on the branch), due about 01:05Z. The timer wakes me then. If it is green, I run the full build, record the release and send the answer.
+<!-- sha:e4f0d4c65397 -->
