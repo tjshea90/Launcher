@@ -2259,3 +2259,7 @@
 ## 2026-11-18T23:23:00Z
 > Status: SR1 is proven on the emulator. I'm now waiting on the reviewer's findings and the `ss` run for the Settings change.
 <!-- sha:7134cec1b027 -->
+
+## 2026-11-18T23:30:47Z
+> Both runs are in flight (`sr` and `ss` on the fixed head). A timer fires at 23:42Z, and I'll read them then and dispatch the three-run gate for v0.9.14 if they're green.
+<!-- sha:966408e04727 -->
