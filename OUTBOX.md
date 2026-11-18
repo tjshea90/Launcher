@@ -2158,3 +2158,7 @@
 ## 2026-11-18T21:34:50Z
 > The notice that just arrived is only the wrapper that started the timer, so it says nothing about the builds. I'm waiting on the real 21:39Z marker before reading LinkMeter's run.
 <!-- sha:fac026e2c34c -->
+
+## 2026-11-18T21:41:14Z
+> LinkMeter v0.2.190 is published and recorded. The four solo Launcher reruns (`wf` and `fl`, each on the current code and on v0.9.12) are still running, and I'll read them at 21:48Z.
+<!-- sha:f888c2b03688 -->
