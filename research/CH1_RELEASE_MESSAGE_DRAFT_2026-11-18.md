@@ -19,7 +19,8 @@ https://github.com/tjshea90/LinkMeter/releases/tag/v0.2.190
 ## MEASURED (emulator, CI) and tested
 - Unit tests: 1167, 0 failures (the switch OFF is never "active", only the tile / icon count, which apps may be stopped, the Wi-Fi-off timing, the bridge verdicts, the keyboard choice, LinkMeter's own PocketRulesTest 35,580 checks).
 - Section `pk` (run #658): OFF = no pocket line at all and the old single lock preparation; ON via the tile = the steps in order in the lock log, the tablet's Wi-Fi really off, no stand-in app, double Home NOT a pocket return, the lock preparation starts at the key press.
-- The full gate (the runs named in BUILDLOG).
+- The gate (emulator, head a31f6e05, product code unchanged since except the version number): `base,e1,t,x,ac,cs,fp,bt,pk` 144 PASS + 1 FAIL (CS-B2, green when `cs` ran alone on the head and on v0.9.12); `x1,y2,b4,n,o,cs2,an,rt,ss,vo` green; `rg` green; `b6,n6,lq,uf,pf,rb,wf,fl,last` 121 PASS + 5 FAIL: the 4 `wf` failures passed when `wf` ran alone (head and v0.9.12); the 5th is below.
+- NOT clean, and not fixed: section `fl` (films of the lock-screen power menu) fails FL2 menuP1 (the stock "Screenshot" entry is visible for 5 to 11 frames, 83 to 183 ms, when the menu is opened over the open PIN pad). It fails the same way on the released v0.9.12 (9 frames) although that release's own gate had no such failure, so it is not from this change (with the switch OFF the lock path is the old one), but it also is not proven harmless on the tablet: it is a timing check on the CI emulator. Written down as TASKS CH1i.
 
 ## NOT seen (only reasoned, or untestable here): please check on the tablet and phone
 - The phone half: the real phone going to sleep through LinkMeter (LinkMeter's tests use a simulated phone). The CI emulator has no LinkMeter, so there the log says "LinkMeter did not answer ... phone steps are skipped".
