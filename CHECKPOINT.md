@@ -1,13 +1,13 @@
-# CHECKPOINT 1450 — read me first, then TASKS.md
+# CHECKPOINT 1451 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T19:56:45Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `cbedb2ff` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T19:59:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `e921337a` (this checkpoint is the commit after it)
 
 ## Just done
-CH1c/d: PocketReturn glue, ReturnReset pocket variants, service lock-prep 0/250 ms + lock notif clean + pocketPreload, Control toggle, ReportState keys; unit suite 1163/0 GREEN
+CH1f: emulator section pk written (OFF unchanged, ON ordered POCKET lines, Wi-Fi off, double Home unchanged, lock prep 0/250/700) + gate-map + emulator.yml list
 
 ## Do this next
-emulator section pk (tools/scenario + emulator.yml + gate-map), then /code-review high on diff vs v0.9.12 base, gate, ship.sh, android.yml, release; LinkMeter closing checkpoint; heartbeat trig_01CxhtUYmpxg1H1vMi1NgFbF
+dispatch emulator.yml sections=pk on main (ref main), read RESULTS; then /code-review high vs v0.9.12; heartbeat trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ emulator section pk (tools/scenario + emulator.yml + gate-map), then /code-revie
 
 ## Last ten checkpoints
 ```
+  76b5ea01 ckpt 1450: CH1c/d: PocketReturn glue, ReturnReset pocket variants, service lock-prep 0/
   0c2c9bb3 ckpt 1449: CH1c: Launcher PocketRules (pure) + PocketRulesTest 26/0 GREEN
   3745e069 ckpt 1448: heartbeat armed trig_01CxhtUYmpxg1H1vMi1NgFbF (every 2h at :47, bound to thi
   32ea3990 ckpt 1447: CH1e: KeyboardPolicyTest+ReportStateTest GREEN (GRADLE_EXIT=0)
@@ -25,8 +26,7 @@ emulator section pk (tools/scenario + emulator.yml + gate-map), then /code-revie
   c4b05681 ckpt 1443: CH1 written into TASKS (pocket return + Quickstep keyboard choice)
   710d7019 ckpt 1442: 01:27 Z: heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ DISABLED (update_trigger en
   31a00b1a ckpt 1441: 01:12 Z: records done after the release: TASKS CG1a-d,f,g + CG3a-d + CG3 tic
-  0ec228c9 ckpt 1440: 01:09 Z: v0.9.12 RELEASED and RECORDED: https://github.com/tjshea90/Launcher
 ```
 
-(5 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
