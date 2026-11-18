@@ -5497,6 +5497,7 @@ hpint sr_min_mb 1; hpint sr_delay_ms 3000
 setmode custom; ensurehome; rebind; home; sleep 2
 cdhelper
 srwait 20
+SR_PB="$(srpid)"   # the pid BEFORE the return (run #674: the restart already happened inside cdreturns, a pid read after it is the NEW process)
 cdreturns 1
 SR_P2="$(srpid)"; cdmem b0
 SR_T=$(( $(date +%s) + 50 )); SR_P3="$SR_P2"
@@ -5507,7 +5508,8 @@ SR_N2="$(srlog | grep -c 'restarting the stock launcher')"
 SR_ST="$(srstatus)"
 info "SR restart: stock pid before ${SR_P2:-none}, then ${SR_P3:-none}, after the wait ${SR_P4:-none}; status: $(echo "$SR_ST" | cut -c1-230)"
 info "SR lock log: $(srlog | grep ' SR ' | tail -n 3 | cut -c1-200 | tr '\n' '|')"
-check "SR2: the stock launcher process was restarted (its pid changed or it was gone and came back)" bash -c "[ -n '$SR_P2' ] && { [ '$SR_P2' != '$SR_P3' ] || [ '$SR_P2' != '$SR_P4' ]; }"
+info "SR pids: before the return ${SR_PB:-none}, right after it ${SR_P2:-none}, then ${SR_P3:-none}, after the wait ${SR_P4:-none}"
+check "SR2: the stock launcher process was restarted (its pid after the return and the wait is not the one before it)" bash -c "[ -n '$SR_PB' ] && [ '$SR_PB' != '$SR_P4' ]"
 check "SR3: the lock log and the status say so" bash -c "[ '$SR_N2' = 1 ] && echo '$SR_ST' | grep -q 'restarted the stock launcher'"
 SR_RES="$(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1)"
 info "SR resumed after the restart: ${SR_RES:-?}"
