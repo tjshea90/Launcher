@@ -173,6 +173,13 @@ public final class ShellProtocol {
      */
     public static boolean isStockMem(String line) { return line != null && line.trim().equals("STOCKMEM"); }
 
+    /**
+     * CI1 (SR1): "STOCKRESTART" -> the helper force-stops the stock launcher ({@link #STOCK_PKG}) and nothing else. A constant command, no argument is ever read: the package cannot be chosen by the caller (the
+     * general FORCESTOP refuses this package on purpose, see {@link #allowed}). Tj did the same by hand in Settings several times (CD1j): the process comes back by itself when SystemUI re-binds its overview service,
+     * and the memory the stock launcher's pinned screens held (CG1F: a Go IconRecentsView listener pins every Activity ever created) is given back.
+     */
+    public static boolean isStockRestart(String line) { return line != null && line.trim().equals("STOCKRESTART"); }
+
     private static final Pattern NOTIF_RECORD = Pattern.compile("NotificationRecord\\(0x[0-9a-fA-F]+: pkg=([A-Za-z][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)+) user=UserHandle\\{(\\d+)\\}");
 
     /**

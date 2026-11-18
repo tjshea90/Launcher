@@ -168,6 +168,14 @@ public final class ShellHelper {
     /** CG1f: the text of {@code dumpsys meminfo com.android.launcher3} as the shell user sees it (an app uid is refused), or null when the helper cannot be reached. Blocking: call off the main thread. */
     public static String stockMeminfo() { return askLongAny("STOCKMEM", 25_000); }
 
+    /** CI1 (SR1): force-stops the stock launcher through the helper (the one package of the constant command STOCKRESTART). True = the helper did it; false = no helper, an older helper ("ERR unknown command": start it again) or the call failed ({@link #lastError}). Blocking: call off the main thread. */
+    public static boolean stockRestart() {
+        String r = ask("STOCKRESTART", 25_000);
+        if (r != null && r.startsWith("OK")) return true;
+        if (r != null) lastError = r.trim();
+        return false;
+    }
+
     /** AA3: removes exactly these Recents tasks (the helper re-checks the deny-list per id). @return how many were removed, or -1 if the helper could not be reached. Blocking. */
     public static int removeTasks(Collection<Integer> ids) {
         if (ids == null || ids.isEmpty()) return 0;

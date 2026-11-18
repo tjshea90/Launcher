@@ -160,6 +160,11 @@ public final class ShellServer {
             out.print(runShell("dumpsys meminfo " + ShellProtocol.STOCK_PKG, 20_000));
             out.flush(); return;
         }
+        if (ShellProtocol.isStockRestart(line)) {   // CI1 (SR1): one constant package, no argument
+            int n = forceStop(java.util.Collections.singletonList(ShellProtocol.STOCK_PKG));
+            out.println(n == 1 ? "OK" : "ERR force-stop failed");
+            out.flush(); return;
+        }
         List<Integer> rmIds = ShellProtocol.removeTaskIds(line);
         if (rmIds != null) {
             // the deny-list is enforced HERE, on the package the system itself reports for each id: an id can never be used to close the system, the keyboard, this app or the stock launcher
