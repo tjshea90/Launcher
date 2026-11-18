@@ -134,21 +134,22 @@ public final class ReturnReset {
      * Solitaire (or the target app) at once; the Quickstep apps are force-stopped BEHIND it: Recents cards, notifications and processes vanish with no shade, no Recents screen, no cover.
      * BE3: in a clean start nothing is opened at all: the custom home is already the screen, and every Recents task is removed by id behind it (complete clear).
      */
-    private static void runInvisible(final Context app, final boolean clean) {
+    private static void runInvisible(final Context app, final boolean clean, final boolean pocket) {
         final long t0 = android.os.SystemClock.uptimeMillis();
         final java.util.List<String> pkgs = invisibleTargets(app);
         final boolean first = !AppOrigin.tracked(app);
         final String target = clean ? null : targetPackage(app);
         final TaskOrigin.Guard guard = guard(app);
         new Thread(new Runnable() { @Override public void run() {
-            try { radiosOff(app); } catch (Throwable t) { Log.e(TAG, "radios failed", t); }
+            try { radiosOff(app, pocket); } catch (Throwable t) { Log.e(TAG, "radios failed", t); }
             TaskOrigin.Outcome oc = TaskOrigin.finish(app, pkgs, target, guard, clean);   // AA3: ground truth from the helper's task list when a start-of-session snapshot exists
-            int n = ShellHelper.forceStop(oc.stop);
+            final java.util.List<String> stop = pocket ? pocketStop(app, oc.stop, guard) : oc.stop;   // CH1: every OPEN app (a Recents card or a notification) except LinkMeter, keyboards, system apps
+            int n = ShellHelper.forceStop(stop);
             int m = (n >= 0 && !oc.removeIds.isEmpty()) ? ShellHelper.removeTasks(oc.removeIds) : 0;
             if (n >= 0) { AppOrigin.clearQuickstep(app); AppOrigin.setTracked(app); }
             if (clean && n >= 0 && oc.listed && m >= 0) { RecentsDirty.clear(app); clearBootClean(app); }   // BE3: the list was read and every task removed (no cap: the helper client sends them in chunks): the next return has nothing to redo
             invisAt = 0;
-            String line = "INVISIBLE: " + (n < 0 ? "the shell helper stopped answering, " + oc.stop.size() + " apps NOT stopped (next return uses the cover method)" : "force-stopped " + n + " of " + oc.stop.size() + " apps"
+            String line = "INVISIBLE: " + (n < 0 ? "the shell helper stopped answering, " + stop.size() + " apps NOT stopped (next return uses the cover method)" : "force-stopped " + n + " of " + stop.size() + " apps" + (pocket ? " (pocket return: every open app)" : "")
                     + (first ? " (first run: every non-custom app)" : "") + " in " + (android.os.SystemClock.uptimeMillis() - t0) + " ms; no cover, no shade, no Recents screen; " + oc.note + (m != 0 ? " [task removal answered " + m + "]" : ""));
             report(app, line);
         } }, "tj-reset-invisible").start();
@@ -184,15 +185,22 @@ public final class ReturnReset {
         return true;
     }
 
-    public static void run(final Context c) {
+    public static void run(final Context c) { run(c, false); }
+
+    /**
+     * CH1: {@code pocket} = the "Pocket return" switch is ON and the return came from the tile or the icon ({@link PocketRules#active}). Then the clean-up is the COMPLETE one whatever the clean-start switch
+     * says (no stand-in app: Tj's list ends with the custom launcher, empty Recents), every open app but LinkMeter / the keyboards / system apps is force-stopped, and the radios are left to
+     * {@link PocketReturn} (the tablet's Wi-Fi goes off when the phone has its order; Bluetooth stays on, LinkMeter reaches the phone over it). {@code pocket} false = the code below as it always was.
+     */
+    public static void run(final Context c, final boolean pocket) {
         if (!enabled(c)) return;
         final Context app = c.getApplicationContext();
-        final boolean clean = cleanStart(app);
-        if (invisibleReady(app)) { runInvisible(app, clean); return; }
+        final boolean clean = cleanStart(app) || pocket;
+        if (invisibleReady(app)) { runInvisible(app, clean, pocket); return; }
         // W1: the slow, blocking parts (a binder call per app, Wi-Fi/Bluetooth) run on their own thread, so the main thread starts pressing "Clear all" at once.
         new Thread(new Runnable() { @Override public void run() {
-            try { killApps(app); } catch (Throwable t) { Log.e(TAG, "kill failed", t); }
-            try { radiosOff(app); } catch (Throwable t) { Log.e(TAG, "radios failed", t); }
+            try { killApps(app, pocket); } catch (Throwable t) { Log.e(TAG, "kill failed", t); }
+            try { radiosOff(app, pocket); } catch (Throwable t) { Log.e(TAG, "radios failed", t); }
         } }, "tj-reset-bg").start();
         final boolean notif = clearNotifications(app), recents = clearRecents(app);
         TjAccessibilityService svc = TjAccessibilityService.get();
@@ -261,7 +269,9 @@ public final class ReturnReset {
         return out;
     }
 
-    private static void killApps(Context c) {
+    private static void killApps(Context c) { killApps(c, false); }
+
+    private static void killApps(Context c, boolean pocket) {
         PackageManager pm = c.getPackageManager();
         ActivityManager am = (ActivityManager) c.getSystemService(Context.ACTIVITY_SERVICE);
         ComponentName stock = StockLauncher.find(c);
@@ -273,7 +283,8 @@ public final class ReturnReset {
         int n = 0;
         for (ResolveInfo ri : pm.queryIntentActivities(launcher, 0)) {
             String pkg = ri.activityInfo.packageName;
-            if (keep.contains(pkg)) continue;   // D5: apps opened from the custom launcher stay open
+            if (!pocket && keep.contains(pkg)) continue;   // D5: apps opened from the custom launcher stay open (CH1: not in a pocket return: every open app closes)
+            if (pocket && (PocketRules.keepPackage(pkg) || isSystemApp(c, pkg))) continue;
             if (ResetPolicy.shouldKill(pkg, c.getPackageName(), stock == null ? null : stock.getPackageName(), ime)) {
                 am.killBackgroundProcesses(pkg);
                 n++;
@@ -289,7 +300,11 @@ public final class ReturnReset {
         Log.i(TAG, "cleared notifications");
     }
 
-    static void radiosOff(Context c) {
+    static void radiosOff(Context c) { radiosOff(c, false); }
+
+    /** CH1: {@code pocket} = leave BOTH radios alone here: the tablet's Wi-Fi is switched off by {@link PocketReturn} at the right moment, and Bluetooth stays on (LinkMeter's way to the phone). */
+    static void radiosOff(Context c, boolean pocket) {
+        if (pocket) { Log.i(TAG, "radios left to the pocket return (Wi-Fi off after the phone's order, Bluetooth stays on)"); return; }
         final boolean keep = RadioIconHide.keepsRadiosOn(c);   // BS1 + BS2 (Tj): Wi-Fi and Bluetooth stay on (only if they already are: nothing here turns one on), only their symbols go
         WifiManager wm = (WifiManager) c.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wm != null && wm.isWifiEnabled()) {
@@ -301,6 +316,44 @@ public final class ReturnReset {
             if (keep) Log.i(TAG, "bluetooth left on (BS2: its symbol is hidden instead)");
             else { boolean ok = bt.disable(); Log.i(TAG, "bluetooth off -> " + ok); }
         }
+    }
+
+    /** CH1: a system app that no update replaced (never force-stopped by the pocket return); an unknown package counts as system (never touched). */
+    static boolean isSystemApp(Context c, String pkg) {
+        try {
+            int f = c.getPackageManager().getApplicationInfo(pkg, 0).flags;
+            return (f & android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0 && (f & android.content.pm.ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) == 0;
+        } catch (Throwable t) { return true; }
+    }
+
+    private static PocketRules.Facts pocketFacts(final Context app, final TaskOrigin.Guard guard) {
+        return new PocketRules.Facts() {
+            @Override public boolean mayClose(String pkg) { return guard.mayClose(pkg); }
+            @Override public boolean isSystemApp(String pkg) { return ReturnReset.isSystemApp(app, pkg); }
+        };
+    }
+
+    /** CH1 (blocking: two helper calls): the old decision plus every app with a card in Recents or a notification in the shade. */
+    private static java.util.List<String> pocketStop(Context app, java.util.List<String> origin, TaskOrigin.Guard guard) {
+        java.util.LinkedHashMap<Integer, String> tasks = ShellHelper.listTasks();
+        java.util.Set<String> notified = ShellHelper.notifPackages();
+        return PocketRules.stopList(origin, tasks == null ? null : tasks.values(), notified, pocketFacts(app, guard));
+    }
+
+    /**
+     * CH1 step 10: at the LOCK, in the custom launcher, close the apps that have a notification (force-stop: their notifications go with them) so the lock screen shows none. Helper only; one blocking
+     * round on its own thread. Recents is left to the lock's own drawer-only sweep (what Tj opened from the custom launcher stays until the next pocket return).
+     */
+    public static void pocketCleanAtLock(final Context c) {
+        final Context app = c.getApplicationContext();
+        final TaskOrigin.Guard guard = guard(app);
+        new Thread(new Runnable() { @Override public void run() {
+            try {
+                java.util.List<String> stop = PocketRules.stopList(null, null, ShellHelper.notifPackages(), pocketFacts(app, guard));
+                int n = stop.isEmpty() ? 0 : ShellHelper.forceStop(stop);
+                LockLog.add(app, "POCKET", "at lock: " + (n < 0 ? "the helper stopped answering, " + stop.size() + " notifying app(s) NOT stopped" : "closed " + n + " notifying app(s) " + stop));
+            } catch (Throwable t) { Log.e(TAG, "pocket lock clean failed", t); }
+        } }, "tj-pocket-lock").start();
     }
 
     private static volatile String cachedLabel, cachedPkg;
