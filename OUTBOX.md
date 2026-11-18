@@ -2245,3 +2245,13 @@
 >
 > Everything is saved and pushed: `main` equals my branch tip, the release is recorded in BUILDLOG, and I disabled the auto-resume heartbeat because only your tablet test is left. I could not delete it myself, so you can remove it if you like.
 <!-- sha:91c227521ce6 -->
+
+## 2026-11-18T23:14:54Z
+> Status: two code changes are written and unit-tested, and I'm waiting on three things before going further.
+>
+> - **Settings reload skip (G1):** the full home-screen reload after returning to custom is skipped when the drawer is already right.
+> - **Stock launcher refresh (SR1):** Quickstep's process is restarted through the shell helper after a Quickstep session, only when it is big and the custom home is on screen.
+> - **Still pending:** an emulator proof run for the refresh, an emulator run for the Settings change, and a code review of both. The check at 23:20 UTC will pick them up, and I'll continue from there.
+>
+> The lock-screen patch is unchanged so far. The emulator runs show the first side-key press already as fast as the emulator can measure, so any further change would be a guess without a fresh tablet report.
+<!-- sha:38edbe5dec43 -->
