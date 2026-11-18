@@ -79,4 +79,20 @@ public class SettingsSpoofTest {
         Set<String> seen = new HashSet<>();
         for (SsPage p : SsPage.values()) assertTrue("duplicate id " + p.id, seen.add(p.id));
     }
+
+    /** CI1 (G1): the full reload after an alias change is skipped only when the model already holds exactly the right rows. */
+    @Test public void aFullReloadIsSkippedOnlyWhenTheDrawerModelIsAlreadyRight() {
+        // loaded, alias wanted, real Settings out, alias row in = nothing to do
+        assertFalse(SettingsSpoof.reloadNeeded(true, true, false, true));
+        // the real Settings row is still in (the process loaded in Quickstep mode): reload
+        assertTrue(SettingsSpoof.reloadNeeded(true, true, true, true));
+        // the alias row has not arrived yet: reload (the old, certain path)
+        assertTrue(SettingsSpoof.reloadNeeded(true, true, false, false));
+        assertTrue(SettingsSpoof.reloadNeeded(true, true, true, false));
+        // model not loaded (a loader is pending or was dropped): today's path
+        assertTrue(SettingsSpoof.reloadNeeded(false, true, false, true));
+        // alias NOT wanted (switch turned off in the custom mode): the real Settings must come back: always reload
+        assertTrue(SettingsSpoof.reloadNeeded(true, false, false, false));
+        assertTrue(SettingsSpoof.reloadNeeded(true, false, true, false));
+    }
 }
