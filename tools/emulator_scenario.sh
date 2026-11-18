@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
@@ -5462,6 +5462,77 @@ info "RO end: overlays left: $(adb shell cmd overlay list 2>&1 | tr -d '\r' | gr
 ensurehome; setmode custom; rebind; home
 fi # section ro
 
+if want sr; then # section sr
+beat "before SR"
+ensurehome
+# ---- SR (TASKS CI1c / SR1; Tj, 2026-11-18: "the quickstep launcher ram building problem"). The stock launcher process is restarted through the shell helper (command STOCKRESTART) after a Quickstep session, but ONLY when it is big,
+#      the custom home is on screen, the helper runs and the last restart is more than 6 h ago. The "big" line is lowered through the int keys sr_min_mb / sr_delay_ms (the emulator's stock launcher is small; the keys are read by both
+#      builds, nothing else writes them). Order: (1) NEGATIVE CONTROL with a line nobody reaches: a session return must leave the stock process alone; (2) the line at 1 MB: the return restarts it (pid changes, lock log + status say so)
+#      and the custom home is still in front; (3) Recents still opens afterwards (the stock process starts again by itself); (4) a Quickstep session after the restart still puts the stock home in front (cold start); (5) the next
+#      return does NOT restart it again (cooldown). The CI image's stock launcher is plain AOSP (no Go IconRecentsView): the memory GAIN is the tablet's to show; this section proves the mechanism and its safety.
+adb shell pm grant "$PKG" android.permission.DUMP >/dev/null 2>&1
+adb shell pm grant "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1
+CDP=SR
+hpinit false; hpkey qs_memory_log true; hpkey stock_refresh true; hpint sr_min_mb 9999; hpint sr_min_act 9999; hpint sr_delay_ms 3000
+setmode custom; ensurehome; rebind; home; sleep 2
+cdhelper
+check "SR0: the shell helper process is running" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/cd-helper-ps.txt)\" -ge 1 ]"
+srpid(){ adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n' | awk '{print $1}'; }
+srlog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
+srstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="sr_status">[^<]*' | sed 's/.*>//'; }
+srwait(){ local t=$(( $(date +%s) + $1 )); while [ "$(date +%s)" -lt "$t" ]; do sleep 2; done; }   # a plain bounded wait (the deadline is checked first)
+# (1) negative control: nothing is big enough, the stock process must keep its pid and no restart line may appear
+cdreturns 1
+SR_P0="$(srpid)"; cdmem a0
+srwait 25
+SR_P1="$(srpid)"
+SR_N1="$(srlog | grep -c 'restarting the stock launcher')"
+info "SR control: stock pid before the return ${SR_P0:-none}, 25 s after it ${SR_P1:-none}; restart lines: $SR_N1"
+check "SR1: with the line out of reach the stock launcher is NOT restarted (pid unchanged, no restart line)" bash -c "[ -n '$SR_P0' ] && [ '$SR_P0' = '$SR_P1' ] && [ '$SR_N1' = 0 ]"
+# (2) the line at 1 MB: the next return restarts the process (the recorder's forced reading is 30 s apart at most: wait it out)
+hpint sr_min_mb 1; hpint sr_delay_ms 3000
+setmode custom; ensurehome; rebind; home; sleep 2
+cdhelper
+srwait 20
+cdreturns 1
+SR_P2="$(srpid)"; cdmem b0
+SR_T=$(( $(date +%s) + 50 )); SR_P3="$SR_P2"
+while [ "$(date +%s)" -lt "$SR_T" ]; do SR_P3="$(srpid)"; [ "$SR_P3" != "$SR_P2" ] && break; sleep 3; done
+sleep 14
+SR_P4="$(srpid)"; cdmem b1
+SR_N2="$(srlog | grep -c 'restarting the stock launcher')"
+SR_ST="$(srstatus)"
+info "SR restart: stock pid before ${SR_P2:-none}, then ${SR_P3:-none}, after the wait ${SR_P4:-none}; status: $(echo "$SR_ST" | cut -c1-230)"
+info "SR lock log: $(srlog | grep ' SR ' | tail -n 3 | cut -c1-200 | tr '\n' '|')"
+check "SR2: the stock launcher process was restarted (its pid changed or it was gone and came back)" bash -c "[ -n '$SR_P2' ] && { [ '$SR_P2' != '$SR_P3' ] || [ '$SR_P2' != '$SR_P4' ]; }"
+check "SR3: the lock log and the status say so" bash -c "[ '$SR_N2' = 1 ] && echo '$SR_ST' | grep -q 'restarted the stock launcher'"
+SR_RES="$(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1)"
+info "SR resumed after the restart: ${SR_RES:-?}"
+check "SR4: the custom home is still the screen in front" bash -c "echo '$SR_RES' | grep -q 'com.tj.launcher'"
+# (3) Recents still opens (the stock process starts again by itself)
+adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4
+SR_REC="$(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1)"
+info "SR Recents key after the restart: resumed ${SR_REC:-?}; stock pid now $(srpid)"
+check "SR5: the Recents key still opens Recents after the restart (the stock launcher is in front again)" bash -c "echo '$SR_REC' | grep -q 'com.android.launcher3'"
+adb shell input keyevent KEYCODE_HOME; sleep 3
+# (4) a Quickstep session after the restart: the stock home must come up in front (cold start of the process)
+setmode quickstep; rebind; home; sleep 4
+SR_Q="$(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1)"
+info "SR Quickstep session after the restart: resumed ${SR_Q:-?}; stock pid $(srpid)"
+check "SR6: a Quickstep session after the restart shows the stock home" bash -c "echo '$SR_Q' | grep -q 'com.android.launcher3'"
+# (5) the next return must not restart it again (cooldown): wait out the 30 s reading gap, return, wait, count the restart lines
+srwait 25
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8
+SR_P5="$(srpid)"; srwait 20
+SR_P6="$(srpid)"
+SR_N3="$(srlog | grep -c 'restarting the stock launcher')"
+info "SR cooldown: stock pid ${SR_P5:-none} then ${SR_P6:-none}; restart lines: $SR_N3; status: $(srstatus | cut -c1-200)"
+check "SR7: the second return does not restart it again (cooldown): still ONE restart line" bash -c "[ '$SR_N3' = 1 ]"
+check "SR8: the launcher did not crash anywhere in this section" bash -c "! adb logcat -d -b crash 2>/dev/null | grep -A3 'FATAL EXCEPTION' | grep -q 'Process: $PKG'"
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+ensurehome; setfeat; setmode custom; rebind; home
+info "SR end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section sr
 if want qm; then # section qm
 beat "before QM"
 # ---- QM (TASKS CG1f; Tj, 2026-11-17: "investigate why and how the quickstep launcher slowly builds in ram usage over time ... Figure out what features in the custom launcher app can add to the quickstep ram usage").
