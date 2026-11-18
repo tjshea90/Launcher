@@ -2271,3 +2271,7 @@
 ## 2026-11-18T23:46:19Z
 > Tier 0 is green: the full unit suite and lint both passed locally. The three emulator gate runs started at 23:44Z, and a timer fires at 00:07Z. I'll read them then and ship v0.9.14 if they're green.
 <!-- sha:5486d9c01e80 -->
+
+## 2026-11-18T23:51:42Z
+> The container restarted, so I re-installed the hooks (confirmed installed) and re-armed the 00:07Z timer. The three emulator gate runs started at 23:44Z and are unaffected, because they run on GitHub. When the timer fires I'll read them and ship v0.9.14 if they're green.
+<!-- sha:637ae2152bcb -->
