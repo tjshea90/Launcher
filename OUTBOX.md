@@ -2077,3 +2077,48 @@
 ## 2026-11-18T00:58:17Z
 > Waiting on the exact-chain rerun (#655, `cs2,hp,cu,last` on the branch), due about 01:05Z. The timer wakes me then. If it is green, I run the full build, record the release and send the answer.
 <!-- sha:e4f0d4c65397 -->
+
+## 2026-11-18T01:29:55Z
+> Release v0.9.12 is built, signed and published. It installs over your current one as an in-place update.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.12
+>
+> Your six asks (CG1) and "finish and build the release" (CG3) are done on my side. Everything was measured on the CI emulator or reasoned from the Android source. None of it has been on your tablet yet.
+>
+> 1. **Custom launcher showing up in Quickstep.** I found one real cause and fixed it.
+>    - **Cause:** lock with an app open in Quickstep, unlock with the gesture, then leave the app with Back. The custom home was sitting underneath it.
+>    - **Fix:** a guard now sends you to the stock home when that happens. Launcher control has a switch for it, "Keep the custom home away while I am in Quickstep", on in the release.
+>    - **Measured:** the emulator reproduced the bug (#619). With the guard it passed 14 of 14 checks (#626).
+>    - **Not covered:** a custom home pre-armed behind the lock screen that is still in front after a gesture unlock. I saw nothing like it on the emulator.
+>    - **If it still happens:** the lock log in the tablet report has a STRAYCUSTOM line that says why.
+>
+> 2. **CPU/RAM audit for the MT8168 (2 GB).** Three read-only reviews covered startup, the accessibility hot paths and the Launcher3 fork.
+>    - **Shipped:** three accessibility savings (one text search fewer per power-menu scan, a preference write moved off the main thread, and report counters showing which trigger starts how many scans), plus a memory split in the report.
+>    - **Not shipped:** E1, G1 and G3. They change behaviour and need tablet numbers first.
+>
+> 3. **Compile at install.** Android 10 gives an app no switch for it.
+>    - **Shipped:** a baseline profile, which the build confirmed is inside the APK, and a "compiled ahead of time" line in Launcher control and the report.
+>    - **Needs the cable:** a full compile is `adb shell cmd package compile -m speed -f com.tj.launcher`.
+>    - **Not measured:** the effect on your tablet.
+>
+> 4. **Lock-screen patch ready at once.** Time the screen spent dark now counts toward the patch settling. A finger or PIN-pad hold that was running when the screen turned off is voided after the wake.
+>    - **Measured:** I ran a side-key-hold matrix on the emulator (#625 and #627, 12 of 12 checks each). With the fix the patch was resting at the first hold in all four wake situations. With the switch off it was away after a lock from the unlocked home and after a finger-down that ended in a screen-off.
+>    - **Limits:** a window created while the screen is lit still waits 1.2 s. I don't know whether your tablet's lock screen fades in from black.
+>
+> 5. **Pencil icon without root.** No. The system refuses an overlay APK, and accessibility can't repaint another app's icon (#618).
+>
+> 6. **Why Quickstep RAM grows.** This is reasoned from the Android source, not measured on your tablet.
+>    - **Cause:** the Go recents view registers a listener in a process-wide object and nothing removes it. Every re-cr
+> [... 1069 characters omitted ...]
+> ORD_2026-11-18.md`.
+>
+> The other session sat silent from 21:48Z, so I took over at 22:25Z (merge `aa4fd5e2`) and nothing of its work was lost. The 2-hourly auto-resume timer is switched off. It still exists, so you can delete it in the app.
+>
+> What I need from you on the tablet (nothing urgent):
+> - Start the adb helper as usual, then send the tablet report after a day.
+> - Lock screen: try the first side-key hold after waking it, and a slow PIN-pad pull-up. Tell me whether the Screenshot entry ever shows, and whether the lock screen fades in from black on wake.
+> - Quickstep: lock with an app open, unlock with the gesture, press Back. You should land on the stock home.
+> - Optional, with the cable: run the compile command above, then compare the "start-up" line in the report before and after.
+>
+> Still open from you: these tablet checks (TASKS CG1h), plus the older waiting items (CE1d, CB2g, CD1/CD3).
+<!-- sha:75a669b5ba63 -->
