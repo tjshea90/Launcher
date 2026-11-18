@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * V2: stock keyboard while the custom launcher is on, Gboard while Quickstep is on (BX1, 2026-11-12; it was Microsoft SwiftKey before). Needs WRITE_SECURE_SETTINGS, which only adb can grant
+ * V2: stock keyboard while the custom launcher is on, Gboard while Quickstep is on (BX1, 2026-11-12; it was Microsoft SwiftKey before); CH1e (2026-11-18): Quickstep's keyboard is a choice in Launcher control: the stock keyboard, Gboard (default) or Swoop. Needs WRITE_SECURE_SETTINGS, which only adb can grant
  * (`bash tools/adb-grant.sh keyboard`); without it nothing changes and Launcher control says so. Default OFF. Snapshot first (RestoreStore), write, read back, undo on mismatch.
  * Never touches anything lock-screen related; only switches to a keyboard that is already enabled.
  */
@@ -24,6 +24,8 @@ public final class KeyboardSwitch {
     private KeyboardSwitch() {}
 
     public static boolean enabled(Context c) { return Features.get(c, KEY, false); }
+    /** CH1e: "stock" / "gboard" / "swoop" (a damaged value reads as gboard). */
+    public static String choice(Context c) { return KeyboardPolicy.normalizeChoice(Features.getString(c, KeyboardPolicy.CHOICE_KEY, KeyboardPolicy.CHOICE_GBOARD)); }
     public static boolean permitted(Context c) { return c.checkSelfPermission("android.permission.WRITE_SECURE_SETTINGS") == PackageManager.PERMISSION_GRANTED; }
     public static String status(Context c) { return Features.getString(c, STATUS_KEY, "(not run yet)"); }
 
@@ -47,9 +49,10 @@ public final class KeyboardSwitch {
                 c.getSharedPreferences("tj_kb", Context.MODE_PRIVATE).edit().putString("original", original).commit();
                 RestoreStore.snapshotSecure(c, DEFAULT_IME);   // "Restore everything" puts this back
             }
-            String target = KeyboardPolicy.target(mode, enabledImes, original);
+            String choice = choice(c);   // CH1e: the Quickstep side's keyboard is the user's choice (Gboard by default = BX1 unchanged)
+            String target = KeyboardPolicy.target(mode, enabledImes, original, choice);
             if (target == null) {
-                say(c, KeyboardPolicy.noTargetStatus(mode, enabledImes));   // BX1: names what IS enabled, so the line alone shows why Gboard was not found
+                say(c, KeyboardPolicy.noTargetStatus(mode, enabledImes, choice));   // BX1: names what IS enabled, so the line alone shows why Gboard was not found
                 return;
             }
             if (target.equals(current)) { say(c, mode + ": already " + target); return; }

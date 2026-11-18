@@ -345,9 +345,14 @@ public class ControlActivity extends Activity {
             tileChooser("Tiles in the custom launcher", TileProfile.CUSTOM_KEY, TileProfile.DEFAULT_CUSTOM);
             tileChooser("Tiles in Quickstep", TileProfile.QUICKSTEP_KEY, TileProfile.DEFAULT_QUICKSTEP);
         } else note("Per-launcher tiles are OFF: both launchers keep whatever quick-settings tiles Android has.");
-        toggle("Stock keyboard in custom, Gboard in Quickstep", KeyboardSwitch.status(this), KeyboardSwitch.enabled(this), new Chg() { public void on(boolean v) {
+        toggle("Stock keyboard in custom, your choice in Quickstep", KeyboardSwitch.status(this), KeyboardSwitch.enabled(this), new Chg() { public void on(boolean v) {
             Features.set(ControlActivity.this, KeyboardSwitch.KEY, v);
             KeyboardSwitch.apply(ControlActivity.this, Mode.get(ControlActivity.this));
+        } });
+        radio("Keyboard in Quickstep (the custom launcher always has the stock keyboard)", new String[] { "Gboard (as before)", "Stock Android keyboard", "Swoop (your own keyboard)" },
+                new String[] { KeyboardPolicy.CHOICE_GBOARD, KeyboardPolicy.CHOICE_STOCK, KeyboardPolicy.CHOICE_SWOOP }, KeyboardSwitch.choice(this), new Str() { public void on(String v) {   // CH1e
+            Features.setString(ControlActivity.this, KeyboardPolicy.CHOICE_KEY, KeyboardPolicy.normalizeChoice(v));
+            KeyboardSwitch.apply(ControlActivity.this, Mode.get(ControlActivity.this));   // takes effect now if Quickstep is the active launcher
         } });
 
         group("safety", "Safety & secret ways to Quickstep", false);
