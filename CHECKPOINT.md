@@ -1,22 +1,22 @@
-# CHECKPOINT 1478 — read me first, then TASKS.md
+# CHECKPOINT 1479 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T22:52:28Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `62fe1bc6` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T22:57:12Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `91c9b941` (this checkpoint is the commit after it)
 
 ## Just done
-CI1 written into TASKS (Tj full audit request), starting audit; no code yet
+CI1: fl solo dispatched 22:53Z on head 91c9b941: main #671 id 44415811567, branch #672 id 44415816691; plan = G1 check-before-reload, G3, StockRefresh (helper restart of stock launcher in custom mode, screen off, big reading only), patch per fl numbers
 
 ## Do this next
-CI1a: read CG1D/CG1F/CG1B open items, decide batch; then implement CI1b-d; heartbeat optional
+read fl results (list_workflow_jobs -> get_job_logs tail ~60); then implement G1 in SettingsSpoof.postReload (pure rule + JVM test), then StockRefresh
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M TASKS.md
 
 ## Last ten checkpoints
 ```
+  91c9b941 ckpt 1478: CI1 written into TASKS (Tj full audit request), starting audit; no code yet
   368d1081 ckpt 1477: after worker restart: hooks ok, tree clean, main=6308ef0c=tip; OUTBOX had no
   6308ef0c ckpt 1476: v0.9.13 SHIPPED + recorded (BUILDLOG), LinkMeter v0.2.190; draft links fille
   b753f73f ckpt 1475: ship.sh v0.9.13 (code 52) OK, main=4bea2198; android.yml full_build=true dis
@@ -26,8 +26,4 @@ CI1a: read CG1D/CG1F/CG1B open items, decide batch; then implement CI1b-d; heart
   abc97842 ckpt 1471: fl HEAD solo #670 id 44405222990 job 135158542388 RED (FAIL names pending); 
   b5d580b3 ckpt 1470: fl TAG v0.9.12 #669 RED 17 PASS 2 FAIL (FL2 menuW1 flashA 6/4, FL2 menuP1 sc
   6c514553 ckpt 1469: SOLO reruns 21:48Z: wf main #666 GREEN, wf tag v0.9.12 #668 GREEN => #663 WF
-  a1ed0154 ckpt 1468: LinkMeter v0.2.190 RELEASED (run #190 green, 413b4f4, asset LinkMeter.apk); 
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
