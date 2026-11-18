@@ -1,22 +1,22 @@
-# CHECKPOINT 1468 — read me first, then TASKS.md
+# CHECKPOINT 1469 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T21:41:04Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `ef7b4f39` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T21:49:47Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `7ffe65e5` (this checkpoint is the commit after it)
 
 ## Just done
-LinkMeter v0.2.190 RELEASED (run #190 green, 413b4f4, asset LinkMeter.apk); draft updated; Launcher wf/fl reruns #666-#669 in flight
+SOLO reruns 21:48Z: wf main #666 GREEN, wf tag v0.9.12 #668 GREEN => #663 WF2/2b/3/2d = in-chain flake; fl main #667 id 44402514473 = no results (infra), fl tag #669 id 44402526454 RED (FAIL names pending); fl main rerun dispatched 21:49Z
 
 ## Do this next
-21:48Z read #666-#669 (ids 44402508323 wf main, 44402514473 fl main, 44402521045 wf tag, 44402526454 fl tag); green on head = flake -> ship.sh; trig_01CxhtUYmpxg1H1vMi1NgFbF
+read fl tag FAIL lines (job 135149068290); read the new fl main run (list_workflow_runs emulator.yml main dispatch perPage 1); if fl red on tag too = pre-existing/env, not the diff; trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M research/CH1_RELEASE_MESSAGE_DRAFT_2026-11-18.md
 
 ## Last ten checkpoints
 ```
+  a1ed0154 ckpt 1468: LinkMeter v0.2.190 RELEASED (run #190 green, 413b4f4, asset LinkMeter.apk); 
   647e0c68 ckpt 1467: LinkMeter closing save 413b4f4 pushed 21:33Z: run #190 id 44402604562 (build
   038664f9 ckpt 1466: dispatched 21:32Z: wf main #666 id 44402508323; fl main #667 id 44402514473;
   4ccfc112 ckpt 1465: #663 id 44396161665 job 135126488976: 121 PASS 5 FAIL = WF2 WF2b WF3 WF2d (w
@@ -26,7 +26,6 @@ LinkMeter v0.2.190 RELEASED (run #190 green, 413b4f4, asset LinkMeter.apk); draf
   6a307af5 ckpt 1461: GATE read 20:55Z: #662 rg GREEN; #660 (x1,y2,b4,n,o,cs2,an,rt,ss,vo) GREEN; 
   335e54fe ckpt 1460: release answer draft written (research/CH1_RELEASE_MESSAGE_DRAFT_2026-11-18.
   b29a5adc ckpt 1459: CH1 TASKS ticks a-f + HANDOFF 0za written (docs only)
-  870e023c ckpt 1458: pk #658 GREEN. GATE DISPATCHED on head a31f6e05 at 20:25Z: #659 id 443909122
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
