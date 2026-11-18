@@ -1,17 +1,13 @@
-# CHECKPOINT 1429 — read me first, then TASKS.md
+# CHECKPOINT 1430 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T00:33:40Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-16772798-h13w43` · **builds on:** `cc784e1c` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T00:34:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-16772798-h13w43` · **builds on:** `e96c9bba` (this checkpoint is the commit after it)
 
 ## Just done
-gated v0.9.12 (code 51) and pushed it: the handoff self-test, the full unit suite + lint
-and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
+00:34Z: e1@branch #645 id 44207837374 GREEN; x1,e1@main #646 id 44207842258 GREEN (so the E1 FAIL of #639 = flake: head e1 3 of 4 green); e1@tag #647 id 44207847156 (probe pending); pt reruns in flight: pt@main #648 id 44208108238, pt@branch #649 id 44208112296, pt@tag #650 id 44208116751 (due ~00:45Z); #643 id 44206647208 (x,ad,ae,pa,uf) due ~00:42Z; #644 id 44206651719 (cs2,hp,cu,last) due ~00:55Z; ship.sh gates ALL GREEN at 00:33Z (handoff self-test, versionCode 51, unit suite+lint), commit pushed, NOT built
 
 ## Do this next
-TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
-android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
-confirm the Release is published (get_release_by_tag is enough) and then run:
-  bash tools/record-release.sh v0.9.12 "v0.9.12: no more custom home showing up in a Quickstep session after a gesture unlock (stray-home guard, CG1a); lock-screen patch counted as ready at once when it is prepared with the screen off (CG1d); baseline profile plus compile-state and stock-launcher-memory recorders (CG1c, CG1f); three accessibility hot-path savings (CG1b)"
+probe #647, #643 (failed_only), then #648-#650 pt, then #644; if no real regression: dispatch android.yml full_build=true on the branch (ref ccr-16772798-h13w43), get_release_by_tag v0.9.12, record-release.sh, fill answer draft, delete heartbeat trig_01EzvMtE44ag8oMav4DqoqHZ
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -20,6 +16,7 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
 
 ## Last ten checkpoints
 ```
+  e96c9bba ckpt 1429: gated v0.9.12 (code 51) and pushed it: the handoff self-test, the full unit 
   cc784e1c ckpt 1428: PT TALLY 00:40Z (all solo): HEAD #631 BC2 only; #632 BA1+PT (1 of 5 fades; B
   31718304 ckpt 1427: PROBES 00:36Z (failed_only): pt@branch #634 id 44205747479 job 134471094065 
   6085afa9 ckpt 1426: VERIFIED 00:30Z (cheap probe 'No failed jobs'): base@head #637 green 29/0 (b
@@ -29,5 +26,4 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
   b911a52b ckpt 1422: triage dispatched 00:17Z (all on product code = 1c135985 + version bump): pt
   fd046e2f ckpt 1421: RAW VERDICTS 00:08Z: #629 (base,y2,n,ac,bs,se,fp,rt,gear,fl) 123 PASS 4 FAIL
   688590e5 ckpt 1420: gate ended 00:02Z: #629 (run 44199579604 job 134449895997, base,y2,n,ac,bs,s
-  74289af2 ckpt 1419: #631 pt (id 44199590509, head 1c135985): 30 PASS, 1 FAIL, 124 INFO; the one 
 ```
