@@ -1,17 +1,13 @@
-# CHECKPOINT 1474 — read me first, then TASKS.md
+# CHECKPOINT 1475 — read me first, then TASKS.md
 
-**Written:** 2026-11-18T22:08:33Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `541cd5ed` (this checkpoint is the commit after it)
+**Written:** 2026-11-18T22:10:11Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-61fe5a34-fw0jax` · **builds on:** `4bea2198` (this checkpoint is the commit after it)
 
 ## Just done
-gated v0.9.13 (code 52) and pushed it: the handoff self-test, the full unit suite + lint
-and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
+ship.sh v0.9.13 (code 52) OK, main=4bea2198; android.yml full_build=true dispatched 22:08 Z on main
 
 ## Do this next
-TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
-android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
-confirm the Release is published (get_release_by_tag is enough) and then run:
-  bash tools/record-release.sh v0.9.13 "Pocket return switch (tile and icon, with LinkMeter) and Quickstep keyboard choice (stock, Gboard, Swoop)"
+at +4 min get_release_by_tag v0.9.13; if green: bash tools/record-release.sh v0.9.13 with the ship note (BUILDLOG), fill Launcher link into research/CH1_RELEASE_MESSAGE_DRAFT, send Tj the answer, update TASKS CH1/HANDOFF 0za/CHECKPOINT, update_trigger enabled=false on trig_01CxhtUYmpxg1H1vMi1NgFbF
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -20,6 +16,7 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
 
 ## Last ten checkpoints
 ```
+  4bea2198 ckpt 1474: gated v0.9.13 (code 52) and pushed it: the handoff self-test, the full unit 
   541cd5ed ckpt 1473: pre-ship: Pocket return switch (tile and icon, with LinkMeter) and Quickstep
   a071faa6 ckpt 1472: fl: #670 head solo 18 PASS 1 FAIL (FL2 menuP1 5 frames 83ms); same tag red n
   abc97842 ckpt 1471: fl HEAD solo #670 id 44405222990 job 135158542388 RED (FAIL names pending); 
@@ -29,5 +26,4 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
   647e0c68 ckpt 1467: LinkMeter closing save 413b4f4 pushed 21:33Z: run #190 id 44402604562 (build
   038664f9 ckpt 1466: dispatched 21:32Z: wf main #666 id 44402508323; fl main #667 id 44402514473;
   4ccfc112 ckpt 1465: #663 id 44396161665 job 135126488976: 121 PASS 5 FAIL = WF2 WF2b WF3 WF2d (w
-  636fbee5 ckpt 1464: cs rerun GREEN on head (#664 id 44396167699, job 135126506728) AND on tag v0
 ```
