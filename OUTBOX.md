@@ -2201,3 +2201,47 @@
 >
 > 💡 This chat is getting long. Consider `/amhandoff` at the next good stopping point.
 <!-- sha:12371b600bba -->
+
+## 2026-11-18T22:33:15Z
+> Tj, both halves of the pocket-return request and the keyboard choice are released. The phone side and the keyboard switching have not been run on a real device yet, so I need you to try them.
+>
+> Install both apps. The Launcher asks LinkMeter to put the phone to sleep, and only the new LinkMeter answers.
+>
+> Launcher v0.9.13:
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.13
+>
+> LinkMeter v0.2.190:
+> https://github.com/tjshea90/LinkMeter/releases/tag/v0.2.190
+>
+> ## What you get (Launcher control)
+> 1. **"Pocket return (tile and icon)"** is OFF by default, and OFF behaves exactly as before. With it ON, pressing the **"Back to custom" tile or drawer icon** does this:
+>    - **Phone:** LinkMeter turns phone Wi-Fi off and LinkMeter's saver on, then does its existing deep sleep (hotspot off, airplane mode on, screen off). After that it turns Android's own Battery saver on and checks the screen is off.
+>    - **Tablet:**
+>      - Wi-Fi goes off once the phone has accepted its order, at the latest 25 s after the start. If LinkMeter doesn't answer, Wi-Fi goes off after the call times out, 6 s at most.
+>      - The VPN is turned off, and the stock keyboard is set again.
+>      - Every open app is force-stopped except LinkMeter, Gboard, SwiftKey, Swoop, system apps and the Google infrastructure apps. Notifications and Recents are cleared, and the custom home comes up with no stand-in app.
+>    - **At the side key:** lock preparation now starts at once (0 ms and 250 ms, then the old 0.7 s and 6.5 s). It prepares the patch, the pencil cover, the number, closed notifications, hidden Wi-Fi/Bluetooth symbols and no VPN. Apps with a notification are force-stopped, but not while music is playing.
+>    - **Double Home** is unchanged. A plain PIN, the volume/back keys and the other return methods don't trigger it either.
+> 2. **"Keyboard in Quickstep"** offers Gboard (the default, as before), Stock Android keyboard or Swoop. The custom launcher always keeps the stock keyboard.
+>
+> ## Measured (CI emulator and tests)
+> - Unit tests: 1167 pass, 0 fail. LinkMeter's own tests: 35,580 checks pass.
+> - Section `pk` was green (run #658). With the switch OFF there are no pocket log lines and the lock preparation is the old one. With it ON via the tile, the steps ran in order, tablet Wi-Fi really went off, and no stand-in app showed. Double Home was not treated as a pocket return, and lock preparation started at the key press.
+> - Gate on the code I shipped:
+>   - `rg`, `x1,y2,b4,n,o,cs2,an,rt,ss,vo` and the other four sections of `base,e1,t,x,ac,cs,fp,bt,pk` were green.
+>   - The `cs` section had one failure (CS-B2) in the big run. It was green when I ran it alone on this code and on v0.9.12.
+>   - Four `wf` failures in the third group were green when I ran `wf` alone on this code and on v0.9.12.
+>
+> ## Not clean, and not fixed
+> - Section `fl` (films of the lock-screen power menu) fails one check, FL2 menuP1. The stock "Screenshot" entry shows for 5 to 11 frames (83 to 183 ms) when the menu is opened over the open
+> [... 1009 characters omitted ...]
+>  tablet's Bluetooth stays on while the phone goes to sleep.
+> - The pocket step turns on LinkMeter's option "Also switch on Android's Battery saver" and leaves it ON until you press "Leave alone".
+> - Apps force-stopped by the return or the side key stay "stopped", so they get no pushes until you open them once.
+>
+> ## What I need from you
+> - Install both apps, switch Pocket return ON, and press the tile or icon with the phone linked. Then tell me what the phone and tablet did. The Launcher control shows "Last run:" and the tablet report has the log lines.
+> - Try the "Keyboard in Quickstep" choices, Swoop included. If anything is off, send the tablet report.
+>
+> Everything is saved and pushed: `main` equals my branch tip, the release is recorded in BUILDLOG, and I disabled the auto-resume heartbeat because only your tablet test is left. I could not delete it myself, so you can remove it if you like.
+<!-- sha:91c227521ce6 -->
