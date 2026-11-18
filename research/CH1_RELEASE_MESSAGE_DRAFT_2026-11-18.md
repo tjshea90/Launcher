@@ -3,7 +3,7 @@
 Tj, your pocket-return request and the keyboard choice are built.
 
 **Launcher: <RELEASE LINK, plain text, own line>**
-**LinkMeter: <RELEASE LINK, plain text, own line>** (install BOTH: the Launcher asks LinkMeter, and only the new LinkMeter answers)
+**LinkMeter: https://github.com/tjshea90/LinkMeter/releases/tag/v0.2.190** (install BOTH: the Launcher asks LinkMeter, and only the new LinkMeter answers)
 
 ## What you get (Launcher control, both default as before)
 1. **"Pocket return (tile and icon)"**, OFF by default. OFF = the launcher behaves exactly as it did (the lock preparation still runs at 0.7 s and 6.5 s, nothing else is new).
