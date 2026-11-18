@@ -2255,3 +2255,7 @@
 >
 > The lock-screen patch is unchanged so far. The emulator runs show the first side-key press already as fast as the emulator can measure, so any further change would be a guess without a fresh tablet report.
 <!-- sha:38edbe5dec43 -->
+
+## 2026-11-18T23:23:00Z
+> Status: SR1 is proven on the emulator. I'm now waiting on the reviewer's findings and the `ss` run for the Settings change.
+<!-- sha:7134cec1b027 -->
