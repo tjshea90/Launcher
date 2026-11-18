@@ -2154,3 +2154,7 @@
 ## 2026-11-18T21:34:27Z
 > Both builds are still running. The wait ends at 21:39Z, and then I'll check LinkMeter's run and its release.
 <!-- sha:543ec90b74a4 -->
+
+## 2026-11-18T21:34:50Z
+> The notice that just arrived is only the wrapper that started the timer, so it says nothing about the builds. I'm waiting on the real 21:39Z marker before reading LinkMeter's run.
+<!-- sha:fac026e2c34c -->
