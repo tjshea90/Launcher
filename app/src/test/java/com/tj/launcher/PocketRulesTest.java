@@ -56,20 +56,21 @@ public class PocketRulesTest {
     }
 
     @Test public void lockNotificationCleanNeedsEveryCondition() {
-        assertTrue(PocketRules.lockNotificationClean(true, true, false, true, false, true, false));
-        assertFalse("switch off", PocketRules.lockNotificationClean(false, true, false, true, false, true, false));
-        assertFalse("quickstep session (its own clean-up)", PocketRules.lockNotificationClean(true, false, false, true, false, true, false));
-        assertFalse("paused", PocketRules.lockNotificationClean(true, true, true, true, false, true, false));
-        assertFalse("not locked", PocketRules.lockNotificationClean(true, true, false, false, false, true, false));
-        assertFalse("handshake armed", PocketRules.lockNotificationClean(true, true, false, true, true, true, false));
-        assertFalse("no helper", PocketRules.lockNotificationClean(true, true, false, true, false, false, false));
-        assertFalse("already done this lock", PocketRules.lockNotificationClean(true, true, false, true, false, true, true));
+        assertTrue(PocketRules.lockNotificationClean(true, true, false, true, false, true, false, false));
+        assertFalse("switch off", PocketRules.lockNotificationClean(false, true, false, true, false, true, false, false));
+        assertFalse("quickstep session (its own clean-up)", PocketRules.lockNotificationClean(true, false, false, true, false, true, false, false));
+        assertFalse("paused", PocketRules.lockNotificationClean(true, true, true, true, false, true, false, false));
+        assertFalse("not locked", PocketRules.lockNotificationClean(true, true, false, false, false, true, false, false));
+        assertFalse("handshake armed", PocketRules.lockNotificationClean(true, true, false, true, true, true, false, false));
+        assertFalse("no helper", PocketRules.lockNotificationClean(true, true, false, true, false, false, false, false));
+        assertFalse("already done this lock", PocketRules.lockNotificationClean(true, true, false, true, false, true, true, false));
+        assertFalse("music is playing: the side key does not stop the song", PocketRules.lockNotificationClean(true, true, false, true, false, true, false, true));
     }
 
     @Test public void lockNotificationCleanIsNeverTrueWithTheSwitchOff() {
         boolean[] b = { false, true };
-        for (boolean a : b) for (boolean c : b) for (boolean d : b) for (boolean e : b) for (boolean f : b)
-            assertFalse(PocketRules.lockNotificationClean(false, a, c, d, e, f, false));
+        for (boolean a : b) for (boolean c : b) for (boolean d : b) for (boolean e : b) for (boolean f : b) for (boolean g : b)
+            assertFalse(PocketRules.lockNotificationClean(false, a, c, d, e, f, g, false));
     }
 
     // ---------------------------------------------------------------- which apps are stopped
@@ -97,11 +98,37 @@ public class PocketRulesTest {
 
     @Test public void stopListNeverHasLinkMeterKeyboardsSystemOrOldRuleRefusals() {
         List<String> origin = Arrays.asList("com.whatsapp", "com.tj.linkmeter", "com.tj.launcher");
-        List<String> tasks = Arrays.asList("app.swoop.keyboard", "com.android.settings", "com.google.android.apps.chrome", "com.android.systemui");
+        List<String> tasks = Arrays.asList("app.swoop.keyboard", "com.sys.calc", "com.google.android.apps.chrome", "com.android.systemui");
         List<String> notified = Arrays.asList("com.google.android.inputmethod.latin", "org.telegram.messenger");
-        PocketRules.Facts f = facts(set("com.android.settings"), set("com.tj.launcher", "com.android.systemui"));
+        PocketRules.Facts f = facts(set("com.sys.calc"), set("com.tj.launcher", "com.android.systemui"));
         List<String> out = PocketRules.stopList(origin, tasks, notified, f);
         assertEquals(Arrays.asList("com.whatsapp", "com.google.android.apps.chrome", "org.telegram.messenger"), out);
+    }
+
+    @Test public void aSystemAppQuickstepOpenedIsStillClosedAsBeforeButOneFoundOnlyInRecentsIsNot() {   // review CH1: the pocket return must close at least what the plain return closed
+        PocketRules.Facts f = facts(set("com.sys.files", "com.sys.calc"), set());
+        assertEquals(Arrays.asList("com.sys.files"), PocketRules.stopList(Arrays.asList("com.sys.files"), Arrays.asList("com.sys.calc"), null, f));
+    }
+
+    @Test public void infrastructureAppsAreNeverStoppedEvenWhenAnUpdateMadeThemOrdinaryApps() {
+        PocketRules.Facts f = facts(set(), set());   // isSystemApp false for all: the updated Google apps
+        for (String p : new String[] { "com.google.android.gms", "com.google.android.gms.persistent", "com.google.android.gsf", "com.android.vending", "com.google.android.webview",
+                "com.google.android.packageinstaller", "com.google.android.permissioncontroller", "com.android.providers.media", "com.android.bluetooth", "com.android.settings" }) {
+            assertTrue(p, PocketRules.keepPackage(p));
+            assertEquals(p, Collections.emptyList(), PocketRules.stopList(Collections.singletonList(p), Collections.singletonList(p), Collections.singletonList(p), f));
+        }
+        for (String p : new String[] { "com.android.chrome", "com.google.android.youtube", "com.google.android.apps.maps", "com.android.vendingmachine", "com.google.android.gmsfoo", "org.telegram.messenger" }) {
+            assertFalse(p, PocketRules.keepPackage(p));   // the apps Tj opens are closed; a name that only STARTS the same is not the infrastructure app
+        }
+    }
+
+    @Test public void capKeepsOnePartShortAndOnOneLine() {
+        assertEquals("abc", PocketRules.cap("abc", 10));
+        assertEquals("a b", PocketRules.cap("a\nb", 10));
+        assertEquals(10, PocketRules.cap("0123456789012345", 10).length());
+        String s = PocketRules.summary("12:00:00", "v", "x", true);
+        String big = new String(new char[500]).replace('\0', 'z');
+        assertTrue(PocketRules.summary("12:00:00", big, big, false).length() < s.length() + 400);
     }
 
     @Test public void stopListHasNoDuplicatesAndKeepsTheOrderOriginTasksNotified() {
