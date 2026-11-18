@@ -2263,3 +2263,7 @@
 ## 2026-11-18T23:30:47Z
 > Both runs are in flight (`sr` and `ss` on the fixed head). A timer fires at 23:42Z, and I'll read them then and dispatch the three-run gate for v0.9.14 if they're green.
 <!-- sha:966408e04727 -->
+
+## 2026-11-18T23:45:24Z
+> Tier 0 (full unit suite and lint) is running locally while the three emulator gate runs finish, around 00:08Z. I'll read the gate runs then, ship v0.9.14 if they're green, and send you the Release link.
+<!-- sha:132baa22122b -->
