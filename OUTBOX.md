@@ -2275,3 +2275,13 @@
 ## 2026-11-18T23:51:42Z
 > The container restarted, so I re-installed the hooks (confirmed installed) and re-armed the 00:07Z timer. The three emulator gate runs started at 23:44Z and are unaffected, because they run on GitHub. When the timer fires I'll read them and ship v0.9.14 if they're green.
 <!-- sha:637ae2152bcb -->
+
+## 2026-11-19T00:09:31Z
+> Gate status so far on the v0.9.14 candidate:
+>
+> - **Run B** (`e1,bs,bl,rt,rb,last`): green.
+> - **Run A** (`base,x1,t,x,an,sr`): 6 FAILs, with one native crash of our process inside Android's own memory library (the known flake). The failures are in `base` (crash breaker, Launcher control groups) and `an` (animation checks).
+> - **Run C** (`n,n6,o,ac,cs2,ss`): 1 FAIL, the `ac` control check, also beside a native crash. `ss` and `sr` passed.
+>
+> I re-dispatched the failing sections on the same code at 00:10Z: `base,an` and `ac`, each on its own run. A timer fires at 00:24Z. If both come back green I'll ship; if either fails again I'll compare against the v0.9.13 tag before touching any code.
+<!-- sha:5b3af88e32c2 -->
