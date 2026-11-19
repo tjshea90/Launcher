@@ -2293,3 +2293,16 @@
 > - **`base,an` re-run:** one check failed, `AN9b`. It checks that a launcher process starting on the lock screen gives the animation speed back at once. `AN7` and `AN8` passed this time.
 > - **Whether my change caused it:** this release touches no animation code, so I suspect a flaky check. I'm testing that by running `an` again on the current code and `base,an` on both the current code and the v0.9.13 release tag. All three were dispatched at 00:27Z. I'll read them around 00:39Z. If the tag fails the same way, it's already flaky and I'll ship; if only the new code fails, I'll look at the diff.
 <!-- sha:294e4ec40244 -->
+
+## 2026-11-19T00:42:43Z
+> Gate status for v0.9.14:
+>
+> - **Green on identical code:**
+>   - Run B (`e1,bs,bl,rt,rb,last`).
+>   - `sr`, `ss` and `ac`, re-run on their own.
+>   - `an` on its own.
+> - **Release tag v0.9.13:** `base,an` passed there.
+> - **Current code, `base,an`:** failed twice, with a different single check each time (`AN9b`, then a "reinstalled app is forgotten" check in `base`). The two failures were on different checks, and the product code was identical across all of these runs.
+> - **My read:** the reinstall check is timing-based and waited a fixed 7 seconds. I made it poll for up to 16 seconds and print how long the app took to be forgotten. That is a test-only change, with no change to the app or launcher code.
+> - **Next:** I'm re-running `base,an` twice on the new head (one on `main`, one on the branch, dispatched at about 00:45Z). A timer fires at 00:56Z. If both pass I ship; if a check fails again, I'll treat it as a real regression and bisect the Settings change.
+<!-- sha:973c971afaf7 -->
