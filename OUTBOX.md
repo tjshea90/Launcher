@@ -2314,3 +2314,40 @@
 ## 2026-11-19T01:03:10Z
 > The `android.yml` build (run #55) was still going at 01:03Z. I set a short timer for 01:05:30Z and will confirm the Release then.
 <!-- sha:ba7870a9f28f -->
+
+## 2026-11-19T01:08:53Z
+> The v0.9.14 update is released. It restarts the stock launcher's process when that process has grown big, and it removes one needless full reload. I did not change the lock-screen or home Screenshot patch.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.14
+>
+> **The Quickstep RAM problem**
+> - **Change:** the launcher now restarts the stock launcher's process once when four conditions hold. It must be big (200 MB or more, or 6+ kept-alive screens). The custom home must be on screen, the screen on and unlocked, and the shell helper running. It acts at most every 6 hours.
+> - **What it replaces:** it is the same cure as your own force stops (450 → 280 → 130 MB), done for you at a moment nobody uses that process.
+> - **What it doesn't do:** a healthy stock launcher (50–130 MB) is never touched, and without the helper nothing happens. The next Recents opening or Quickstep entry after a restart takes about a second once.
+> - **Why I think it grows (reasoned, not measured):** the stock launcher keeps every new screen of itself alive for the life of its process, and each battery-saver flip re-creates the visible one. The lock flips the saver around every lock, so one lock plus gesture unlock plausibly adds up to two kept screens.
+> - **What I measured:** on the CI emulator the restart worked, with the stock process going from 32 MB / 1 screen to 11 MB / 0. The custom home stayed, Recents still opened, and a Quickstep session still showed the stock home.
+> - **What I couldn't measure:** the emulator's stock launcher doesn't leak, so it can't show the growth or the memory you get back. Only your tablet can.
+>
+> **Speed and battery**
+> - **Change:** the Settings look-alike no longer rebuilds the whole home and drawer after a flip when the drawer is already right. On the emulator the log confirmed it skipped the reload.
+> - **Checked, nothing to fix:** the app has no alarm, job, timer or loop that runs while the screen is dark.
+> - **Left alone:** quieter PIN entry and moving the Hidden apps screen off the main thread. They need a tablet number first.
+>
+> **The Screenshot patch on the first side-key press**
+> - **What the emulator shows:** the cover already reacts 2–23 ms after the power menu announces itself, which is as fast as it can be measured there.
+> - **Why I changed nothing:** the two things that could still flash on the tablet (the launcher busy at that moment, a cold first draw) can't be seen on the emulator. Changing lock-safety rules without a number would be a guess.
+> - **If it flashes:** send the tablet report right after a flash on the first press and I'll fix it from that.
+>
+> **Testing, with the failures included**
+> - **Passed first time:** the full unit tests and lint, plus the new `sr` and `ss` emulator sections.
+> - **Single failures that I re-ran:**
+>   - Two runs had a native crash of the emulator's app (a known flake).
+>   - `AN9b` failed once.
+>   - A timing check in `base` failed once because it waited a fixed 7 seconds for a package event. It now polls up to 16 seconds. I did not read how long it actually waited.
+> - **After the re-runs:** every section the change needs passed on identical app code. `base,an` passed twice and also passed on the old v0.9.13 build.
+>
+> **What I need from you**
+> 1. Start the adb helper as before; this restart does nothing without it.
+> 2. Install v0.9.14. Launcher control has a new switch, "Give the stock launcher's memory back (needs the shell helper)", on by default.
+> 3. After a day or two, send the tablet report. Its "stock launcher memory refresh" line says whether it acted and the MB before and after. Compare the Quickstep "Memory used by apps" row with your 445 MB one-day average.
+<!-- sha:08e261bad170 -->
