@@ -1,13 +1,13 @@
-# CHECKPOINT 1499 — read me first, then TASKS.md
+# CHECKPOINT 1500 — read me first, then TASKS.md
 
-**Written:** 2026-11-19T00:42:19Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `41321437` (this checkpoint is the commit after it)
+**Written:** 2026-11-19T00:43:42Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `1ff0a972` (this checkpoint is the commit after it)
 
 ## Just done
-CI1: #685 base,an main FAIL = only 'hidden: REINSTALLED app is forgotten' (AN9b passed this time; #681 had AN9b only, base ok): two different single FAILs in the same chain on identical product code = timing flakes; scenario hardened (hidden check polls up to 16 s + INFO with the wait; no product change, git diff 3e02bf08 -- app launcher3 phoneguide empty); rerun base,an x2 (main + branch ref)
+CI1: base,an x2 dispatched 00:45Z (main a2b5316c + branch ref); ids = newest two of list_workflow_runs emulator.yml event workflow_dispatch perPage 2
 
 ## Do this next
-read both reruns; if base,an both green -> gate done (A+C parts covered: base,an,ac,sr,ss green; B green) -> ship.sh; hidden INFO line says the delay
+read both at ~00:57Z (haiku: header, FAILs, INFO 'hidden:' and 'AN9b' lines); both green = ship.sh + android.yml full_build; a repeat FAIL = real: bisect G1 (SettingsSpoof) against the chain
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read both reruns; if base,an both green -> gate done (A+C parts covered: base,an
 
 ## Last ten checkpoints
 ```
+  a2b5316c ckpt 1499: CI1: #685 base,an main FAIL = only 'hidden: REINSTALLED app is forgotten' (A
   1ff86b86 ckpt 1498: CI1: triage: an solo main #683 id 44428928340 SUCCESS; base,an on TAG v0.9.1
   8d1a658d ckpt 1497: CI1: base,an #681 id 44426690735 = 41 PASS 1 FAIL: only AN9b (lock log shows
   681c0607 ckpt 1496: CI1: rerun verdict: ac solo #682 id 44426695151 SUCCESS (AC2 was the native-
@@ -25,7 +26,6 @@ read both reruns; if base,an both green -> gate done (A+C parts covered: base,an
   9f4d3d35 ckpt 1492: CI1: TASKS ticked (CI1a/c/d with proofs; CI1b left open on purpose), HANDOFF
   3e02bf08 ckpt 1491: CI1: VERDICT sr main #676 id 44421271607 = 13 PASS 0 FAIL (stock 32 MB/1 Act
   6c027d6c ckpt 1490: CI1: version 0.9.14 code 53, draft research/CI1_RELEASE_MESSAGE_DRAFT_2026-1
-  f47446c4 ckpt 1489: CI1: ss #675 id 44418711509 job 135205705700 = 73 PASS 0 FAIL (head 8a46ec64
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
