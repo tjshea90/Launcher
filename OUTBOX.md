@@ -2310,3 +2310,7 @@
 ## 2026-11-19T01:00:05Z
 > The v0.9.14 gate is green and `ship.sh` passed (handoff test, full unit suite, version check). The signed build (`android.yml`, `full_build=true`) was dispatched at 00:59Z. A build like this usually finishes about 2.5 minutes after dispatch, so I'll check for the Release at 01:03Z. Then I'll record it and send you the link and the write-up.
 <!-- sha:88ffd619e85a -->
+
+## 2026-11-19T01:03:10Z
+> The `android.yml` build (run #55) was still going at 01:03Z. I set a short timer for 01:05:30Z and will confirm the Release then.
+<!-- sha:ba7870a9f28f -->
