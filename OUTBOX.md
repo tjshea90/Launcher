@@ -2285,3 +2285,11 @@
 >
 > I re-dispatched the failing sections on the same code at 00:10Z: `base,an` and `ac`, each on its own run. A timer fires at 00:24Z. If both come back green I'll ship; if either fails again I'll compare against the v0.9.13 tag before touching any code.
 <!-- sha:5b3af88e32c2 -->
+
+## 2026-11-19T00:27:11Z
+> Progress on the v0.9.14 gate:
+>
+> - **`ac`:** the failing check passed when re-run on its own, so the earlier failure was the native-crash flake.
+> - **`base,an` re-run:** one check failed, `AN9b`. It checks that a launcher process starting on the lock screen gives the animation speed back at once. `AN7` and `AN8` passed this time.
+> - **Whether my change caused it:** this release touches no animation code, so I suspect a flaky check. I'm testing that by running `an` again on the current code and `base,an` on both the current code and the v0.9.13 release tag. All three were dispatched at 00:27Z. I'll read them around 00:39Z. If the tag fails the same way, it's already flaky and I'll ship; if only the new code fails, I'll look at the diff.
+<!-- sha:294e4ec40244 -->
