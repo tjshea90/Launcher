@@ -1,13 +1,13 @@
-# CHECKPOINT 1494 — read me first, then TASKS.md
+# CHECKPOINT 1495 — read me first, then TASKS.md
 
-**Written:** 2026-11-19T00:08:21Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `ec86e81e` (this checkpoint is the commit after it)
+**Written:** 2026-11-19T00:10:32Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `e1055c7f` (this checkpoint is the commit after it)
 
 ## Just done
-CI1: gate raw verdict (head 3e02bf08): A #678 id 44423199764 (base,x1,t,x,an,sr) FAILURE; B #679 id 44423204275 (e1,bs,bl,rt,rb,last) success; C #680 id 44423208456 (n,n6,o,ac,cs2,ss) FAILURE; FAIL names being read
+CI1: gate triage (head 3e02bf08, product unchanged since): A #678 6 FAIL (86 PASS): base crash breaker x2 + AR1 x2 + an AN7/AN8, one NATIVE CRASH #1 (jemalloc RenderThread); C #680 1 FAIL AC2 control + NATIVE CRASH #1 (jemalloc tzload); B #679 green; sr passed in A. Rerun solo dispatched 00:10Z on main c33f0c26: base,an and ac
 
 ## Do this next
-read FAIL lines of #678 and #680 (haiku subagent: job via list_workflow_jobs, get_job_logs tail 150); triage: rerun only failing sections solo, native crash = known flake
+at ~00:25Z read both reruns (list_workflow_runs emulator.yml main workflow_dispatch perPage 2, haiku subagent); both green = gate done -> ship.sh, android.yml full_build; a FAIL again = compare on tag v0.9.13 (ref) before touching code
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read FAIL lines of #678 and #680 (haiku subagent: job via list_workflow_jobs, ge
 
 ## Last ten checkpoints
 ```
+  c33f0c26 ckpt 1494: CI1: gate raw verdict (head 3e02bf08): A #678 id 44423199764 (base,x1,t,x,an
   3492984f ckpt 1493: CI1: tier 0 local green (testDebugUnitTest + lintDebug, BUILD SUCCESSFUL, GR
   9f4d3d35 ckpt 1492: CI1: TASKS ticked (CI1a/c/d with proofs; CI1b left open on purpose), HANDOFF
   3e02bf08 ckpt 1491: CI1: VERDICT sr main #676 id 44421271607 = 13 PASS 0 FAIL (stock 32 MB/1 Act
@@ -25,7 +26,6 @@ read FAIL lines of #678 and #680 (haiku subagent: job via list_workflow_jobs, ge
   73eebb4a ckpt 1487: CI1: sr #674 id 44417744367 job 135202357753 = 12 PASS 1 FAIL: SR2 was a TES
   083eb8f8 ckpt 1486: CI1: sr #674 id 44417744367 finished (result being read by a subagent); ss m
   5c4ef2a0 ckpt 1485: CI1: research/CI1_AUDIT_2026-11-18.md written; ss G1 check added (SS1g); rev
-  8a46ec64 ckpt 1484: CI1: VERDICT fl branch #673 id 44416691055 job 135198762832 (head 35e5283d, 
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the
