@@ -1,13 +1,13 @@
-# CHECKPOINT 1496 — read me first, then TASKS.md
+# CHECKPOINT 1497 — read me first, then TASKS.md
 
-**Written:** 2026-11-19T00:25:09Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `8eca3e05` (this checkpoint is the commit after it)
+**Written:** 2026-11-19T00:27:02Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-3b4e218f-z6cmv4` · **builds on:** `681c0607` (this checkpoint is the commit after it)
 
 ## Just done
-CI1: rerun verdict: ac solo #682 id 44426695151 SUCCESS (AC2 was the native-crash flake); base,an #681 id 44426690735 FAILURE (names being read)
+CI1: base,an #681 id 44426690735 = 41 PASS 1 FAIL: only AN9b (lock log shows 'ANIM ON again: accessibility helper not running (process start + 2.5 s)', check wants 'lock screen (process start)'); base + AN7/AN8 PASSED this time; no native crash. Triage dispatched 00:27Z: an solo main, base,an main, base,an ref v0.9.13 (tag)
 
 ## Do this next
-read FAIL lines of #681 (haiku); if base or an fails again run the SAME sections on ref v0.9.13 to compare
+read the 3 triage runs ~00:40Z (list_workflow_runs emulator.yml workflow_dispatch perPage 3, event only, branch filter drops the tag run); tag also fails AN9b = pre-existing flake, else compare AN9b path with diff (AnimationSpeedup untouched by CI1)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read FAIL lines of #681 (haiku); if base or an fails again run the SAME sections
 
 ## Last ten checkpoints
 ```
+  681c0607 ckpt 1496: CI1: rerun verdict: ac solo #682 id 44426695151 SUCCESS (AC2 was the native-
   8eca3e05 ckpt 1495: CI1: gate triage (head 3e02bf08, product unchanged since): A #678 6 FAIL (86
   c33f0c26 ckpt 1494: CI1: gate raw verdict (head 3e02bf08): A #678 id 44423199764 (base,x1,t,x,an
   3492984f ckpt 1493: CI1: tier 0 local green (testDebugUnitTest + lintDebug, BUILD SUCCESSFUL, GR
@@ -25,5 +26,4 @@ read FAIL lines of #681 (haiku); if base or an fails again run the SAME sections
   f47446c4 ckpt 1489: CI1: ss #675 id 44418711509 job 135205705700 = 73 PASS 0 FAIL (head 8a46ec64
   328c0636 ckpt 1488: CI1: reviewer ac46f883 read (7 LOW): fixed 1 (no forced reading without help
   73eebb4a ckpt 1487: CI1: sr #674 id 44417744367 job 135202357753 = 12 PASS 1 FAIL: SR2 was a TES
-  083eb8f8 ckpt 1486: CI1: sr #674 id 44417744367 finished (result being read by a subagent); ss m
 ```
