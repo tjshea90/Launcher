@@ -16,6 +16,7 @@ Answers CI1 (Tj 22:50 UTC: full pass on efficiency, RAM / CPU / battery, speed, 
   Recents still opens, a Quickstep session still shows the stock home, the cooldown holds, a healthy launcher is left alone, no crash.
 - MEASURED, emulator section `ss`: the Settings look-alike still works (73 checks green); the new "no full reload" path is read from the log line.
 - MEASURED, unit tests: the new rules (when to restart, cooldown, retry after a failed try, never behind the lock screen) and the reload rule.
+- GATE: the emulator gate for the diff (core set + sr, ss, bs, bl, an, rt, cs2) ended green on identical product code after re-running the sections that had single failures (a native crash of the emulator app, a timing check in base that now waits longer); no section failed twice.
 - REASONED, not measured: why your stock launcher grows. The stock (MediaTek Go) launcher keeps every NEW screen of itself alive for the life of its process;
   every battery-saver flip re-creates the visible one. The lock flips the saver around every lock, so a lock + gesture unlock plausibly adds up to two kept
   screens. The emulator's stock launcher is plain Android and does not leak, so no emulator can show the growth, and no emulator can show the memory you
