@@ -205,7 +205,14 @@ home
 adb shell "run-as $PKG cat shared_prefs/tj_apps.xml" > "$OUT/apps-prefs-before.txt" 2>&1
 adb shell pm uninstall -k --user 0 com.android.gallery3d > "$OUT/gallery-uninstall.txt" 2>&1; sleep 3
 adb shell pm install-existing --user 0 com.android.gallery3d >> "$OUT/gallery-uninstall.txt" 2>&1; sleep 4
-adb shell "run-as $PKG cat shared_prefs/tj_apps.xml" > "$OUT/apps-prefs-after.txt" 2>&1
+# CI1 (gate #685, 2026-11-19): the package-removed event reaches the app's model worker with a variable delay on the CI emulator (a fixed 3 + 4 s sleep failed once in four runs of identical code): look again for up to 16 s (bounded, deadline = the loop count) and say how long it took
+HID_N=0
+for HID_I in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
+  adb shell "run-as $PKG cat shared_prefs/tj_apps.xml" > "$OUT/apps-prefs-after.txt" 2>&1
+  grep -q gallery3d "$OUT/apps-prefs-after.txt" || break
+  HID_N=$HID_I; sleep 1
+done
+info "hidden: the reinstalled app was forgotten after $HID_N extra second(s) of polling (0 = at the first look, 16 = never)"
 check "hidden: contacts allowed before, gallery allowed before" bash -c "grep -q gallery3d $OUT/apps-prefs-before.txt && grep -q contacts $OUT/apps-prefs-before.txt"
 check "hidden: a REINSTALLED app is forgotten, so it is hidden until Tj allows it" bash -c "! grep -q gallery3d $OUT/apps-prefs-after.txt && grep -q contacts $OUT/apps-prefs-after.txt"
 adb shell input swipe 300 900 300 200 400; sleep 3; shot 22-drawer-after-reinstall
