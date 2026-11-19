@@ -2306,3 +2306,7 @@
 > - **My read:** the reinstall check is timing-based and waited a fixed 7 seconds. I made it poll for up to 16 seconds and print how long the app took to be forgotten. That is a test-only change, with no change to the app or launcher code.
 > - **Next:** I'm re-running `base,an` twice on the new head (one on `main`, one on the branch, dispatched at about 00:45Z). A timer fires at 00:56Z. If both pass I ship; if a check fails again, I'll treat it as a real regression and bisect the Settings change.
 <!-- sha:973c971afaf7 -->
+
+## 2026-11-19T01:00:05Z
+> The v0.9.14 gate is green and `ship.sh` passed (handoff test, full unit suite, version check). The signed build (`android.yml`, `full_build=true`) was dispatched at 00:59Z. A build like this usually finishes about 2.5 minutes after dispatch, so I'll check for the Release at 01:03Z. Then I'll record it and send you the link and the write-up.
+<!-- sha:88ffd619e85a -->
