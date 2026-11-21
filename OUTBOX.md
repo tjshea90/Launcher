@@ -2397,3 +2397,7 @@
 ## 2026-11-21T20:48:15Z
 > Both gate groups (`base,n,cu,pf,rb,last` and `lq,uf,cs,cs2,pk`) are running on the fixed head. I'll read the results when the 15-minute timer fires.
 <!-- sha:7aab91591113 -->
+
+## 2026-11-21T21:03:36Z
+> Both gate groups failed on the fixed head, and `#702` also shows a native crash. A helper is reading the FAIL lines out of both logs, and I'm holding triage until it reports.
+<!-- sha:e74cf5560926 -->
