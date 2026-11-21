@@ -5349,7 +5349,7 @@ public class TjAccessibilityService extends AccessibilityService {
         }
         StockForceStop.Obs o = sfObs();
         StockForceStop.Step st = StockForceStop.step(sfPhase, now - sfPhaseAtMs, now - sfRunAtMs, sfClicks, sfLeave, sfPending, o);
-        if (st.action == StockForceStop.ACT_END) { sfEnd(st.outcome, st.why.isEmpty() ? sfEndWhy : (st.outcome == StockForceStop.OUT_RESTARTED || st.outcome == StockForceStop.OUT_NOT_RUNNING ? sfEndWhy : (sfEndWhy.isEmpty() ? st.why : sfEndWhy)), true); return; }
+        if (st.action == StockForceStop.ACT_END) { sfEnd(st.outcome, sfEndWhy.isEmpty() ? st.why : sfEndWhy, true); return; }
         boolean ok;
         switch (st.action) {
             case StockForceStop.ACT_CLICK_FORCE: ok = false; try { ok = sfBtn != null && sfBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK); } catch (Throwable ignored) { } sfClicks++; LockLog.add(getApplicationContext(), "SF", "+" + (now - sfRunAtMs) + " ms: Force stop pressed, accepted=" + ok); break;
