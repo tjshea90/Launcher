@@ -1859,3 +1859,7 @@
 > - Your Keyboard Diagnostics lines and examples.
 > - Your tablet checks for the Launcher.
 <!-- sha:1c883c95e7f1 -->
+
+## 2026-11-21T21:52:27Z
+> LinkMeter release is underway: the closing commit is on `ccr-linkmeter-fixes-1121`, and the pipeline is building, testing, merging into `main` and publishing the numbered release. I'm checking back in about six minutes.
+<!-- sha:edc21412c4be -->
