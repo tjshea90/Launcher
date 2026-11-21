@@ -2393,3 +2393,7 @@
 >    - There is a switch in Launcher control.
 > 3. **Proof and release:** JVM tests plus a new emulator section, then the normal gate and release. I can't test it on your tablet's Settings screen, so I'll say plainly which parts are emulator-only.
 <!-- sha:5303ce55aec3 -->
+
+## 2026-11-21T20:48:15Z
+> Both gate groups (`base,n,cu,pf,rb,last` and `lq,uf,cs,cs2,pk`) are running on the fixed head. I'll read the results when the 15-minute timer fires.
+<!-- sha:7aab91591113 -->
