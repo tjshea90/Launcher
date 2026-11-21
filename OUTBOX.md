@@ -1883,3 +1883,7 @@
 >
 > I added one more small commit afterwards that only records the release number in the notes. It was pushed with no-release, so it doesn't create another version.
 <!-- sha:82b03bbd86f8 -->
+
+## 2026-11-21T22:12:52Z
+> The weight file has a simple, readable format (a named list of tensors, starting with the smoothing filter for the touch path). I'm waiting for the helper to deliver the model's source code, then I'll port the forward pass.
+<!-- sha:914d38ac545d -->
