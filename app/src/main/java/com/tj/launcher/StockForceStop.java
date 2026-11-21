@@ -36,15 +36,18 @@ final class StockForceStop {
     static final long AFTER_RETURN_DELAY_MS = 45_000L;
     /** The whole drive (from the cover going up) is over by then; the cover's failsafe is re-armed to {@link #COVER_MS}. */
     static final long CAP_MS = 14_000L;
-    static final long COVER_MS = CAP_MS + 1_500L;
+    static final long LEAVE_STEP_MS = 1_000L;   // more than HomeDoublePress's 900 ms: two HOME presses of one leave are never one double Home
+    static final int LEAVE_TRIES = 4;
+    /** The cover outlives the whole run: the cap, every leave press, and a margin (review: a shorter failsafe showed Settings while BACK / HOME were still being pressed). */
+    static final long COVER_MS = CAP_MS + LEAVE_TRIES * LEAVE_STEP_MS + 2_000L;
+    /** Not before this long without a touch on the home screen (a tap that lands on an invisible App info page would be Tj's wrong tap, not ours). */
+    static final long TOUCH_QUIET_MS = 2_500L;
     static final long TICK_MS = 120L;
     static final long START_DELAY_MS = 600L;
     static final long RECHECK_MS = 400L;
     static final long START_WAIT_MAX_MS = 12_000L;
     /** The App info page: how long for the page, for a Force stop button that is still greyed (it is enabled by an answer to a broadcast), for the dialog, for the dialog to go. */
     static final long PAGE_WAIT_MS = 7_000L, GREY_WAIT_MS = 2_500L, DIALOG_WAIT_MS = 4_000L, GONE_WAIT_MS = 4_000L, RETRY_CLICK_MS = 1_500L;
-    static final long LEAVE_STEP_MS = 700L;
-    static final int LEAVE_TRIES = 4;
     /** Not again within this time of the last drive's end, whatever the cooldown says. */
     static final long MIN_GAP_MS = 60_000L;
 
@@ -65,6 +68,12 @@ final class StockForceStop {
 
     /** Pure: does this reading of {@code low_power} count as a flip? Only a CHANGE of the value does (a ContentObserver can report one write twice). {@code prev} MIN_VALUE = first reading, never counted. */
     static boolean isFlip(int prev, int now) { return prev != Integer.MIN_VALUE && now != prev; }
+
+    /** SR1 (the helper path) or a finished drive took the debt away. Under the same lock as the additions, so a flip cannot be overwritten. */
+    static synchronized void setDebt(Context app, int v) { try { Features.setIntAsync(app, DEBT_KEY, v); } catch (Throwable ignored) { } }
+
+    /** The first reading of low_power in this process (BatterySaverGuard.start): a Go tablet kills the process often, and the first flip after each start must still count. */
+    static void seedLowPower(int now) { synchronized (StockForceStop.class) { if (lastLow == Integer.MIN_VALUE) lastLow = now; } }
 
     private static synchronized void addDebt(Context app, int n) {
         try { Features.setIntAsync(app, DEBT_KEY, addDebt(Features.getInt(app, DEBT_KEY, 0), n)); } catch (Throwable ignored) { }
@@ -148,14 +157,15 @@ final class StockForceStop {
     }
 
     /**
-     * One look of a running drive. phase / phaseAgeMs: where it is and for how long; runMs: since the cover went up; clicks: Force stop presses so far; leaveTries: BACK / HOME presses so far;
-     * pending: the outcome decided in an earlier phase (the LEAVING phase carries it to the end).
+     * One look of a running drive. phase / phaseAgeMs: where it is and for how long; runMs: since the cover went up; pageAgeMs: how long the App info page has shown its Force stop button (-1 = not yet:
+     * a cold-starting Settings builds the button greyed, so "grey" counts from the first look at the page, not from the start of the intent); clicks: Force stop presses so far; leaveTries: BACK / HOME
+     * presses so far; pending: the outcome decided in an earlier phase (the LEAVING phase carries it to the end).
      */
-    static Step step(int phase, long phaseAgeMs, long runMs, int clicks, int leaveTries, int pending, Obs o) {
+    static Step step(int phase, long phaseAgeMs, long runMs, long pageAgeMs, int clicks, int leaveTries, int pending, Obs o) {
         if (phase == LEAVING) {
             if (!o.plain) return new Step(IDLE, ACT_END, pending, "the screen is not plain: nothing is pressed, the rest is left to the system");   // never BACK / HOME on a lock screen
             if (o.homeFront) return new Step(IDLE, ACT_END, pending, "back on the custom home");
-            if (leaveTries >= LEAVE_TRIES) return new Step(IDLE, ACT_END, pending == OUT_RESTARTED ? OUT_RESTARTED : OUT_FAILED, "could not get back to the custom home after " + leaveTries + " presses");
+            if (leaveTries >= LEAVE_TRIES) return new Step(IDLE, ACT_END, keepsOutcomeWhenStuck(pending) ? pending : OUT_FAILED, "could not get back to the custom home after " + leaveTries + " presses");
             if (phaseAgeMs >= LEAVE_STEP_MS || leaveTries == 0) return new Step(LEAVING, leaveTries < 2 ? ACT_BACK : ACT_HOME, pending, "going back");
             return new Step(LEAVING, ACT_NONE, pending, "");
         }
@@ -165,7 +175,7 @@ final class StockForceStop {
         switch (phase) {
             case OPENING:
                 if (o.settingsFront && o.button == BTN_ENABLED) return new Step(PRESSING, ACT_CLICK_FORCE, OUT_NONE, "Force stop pressed");
-                if (o.settingsFront && o.button == BTN_GREY && phaseAgeMs >= GREY_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_NOT_RUNNING, "the Force stop button stays grey: the stock launcher is not running");
+                if (o.settingsFront && o.button == BTN_GREY && pageAgeMs >= GREY_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_NOT_RUNNING, "the Force stop button stays grey: the stock launcher is not running");
                 if (phaseAgeMs >= PAGE_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_FAILED, o.settingsFront ? "the App info page shows no Force stop button" : "the App info page did not come up");
                 return new Step(OPENING, ACT_NONE, OUT_NONE, "");
             case PRESSING:
@@ -178,6 +188,21 @@ final class StockForceStop {
                 if (phaseAgeMs >= GONE_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_FAILED, "the dialog did not close after OK");
                 return new Step(CONFIRMING, ACT_NONE, OUT_NONE, "");
         }
+    }
+
+    /** Pure: a decided outcome that stays what it was when the way back to the home is stuck (a stuck way home is no reason to call a verified restart, a verified "not running" or a safety stop a failure). */
+    static boolean keepsOutcomeWhenStuck(int outcome) { return outcome == OUT_RESTARTED || outcome == OUT_NOT_RUNNING || outcome == OUT_ABORTED; }
+
+    /** What a finished drive writes (pure, tested). {@code debt} -1 = leave it; {@code fails}: -1 = leave it, else the new count; {@code lastAt}: the new "last drive" time. */
+    static final class After {
+        final int debt, fails; final long lastAt;
+        After(int debt, int fails, long lastAt) { this.debt = debt; this.fails = fails; this.lastAt = lastAt; }
+    }
+
+    static After afterOutcome(int outcome, int failsNow, long nowMs, long cooldownMs) {
+        if (clearsDebt(outcome)) return new After(0, 0, nowMs);                                                   // done: nothing piled up, the full cooldown starts
+        if (outcome == OUT_FAILED) return new After(-1, failsNow + 1, lastAtAfter(false, nowMs, cooldownMs));    // failed: debt kept, one more failure, retry later
+        return new After(-1, -1, lastAtAfter(false, nowMs, cooldownMs));                                          // aborted / nothing: debt kept, no failure counted, retry later
     }
 
     // ------------------------------------------------------------------------------------------------ text
@@ -267,10 +292,10 @@ final class StockForceStop {
     static void finished(Context app, int outcome, String why, int debtBefore, long ms, long cooldownMs, String via) {
         try {
             long now = System.currentTimeMillis();
-            boolean worked = clearsDebt(outcome);
-            if (worked) { Features.setIntAsync(app, DEBT_KEY, 0); Features.setIntAsync(app, FAILS_KEY, 0); Features.setLongAsync(app, LAST_AT_KEY, now); }
-            else if (outcome == OUT_FAILED) { Features.setIntAsync(app, FAILS_KEY, Features.getInt(app, FAILS_KEY, 0) + 1); Features.setLongAsync(app, LAST_AT_KEY, lastAtAfter(false, now, cooldownMs)); }
-            else Features.setLongAsync(app, LAST_AT_KEY, lastAtAfter(false, now, cooldownMs));   // aborted: tried again after the retry time, no failure counted
+            After af = afterOutcome(outcome, Features.getInt(app, FAILS_KEY, 0), now, cooldownMs);
+            if (af.debt >= 0) setDebt(app, af.debt);
+            if (af.fails >= 0) Features.setIntAsync(app, FAILS_KEY, af.fails);
+            Features.setLongAsync(app, LAST_AT_KEY, af.lastAt);
             String text = resultText(clock(), outcome, why, debtBefore, ms, via);
             Features.setStringAsync(app, STATUS_KEY, text);
             LockLog.add(app, "SF", text.length() > 190 ? text.substring(0, 190) : text);

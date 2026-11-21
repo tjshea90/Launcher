@@ -51,6 +51,7 @@ public final class BatterySaverGuard {
                 }
             };
             app.getContentResolver().registerContentObserver(Settings.Global.getUriFor(BatterySaverPolicy.SETTING), false, observer);
+            try { StockForceStop.seedLowPower(Settings.Global.getInt(app.getContentResolver(), BatterySaverPolicy.SETTING, 0)); } catch (Throwable ignored) { }   // CT1: the first flip after a process start counts too
             // AZ2: the self-heal. Android raises this counter for every request to turn the saver ON that it ACCEPTED (even one its state machine then ignores because a direct write put it out of step).
             lastCount = readCount(app);
             countObserver = new ContentObserver(main) { @Override public void onChange(boolean selfChange) { onActivationCount(app); } };
