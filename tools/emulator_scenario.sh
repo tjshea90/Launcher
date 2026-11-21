@@ -5593,12 +5593,16 @@ SF_REC="$(adb shell dumpsys activity recents 2>/dev/null | grep -c 'com.android.
 SF_TASK="$(adb shell dumpsys activity activities 2>/dev/null | grep -c 'com.android.settings/.*InstalledApp\|AppInfoDashboard')"
 info "SF Settings leftovers: Recents lines before the drive $SF_RB, after $SF_REC; App info activity records $SF_TASK"
 sflog | grep ' SF diag' | tail -n 6 | while IFS= read -r l; do info "SF $(echo "$l" | cut -c1-300)"; done
-check "SF5: Settings is not left in Recents (no more Settings lines than before) and no App info page is left" bash -c "[ '$SF_REC' -le '$SF_RB' ] && [ '$SF_TASK' = 0 ]"
-# (3) Recents still opens (the stock process starts again by itself)
+check "SF5: no App info page is left behind" bash -c "[ '$SF_TASK' = 0 ]"
+# (3) Recents still opens (the stock process starts again by itself) and shows NO Settings card (what Tj would see); ONE dump at the very end of the phase
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4
 SF_RC="$(sfres)"
-info "SF Recents key after the drive: resumed ${SF_RC:-?}; stock pid now $(sfpid)"
+shot sf-recents
+adb shell uiautomator dump /sdcard/sfrec.xml >/dev/null 2>&1; adb shell cat /sdcard/sfrec.xml 2>/dev/null | tr '>' '\n' > "$OUT/sf-recents-dump.txt"
+SF_CARDS="$(grep -ci 'settings' "$OUT/sf-recents-dump.txt")"; SF_NODES="$(grep -c '<node\|node ' "$OUT/sf-recents-dump.txt")"
+info "SF Recents key after the drive: resumed ${SF_RC:-?}; stock pid now $(sfpid); dump nodes $SF_NODES, nodes naming Settings $SF_CARDS; Recents lines: $(adb shell dumpsys activity recents 2>/dev/null | grep -E 'Recent #|com.android.settings/' | cut -c1-110 | head -n 8 | tr '\n' '|')"
 check "SF6: the Recents key still opens Recents after the drive (the stock launcher is in front again)" bash -c "echo '$SF_RC' | grep -q 'com.android.launcher3'"
+check "SF6b: Recents shows no Settings card (the dump was taken and names nothing called Settings)" bash -c "[ '$SF_NODES' -gt 5 ] && [ '$SF_CARDS' = 0 ]"
 adb shell input keyevent KEYCODE_HOME; sleep 3
 # (4) the next return must not do it again (cooldown): a big debt, a return, a wait, count the start lines
 hpint sf_debt 50
