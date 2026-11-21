@@ -1811,3 +1811,7 @@
 ## 2026-11-21T21:32:14Z
 > Tag run #706 had hung for over 25 minutes, so I cancelled it (its results block still prints). A helper is reading it and the four newer runs, and I'll decide once it reports.
 <!-- sha:b8cb469dc67f -->
+
+## 2026-11-21T21:35:04Z
+> `ship.sh` is running its unit suite and lint; I'll read its result when the bounded wait finishes (at most 9 minutes).
+<!-- sha:73ea6022db62 -->
