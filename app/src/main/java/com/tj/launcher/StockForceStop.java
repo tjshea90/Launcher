@@ -98,6 +98,14 @@ final class StockForceStop {
         return "";
     }
 
+    /** Pure: the start decision of a waiting drive: "" = go now, "WAIT:..." = look again, "STOP:..." = give this run up (nothing was opened). {@code stop} = a permanent reason, {@code wait} = a transient one. */
+    static String startVerdict(String stop, String wait, long waitedMs) {
+        if (stop != null && !stop.isEmpty()) return "STOP:" + stop;
+        if (wait == null || wait.isEmpty()) return "";
+        if (waitedMs >= START_WAIT_MAX_MS) return "STOP:gave up after " + (waitedMs / 1000) + " s: " + wait;
+        return "WAIT:" + wait;
+    }
+
     /** Pure: the part every start shares (also the button): the custom launcher is the screen in front and nothing else is going on. */
     static String safeMoment(boolean customMode, boolean customHomeInFront, boolean screenOnUnlocked, boolean automationOff) {
         if (automationOff) return "automation is off (crash guard or pause)";
