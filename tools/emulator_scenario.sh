@@ -5746,7 +5746,7 @@ pmlog > "$OUT/pm-a-log.txt"
 info "PM A (switch OFF): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-a-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-400)"
 check "PM1: switch OFF: the tile still returns to the custom launcher" bash -c "[ \"$(getmode)\" = custom ]"
 check "PM1: switch OFF: the menu is never asked for (no 'PRIME start' line)" bash -c "! grep -q ' PRIME start' $OUT/pm-a-log.txt"
-check "PM1: switch OFF: the run says why it did nothing" grep -q ' PRIME end: .*the switch is off' "$OUT/pm-a-log.txt"
+check "PM1: switch OFF: nothing of the prime runs at all (no PRIME line of any kind)" bash -c "! grep -q ' PRIME ' $OUT/pm-a-log.txt"
 # B: switch ON
 hpinit true; hpkey prime_menu true
 setmode quickstep; rebind; home; sleep 2
