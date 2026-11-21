@@ -5141,9 +5141,112 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.postDelayed(scrimTick, ScrimMeasure.CLOSE_STEP_MS);
     }
 
+    // ------------------------------------------------------------------------------------------------ CS2: the automatic power-menu prime (rules: PowerMenuPrime)
+
+    private int primePhase = PowerMenuPrime.IDLE;
+    private long primeAskedMs, primePhaseAtMs, primeRunAtMs, primeLastEndMs;
+    private int primeBacks;
+    private boolean primeOwnsCover, primeOpened;
+    private String primeWhy = "";
+
+    /** True while a prime run is going (the home calibration must not photograph the screen behind its cover). */
+    private boolean primeRunning() { return primePhase != PowerMenuPrime.IDLE; }
+
+    /**
+     * CS2 (Tj, 2026-11-21): called by the return to custom (the tile / the drawer icon). One automatic open + close of the stock power menu behind a cover, so the FIRST side-key press finds SystemUI's
+     * dialog, our patch window and our fast path warm. Never throws; does nothing unless every start condition in {@link PowerMenuPrime#start} holds.
+     */
+    public void primePowerMenu(final String why) {
+        handler.post(new Runnable() { @Override public void run() {
+            try {
+                if (primePhase != PowerMenuPrime.IDLE) return;   // one run at a time
+                primeWhy = why == null ? "" : why; primeAskedMs = android.os.SystemClock.uptimeMillis(); primePhase = PowerMenuPrime.WAITING;
+                handler.removeCallbacks(primeTick); handler.postDelayed(primeTick, PowerMenuPrime.START_DELAY_MS);
+            } catch (Throwable t) { Log.e(TAG, "prime request failed", t); primePhase = PowerMenuPrime.IDLE; }
+        } });
+    }
+
+    private final Runnable primeTick = new Runnable() { @Override public void run() { try { primeStep(); } catch (Throwable t) { Log.e(TAG, "prime step failed", t); primeEnd("stopped on an error: " + t); } } };
+
+    private PowerMenuPrime.Facts primeFacts() {
+        PowerMenuPrime.Facts f = new PowerMenuPrime.Facts();
+        f.wanted = true;
+        f.switchOn = Features.get(this, PowerMenuPrime.KEY, PowerMenuPrime.defaultOn(debuggable()));
+        f.automationOff = CrashGuard.automationOff(this);
+        f.coverMode = Features.isCover(Features.powerMode(this));
+        f.customMode = Mode.isCustom(this);
+        f.keyguardLocked = keyguardLocked(); f.pinPad = lastBouncer; f.screenOn = isScreenOn();
+        f.homeInFront = TjHooks.homeScreenShowing();
+        f.homeBusy = TjHooks.homeFloatingViewOpen() || TjHooks.homeBusy();
+        boolean listed = false; try { listed = dialogWindowPresent(getWindows()); } catch (Throwable ignored) { }
+        f.menuOpen = overlayShown || listed;
+        f.otherStage = scrimStage != 0 || homeCalRunning || calibrating() || homeBuilding;
+        f.coverUp = resetCover != null;
+        f.msSinceLastEnd = primeLastEndMs == 0 ? Long.MAX_VALUE : android.os.SystemClock.uptimeMillis() - primeLastEndMs;
+        return f;
+    }
+
+    private void primeStep() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (primePhase == PowerMenuPrime.IDLE) return;
+        if (primePhase == PowerMenuPrime.WAITING) {
+            PowerMenuPrime.Start s = PowerMenuPrime.start(primeFacts(), now - primeAskedMs);
+            if (s.verdict == PowerMenuPrime.WAIT) { handler.postDelayed(primeTick, PowerMenuPrime.RECHECK_MS); return; }
+            if (s.verdict == PowerMenuPrime.STOP) { primeEnd(s.why); return; }
+            // GO: the cover first (the picture of the home screen, else black), then the menu
+            primeRunAtMs = now; primeBacks = 0; primeOpened = false;
+            if (resetCover == null) { showResetCover(); primeOwnsCover = resetCover != null; }
+            boolean ok = false;
+            try { ok = performGlobalAction(GLOBAL_ACTION_POWER_DIALOG); } catch (Throwable ignored) { }
+            LockLog.add(getApplicationContext(), "PRIME", "start (" + primeWhy + "): cover " + (primeOwnsCover ? (resetCoverIsCurtain ? "curtain" : "black") : "none") + ", menu asked, accepted=" + ok);
+            if (!ok) { primeEnd("Android refused to open the power menu"); return; }
+            primeOpened = true; primePhase = PowerMenuPrime.OPENING; primePhaseAtMs = now;
+            handler.postDelayed(primeTick, PowerMenuPrime.TICK_MS);
+            return;
+        }
+        boolean present = overlayShown;
+        if (!present) { try { present = dialogWindowPresent(getWindows()); } catch (Throwable ignored) { } }   // the window list is authoritative
+        boolean safe = isScreenOn() && !keyguardLocked() && !lastBouncer && Mode.isCustom(this) && !CrashGuard.automationOff(this);
+        PowerMenuPrime.Step st = PowerMenuPrime.step(primePhase, now - primePhaseAtMs, now - primeRunAtMs, present, safe, primeBacks);
+        if (st.action == PowerMenuPrime.ACT_END) { primeEnd(st.why); return; }
+        if (st.action == PowerMenuPrime.ACT_BACK) { primeBacks++; try { performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } primePhaseAtMs = now; }
+        else if (st.phase != primePhase) primePhaseAtMs = now;
+        if (st.phase != primePhase) LockLog.add(getApplicationContext(), "PRIME", "+" + (now - primeRunAtMs) + " ms: " + st.why);
+        primePhase = st.phase;
+        handler.postDelayed(primeTick, PowerMenuPrime.TICK_MS);
+    }
+
+    private void primeEnd(String why) {
+        long now = android.os.SystemClock.uptimeMillis();
+        boolean opened = primeOpened; long ms = primeRunAtMs == 0 ? 0 : now - primeRunAtMs;
+        handler.removeCallbacks(primeTick);
+        primePhase = PowerMenuPrime.IDLE; primeOpened = false;
+        if (primeOwnsCover) { primeOwnsCover = false; hideResetCover(); }
+        primeLastEndMs = now; primeRunAtMs = 0;
+        try {
+            android.content.Context app = getApplicationContext();
+            String line = PowerMenuPrime.summary(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), why, opened, ms);
+            Features.setStringAsync(app, PowerMenuPrime.LAST_KEY, line);
+            LockLog.add(app, "PRIME", "end: " + line);
+            Log.i(TAG, "PRIME " + line);
+        } catch (Throwable ignored) { }
+        try { refreshLayersSoon(); } catch (Throwable ignored) { }   // the layers and a calibration that waited for the prime look again
+    }
+
+    /** The service is going away in the middle of a run: the menu it opened is closed once (only when verifiably still there over a plain screen), the cover goes. */
+    private void primeTeardown() {
+        try {
+            if (primePhase == PowerMenuPrime.IDLE) return;
+            boolean present = overlayShown; if (!present) { try { present = dialogWindowPresent(getWindows()); } catch (Throwable ignored) { } }
+            if (present && primeOpened && isScreenOn() && !keyguardLocked() && !lastBouncer) { try { performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } }
+            primeEnd("stopped: the accessibility service was restarted or switched off");
+        } catch (Throwable ignored) { }
+    }
+
     /** Review of BA1 (finding 7): the service is being interrupted / unbound / destroyed: stop the sequence and, if the helper opened the stock menu and it is still up over a plain lock screen, close it once. */
     private void scrimTeardown() {
         try {
+            primeTeardown();   // CS2
             handler.removeCallbacks(scrimTick); handler.removeCallbacks(scrimTrigger);
             if (scrimStage >= 1 && scrimStage <= 4) {   // BQ1a: a run torn down in the middle (stage 5 = its end is already recorded; the run itself was counted when it started) says so in the report and the lock log
                 try {
