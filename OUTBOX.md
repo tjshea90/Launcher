@@ -2405,3 +2405,7 @@
 ## 2026-11-21T21:07:42Z
 > Dispatched two more `base,n` runs on head (branch and `main`, same code), and two control runs on tag `v0.9.14` are already going. I'll read all four when the 10-minute timer fires.
 <!-- sha:afb276b62e39 -->
+
+## 2026-11-21T21:17:57Z
+> Same code on head now has one pass (#708 on `main`) and one fail (#707 on the branch), and the tag chain `lq,uf,cs,cs2,pk` also failed (#705). A helper is reading the FAIL lines and the new N2 detail, and I'm holding any conclusion until it reports.
+<!-- sha:fbb8a24eadcf -->
