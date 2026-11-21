@@ -5248,9 +5248,154 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable ignored) { }
     }
 
+    // ------------------------------------------------------------------------------------------------ CT1 / SR2: the helper-free Force stop of the stock launcher (rules: StockForceStop)
+
+    private int sfPhase = StockForceStop.IDLE;
+    private long sfAskedMs, sfPhaseAtMs, sfRunAtMs, sfCooldown;
+    /** When the last drive ended (uptime ms). STATIC like primeLastEndMs: the service can be re-created without the process dying. */
+    private static volatile long sfLastEndMs;
+    private int sfClicks, sfLeave, sfPending, sfDebt;
+    private boolean sfOwnsCover, sfManual;
+    private String sfWhy = "", sfEndWhy = "";
+    private AccessibilityNodeInfo sfBtn, sfOk;   // found by the look of THIS tick only
+
+    private final Runnable sfTick = new Runnable() { @Override public void run() { try { sfStep(); } catch (Throwable t) { Log.e(TAG, "stock force stop step failed", t); sfEnd(StockForceStop.OUT_FAILED, "stopped on an error: " + t); } } };
+
+    /**
+     * CT1: asked by {@link StockForceStop} (any thread). Opens Settings' App info of the stock launcher behind the cover, presses Force stop and OK, goes back to the custom home. True = the run was scheduled
+     * (its end is reported through {@link StockForceStop#finished}); false = nothing was scheduled.
+     */
+    boolean stockForceStop(final String why, final boolean manual, final int debt, final long cooldownMs) {
+        try {
+            handler.post(new Runnable() { @Override public void run() {
+                try {
+                    if (sfPhase != StockForceStop.IDLE) { StockForceStop.finished(getApplicationContext(), StockForceStop.OUT_ABORTED, "another run is still going", debt, 0, cooldownMs, why); return; }
+                    sfWhy = (why == null ? "" : why); sfManual = manual; sfDebt = debt; sfCooldown = cooldownMs; sfEndWhy = ""; sfPending = StockForceStop.OUT_NONE;
+                    sfAskedMs = android.os.SystemClock.uptimeMillis(); sfPhase = StockForceStop.WAITING;
+                    handler.removeCallbacks(sfTick); handler.postDelayed(sfTick, StockForceStop.START_DELAY_MS);
+                } catch (Throwable t) { Log.e(TAG, "stock force stop request failed", t); sfPhase = StockForceStop.IDLE; StockForceStop.finished(getApplicationContext(), StockForceStop.OUT_FAILED, "request failed: " + t, debt, 0, cooldownMs, why); }
+            } });
+            return true;
+        } catch (Throwable t) { return false; }
+    }
+
+    private StockForceStop.Obs sfObs() {
+        StockForceStop.Obs o = new StockForceStop.Obs();
+        sfBtn = null; sfOk = null;
+        o.plain = isScreenOn() && !keyguardLocked() && !lastBouncer;
+        o.safe = o.plain && Mode.isCustom(this) && !CrashGuard.automationOff(this);
+        AccessibilityNodeInfo root = null;
+        try { root = getRootInActiveWindow(); } catch (Throwable ignored) { }
+        if (root == null) return o;
+        String pkg = root.getPackageName() == null ? "" : root.getPackageName().toString();
+        o.homeFront = getPackageName().equals(pkg);
+        o.settingsFront = StockForceStop.SETTINGS_PKG.equals(pkg);
+        if (!o.settingsFront) return o;
+        boolean titleOk = false;
+        List<AccessibilityNodeInfo> titles = root.findAccessibilityNodeInfosByViewId("android:id/alertTitle");
+        if (titles != null) for (AccessibilityNodeInfo n : titles) { CharSequence t = n.getText(); if (t != null && t.toString().toLowerCase(java.util.Locale.ROOT).contains("force stop")) titleOk = true; }
+        if (titleOk) {   // the confirm dialog: its title says Force stop, its positive button is OK
+            List<AccessibilityNodeInfo> ok = root.findAccessibilityNodeInfosByViewId("android:id/button1");
+            if (ok != null && !ok.isEmpty() && ok.get(0).isEnabled()) { sfOk = ok.get(0); o.confirmUp = true; }
+            return o;
+        }
+        List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByText("Force stop");
+        if (hit != null) for (AccessibilityNodeInfo n : hit) {
+            CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+            if (t == null || !t.toString().trim().equalsIgnoreCase("force stop")) continue;
+            AccessibilityNodeInfo b = clickableAncestor(n);
+            sfBtn = b; o.button = b.isEnabled() ? StockForceStop.BTN_ENABLED : StockForceStop.BTN_GREY;
+            if (o.button == StockForceStop.BTN_ENABLED) break;
+        }
+        return o;
+    }
+
+    private void sfStep() {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (sfPhase == StockForceStop.IDLE) return;
+        if (sfPhase == StockForceStop.WAITING) {
+            boolean plain = isScreenOn() && !keyguardLocked() && !lastBouncer;
+            String stop = StockForceStop.safeMoment(Mode.isCustom(this), true, plain, CrashGuard.automationOff(this));
+            if (stop.isEmpty() && !sfManual && sfLastEndMs != 0 && now - sfLastEndMs < StockForceStop.MIN_GAP_MS) stop = "the last run ended " + ((now - sfLastEndMs) / 1000) + " s ago";
+            String wait = "";
+            boolean listed = false; try { listed = dialogWindowPresent(getWindows()); } catch (Throwable ignored) { }
+            if (stop.isEmpty()) {
+                if (primeRunning()) wait = "a power-menu preparation is running";
+                else if (overlayShown || listed) wait = "a power menu is open";
+                else if (resetCover != null) wait = "the return's cover is still up";
+                else if (scrimStage != 0 || homeCalRunning || calibrating() || homeBuilding) wait = "a calibration or measurement is running";
+                else if (!sfManual && !TjHooks.homeScreenShowing()) wait = "the custom home is not in front yet";
+                else if (!sfManual && (TjHooks.homeFloatingViewOpen() || TjHooks.homeBusy())) wait = "the home screen is busy";
+            }
+            String v = StockForceStop.startVerdict(stop, wait, now - sfAskedMs);
+            if (v.startsWith("WAIT:")) { handler.postDelayed(sfTick, StockForceStop.RECHECK_MS); return; }
+            if (v.startsWith("STOP:")) { sfEnd(StockForceStop.OUT_ABORTED, v.substring(5), false); return; }
+            // GO: the cover first (the picture of the home screen, else black), then Settings' App info page of the stock launcher
+            sfRunAtMs = now; sfPhaseAtMs = now; sfClicks = 0; sfLeave = 0; sfPending = StockForceStop.OUT_NONE; sfEndWhy = "";
+            showResetCover(); sfOwnsCover = resetCover != null;
+            handler.removeCallbacks(coverFailsafe); handler.postDelayed(coverFailsafe, StockForceStop.COVER_MS);   // the default 4.5 s is shorter than a slow tablet's Settings
+            boolean started = false;
+            try {
+                android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", StockForceStop.STOCK_PKG, null));
+                i.setPackage(StockForceStop.SETTINGS_PKG);
+                i.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK | android.content.Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS | android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                startActivity(i); started = true;
+            } catch (Throwable t) { Log.e(TAG, "App info page failed", t); }
+            LockLog.add(getApplicationContext(), "SF", "start (" + sfWhy + ") after " + (now - sfAskedMs) + " ms: cover " + (sfOwnsCover ? (resetCoverIsCurtain ? "curtain" : "black") : "none") + ", App info asked, started=" + started);
+            if (!started) { sfEnd(StockForceStop.OUT_FAILED, "Settings has no App info page to open", true); return; }
+            sfPhase = StockForceStop.OPENING;
+            handler.postDelayed(sfTick, StockForceStop.TICK_MS);
+            return;
+        }
+        StockForceStop.Obs o = sfObs();
+        StockForceStop.Step st = StockForceStop.step(sfPhase, now - sfPhaseAtMs, now - sfRunAtMs, sfClicks, sfLeave, sfPending, o);
+        if (st.action == StockForceStop.ACT_END) { sfEnd(st.outcome, st.why.isEmpty() ? sfEndWhy : (st.outcome == StockForceStop.OUT_RESTARTED || st.outcome == StockForceStop.OUT_NOT_RUNNING ? sfEndWhy : (sfEndWhy.isEmpty() ? st.why : sfEndWhy)), true); return; }
+        boolean ok;
+        switch (st.action) {
+            case StockForceStop.ACT_CLICK_FORCE: ok = false; try { ok = sfBtn != null && sfBtn.performAction(AccessibilityNodeInfo.ACTION_CLICK); } catch (Throwable ignored) { } sfClicks++; LockLog.add(getApplicationContext(), "SF", "+" + (now - sfRunAtMs) + " ms: Force stop pressed, accepted=" + ok); break;
+            case StockForceStop.ACT_CLICK_OK: ok = false; try { ok = sfOk != null && sfOk.performAction(AccessibilityNodeInfo.ACTION_CLICK); } catch (Throwable ignored) { } LockLog.add(getApplicationContext(), "SF", "+" + (now - sfRunAtMs) + " ms: OK pressed, accepted=" + ok); break;
+            case StockForceStop.ACT_BACK: sfLeave++; try { performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } sfPhaseAtMs = now; break;
+            case StockForceStop.ACT_HOME: sfLeave++; try { performGlobalAction(GLOBAL_ACTION_HOME); } catch (Throwable ignored) { } sfPhaseAtMs = now; break;
+            default: break;
+        }
+        if (st.phase == StockForceStop.LEAVING && sfPhase != StockForceStop.LEAVING) {   // a result is decided: it is carried to the end of the leave
+            sfPending = st.outcome; sfEndWhy = st.why; sfLeave = 0; sfPhaseAtMs = now;
+            LockLog.add(getApplicationContext(), "SF", "+" + (now - sfRunAtMs) + " ms: " + st.why);
+        } else if (st.phase != sfPhase) { sfPhaseAtMs = now; }
+        sfPhase = st.phase;
+        handler.postDelayed(sfTick, StockForceStop.TICK_MS);
+    }
+
+    private void sfEnd(int outcome, String why) { sfEnd(outcome, why, true); }
+
+    private void sfEnd(int outcome, String why, boolean ran) {
+        long now = android.os.SystemClock.uptimeMillis();
+        long ms = sfRunAtMs == 0 ? 0 : now - sfRunAtMs;
+        handler.removeCallbacks(sfTick);
+        sfPhase = StockForceStop.IDLE; sfBtn = null; sfOk = null;
+        if (sfOwnsCover) { sfOwnsCover = false; hideResetCover(); }
+        if (ran && sfRunAtMs != 0) sfLastEndMs = now;   // only a run that really opened Settings counts toward the minimum gap
+        sfRunAtMs = 0;
+        try { StockForceStop.finished(getApplicationContext(), outcome, why, sfDebt, ms, sfCooldown, sfWhy + (sfManual ? ", button" : "")); } catch (Throwable ignored) { }
+        try { refreshLayersSoon(); } catch (Throwable ignored) { }
+    }
+
+    /** The service is going away in the middle of a run: Settings is closed once (only when verifiably in front over a plain screen), the cover goes, the run is reported as stopped. */
+    private void sfTeardown() {
+        try {
+            if (sfPhase == StockForceStop.IDLE) return;
+            if (sfPhase != StockForceStop.WAITING) {
+                StockForceStop.Obs o = sfObs();
+                if (o.plain && o.settingsFront) { try { performGlobalAction(GLOBAL_ACTION_BACK); } catch (Throwable ignored) { } }
+            }
+            sfEnd(StockForceStop.OUT_ABORTED, "stopped: the accessibility service was restarted or switched off", sfPhase != StockForceStop.WAITING);
+        } catch (Throwable ignored) { }
+    }
+
     /** Review of BA1 (finding 7): the service is being interrupted / unbound / destroyed: stop the sequence and, if the helper opened the stock menu and it is still up over a plain lock screen, close it once. */
     private void scrimTeardown() {
         try {
+            sfTeardown();   // CT1
             primeTeardown();   // CS2
             handler.removeCallbacks(scrimTick); handler.removeCallbacks(scrimTrigger);
             if (scrimStage >= 1 && scrimStage <= 4) {   // BQ1a: a run torn down in the middle (stage 5 = its end is already recorded; the run itself was counted when it started) says so in the report and the lock log
