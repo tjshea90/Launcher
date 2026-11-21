@@ -126,7 +126,8 @@ final class StockForceStop {
 
     /** What the service saw this tick. */
     static final class Obs {
-        boolean safe;            // screen on, unlocked, custom mode, automation on
+        boolean safe;            // plain, custom mode, automation on
+        boolean plain;           // screen on, unlocked, no PIN pad (BACK / HOME may be pressed)
         boolean settingsFront;   // the active window is com.android.settings
         int button = BTN_NONE;   // the Force stop button of the App info page
         boolean confirmUp;       // the "Force stop?" dialog with its OK button
@@ -144,6 +145,7 @@ final class StockForceStop {
      */
     static Step step(int phase, long phaseAgeMs, long runMs, int clicks, int leaveTries, int pending, Obs o) {
         if (phase == LEAVING) {
+            if (!o.plain) return new Step(IDLE, ACT_END, pending, "the screen is not plain: nothing is pressed, the rest is left to the system");   // never BACK / HOME on a lock screen
             if (o.homeFront) return new Step(IDLE, ACT_END, pending, "back on the custom home");
             if (leaveTries >= LEAVE_TRIES) return new Step(IDLE, ACT_END, pending == OUT_RESTARTED ? OUT_RESTARTED : OUT_FAILED, "could not get back to the custom home after " + leaveTries + " presses");
             if (phaseAgeMs >= LEAVE_STEP_MS || leaveTries == 0) return new Step(LEAVING, leaveTries < 2 ? ACT_BACK : ACT_HOME, pending, "going back");
@@ -237,7 +239,7 @@ final class StockForceStop {
             if (!switchOn(app)) return "the switch is off";
             TjAccessibilityService svc = TjAccessibilityService.get();
             if (svc == null) return "the accessibility service is not running";
-            String block = safeMoment(Mode.isCustom(app), TjHooks.launcherInFront() || ControlActivity.isFront(), screenOnUnlocked(app), CrashGuard.automationOff(app));
+            String block = safeMoment(Mode.isCustom(app), true, screenOnUnlocked(app), CrashGuard.automationOff(app));
             if (!block.isEmpty()) return block;
             start(app, svc, "button", true);
             return "";
