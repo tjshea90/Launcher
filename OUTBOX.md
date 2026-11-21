@@ -1898,3 +1898,38 @@
 >    - There is a switch in Launcher control.
 > 3. **Proof and release:** JVM tests plus a new emulator section, then the normal gate and release. I can't test it on your tablet's Settings screen, so I'll say plainly which parts are emulator-only.
 <!-- sha:5303ce55aec3 -->
+
+## 2026-11-21T23:04:40Z
+> **Launcher v0.9.16 is released.** It force-stops the stock launcher through Settings, so it no longer needs the adb helper.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.16
+>
+> It installs over your current version as an in-place update.
+>
+> **Read-only audit**
+> - **Efficiency:** I found no timers, alarms or background jobs. Nothing runs while the screen is dark, so I changed nothing for battery or CPU. The remaining speed items are lock-screen latency and need your tablet's numbers before they can be sized.
+> - **Quickstep RAM growth:** The cause is in Android's stock Go launcher, not in the custom launcher. Every new screen the stock launcher creates stays in memory until its process ends. Our battery-saver flips around each lock plausibly make it create extra screens. That link is reasoned from Android's source, not measured on your tablet.
+>
+> **What v0.9.16 does**
+> - **Automatic Force stop:** Without the helper, the app can't see how big the stock launcher has grown. So it keeps a count of battery-saver changes plus Quickstep sessions that have ended.
+> - **When it acts:** At a count of 12, 45 seconds after you come back from Quickstep, it opens Settings behind a cover, presses Force stop and OK, and returns to your home screen. That is the same thing you do by hand.
+> - **Conditions:** The custom home must be quiet, the helper must not be running, and the last run must be over 4 hours ago.
+> - **Failures:** It gives up and switches itself off after two failed tries.
+> - **Manual button:** In Launcher control there is a switch, a status line, and a "Force stop the stock launcher now" button.
+> - **Power-menu prep:** The new power-menu preparation from the other session (v0.9.15) no longer opens the menu if its cover can't be raised.
+>
+> **What I tested**
+> - **On the emulator:** The stock launcher's process was really force-stopped through Settings in about 1.7 seconds. The custom home came back, Recents still opened, the 4-hour wait held, and nothing crashed. The release gate runs were green. I skipped the sections that only exercise the one-line hooks I added: `legacy`, `t`, `bl`, `an`, `hp`, `cu`, `ss` and `sr`.
+> - **Not proven:** Your tablet's Settings may word things differently, and the emulator's stock launcher isn't the leaky Go one. So the memory saving itself is for your tablet to show.
+>
+> **The other session**
+> - **Finished first:** It was working when I started and released v0.9.15 at 21:41Z. I waited until it was quiet and no workflows were running, then edited. The only overlap was my first message being saved to `main` automatically. That is now merged and `main` matches my branch.
+> - **Unfixed findings:** A code review of its v0.9.15 power-menu prep found two more real problems, which I left unfixed (CT1e in TASKS.md). Another session or I can pick them up if you say so:
+>   - The menu prep and another feature share one cover.
+>   - If the screen turns off mid-run, the menu might be left open.
+>
+> **What I need from you**
+> - **A day or two on v0.9.16:** Then open Launcher control. The row "Stock launcher Force stop without the helper" shows the count and the last result. You can also tap the manual button once and tell me what you saw: a brief cover, then your home screen.
+> - **Tablet report:** Send it if you can. If a run fails, it shows what the Settings page looked like.
+> - **Quickstep memory:** Compare it in Settings after a day or two.
+<!-- sha:ce3de98d2f0f -->
