@@ -806,6 +806,8 @@ check "N3: Android did not block the helper's start behind the keyguard" bash -c
 pad 1 d 1 d 1 d 1 2 3 4 e; sleep 6
 getmode > "$OUT/n2-taperase-mode.txt"; resumed > "$OUT/n2-taperase-resumed.txt"
 adb logcat -d -s TjA11y:I | grep -E "UNLOCKPICK|UNLOCKCLICK|PROFILE" > "$OUT/n2-taperase-log.txt" 2>&1
+info "N2 detail: mode=$(tr -d '\r\n' < $OUT/n2-taperase-mode.txt) resumed=$(grep -o 'ActivityRecord{[^}]*}' $OUT/n2-taperase-resumed.txt | head -1) keyguard=$(adb shell dumpsys window policy 2>/dev/null | grep -io 'showing=[a-z]*' | head -1) a11y_bound=$(adb shell dumpsys accessibility 2>/dev/null | grep -c 'Bound services.*com.tj.launcher') log: $(cut -c1-110 $OUT/n2-taperase-log.txt | tail -6 | tr '\n' '|')"
+info "N2 lock log (newest 8): $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | tail -8 | cut -c1-120 | tr '\n' '|')"
 check "N2: tap-and-erase x3 before the PIN unlocks into Quickstep" grep -q quickstep "$OUT/n2-taperase-mode.txt"
 check "N2: and the stock launcher is on screen" grep -q 'com.android.launcher3/' "$OUT/n2-taperase-resumed.txt"
 lockpad
