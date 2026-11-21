@@ -2409,3 +2409,7 @@
 ## 2026-11-21T21:17:57Z
 > Same code on head now has one pass (#708 on `main`) and one fail (#707 on the branch), and the tag chain `lq,uf,cs,cs2,pk` also failed (#705). A helper is reading the FAIL lines and the new N2 detail, and I'm holding any conclusion until it reports.
 <!-- sha:fbb8a24eadcf -->
+
+## 2026-11-21T21:21:00Z
+> Four more runs are going (two on head, two on tag `v0.9.14`) plus tag run #706 still finishing. I'll read all of them in about 11 minutes.
+<!-- sha:f1ec095bd07a -->
