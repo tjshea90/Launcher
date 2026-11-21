@@ -1887,3 +1887,40 @@
 ## 2026-11-21T22:12:52Z
 > The weight file has a simple, readable format (a named list of tensors, starting with the smoothing filter for the touch path). I'm waiting for the helper to deliver the model's source code, then I'll port the forward pass.
 <!-- sha:914d38ac545d -->
+
+## 2026-11-21T23:19:51Z
+> The keyboard now has a trained shape model, and it's released as alpha10. I couldn't run it on your tablet or phone, so I don't know how fast it is there.
+>
+> https://github.com/tjshea90/Keyboard/releases/tag/swoop-v0.7.0-alpha10
+>
+> **Gboard's own model can't be adopted.** Google ships it only inside the Gboard app, closed and copyrighted, and this repo is public.
+>
+> **What I used instead: an open model.** A published model (Parth Parekh, MIT licence) was trained on about 900,000 real swipes from FUTO's open dataset (also MIT). I rewrote its forward pass in plain Kotlin; it matches the original's numbers to about 1e-5. It adds 2.5 MB to the app and uses no third-party libraries.
+>
+> **It works as a second opinion, not a replacement.** On its own, the model is only about as accurate as the keyboard's existing decoder. Added to the decoder's ranking, it is clearly better. I tuned the blend on one set of real swipes, then checked it on two others, one of them FUTO's untouched test split:
+>
+> | Real swipes | Right word first, before | After |
+> |---|---|---|
+> | Set 1 | 87.9% | 92.3% |
+> | Set 2 | 88.8% | 92.3% |
+> | FUTO test split | 90.6% | 94.4% |
+>
+> - **Short words:** "short word read as a much longer one" (your the → there, and → access) fell from 11 to 4, 4 to 2, and 3 to 1 across the three sets.
+> - **When it runs:** the model only runs when the old decoder isn't clearly ahead, about every second glide. That keeps nearly all the gain and halves the cost.
+>
+> **New setting:** Settings → Typing → "Smarter glide reading", on by default. Nothing is sent anywhere. Diagnostics now shows how often it ran and how long it took.
+>
+> **Speed on your tablet is unknown.** On the sandbox computer one pass takes about 15–22 ms; the tablet will be several times slower. I built a safety net: if three passes in a row take over 700 ms, it switches itself off for that run and Diagnostics says so.
+>
+> **Other things to know:**
+> - **Earlier dwell finding:** I found and fixed a timestamp bug in my earlier timing study (dwell/pause on doubled letters). Re-run with correct times, it still shows no usable signal, so that conclusion stands.
+> - **Browser copy:** the keyboard copy inside the Kestrel browser isn't re-synced, because that repo is outside this session's scope.
+> - **"Fix the word before":** it now sees slightly different scores, so it may fix a few fewer words. I haven't measured that.
+> - **Next-word model:** the neural next-word half of your message isn't started. Open data exists for it, but it needs its own measurement on real text first.
+>
+> **Waiting on you:** install alpha10 on the tablet and phone and glide your usual words (the, and, or, for). Then send me the Diagnostics line starting "Glide typing:". If glides feel slower, turn off "Smarter glide reading".
+>
+> The research and numbers are in `research/R30-trained-shape-model.md`, and progress is checkpointed to GitHub.
+>
+> <amcheckpoint>health: green; R30 shipped as alpha10 (run #24 green, recorded in BUILDLOG); open: R30f tablet/phone check by the owner, R31 next-word idea not started; resume: bash tools/resume.sh, CHECKPOINT "Do this next"</amcheckpoint>
+<!-- sha:de2854973085 -->
