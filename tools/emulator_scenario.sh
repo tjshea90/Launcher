@@ -5575,6 +5575,7 @@ check "SF1: debt below the line: the stock launcher is NOT restarted (pid unchan
 hpint sf_debt 4; hpint sf_delay_ms 3000
 setmode custom; ensurehome; rebind; home; sleep 2
 SF_PB="$(sfpid)"
+SF_RB="$(adb shell dumpsys activity recents 2>/dev/null | grep -c 'com.android.settings/')"
 cdreturns 1
 SF_T=$(( $(date +%s) + 70 )); SF_PA="$(sfpid)"
 while [ "$(date +%s)" -lt "$SF_T" ]; do sflog | grep -q ' SF .*\(restarted\|could not\|not running\|stopped\)' && break; sleep 3; done
@@ -5590,8 +5591,9 @@ info "SF resumed after the drive: ${SF_RES:-?}"
 check "SF4: the custom home is the screen in front again" bash -c "echo '$SF_RES' | grep -q 'com.tj.launcher'"
 SF_REC="$(adb shell dumpsys activity recents 2>/dev/null | grep -c 'com.android.settings/')"
 SF_TASK="$(adb shell dumpsys activity activities 2>/dev/null | grep -c 'com.android.settings/.*InstalledApp\|AppInfoDashboard')"
-info "SF Settings leftovers: in Recents $SF_REC, App info activity records $SF_TASK"
-check "SF5: Settings is not left in Recents" bash -c "[ '$SF_REC' = 0 ]"
+info "SF Settings leftovers: Recents lines before the drive $SF_RB, after $SF_REC; App info activity records $SF_TASK"
+sflog | grep ' SF diag' | tail -n 6 | while IFS= read -r l; do info "SF $(echo "$l" | cut -c1-300)"; done
+check "SF5: Settings is not left in Recents (no more Settings lines than before) and no App info page is left" bash -c "[ '$SF_REC' -le '$SF_RB' ] && [ '$SF_TASK' = 0 ]"
 # (3) Recents still opens (the stock process starts again by itself)
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4
 SF_RC="$(sfres)"

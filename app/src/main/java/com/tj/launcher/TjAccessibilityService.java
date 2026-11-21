@@ -5284,30 +5284,67 @@ public class TjAccessibilityService extends AccessibilityService {
         sfBtn = null; sfOk = null;
         o.plain = isScreenOn() && !keyguardLocked() && !lastBouncer;
         o.safe = o.plain && Mode.isCustom(this) && !CrashGuard.automationOff(this);
-        AccessibilityNodeInfo root = null;
-        try { root = getRootInActiveWindow(); } catch (Throwable ignored) { }
-        if (root == null) return o;
-        String pkg = root.getPackageName() == null ? "" : root.getPackageName().toString();
-        o.homeFront = getPackageName().equals(pkg);
-        o.settingsFront = StockForceStop.SETTINGS_PKG.equals(pkg);
-        if (!o.settingsFront) return o;
-        boolean titleOk = false;
-        List<AccessibilityNodeInfo> titles = root.findAccessibilityNodeInfosByViewId("android:id/alertTitle");
-        if (titles != null) for (AccessibilityNodeInfo n : titles) { CharSequence t = n.getText(); if (t != null && t.toString().toLowerCase(java.util.Locale.ROOT).contains("force stop")) titleOk = true; }
-        if (titleOk) {   // the confirm dialog: its title says Force stop, its positive button is OK
+        AccessibilityNodeInfo active = null;
+        try { active = getRootInActiveWindow(); } catch (Throwable ignored) { }
+        if (active != null) o.homeFront = getPackageName().equals(String.valueOf(active.getPackageName()));
+        // every window of Settings (the confirm dialog is a window of its own; the active one is not always the dialog)
+        List<AccessibilityNodeInfo> roots = new java.util.ArrayList<AccessibilityNodeInfo>();
+        if (active != null && StockForceStop.SETTINGS_PKG.equals(String.valueOf(active.getPackageName()))) roots.add(active);
+        try {
+            List<AccessibilityWindowInfo> ws = getWindows();
+            if (ws != null) for (AccessibilityWindowInfo w : ws) {
+                AccessibilityNodeInfo r = w.getRoot();
+                if (r != null && StockForceStop.SETTINGS_PKG.equals(String.valueOf(r.getPackageName())) && !roots.contains(r)) roots.add(r);
+            }
+        } catch (Throwable ignored) { }
+        o.settingsFront = !roots.isEmpty();
+        for (AccessibilityNodeInfo root : roots) {   // the confirm dialog first: its title or message says Force stop, its positive button is OK
+            boolean says = false;
+            for (String id : new String[] { "android:id/alertTitle", "android:id/message" }) {
+                List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByViewId(id);
+                if (hit != null) for (AccessibilityNodeInfo n : hit) { CharSequence t = n.getText(); if (t != null && t.toString().toLowerCase(java.util.Locale.ROOT).contains("force stop")) says = true; }
+            }
+            if (!says) continue;
             List<AccessibilityNodeInfo> ok = root.findAccessibilityNodeInfosByViewId("android:id/button1");
-            if (ok != null && !ok.isEmpty() && ok.get(0).isEnabled()) { sfOk = ok.get(0); o.confirmUp = true; }
-            return o;
+            if (ok != null && !ok.isEmpty() && ok.get(0).isEnabled()) { sfOk = ok.get(0); o.confirmUp = true; return o; }
         }
-        List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByText("Force stop");
-        if (hit != null) for (AccessibilityNodeInfo n : hit) {
-            CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
-            if (t == null || !t.toString().trim().equalsIgnoreCase("force stop")) continue;
-            AccessibilityNodeInfo b = clickableAncestor(n);
-            sfBtn = b; o.button = b.isEnabled() ? StockForceStop.BTN_ENABLED : StockForceStop.BTN_GREY;
-            if (o.button == StockForceStop.BTN_ENABLED) break;
+        for (AccessibilityNodeInfo root : roots) {
+            List<AccessibilityNodeInfo> hit = root.findAccessibilityNodeInfosByText("Force stop");
+            if (hit != null) for (AccessibilityNodeInfo n : hit) {
+                CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+                if (t == null || !t.toString().trim().equalsIgnoreCase("force stop")) continue;
+                AccessibilityNodeInfo b = clickableAncestor(n);
+                sfBtn = b; o.button = b.isEnabled() ? StockForceStop.BTN_ENABLED : StockForceStop.BTN_GREY;
+                if (o.button == StockForceStop.BTN_ENABLED) return o;
+            }
         }
         return o;
+    }
+
+    /** A drive failed: what the screen looked like (windows, then up to 45 nodes of the active window), in the lock log, so a Settings with other wording or ids can be read from a tablet report. At most three failures ever happen (two switch it off). */
+    private void sfDiag() {
+        try {
+            android.content.Context app = getApplicationContext();
+            StringBuilder w = new StringBuilder("windows:");
+            List<AccessibilityWindowInfo> ws = getWindows();
+            if (ws != null) for (AccessibilityWindowInfo x : ws) { AccessibilityNodeInfo r = x.getRoot(); w.append(' ').append(x.getType()).append(x.isActive() ? "A" : "-").append('/').append(r == null || r.getPackageName() == null ? "?" : r.getPackageName()); }
+            LockLog.add(app, "SF", "diag " + w);
+            AccessibilityNodeInfo r = getRootInActiveWindow();
+            if (r == null) { LockLog.add(app, "SF", "diag no active window"); return; }
+            StringBuilder b = new StringBuilder(); int[] n = { 0 };
+            sfDump(r, 0, b, n);
+            for (int i = 0, k = 0; i < b.length() && k < 4; i += 230, k++) LockLog.add(app, "SF", "diag nodes " + b.substring(i, Math.min(b.length(), i + 230)));
+        } catch (Throwable ignored) { }
+    }
+
+    private void sfDump(AccessibilityNodeInfo n, int depth, StringBuilder b, int[] count) {
+        if (n == null || count[0] >= 45 || depth > 12) return;
+        count[0]++;
+        CharSequence t = n.getText() != null ? n.getText() : n.getContentDescription();
+        String id = n.getViewIdResourceName(), cls = String.valueOf(n.getClassName());
+        if (id != null) id = id.substring(id.indexOf(":id/") >= 0 ? id.indexOf(":id/") + 4 : 0);
+        b.append(depth).append(':').append(cls.substring(cls.lastIndexOf('.') + 1)).append(id == null ? "" : "#" + id).append(t == null ? "" : "='" + (t.length() > 22 ? t.subSequence(0, 22) : t) + "'").append(n.isClickable() ? " c" : "").append(n.isEnabled() ? "" : " x").append("; ");
+        for (int i = 0; i < n.getChildCount(); i++) sfDump(n.getChild(i), depth + 1, b, count);
     }
 
     private void sfStep() {
@@ -5360,6 +5397,7 @@ public class TjAccessibilityService extends AccessibilityService {
         }
         if (st.phase == StockForceStop.LEAVING && sfPhase != StockForceStop.LEAVING) {   // a result is decided: it is carried to the end of the leave
             sfPending = st.outcome; sfEndWhy = st.why; sfLeave = 0; sfPhaseAtMs = now;
+            if (st.outcome == StockForceStop.OUT_FAILED) sfDiag();   // before the leave changes the screen
             LockLog.add(getApplicationContext(), "SF", "+" + (now - sfRunAtMs) + " ms: " + st.why);
         } else if (st.phase != sfPhase) { sfPhaseAtMs = now; }
         sfPhase = st.phase;
