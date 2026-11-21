@@ -1863,3 +1863,23 @@
 ## 2026-11-21T21:52:27Z
 > LinkMeter release is underway: the closing commit is on `ccr-linkmeter-fixes-1121`, and the pipeline is building, testing, merging into `main` and publishing the numbered release. I'm checking back in about six minutes.
 <!-- sha:edc21412c4be -->
+
+## 2026-11-21T21:58:45Z
+> LinkMeter 0.2.204 is released and signed. The build, offline tests and merge into `main` all passed. `main` now contains all the LinkMeter work.
+>
+> https://github.com/tjshea90/LinkMeter/releases/tag/v0.2.204
+>
+> Install `LinkMeter-0.2.204.apk` on the phone and on the tablet. On the tablet, Phone tab > Update the phone puts it on the phone.
+>
+> This release has everything from my earlier list:
+> - the "Switch Wi-Fi on" fix
+> - the instant press feedback on the Phone and Bluetooth buttons
+> - the one-screen new message
+> - the battery-saver keep-on with read-back
+>
+> None of it has been run on a real phone or tablet, so please try those four things.
+>
+> The battery-saver guarantee only runs when the "Pocket return" switch in the Launcher is on. The Launcher itself is v0.9.15, released earlier.
+>
+> I added one more small commit afterwards that only records the release number in the notes. It was pushed with no-release, so it doesn't create another version.
+<!-- sha:82b03bbd86f8 -->
