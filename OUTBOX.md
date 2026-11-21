@@ -1815,3 +1815,47 @@
 ## 2026-11-21T21:35:04Z
 > `ship.sh` is running its unit suite and lint; I'll read its result when the bounded wait finishes (at most 9 minutes).
 <!-- sha:73ea6022db62 -->
+
+## 2026-11-21T21:43:03Z
+> All three repos are saved on `claude/linkmeter-keyboard-launcher-fixes-fsk78t`. Keyboard and Launcher are released. LinkMeter is built and tested but not released yet. None of it was run on your phone or tablet.
+>
+> **Releases that exist:**
+> - Keyboard: https://github.com/tjshea90/Keyboard/releases/tag/swoop-v0.7.0-alpha9
+> - Launcher: https://github.com/tjshea90/Launcher/releases/tag/v0.9.15
+>
+> ## LinkMeter
+> - **"Switch Wi-Fi on" button:** it now tries the Internet panel, then the Wi-Fi panel, then Wi-Fi settings. It moves to the next one when the previous one didn't open. I traced the logic and checked it with tests, but couldn't try it on a real tablet.
+> - **Phone and Bluetooth buttons:**
+>   - The tap targets are bigger.
+>   - The buttons darken the moment you press them, like the keyboard keys.
+>   - The Launcher sets animation speed to zero, so the darkening is drawn directly rather than animated.
+> - **Texting:** typing a number and the message now happen on one screen, like popular texting apps, so there's no separate "next" step. I checked the layout in Robolectric screenshot previews.
+> - **Battery saver (your Launcher/LinkMeter item 1):** the phone side now makes sure Android battery saver is on, and leaves it alone if it already is. It reads the setting back and retries three times, four seconds apart. The "Pocket return" switch in the Launcher has to be on for this to run.
+> - **Not released:** a numbered LinkMeter release needs the code on a `ccr-*` branch, and I won't push to one without your OK. Say yes and I'll do it.
+>
+> ## Keyboard (alpha9)
+> - **Words you named:**
+>   - and → access, for → fur and make → Maggie could not be reproduced in simulation or on the real swipe samples I have. Everything I measured is on a phone-sized keyboard or a simulated finger, so a corner-cutting real thumb on the tablet can't be ruled out.
+>   - or → our is the language model working. "our" lies on the straight line from o to r, and after "to" it is genuinely the likelier word. I tried a per-letter price that fixes "or", but it cost 3–4 points of overall accuracy, so I left it off.
+> - **What changed:** a wrong word you keep is now learned only lightly, and the keyboard counts when its own learning changed the first guess.
+> - **Learning:** with the real settings, learning is level or better on the tablet and clearly better on the phone. This holds even if you leave 40% of wrong words in the text.
+> - **Glide start:** the faster glide start (the "one letter typed" problem) shipped in alpha8; alpha9 changed nothing there.
+> - **Why Gboard is better:** it has a trained shape model and a neural next-word model built on huge amounts of real typing. I can't copy that offline. The write-up is `research/GBOARD_GLIDE_CONTEXT.md`.
+> - **What I need from you:** the Diagnostics lines "learning changed the first guess" and "touch plane up to". One example of the word before, the word you glided, and what came out is worth more than any simulation.
+>
+> ## Launcher (v0.9.15)
+> - **Battery saver:** the La
+> [... 927 characters omitted ...]
+> ss on your tablet is flicker-free. The CI emulator can't show that.
+> - **Emulator checks not fully green:**
+>   - The check for the tap-and-erase handshake into Quickstep failed on my build, but only in runs where the emulator's own memory crashed first. It never failed without that crash.
+>   - The released v0.9.14 stayed green after the same crash twice, and failed other checks in one longer run.
+>   - With the switch off the new code does nothing, and I found no code path that explains it.
+>   - The full record is in TASKS `CS2g`, and the check now prints more detail when it fails.
+> - **Please test on the tablet:** "tap and erase ×3 on the PIN pad still switches to Quickstep", and whether the first side-key press is clean after the tile or icon.
+>
+> ## Still open
+> - Your yes or no on the LinkMeter release branch.
+> - Your Keyboard Diagnostics lines and examples.
+> - Your tablet checks for the Launcher.
+<!-- sha:1c883c95e7f1 -->
