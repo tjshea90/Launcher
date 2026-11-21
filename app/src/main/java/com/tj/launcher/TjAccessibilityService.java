@@ -5200,6 +5200,7 @@ public class TjAccessibilityService extends AccessibilityService {
             // GO: the cover first (the picture of the home screen, else black), then the menu
             primeRunAtMs = now; primeBacks = 0; primeOpened = false;
             if (resetCover == null) { showResetCover(); primeOwnsCover = resetCover != null; }
+            if (resetCover == null) { primeEnd("no cover could be raised: the menu is not opened in plain view"); return; }   // CT1 review of v0.9.15: without the cover the open + close would be seen as a flash
             boolean ok = false;
             try { ok = performGlobalAction(GLOBAL_ACTION_POWER_DIALOG); } catch (Throwable ignored) { }
             LockLog.add(getApplicationContext(), "PRIME", "start (" + primeWhy + ") after " + (now - primeAskedMs) + " ms: cover " + (primeOwnsCover ? (resetCoverIsCurtain ? "curtain" : "black") : "none") + ", menu asked, accepted=" + ok);
