@@ -139,6 +139,7 @@ public final class ProfileSession {
         Features.setString(app, FailsafeKeys.LAST_KEY, "back to custom via " + why + " at " + new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()));
         app.startActivity(new android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_HOME).setPackage(app.getPackageName())
                 .putExtra(RouterActivity.EXTRA_PREARM, "custom").addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_NO_ANIMATION));
+        if (pocketVia != null) { try { TjAccessibilityService prime = TjAccessibilityService.get(); if (prime != null) prime.primePowerMenu(pocketVia); } catch (Throwable t) { android.util.Log.e("TjPrime", "power menu prime request failed", t); } }   // CS2: the tile / the icon also prepare the stock power menu and the patch for the first side-key press (its own switch; quiet conditions only)
         if (pocket) PocketReturn.begin(app, pocketVia);   // CH1: after the mode switch and the home start went through (review): the phone steps run beside the clean-up, nothing waits on the phone
         ReturnReset.run(app, pocket);
     }
