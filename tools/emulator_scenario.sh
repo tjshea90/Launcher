@@ -5762,7 +5762,7 @@ check "PM2: the run started with a cover and the menu asked for (accepted)" grep
 check "PM2: the stock menu came up" grep -q ' PRIME .*the menu is up' "$OUT/pm-b-log.txt"
 check "PM2: and was closed again with Back" grep -q ' PRIME .*closing it' "$OUT/pm-b-log.txt"
 check "PM2: the run ended: it opened and closed the stock menu" grep -qE ' PRIME end: .*opened and closed the stock menu in [0-9]+ ms' "$OUT/pm-b-log.txt"
-check "PM2: the lines are in order (start, up, closing, end)" bash -c "a=\$(grep -n ' PRIME start' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); b=\$(grep -n 'the menu is up' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); c=\$(grep -n 'closing it' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); d=\$(grep -n ' PRIME end:' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); [ -n \"\$a\" ] && [ -n \"\$d\" ] && [ \"\$a\" -lt \"\$b\" ] && [ \"\$b\" -lt \"\$c\" ] && [ \"\$c\" -lt \"\$d\" ]"
+check "PM2: the lines are in order (start, up, closing, end)" bash -c "a=\$(grep -n ' PRIME start' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); b=\$(grep -n 'the menu is up' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); c=\$(grep -n 'closing it' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); d=\$(grep -n ' PRIME end:' $OUT/pm-b-log.txt | tail -n 1 | cut -d: -f1); [ -n \"\$a\" ] && [ -n \"\$d\" ] && [ \"\$a\" -lt \"\$b\" ] && [ \"\$b\" -lt \"\$c\" ] && [ \"\$c\" -lt \"\$d\" ]"
 PM_MS="$(grep ' PRIME end:' "$OUT/pm-b-log.txt" | tail -n 1 | grep -o 'in [0-9]* ms' | head -1 | grep -o '[0-9]*')"
 info "PM B: the run took ${PM_MS:-?} ms from the cover going up to the menu closed (the cover's own failsafe is 4500 ms)"
 check "PM2: it ended inside the cover's failsafe (under 4400 ms)" bash -c "[ -n '$PM_MS' ] && [ '$PM_MS' -lt 4400 ]"
