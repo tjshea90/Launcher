@@ -63,3 +63,4 @@ No releases yet.
 | v0.9.13 | code 52 | 2026-11-18T22:13Z | Pocket return switch (tile and icon, with LinkMeter) and Quickstep keyboard choice (stock, Gboard, Swoop)
 | v0.9.14 | code 53 | 2026-11-19T01:05Z | CI1: restart the leaky stock launcher process through the helper when big (SR1), skip the needless full reload after the Settings look-alike flips (G1), no patch change
 | v0.9.15 | code 54 | 2026-11-21T21:41Z | CS2: after Back to custom (tile / drawer icon) the launcher opens and closes the stock power menu once behind its cover, so the first side-key press finds the dialog, the patch window and the fast path warm (switch in Launcher control, default ON; at most one run a minute; never on the lock screen); no other change
+| v0.9.16 | code 55 | 2026-11-21T23:01Z | v0.9.16: the stock launcher is force-stopped through Settings without the shell helper (debt-triggered, cover, 4 h cooldown); button in Launcher control; prime cover guard
