@@ -1933,3 +1933,9 @@
 > - **Tablet report:** Send it if you can. If a run fails, it shows what the Settings page looked like.
 > - **Quickstep memory:** Compare it in Settings after a day or two.
 <!-- sha:ce3de98d2f0f -->
+
+## 2026-11-21T23:04:52Z
+> The heartbeat fired at 22:49, before I deleted it. I had already deleted that trigger at about 23:03, so no more heartbeats will fire.
+>
+> Nothing is left for me to do. v0.9.16 is released and recorded, and Tj's only message of this stretch has been answered. What remains waits on Tj: the tablet check (TASKS CT1f) and a decision on the open power-menu follow-ups (CT1e).
+<!-- sha:a41ce31e7ace -->
