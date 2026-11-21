@@ -2351,3 +2351,7 @@
 > 2. Install v0.9.14. Launcher control has a new switch, "Give the stock launcher's memory back (needs the shell helper)", on by default.
 > 3. After a day or two, send the tablet report. Its "stock launcher memory refresh" line says whether it acted and the MB before and after. Compare the Quickstep "Memory used by apps" row with your 445 MB one-day average.
 <!-- sha:08e261bad170 -->
+
+## 2026-11-21T20:37:05Z
+> Waiting on the CI runs (`base,n` and `pm` on the fixed head); the timer will wake me when they should be done.
+<!-- sha:f54127edc905 -->
