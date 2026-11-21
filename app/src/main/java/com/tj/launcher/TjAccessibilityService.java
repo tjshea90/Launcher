@@ -5144,7 +5144,9 @@ public class TjAccessibilityService extends AccessibilityService {
     // ------------------------------------------------------------------------------------------------ CS2: the automatic power-menu prime (rules: PowerMenuPrime)
 
     private int primePhase = PowerMenuPrime.IDLE;
-    private long primeAskedMs, primePhaseAtMs, primeRunAtMs, primeLastEndMs;
+    private long primeAskedMs, primePhaseAtMs, primeRunAtMs;
+    /** When the last prime ended (uptime ms). STATIC on purpose: the accessibility service is re-created without the process dying (a rebind, a settings toggle), and the one-run-a-minute rule must survive that. */
+    private static volatile long primeLastEndMs;
     private int primeBacks;
     private boolean primeOwnsCover, primeOpened;
     private String primeWhy = "";

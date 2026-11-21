@@ -5758,7 +5758,7 @@ sleep 2
 pmlog > "$OUT/pm-b-log.txt"; resumed > "$OUT/pm-b-resumed.txt"; adb logcat -d -s TjA11y:I > "$OUT/pm-b-a11y.txt" 2>&1
 info "PM B (switch ON): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-b-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-900)"
 check "PM2: the return switched Quickstep to custom" bash -c "[ \"$(getmode)\" = custom ]"
-check "PM2: the run started with a cover and the menu asked for (accepted)" grep -qE ' PRIME start \(tile\): cover (curtain|black), menu asked, accepted=true' "$OUT/pm-b-log.txt"
+check "PM2: the run started with a cover and the menu asked for (accepted)" grep -qE ' PRIME start \(tile\) after [0-9]+ ms: cover (curtain|black), menu asked, accepted=true' "$OUT/pm-b-log.txt"
 check "PM2: the stock menu came up" grep -q ' PRIME .*the menu is up' "$OUT/pm-b-log.txt"
 check "PM2: and was closed again with Back" grep -q ' PRIME .*closing it' "$OUT/pm-b-log.txt"
 check "PM2: the run ended: it opened and closed the stock menu" grep -qE ' PRIME end: .*opened and closed the stock menu in [0-9]+ ms' "$OUT/pm-b-log.txt"
@@ -5774,7 +5774,7 @@ setmode quickstep; rebind; home; sleep 2
 adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-c-start.txt" 2>&1; sleep 9
 pmlog > "$OUT/pm-c-log.txt"
 PM_N="$(grep -c ' PRIME start' "$OUT/pm-c-log.txt")"
-info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; PRIME lines: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-1100)"
+info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; PRIME lines: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | cut -c1-110 | tr '\n' '|' | cut -c1-1100)"
 check "PM4: the second return did not open the menu again (still ONE start line)" bash -c "[ '$PM_N' = 1 ]"
 # D: a real side-key menu afterwards still opens and closes
 home; sleep 2
