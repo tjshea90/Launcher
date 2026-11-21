@@ -5547,6 +5547,68 @@ adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
 ensurehome; setfeat; setmode custom; rebind; home
 info "SR end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section sr
+if want sf; then # section sf
+# ---- SF (TASKS CT1 / SR2; Tj, 2026-11-21: "There is already a fix to force stop quickstep, but it requires the adb helper which i don't have"). The stock launcher process is force-stopped WITHOUT the helper: the accessibility
+#      service opens Settings' App info page of com.android.launcher3 behind a cover, presses Force stop and OK and goes back to the custom home. The trigger is a DEBT (each Quickstep session end and each change of low_power adds one);
+#      the line is lowered through the int keys sf_min_debt / sf_debt / sf_delay_ms (nothing else writes them). Order: (1) NEGATIVE CONTROL, debt below the line: a session return leaves the stock process alone; (2) debt at the line:
+#      the return force-stops it (pid changes, lock log + status say so), the custom home is in front again, Settings is gone and not in Recents; (3) Recents still opens afterwards; (4) the next return does NOT do it again (cooldown).
+#      The CI image has no Go IconRecentsView (no leak to show): this section proves the mechanism and its safety; the memory gain is the tablet's to show.
+CDP=SF
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+hpinit false; hpkey stock_force_stop true; hpkey stock_refresh false; hpint sf_debt 0; hpint sf_fails 0; hpint sf_min_debt 5; hpint sf_delay_ms 3000
+setmode custom; ensurehome; rebind; home; sleep 2
+sfpid(){ adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n' | awk '{print $1}'; }
+sflog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
+sfstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="sf_status">[^<]*' | sed 's/.*>//'; }
+sfwait(){ local t=$(( $(date +%s) + $1 )); while [ "$(date +%s)" -lt "$t" ]; do sleep 2; done; }   # a plain bounded wait (the deadline is checked first)
+sfres(){ resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1; }
+check "SF0: the shell helper is NOT running (this section is the helper-free path)" bash -c "! adb shell pgrep -f com.tj.launcher.ShellServer | grep -q ."
+# (1) negative control: one session end adds one piece of debt (1 of 5): the stock process must keep its pid and no start line may appear
+adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; sleep 2
+SF_P0="$(sfpid)"
+cdreturns 1
+SF_P1="$(sfpid)"; sfwait 15; SF_P2="$(sfpid)"
+SF_N1="$(sflog | grep -c 'restarting the stock launcher through Settings')"
+info "SF control: stock pid before ${SF_P0:-none}, after the return ${SF_P1:-none}, 15 s later ${SF_P2:-none}; start lines: $SF_N1"
+check "SF1: debt below the line: the stock launcher is NOT restarted (pid unchanged, no start line)" bash -c "[ '$SF_N1' = 0 ] && [ '$SF_P1' = '$SF_P2' ]"
+# (2) debt at the line: the next return makes it 5 of 5
+hpint sf_debt 4; hpint sf_delay_ms 3000
+setmode custom; ensurehome; rebind; home; sleep 2
+SF_PB="$(sfpid)"
+cdreturns 1
+SF_T=$(( $(date +%s) + 70 )); SF_PA="$(sfpid)"
+while [ "$(date +%s)" -lt "$SF_T" ]; do sflog | grep -q ' SF .*\(restarted\|could not\|not running\|stopped\)' && break; sleep 3; done
+sleep 3; shot sf-after; SF_PA="$(sfpid)"
+SF_N2="$(sflog | grep -c 'restarting the stock launcher through Settings')"
+SF_ST="$(sfstatus)"
+info "SF drive: stock pid before ${SF_PB:-none}, after ${SF_PA:-none}; start lines $SF_N2; status: $(echo "$SF_ST" | cut -c1-230)"
+info "SF lock log: $(sflog | grep ' SF ' | tail -n 8 | cut -c1-170 | tr '\n' '|')"
+check "SF2: the stock launcher process was force-stopped through Settings (its pid is not the one before)" bash -c "[ -n '$SF_PB' ] && [ '$SF_PB' != '$SF_PA' ]"
+check "SF3: the lock log and the status say so" bash -c "[ '$SF_N2' = 1 ] && echo '$SF_ST' | grep -q 'restarted the stock launcher through Settings'"
+SF_RES="$(sfres)"
+info "SF resumed after the drive: ${SF_RES:-?}"
+check "SF4: the custom home is the screen in front again" bash -c "echo '$SF_RES' | grep -q 'com.tj.launcher'"
+SF_REC="$(adb shell dumpsys activity recents 2>/dev/null | grep -c 'com.android.settings/')"
+SF_TASK="$(adb shell dumpsys activity activities 2>/dev/null | grep -c 'com.android.settings/.*InstalledApp\|AppInfoDashboard')"
+info "SF Settings leftovers: in Recents $SF_REC, App info activity records $SF_TASK"
+check "SF5: Settings is not left in Recents" bash -c "[ '$SF_REC' = 0 ]"
+# (3) Recents still opens (the stock process starts again by itself)
+adb shell input keyevent KEYCODE_APP_SWITCH; sleep 4
+SF_RC="$(sfres)"
+info "SF Recents key after the drive: resumed ${SF_RC:-?}; stock pid now $(sfpid)"
+check "SF6: the Recents key still opens Recents after the drive (the stock launcher is in front again)" bash -c "echo '$SF_RC' | grep -q 'com.android.launcher3'"
+adb shell input keyevent KEYCODE_HOME; sleep 3
+# (4) the next return must not do it again (cooldown): a big debt, a return, a wait, count the start lines
+hpint sf_debt 50
+setmode custom; ensurehome; rebind; home; sleep 2
+cdreturns 1; sfwait 15
+SF_N3="$(sflog | grep -c 'restarting the stock launcher through Settings')"
+info "SF cooldown: start lines $SF_N3; status: $(sfstatus | cut -c1-200)"
+check "SF7: the second return does not do it again (cooldown): still ONE start line" bash -c "[ '$SF_N3' = 1 ]"
+check "SF8: the launcher did not crash anywhere in this section" bash -c "! adb logcat -d -b crash 2>/dev/null | grep -A3 'FATAL EXCEPTION' | grep -q 'Process: $PKG'"
+ensurehome; setfeat; setmode custom; rebind; home
+info "SF end: resumed $(sfres), mode $(getmode)"
+fi # section sf
 if want qm; then # section qm
 beat "before QM"
 # ---- QM (TASKS CG1f; Tj, 2026-11-17: "investigate why and how the quickstep launcher slowly builds in ram usage over time ... Figure out what features in the custom launcher app can add to the quickstep ram usage").
