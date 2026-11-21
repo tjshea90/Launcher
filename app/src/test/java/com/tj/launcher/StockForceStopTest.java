@@ -24,9 +24,13 @@ public class StockForceStopTest {
         assertEquals("com.android.settings", StockForceStop.SETTINGS_PKG);
     }
 
-    @Test public void coverOutlivesTheWholeRun() {
-        assertTrue(StockForceStop.COVER_MS > StockForceStop.CAP_MS);
+    @Test public void coverOutlivesTheWholeRunIncludingEveryLeavePress() {
+        assertTrue(StockForceStop.COVER_MS >= StockForceStop.CAP_MS + StockForceStop.LEAVE_TRIES * StockForceStop.LEAVE_STEP_MS);
         assertTrue(StockForceStop.COVER_MS > 4500);   // the cover's own failsafe is 4.5 s: a Settings drive needs longer
+    }
+
+    @Test public void twoHomePressesOfOneLeaveAreNeverADoubleHome() {
+        assertTrue(StockForceStop.LEAVE_STEP_MS > 900);   // HomeDoublePress counts two HOME presses within 900 ms as a double Home
     }
 
     // ---------------------------------------------------------------- the debt
@@ -102,7 +106,8 @@ public class StockForceStopTest {
         return o;
     }
 
-    private static StockForceStop.Step st(int phase, long age, long run, int clicks, int leave, int pending, StockForceStop.Obs o) { return StockForceStop.step(phase, age, run, clicks, leave, pending, o); }
+    private static StockForceStop.Step st(int phase, long age, long run, int clicks, int leave, int pending, StockForceStop.Obs o) { return StockForceStop.step(phase, age, run, age, clicks, leave, pending, o); }
+    private static StockForceStop.Step stp(int phase, long age, long run, long pageAge, int clicks, int leave, int pending, StockForceStop.Obs o) { return StockForceStop.step(phase, age, run, pageAge, clicks, leave, pending, o); }
 
     @Test public void happyPathPressesForceStopThenOkThenLeaves() {
         StockForceStop.Step s = st(StockForceStop.OPENING, 300, 300, 0, 0, 0, obs(true, StockForceStop.BTN_ENABLED, false, false));
@@ -117,6 +122,14 @@ public class StockForceStopTest {
         assertEquals("a BACK just sent is given time to work", StockForceStop.ACT_NONE, s.action);
         s = st(StockForceStop.LEAVING, 800, 1900, 1, 1, StockForceStop.OUT_RESTARTED, obs(false, StockForceStop.BTN_NONE, false, true));
         assertEquals(StockForceStop.ACT_END, s.action); assertEquals(StockForceStop.OUT_RESTARTED, s.outcome);
+    }
+
+    @Test public void theGreyWaitCountsFromTheFirstLookAtThePageNotFromTheStartOfTheIntent() {
+        StockForceStop.Obs grey = obs(true, StockForceStop.BTN_GREY, false, false);
+        // Settings cold-started for 3 s: the phase is old but the page was seen 300 ms ago, its button is still greyed
+        assertEquals(StockForceStop.OPENING, stp(StockForceStop.OPENING, 3300, 3300, 300, 0, 0, 0, grey).phase);
+        assertEquals(StockForceStop.OUT_NOT_RUNNING, stp(StockForceStop.OPENING, 5000, 5000, StockForceStop.GREY_WAIT_MS, 0, 0, 0, grey).outcome);
+        assertEquals("page never seen: no verdict from grey", StockForceStop.OPENING, stp(StockForceStop.OPENING, 3300, 3300, -1, 0, 0, 0, grey).phase);
     }
 
     @Test public void aGreyButtonMeansNothingIsRunningButOnlyAfterItHadTimeToTurnOn() {
@@ -183,6 +196,38 @@ public class StockForceStopTest {
         assertEquals("a restart that happened stays a restart even when the way home is stuck", StockForceStop.OUT_RESTARTED, s.outcome);
         s = st(StockForceStop.LEAVING, 800, 0, 1, StockForceStop.LEAVE_TRIES, StockForceStop.OUT_FAILED, o);
         assertEquals(StockForceStop.OUT_FAILED, s.outcome);
+    }
+
+    @Test public void aStuckWayHomeKeepsEveryDecidedOutcomeThatWasNotAFailure() {
+        StockForceStop.Obs o = obs(true, StockForceStop.BTN_GREY, false, false);
+        for (int out : new int[] { StockForceStop.OUT_RESTARTED, StockForceStop.OUT_NOT_RUNNING, StockForceStop.OUT_ABORTED }) {
+            assertTrue(StockForceStop.keepsOutcomeWhenStuck(out));
+            assertEquals(out, st(StockForceStop.LEAVING, 1100, 0, 1, StockForceStop.LEAVE_TRIES, out, o).outcome);
+        }
+        assertFalse(StockForceStop.keepsOutcomeWhenStuck(StockForceStop.OUT_FAILED));
+        assertFalse(StockForceStop.keepsOutcomeWhenStuck(StockForceStop.OUT_NONE));
+    }
+
+    // ---------------------------------------------------------------- what a finished drive writes
+
+    @Test public void afterOutcomeClearsTheDebtOnlyWhenSomethingWasGivenBack() {
+        long now = 100 * H, cd = 4 * H;
+        StockForceStop.After a = StockForceStop.afterOutcome(StockForceStop.OUT_RESTARTED, 1, now, cd);
+        assertEquals(0, a.debt); assertEquals(0, a.fails); assertEquals(now, a.lastAt);
+        a = StockForceStop.afterOutcome(StockForceStop.OUT_NOT_RUNNING, 1, now, cd);
+        assertEquals(0, a.debt); assertEquals(0, a.fails); assertEquals(now, a.lastAt);
+        a = StockForceStop.afterOutcome(StockForceStop.OUT_FAILED, 1, now, cd);
+        assertEquals("debt kept", -1, a.debt); assertEquals(2, a.fails); assertEquals(StockForceStop.lastAtAfter(false, now, cd), a.lastAt);
+        a = StockForceStop.afterOutcome(StockForceStop.OUT_ABORTED, 1, now, cd);
+        assertEquals("debt kept", -1, a.debt); assertEquals("a safety stop is no failure", -1, a.fails); assertEquals(StockForceStop.lastAtAfter(false, now, cd), a.lastAt);
+    }
+
+    @Test public void twoFailuresInARowGiveUp() {
+        int fails = 0;
+        fails = StockForceStop.afterOutcome(StockForceStop.OUT_FAILED, fails, 0, 4 * H).fails;
+        assertEquals("", block(true, fails, false, 99, true, true, true, false, 0, 100 * H));
+        fails = StockForceStop.afterOutcome(StockForceStop.OUT_FAILED, fails, 0, 4 * H).fails;
+        assertTrue(block(true, fails, false, 99, true, true, true, false, 0, 100 * H).startsWith("gave up"));
     }
 
     @Test public void anIdlePhaseDoesNothing() {
