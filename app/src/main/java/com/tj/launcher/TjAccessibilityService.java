@@ -5224,7 +5224,8 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.removeCallbacks(primeTick);
         primePhase = PowerMenuPrime.IDLE; primeOpened = false;
         if (primeOwnsCover) { primeOwnsCover = false; hideResetCover(); }
-        primeLastEndMs = now; primeRunAtMs = 0;
+        if (opened) primeLastEndMs = now;   // only a run that really asked for the menu counts toward the one-run-a-minute rule (a refusal at the start must not block the next return)
+        primeRunAtMs = 0;
         try {
             android.content.Context app = getApplicationContext();
             String line = PowerMenuPrime.summary(new java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US).format(new java.util.Date()), why, opened, ms);
