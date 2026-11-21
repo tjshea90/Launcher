@@ -2401,3 +2401,7 @@
 ## 2026-11-21T21:03:36Z
 > Both gate groups failed on the fixed head, and `#702` also shows a native crash. A helper is reading the FAIL lines out of both logs, and I'm holding triage until it reports.
 <!-- sha:e74cf5560926 -->
+
+## 2026-11-21T21:07:42Z
+> Dispatched two more `base,n` runs on head (branch and `main`, same code), and two control runs on tag `v0.9.14` are already going. I'll read all four when the 10-minute timer fires.
+<!-- sha:afb276b62e39 -->
