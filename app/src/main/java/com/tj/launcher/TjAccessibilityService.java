@@ -5259,8 +5259,10 @@ public class TjAccessibilityService extends AccessibilityService {
     private boolean sfOwnsCover, sfManual;
     private String sfWhy = "", sfEndWhy = "";
     private AccessibilityNodeInfo sfBtn, sfOk;   // found by the look of THIS tick only
+    private long sfSeenAtMs;                      // when the App info page first showed its Force stop button (0 = not yet): the grey wait counts from there
+    private View sfCoverView;                     // the cover THIS run raised: only that one is taken down at the end
 
-    private final Runnable sfTick = new Runnable() { @Override public void run() { try { sfStep(); } catch (Throwable t) { Log.e(TAG, "stock force stop step failed", t); sfEnd(StockForceStop.OUT_FAILED, "stopped on an error: " + t); } } };
+    private final Runnable sfTick = new Runnable() { @Override public void run() { try { sfStep(); } catch (Throwable t) { Log.e(TAG, "stock force stop step failed", t); boolean opened = sfPhase != StockForceStop.WAITING && sfPhase != StockForceStop.IDLE; sfEnd(opened ? StockForceStop.OUT_FAILED : StockForceStop.OUT_ABORTED, "stopped on an error: " + t, opened); } } };
 
     /**
      * CT1: asked by {@link StockForceStop} (any thread). Opens Settings' App info of the stock launcher behind the cover, presses Force stop and OK, goes back to the custom home. True = the run was scheduled
@@ -5332,9 +5334,10 @@ public class TjAccessibilityService extends AccessibilityService {
             LockLog.add(app, "SF", "diag " + w);
             AccessibilityNodeInfo r = getRootInActiveWindow();
             if (r == null) { LockLog.add(app, "SF", "diag no active window"); return; }
+            if (!StockForceStop.SETTINGS_PKG.equals(String.valueOf(r.getPackageName()))) { LockLog.add(app, "SF", "diag the active window is " + r.getPackageName() + " (its texts are not logged)"); return; }   // the tablet report goes into a public repo: only Settings' own page is described
             StringBuilder b = new StringBuilder(); int[] n = { 0 };
             sfDump(r, 0, b, n);
-            for (int i = 0, k = 0; i < b.length() && k < 4; i += 230, k++) LockLog.add(app, "SF", "diag nodes " + b.substring(i, Math.min(b.length(), i + 230)));
+            for (int i = 0, k = 0; i < b.length() && k < 4; i += 170, k++) LockLog.add(app, "SF", "diag nodes " + b.substring(i, Math.min(b.length(), i + 170)));   // LockLog cuts a line at 200 characters
         } catch (Throwable ignored) { }
     }
 
@@ -5364,14 +5367,17 @@ public class TjAccessibilityService extends AccessibilityService {
                 else if (scrimStage != 0 || homeCalRunning || calibrating() || homeBuilding) wait = "a calibration or measurement is running";
                 else if (!sfManual && !TjHooks.homeScreenShowing()) wait = "the custom home is not in front yet";
                 else if (!sfManual && (TjHooks.homeFloatingViewOpen() || TjHooks.homeBusy())) wait = "the home screen is busy";
+                else if (!sfManual && since(homeLastTouchMs()) < StockForceStop.TOUCH_QUIET_MS) wait = "a finger was on the screen a moment ago";
             }
             String v = StockForceStop.startVerdict(stop, wait, now - sfAskedMs);
             if (v.startsWith("WAIT:")) { handler.postDelayed(sfTick, StockForceStop.RECHECK_MS); return; }
             if (v.startsWith("STOP:")) { sfEnd(StockForceStop.OUT_ABORTED, v.substring(5), false); return; }
             // GO: the cover first (the picture of the home screen, else black), then Settings' App info page of the stock launcher
-            sfRunAtMs = now; sfPhaseAtMs = now; sfClicks = 0; sfLeave = 0; sfPending = StockForceStop.OUT_NONE; sfEndWhy = "";
-            showResetCover(); sfOwnsCover = resetCover != null;
-            handler.removeCallbacks(coverFailsafe); handler.postDelayed(coverFailsafe, StockForceStop.COVER_MS);   // the default 4.5 s is shorter than a slow tablet's Settings
+            sfRunAtMs = now; sfPhaseAtMs = now; sfClicks = 0; sfLeave = 0; sfPending = StockForceStop.OUT_NONE; sfEndWhy = ""; sfSeenAtMs = 0;
+            showResetCover(); sfOwnsCover = resetCover != null; sfCoverView = resetCover;
+            if (resetCover == null) { sfEnd(StockForceStop.OUT_ABORTED, "no cover could be raised: Settings is not opened in plain view", false); return; }   // review: without the cover the whole drive would be seen
+            sfSwallowTouches();   // the cover takes every tap (a tap on the invisible App info page would be Tj's wrong tap, not ours)
+            handler.removeCallbacks(coverFailsafe); handler.postDelayed(coverFailsafe, StockForceStop.COVER_MS);   // the default 4.5 s is shorter than a slow tablet's Settings, a leave included
             boolean started = false;
             try {
                 android.content.Intent i = new android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", StockForceStop.STOCK_PKG, null));
@@ -5386,7 +5392,8 @@ public class TjAccessibilityService extends AccessibilityService {
             return;
         }
         StockForceStop.Obs o = sfObs();
-        StockForceStop.Step st = StockForceStop.step(sfPhase, now - sfPhaseAtMs, now - sfRunAtMs, sfClicks, sfLeave, sfPending, o);
+        if (sfSeenAtMs == 0 && o.settingsFront && o.button != StockForceStop.BTN_NONE) sfSeenAtMs = now;
+        StockForceStop.Step st = StockForceStop.step(sfPhase, now - sfPhaseAtMs, now - sfRunAtMs, sfSeenAtMs == 0 ? -1 : now - sfSeenAtMs, sfClicks, sfLeave, sfPending, o);
         if (st.action == StockForceStop.ACT_END) { sfEnd(st.outcome, sfEndWhy.isEmpty() ? st.why : sfEndWhy, true); return; }
         boolean ok;
         switch (st.action) {
@@ -5405,6 +5412,15 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.postDelayed(sfTick, StockForceStop.TICK_MS);
     }
 
+    /** The run's cover swallows touches (the reset's own cover is untouchable except as a curtain after a confirmed unlock). */
+    private void sfSwallowTouches() {
+        try {
+            if (resetCover == null || resetCoverLp == null || (resetCoverLp.flags & WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE) == 0) return;
+            resetCoverLp.flags &= ~WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE;
+            ((WindowManager) getSystemService(WINDOW_SERVICE)).updateViewLayout(resetCover, resetCoverLp);
+        } catch (Throwable t) { Log.e(TAG, "force stop cover touch switch failed", t); }
+    }
+
     private void sfEnd(int outcome, String why) { sfEnd(outcome, why, true); }
 
     private void sfEnd(int outcome, String why, boolean ran) {
@@ -5412,7 +5428,8 @@ public class TjAccessibilityService extends AccessibilityService {
         long ms = sfRunAtMs == 0 ? 0 : now - sfRunAtMs;
         handler.removeCallbacks(sfTick);
         sfPhase = StockForceStop.IDLE; sfBtn = null; sfOk = null;
-        if (sfOwnsCover) { sfOwnsCover = false; hideResetCover(); }
+        if (sfOwnsCover) { sfOwnsCover = false; if (resetCover != null && resetCover == sfCoverView) hideResetCover(); }   // only the cover this run raised
+        sfCoverView = null;
         if (ran && sfRunAtMs != 0) sfLastEndMs = now;   // only a run that really opened Settings counts toward the minimum gap
         sfRunAtMs = 0;
         try { StockForceStop.finished(getApplicationContext(), outcome, why, sfDebt, ms, sfCooldown, sfWhy + (sfManual ? ", button" : "")); } catch (Throwable ignored) { }
