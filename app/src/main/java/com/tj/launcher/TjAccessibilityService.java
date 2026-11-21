@@ -5149,8 +5149,8 @@ public class TjAccessibilityService extends AccessibilityService {
     private boolean primeOwnsCover, primeOpened;
     private String primeWhy = "";
 
-    /** True while a prime run is going (the home calibration must not photograph the screen behind its cover). */
-    private boolean primeRunning() { return primePhase != PowerMenuPrime.IDLE; }
+    /** True while a prime run has its cover up (the home calibration must not photograph the screen behind its cover). */
+    private boolean primeRunning() { return primePhase >= PowerMenuPrime.OPENING; }   // the cover is up and the menu was asked for (not while it only waits for quiet)
 
     /**
      * CS2 (Tj, 2026-11-21): called by the return to custom (the tile / the drawer icon). One automatic open + close of the stock power menu behind a cover, so the FIRST side-key press finds SystemUI's
