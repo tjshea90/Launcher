@@ -1,13 +1,17 @@
-# CHECKPOINT 1520 — read me first, then TASKS.md
+# CHECKPOINT 1521 — read me first, then TASKS.md
 
-**Written:** 2026-11-21T21:20:53Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/linkmeter-keyboard-launcher-fixes-fsk78t` · **builds on:** `7059dc3e` (this checkpoint is the commit after it)
+**Written:** 2026-11-21T21:36:25Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/linkmeter-keyboard-launcher-fixes-fsk78t` · **builds on:** `12074dc1` (this checkpoint is the commit after it)
 
 ## Just done
-CS2 triage: head N2 fails ONLY when a native crash hit base earlier (fail: #694 #698 #702 #707 all crash; pass: #700 #708 no crash; pre-fix #692 fail no crash); #707 N2 detail: handshake=none lead=ND (pass has lead=DD erase2); tag chain lq,uf,cs,cs2,pk #705 also FAILS (CS-A1 + crash in cs) so CS-B2/CS-D2 chain fail = env; tag base,n #699 crash+PASS; sent 4 more runs (head branch+main base,n,last; tag base,n and base,n,last); #706 tag base,n,cu,pf,rb,last still running
+gated v0.9.15 (code 54) and pushed it: the handoff self-test, the full unit suite + lint
+and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
 
 ## Do this next
-read the 4 new runs + #706 via haiku brief (header, FAILs, crash section); if head fails N2 without any crash or tag never fails with one: bisect; else flake: ship (ship.sh, android.yml full_build ONCE, record-release)
+TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
+android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
+confirm the Release is published (get_release_by_tag is enough) and then run:
+  bash tools/record-release.sh v0.9.15 "CS2: after Back to custom (tile / drawer icon) the launcher opens and closes the stock power menu once behind its cover, so the first side-key press finds the dialog, the patch window and the fast path warm (switch in Launcher control, default ON; at most one run a minute; never on the lock screen); no other change"
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +20,7 @@ read the 4 new runs + #706 via haiku brief (header, FAILs, crash section); if he
 
 ## Last ten checkpoints
 ```
+  612c5fc9 ckpt 1520: CS2 triage: head N2 fails ONLY when a native crash hit base earlier (fail: #
   b636f8e4 ckpt 1519: scenario only: N2 now prints mode/resumed/keyguard/a11y + lock log tail as I
   af0127bc ckpt 1518: CS2 gate on head 37b99dad-code (early-out): #702 id 44948036203 base,n,cu,pf
   37b99dad ckpt 1517: CS2 head b4485d0a: base,n #700 id 44947211442 GREEN, pm #701 id 44947217420 
@@ -25,8 +30,7 @@ read the 4 new runs + #706 via haiku brief (header, FAILs, crash section); if he
   b90ed541 ckpt 1513: CS2 gate dispatched on 96d0596b: #691 id 44942545183 x1,e1,o,ac,hp,pm | #692
   96d0596b ckpt 1512: CS2: prime end counts toward the 1-minute rule only when the menu was really
   3f77a1df ckpt 1511: CS2: run #690 pm 20 PASS 1 FAIL (PM4): its premise was wrong (setmode force-
-  154d6cf0 ckpt 1510: CS2: run #689 pm: 18 PASS 3 FAIL = test bugs only (PM2 regexes, order check 
 ```
 
-(2 automatic checkpoint(s) since the last deliberate one — the
+(4 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
