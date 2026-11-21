@@ -5770,12 +5770,13 @@ check "PM3: no stock power menu window is left" bash -c "[ \"\$(adb shell dumpsy
 check "PM3: no cover window is left" bash -c "[ \"\$(adb shell dumpsys window windows | grep -c TjResetCover)\" = 0 ]"
 check "PM3: the custom launcher is the screen in front" grep -q 'com.tj.launcher' "$OUT/pm-b-resumed.txt"
 # C: a second return inside the minute does not open the menu again
-setmode quickstep; rebind; home; sleep 2
+# (no setmode / rebind here: setmode force-stops the app, which would also forget the one-run-a-minute memory; the memory itself is pinned by PowerMenuPrimeTest)
+home; sleep 2
 adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-c-start.txt" 2>&1; sleep 9
 pmlog > "$OUT/pm-c-log.txt"
 PM_N="$(grep -c ' PRIME start' "$OUT/pm-c-log.txt")"
 info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; PRIME lines: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | cut -c1-110 | tr '\n' '|' | cut -c1-1100)"
-check "PM4: the second return did not open the menu again (still ONE start line)" bash -c "[ '$PM_N' = 1 ]"
+check "PM4: a second press of the return (already custom) starts no new prime (still ONE start line)" bash -c "[ '$PM_N' = 1 ]"
 # D: a real side-key menu afterwards still opens and closes
 home; sleep 2
 adb shell input keyevent --longpress KEYCODE_POWER; sleep 3
