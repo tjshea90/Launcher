@@ -5729,6 +5729,65 @@ adb shell svc wifi enable >/dev/null 2>&1
 setfeat; setmode custom; home
 
 fi # section pk
+if want pm; then # section pm
+ensurehome
+# ---- PM (CS2, Tj 2026-11-21): "when I press the back button in either the app drawer or notification quick settings tile ... prepare as much as possible the power menu screenshot button cover ... so that even on the first
+# press of the side key, the button is hidden with no flicker at all. This may need the launcher to automatically open then close the power menu". The return from the tile / the icon opens the stock menu ONCE behind a cover and
+# closes it again (PowerMenuPrime). Premises: the switch OFF opens nothing; ON writes the ordered PRIME lines (cover, menu asked, menu up, closing, closed), leaves NO menu window and NO cover behind, the custom home in front,
+# a second return within a minute does not open it again, a real side-key menu afterwards still opens and closes, nothing crashed. What a first side-key press looks like on the TABLET is not provable here (CS2 stays reasoned).
+pmlog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
+pmwin(){ adb shell dumpsys window windows 2>/dev/null | grep -c "$1"; }
+CDP=PM
+# A: switch OFF
+hpinit true; hpkey prime_menu false
+setmode quickstep; rebind; home; sleep 2
+adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-a-start.txt" 2>&1; sleep 9
+pmlog > "$OUT/pm-a-log.txt"
+info "PM A (switch OFF): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-a-log.txt" | cut -c14-150 | tr '\n' '|' | cut -c1-400)"
+check "PM1: switch OFF: the tile still returns to the custom launcher" bash -c "[ \"$(getmode)\" = custom ]"
+check "PM1: switch OFF: the menu is never asked for (no 'PRIME start' line)" bash -c "! grep -q ' PRIME start' $OUT/pm-a-log.txt"
+check "PM1: switch OFF: the run says why it did nothing" grep -q ' PRIME end: .*the switch is off' "$OUT/pm-a-log.txt"
+# B: switch ON
+hpinit true; hpkey prime_menu true
+setmode quickstep; rebind; home; sleep 2
+adb logcat -c
+adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-b-start.txt" 2>&1
+PM_T=$(( $(date +%s) + 25 )); while [ "$(date +%s)" -lt "$PM_T" ]; do pmlog | grep -q ' PRIME end:' && break; sleep 1; done
+sleep 2
+pmlog > "$OUT/pm-b-log.txt"; resumed > "$OUT/pm-b-resumed.txt"; adb logcat -d -s TjA11y:I > "$OUT/pm-b-a11y.txt" 2>&1
+info "PM B (switch ON): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-b-log.txt" | cut -c14-170 | tr '\n' '|' | cut -c1-700)"
+check "PM2: the return switched Quickstep to custom" bash -c "[ \"$(getmode)\" = custom ]"
+check "PM2: the run started with a cover and the menu asked for (accepted)" grep -qE ' PRIME start \(tile\): cover (curtain|black), menu asked, accepted=true' "$OUT/pm-b-log.txt"
+check "PM2: the stock menu came up" grep -q ' PRIME .*the menu is up' "$OUT/pm-b-log.txt"
+check "PM2: and was closed again with Back" grep -q ' PRIME .*closing it' "$OUT/pm-b-log.txt"
+check "PM2: the run ended: it opened and closed the stock menu" grep -qE ' PRIME end: .*opened and closed the stock menu in [0-9]+ ms: closed' "$OUT/pm-b-log.txt"
+check "PM2: the lines are in order (start, up, closing, end)" bash -c "a=\$(grep -n ' PRIME start' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); b=\$(grep -n 'the menu is up' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); c=\$(grep -n 'closing it' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); d=\$(grep -n ' PRIME end:' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); [ -n \"\$a\" ] && [ -n \"\$d\" ] && [ \"\$a\" -lt \"\$b\" ] && [ \"\$b\" -lt \"\$c\" ] && [ \"\$c\" -lt \"\$d\" ]"
+PM_MS="$(grep -o 'in [0-9]* ms' "$OUT/pm-b-log.txt" | head -1 | grep -o '[0-9]*')"
+info "PM B: the run took ${PM_MS:-?} ms from the cover going up to the menu closed (the cover's own failsafe is 4500 ms)"
+check "PM2: it ended inside the cover's failsafe (under 4400 ms)" bash -c "[ -n '$PM_MS' ] && [ '$PM_MS' -lt 4400 ]"
+check "PM3: no stock power menu window is left" bash -c "[ \"\$(adb shell dumpsys window windows | grep -c ActionsDialog)\" = 0 ]"
+check "PM3: no cover window is left" bash -c "[ \"\$(adb shell dumpsys window windows | grep -c TjResetCover)\" = 0 ]"
+check "PM3: the custom launcher is the screen in front" grep -q 'com.tj.launcher' "$OUT/pm-b-resumed.txt"
+# C: a second return inside the minute does not open the menu again
+setmode quickstep; rebind; home; sleep 2
+adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-c-start.txt" 2>&1; sleep 9
+pmlog > "$OUT/pm-c-log.txt"
+PM_N="$(grep -c ' PRIME start' "$OUT/pm-c-log.txt")"
+info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; last PRIME line: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | tail -n 1 | cut -c14-160)"
+check "PM4: the second return did not open the menu again (still ONE start line)" bash -c "[ '$PM_N' = 1 ]"
+# D: a real side-key menu afterwards still opens and closes
+home; sleep 2
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3
+PM_UP="$(pmwin ActionsDialog)"; shot 20-pm-real-menu
+adb shell input keyevent KEYCODE_BACK; sleep 2
+PM_DOWN="$(pmwin ActionsDialog)"
+info "PM D: menu windows with the real side key: open $PM_UP, after Back $PM_DOWN"
+check "PM5: the real side-key menu still opens after a prime" bash -c "[ '$PM_UP' -ge 1 ]"
+check "PM5: and closes again with Back" bash -c "[ '$PM_DOWN' = 0 ]"
+check "PM6: the launcher did not crash anywhere in this section" bash -c "! adb logcat -d -b crash 2>/dev/null | grep -A3 'FATAL EXCEPTION' | grep -q 'Process: $PKG'"
+setfeat; setmode custom; rebind; home
+info "PM end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
+fi # section pm
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
