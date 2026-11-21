@@ -2355,3 +2355,41 @@
 ## 2026-11-21T20:37:05Z
 > Waiting on the CI runs (`base,n` and `pm` on the fixed head); the timer will wake me when they should be done.
 <!-- sha:f54127edc905 -->
+## 2026-11-21T19:47:31Z
+> **Status: the audit is done and nothing has been edited. Another session is working on this repo right now, so I'm waiting for it to finish before changing code.**
+>
+> **The other session is active**
+> - It checkpointed at 19:44Z on `claude/linkmeter-keyboard-launcher-fixes-fsk78t`.
+> - It then started three emulator gate runs (#691–#693), which are still running.
+> - It is heading for a release containing its CS1 and CS2 work: the battery-saver check on the Back button and the power-menu preparation. It has not tagged one yet.
+> - I've armed a background watcher that wakes me when a new release tag appears and the branch goes quiet, or when it has been idle for 75 minutes. Before I touch any code I'll re-check the branches and running CI myself.
+> - My first message was saved to `INBOX.md` and pushed to `main`. That means that session's mirror push to `main` will be refused until it merges. Its own branch is untouched. When I take over I'll do that merge myself.
+>
+> **Audit findings (read-only)**
+> - **Idle battery:** I found no `AlarmManager`, `JobScheduler`, `WorkManager` or `Timer` anywhere in `app/src/main` (grep today). Nothing runs while the screen is dark. The foreground keep-alive service is documented as off by default, though I didn't check the code default.
+> - **CPU and speed:** Three earlier audits (CA1, CG1B, CI1) already shipped the cheap wins. The estimated remaining total is under 0.1% of battery per day. The open items (E1, E2, H1, H2, H4) are lock-screen latency and need your tablet report to size.
+> - **Code I won't touch:** Changing the lock-screen path without a tablet number would be a guess, so I'm leaving it alone.
+> - **The other session's unreleased change:** Its 405-line power-menu prep runs a 100 ms tick for at most 4 seconds, at most once a minute, and bows out when other calibrations are running. I saw no conflict with other features, and it is still to be reviewed.
+> - **Features interfering:** The static maps from earlier audits and the gate itself are the evidence here. The gate is running now.
+>
+> **Quickstep RAM growth and the custom launcher**
+> - **Cause (from the Android 10 source, not measured on your tablet):**
+>   - Every new activity the stock launcher creates stays in memory for the life of its process.
+>   - The Go recents view registers a listener and never removes it.
+>   - A stock Android build removes it, which is why the emulator can't show the growth.
+> - **What fits your readings:** Your 3-hour readings went 450 → 414 → 130 MB after force stops, which matches this.
+> - **Our link to it:** The launcher doesn't hold Quickstep's memory. It can trigger new stock activities, though. It switches battery saver off at every lock and back on after a gesture unlock into Quickstep. On Android 10 each switch flips the dark theme, and each flip recreates the visible stock activity. One lock-and-unlock cycle plausibly adds two. This is reasoned, not measured. Measuring needs the helper.
+> - **Everything else:** The other features I checked either don't reach the stock process or have a bounded effect.
+>
+> **Plan once the other session has released**
+> 1. **Restart without the helper:** An accessibility-driven "Force stop" of the stock launcher through Settings, which is what you do by hand. It would run only when:
+>    - the custom home is in front,
+>    - the screen is on and unlocked,
+>    - enough Quickstep sessions and battery-saver flips have piled up since the last restart,
+>    - the last restart was more than 6 hours ago.
+> 2. **Safety:**
+>    - Settings opens behind a cover and stays out of Recents.
+>    - It gives up and switches itself off after two failed tries.
+>    - There is a switch in Launcher control.
+> 3. **Proof and release:** JVM tests plus a new emulator section, then the normal gate and release. I can't test it on your tablet's Settings screen, so I'll say plainly which parts are emulator-only.
+<!-- sha:5303ce55aec3 -->
