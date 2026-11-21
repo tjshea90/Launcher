@@ -1123,7 +1123,7 @@ public class TjAccessibilityService extends AccessibilityService {
         s.screenOn = isScreenOn();
         s.permission = checkSelfPermission(android.Manifest.permission.READ_EXTERNAL_STORAGE) == android.content.pm.PackageManager.PERMISSION_GRANTED;
         s.running = homeCalRunning;
-        s.otherCalibration = calibrating() || scrimStage != 0;
+        s.otherCalibration = calibrating() || scrimStage != 0 || primeRunning();   // CS2: the prime's cover is up: no screenshot of the plain wallpaper now
         s.positionKnown = TjHooks.wallpaperReported;   // BI1: never file a crop under the placeholder step (code review 2026-11-08)
         s.hasCrop = s.positionKnown && homeCropValid(homeStepNow(), homeSig()) && !curtainWallMissing();   // BL1: a crop made before the curtain existed has no full wallpaper picture next to it: one more calibration (one flash) takes it
         s.rectKnown = cachedCard() != null;
@@ -2204,7 +2204,7 @@ public class TjAccessibilityService extends AccessibilityService {
         f.switchOn = curtainSwitchOn();
         if (!f.switchOn) return;
         f.customMode = Mode.isCustom(app); f.unlocked = !keyguardLockedFast(); f.screenOn = isScreenOn();
-        f.calibrating = homeCalRunning || calibrating() || scrimStage != 0; f.building = curtainBuilding;
+        f.calibrating = homeCalRunning || calibrating() || scrimStage != 0 || primeRunning(); f.building = curtainBuilding;
         f.positionKnown = TjHooks.wallpaperReported;
         final int rot = rotation(); final int step = homeStepNow(); final String sig = homeSig();
         f.wallKnown = f.positionKnown && HomeCurtain.hasWall(app, rot, step, sig);
