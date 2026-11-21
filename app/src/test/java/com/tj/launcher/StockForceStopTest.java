@@ -120,7 +120,7 @@ public class StockForceStopTest {
         assertEquals(StockForceStop.ACT_BACK, s.action);
         s = st(StockForceStop.LEAVING, 300, 1400, 1, 1, StockForceStop.OUT_RESTARTED, obs(true, StockForceStop.BTN_GREY, false, false));
         assertEquals("a BACK just sent is given time to work", StockForceStop.ACT_NONE, s.action);
-        s = st(StockForceStop.LEAVING, 800, 1900, 1, 1, StockForceStop.OUT_RESTARTED, obs(false, StockForceStop.BTN_NONE, false, true));
+        s = st(StockForceStop.LEAVING, 1000, 1900, 1, 1, StockForceStop.OUT_RESTARTED, obs(false, StockForceStop.BTN_NONE, false, true));
         assertEquals(StockForceStop.ACT_END, s.action); assertEquals(StockForceStop.OUT_RESTARTED, s.outcome);
     }
 
@@ -190,11 +190,11 @@ public class StockForceStopTest {
     @Test public void leavingPressesBackTwiceThenHomeThenGivesUp() {
         StockForceStop.Obs o = obs(true, StockForceStop.BTN_GREY, false, false);
         assertEquals(StockForceStop.ACT_BACK, st(StockForceStop.LEAVING, 0, 0, 1, 0, StockForceStop.OUT_RESTARTED, o).action);
-        assertEquals(StockForceStop.ACT_BACK, st(StockForceStop.LEAVING, 800, 0, 1, 1, StockForceStop.OUT_RESTARTED, o).action);
-        assertEquals(StockForceStop.ACT_HOME, st(StockForceStop.LEAVING, 800, 0, 1, 2, StockForceStop.OUT_RESTARTED, o).action);
-        StockForceStop.Step s = st(StockForceStop.LEAVING, 800, 0, 1, StockForceStop.LEAVE_TRIES, StockForceStop.OUT_RESTARTED, o);
+        assertEquals(StockForceStop.ACT_BACK, st(StockForceStop.LEAVING, 1000, 0, 1, 1, StockForceStop.OUT_RESTARTED, o).action);
+        assertEquals(StockForceStop.ACT_HOME, st(StockForceStop.LEAVING, 1000, 0, 1, 2, StockForceStop.OUT_RESTARTED, o).action);
+        StockForceStop.Step s = st(StockForceStop.LEAVING, 1000, 0, 1, StockForceStop.LEAVE_TRIES, StockForceStop.OUT_RESTARTED, o);
         assertEquals("a restart that happened stays a restart even when the way home is stuck", StockForceStop.OUT_RESTARTED, s.outcome);
-        s = st(StockForceStop.LEAVING, 800, 0, 1, StockForceStop.LEAVE_TRIES, StockForceStop.OUT_FAILED, o);
+        s = st(StockForceStop.LEAVING, 1000, 0, 1, StockForceStop.LEAVE_TRIES, StockForceStop.OUT_FAILED, o);
         assertEquals(StockForceStop.OUT_FAILED, s.outcome);
     }
 
