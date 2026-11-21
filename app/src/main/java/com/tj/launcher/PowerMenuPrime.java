@@ -118,8 +118,10 @@ public final class PowerMenuPrime {
         }
     }
 
-    /** The line for Launcher control / the tablet report. */
+    /** The line for Launcher control / the tablet report. [opened]: the menu was asked for; a run that ended with "closed" opened it and closed it again. */
     public static String summary(String clock, String why, boolean opened, long ms) {
-        return clock + " " + (opened ? "opened and closed the stock menu in " + ms + " ms" : "did not open the menu") + ": " + why;
+        if (!opened) return clock + " did not open the menu: " + why;
+        if ("closed".equals(why)) return clock + " opened and closed the stock menu in " + ms + " ms";
+        return clock + " asked for the stock menu, ended after " + ms + " ms: " + why;
     }
 }

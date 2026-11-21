@@ -160,7 +160,8 @@ public class PowerMenuPrimeTest {
     }
 
     @Test public void summaryLine() {
-        assertEquals("12:00:01 opened and closed the stock menu in 1400 ms: closed", PowerMenuPrime.summary("12:00:01", "closed", true, 1400));
+        assertEquals("12:00:01 opened and closed the stock menu in 1400 ms", PowerMenuPrime.summary("12:00:01", "closed", true, 1400));
+        assertEquals("12:00:01 asked for the stock menu, ended after 2600 ms: no menu window came within 2500 ms; nothing to close", PowerMenuPrime.summary("12:00:01", "no menu window came within 2500 ms; nothing to close", true, 2600));
         assertEquals("12:00:01 did not open the menu: the switch is off", PowerMenuPrime.summary("12:00:01", "the switch is off", false, 0));
     }
 }

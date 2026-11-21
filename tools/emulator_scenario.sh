@@ -5743,7 +5743,7 @@ hpinit true; hpkey prime_menu false
 setmode quickstep; rebind; home; sleep 2
 adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-a-start.txt" 2>&1; sleep 9
 pmlog > "$OUT/pm-a-log.txt"
-info "PM A (switch OFF): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-a-log.txt" | cut -c14-150 | tr '\n' '|' | cut -c1-400)"
+info "PM A (switch OFF): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-a-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-400)"
 check "PM1: switch OFF: the tile still returns to the custom launcher" bash -c "[ \"$(getmode)\" = custom ]"
 check "PM1: switch OFF: the menu is never asked for (no 'PRIME start' line)" bash -c "! grep -q ' PRIME start' $OUT/pm-a-log.txt"
 check "PM1: switch OFF: the run says why it did nothing" grep -q ' PRIME end: .*the switch is off' "$OUT/pm-a-log.txt"
@@ -5752,17 +5752,18 @@ hpinit true; hpkey prime_menu true
 setmode quickstep; rebind; home; sleep 2
 adb logcat -c
 adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-b-start.txt" 2>&1
-PM_T=$(( $(date +%s) + 25 )); while [ "$(date +%s)" -lt "$PM_T" ]; do pmlog | grep -q ' PRIME end:' && break; sleep 1; done
+PM_E0="$(pmlog | grep -c ' PRIME end:')"   # the OFF run above left one end line: wait for a NEW one
+PM_T=$(( $(date +%s) + 25 )); while [ "$(date +%s)" -lt "$PM_T" ]; do [ "$(pmlog | grep -c ' PRIME end:')" -gt "$PM_E0" ] && break; sleep 1; done
 sleep 2
 pmlog > "$OUT/pm-b-log.txt"; resumed > "$OUT/pm-b-resumed.txt"; adb logcat -d -s TjA11y:I > "$OUT/pm-b-a11y.txt" 2>&1
-info "PM B (switch ON): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-b-log.txt" | cut -c14-170 | tr '\n' '|' | cut -c1-700)"
+info "PM B (switch ON): mode $(getmode); PRIME lines: $(grep ' PRIME ' "$OUT/pm-b-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-900)"
 check "PM2: the return switched Quickstep to custom" bash -c "[ \"$(getmode)\" = custom ]"
 check "PM2: the run started with a cover and the menu asked for (accepted)" grep -qE ' PRIME start \(tile\): cover (curtain|black), menu asked, accepted=true' "$OUT/pm-b-log.txt"
 check "PM2: the stock menu came up" grep -q ' PRIME .*the menu is up' "$OUT/pm-b-log.txt"
 check "PM2: and was closed again with Back" grep -q ' PRIME .*closing it' "$OUT/pm-b-log.txt"
-check "PM2: the run ended: it opened and closed the stock menu" grep -qE ' PRIME end: .*opened and closed the stock menu in [0-9]+ ms: closed' "$OUT/pm-b-log.txt"
+check "PM2: the run ended: it opened and closed the stock menu" grep -qE ' PRIME end: .*opened and closed the stock menu in [0-9]+ ms' "$OUT/pm-b-log.txt"
 check "PM2: the lines are in order (start, up, closing, end)" bash -c "a=\$(grep -n ' PRIME start' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); b=\$(grep -n 'the menu is up' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); c=\$(grep -n 'closing it' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); d=\$(grep -n ' PRIME end:' $OUT/pm-b-log.txt | head -1 | cut -d: -f1); [ -n \"\$a\" ] && [ -n \"\$d\" ] && [ \"\$a\" -lt \"\$b\" ] && [ \"\$b\" -lt \"\$c\" ] && [ \"\$c\" -lt \"\$d\" ]"
-PM_MS="$(grep -o 'in [0-9]* ms' "$OUT/pm-b-log.txt" | head -1 | grep -o '[0-9]*')"
+PM_MS="$(grep ' PRIME end:' "$OUT/pm-b-log.txt" | tail -n 1 | grep -o 'in [0-9]* ms' | head -1 | grep -o '[0-9]*')"
 info "PM B: the run took ${PM_MS:-?} ms from the cover going up to the menu closed (the cover's own failsafe is 4500 ms)"
 check "PM2: it ended inside the cover's failsafe (under 4400 ms)" bash -c "[ -n '$PM_MS' ] && [ '$PM_MS' -lt 4400 ]"
 check "PM3: no stock power menu window is left" bash -c "[ \"\$(adb shell dumpsys window windows | grep -c ActionsDialog)\" = 0 ]"
@@ -5773,7 +5774,7 @@ setmode quickstep; rebind; home; sleep 2
 adb shell am start -n "$PKG/com.tj.launcher.BackToCustomActivity" --es via tile > "$OUT/pm-c-start.txt" 2>&1; sleep 9
 pmlog > "$OUT/pm-c-log.txt"
 PM_N="$(grep -c ' PRIME start' "$OUT/pm-c-log.txt")"
-info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; last PRIME line: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | tail -n 1 | cut -c14-160)"
+info "PM C (second return within a minute): PRIME start lines in the log: $PM_N; PRIME lines: $(grep ' PRIME ' "$OUT/pm-c-log.txt" | cut -c1-175 | tr '\n' '|' | cut -c1-1100)"
 check "PM4: the second return did not open the menu again (still ONE start line)" bash -c "[ '$PM_N' = 1 ]"
 # D: a real side-key menu afterwards still opens and closes
 home; sleep 2

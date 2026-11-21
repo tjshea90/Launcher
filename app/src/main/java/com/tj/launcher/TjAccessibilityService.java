@@ -5198,7 +5198,7 @@ public class TjAccessibilityService extends AccessibilityService {
             if (resetCover == null) { showResetCover(); primeOwnsCover = resetCover != null; }
             boolean ok = false;
             try { ok = performGlobalAction(GLOBAL_ACTION_POWER_DIALOG); } catch (Throwable ignored) { }
-            LockLog.add(getApplicationContext(), "PRIME", "start (" + primeWhy + "): cover " + (primeOwnsCover ? (resetCoverIsCurtain ? "curtain" : "black") : "none") + ", menu asked, accepted=" + ok);
+            LockLog.add(getApplicationContext(), "PRIME", "start (" + primeWhy + ") after " + (now - primeAskedMs) + " ms: cover " + (primeOwnsCover ? (resetCoverIsCurtain ? "curtain" : "black") : "none") + ", menu asked, accepted=" + ok);
             if (!ok) { primeEnd("Android refused to open the power menu"); return; }
             primeOpened = true; primePhase = PowerMenuPrime.OPENING; primePhaseAtMs = now;
             handler.postDelayed(primeTick, PowerMenuPrime.TICK_MS);
