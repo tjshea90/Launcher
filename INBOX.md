@@ -1665,3 +1665,10 @@ There is currently a Claude session already working on this repo. Be careful not
 ```
 Release linkmeter 
 ```
+
+## 2026-11-21T22:07:32Z
+```
+Why Gboard is better: it has a trained shape model and a neural next-word model built on huge amounts of real typing. I can't copy that offline. 
+
+Make the keyboard either adopt gboard's trained shape model if possible, or build one from the internet 
+```
