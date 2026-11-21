@@ -145,6 +145,12 @@ public class StockForceStopTest {
         assertEquals(StockForceStop.OUT_FAILED, s.outcome); assertEquals(StockForceStop.LEAVING, s.phase);
     }
 
+    @Test public void aMomentWithoutAnySettingsWindowIsNotYetADialogThatClosed() {
+        StockForceStop.Obs o = obs(false, StockForceStop.BTN_NONE, false, false);
+        assertEquals(StockForceStop.CONFIRMING, st(StockForceStop.CONFIRMING, 300, 2000, 1, 0, 0, o).phase);
+        assertEquals(StockForceStop.OUT_RESTARTED, st(StockForceStop.CONFIRMING, 1500, 3000, 1, 0, 0, o).outcome);
+    }
+
     @Test public void aDialogThatStaysIsAFailure() {
         StockForceStop.Obs o = obs(true, StockForceStop.BTN_NONE, true, false);
         assertEquals(StockForceStop.CONFIRMING, st(StockForceStop.CONFIRMING, 1000, 3000, 1, 0, 0, o).phase);

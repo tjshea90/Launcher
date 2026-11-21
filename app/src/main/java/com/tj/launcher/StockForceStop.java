@@ -174,7 +174,7 @@ final class StockForceStop {
                 if (phaseAgeMs >= DIALOG_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_FAILED, "no confirm dialog came after Force stop");
                 return new Step(PRESSING, ACT_NONE, OUT_NONE, "");
             default: // CONFIRMING
-                if (!o.confirmUp) return new Step(LEAVING, ACT_NONE, OUT_RESTARTED, "the dialog closed after OK");
+                if (!o.confirmUp && (o.settingsFront || phaseAgeMs >= 1_500L)) return new Step(LEAVING, ACT_NONE, OUT_RESTARTED, "the dialog closed after OK");   // a moment with no Settings window at all (a transition) is not yet "closed"
                 if (phaseAgeMs >= GONE_WAIT_MS) return new Step(LEAVING, ACT_NONE, OUT_FAILED, "the dialog did not close after OK");
                 return new Step(CONFIRMING, ACT_NONE, OUT_NONE, "");
         }
