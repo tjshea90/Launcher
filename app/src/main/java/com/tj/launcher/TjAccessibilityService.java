@@ -5159,6 +5159,8 @@ public class TjAccessibilityService extends AccessibilityService {
      * dialog, our patch window and our fast path warm. Never throws; does nothing unless every start condition in {@link PowerMenuPrime#start} holds.
      */
     public void primePowerMenu(final String why) {
+        // Switch off (the debug default) or automation off: NOTHING runs, not even a "waiting" tick, a window-list read or a layer refresh (the N2 lock handshake of section n failed on the CS2 head only, 3 of 3, while the tag passed)
+        try { if (!Features.get(this, PowerMenuPrime.KEY, PowerMenuPrime.defaultOn(debuggable())) || CrashGuard.automationOff(this)) return; } catch (Throwable t) { return; }
         handler.post(new Runnable() { @Override public void run() {
             try {
                 if (primePhase != PowerMenuPrime.IDLE) return;   // one run at a time
