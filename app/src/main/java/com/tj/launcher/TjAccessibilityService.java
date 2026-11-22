@@ -4111,7 +4111,10 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     /** Recents task cards: nodes (in the stock launcher / SystemUI windows) that offer a "Close" action. */
-    private List<AccessibilityNodeInfo> findTaskCards() {
+    private List<AccessibilityNodeInfo> findTaskCards() { return findTaskCards(null); }
+
+    /** CW1 D4: with a clock, the first window of the stock launcher this search walks is the clock's first sign (the Recents screen is on its way up). */
+    private List<AccessibilityNodeInfo> findTaskCards(RecentsClock clock) {
         List<AccessibilityNodeInfo> out = new java.util.ArrayList<>();
         List<AccessibilityWindowInfo> windows = getWindows();
         if (windows == null) return out;
@@ -4120,9 +4123,26 @@ public class TjAccessibilityService extends AccessibilityService {
             if (root == null) continue;
             CharSequence pkg = root.getPackageName();
             if (pkg == null || !(pkg.toString().startsWith("com.android.launcher3") || "com.android.systemui".contentEquals(pkg))) continue;
+            if (clock != null && pkg.toString().startsWith("com.android.launcher3")) clock.sign(android.os.SystemClock.uptimeMillis());
             collectCards(root, 0, out);
         }
         return out;
+    }
+
+    /**
+     * CW1 D4: one look of a clear-all loop at its clock. The first root of the stock launcher is the clock's first sign (the Recents screen exists; SystemUI's own windows are always there and prove nothing); a clock that
+     * outruns the reset cover's 4.5 s failsafe (a cold stock start) keeps the cover up until the clock is over. Never throws.
+     */
+    private void recentsClockLook(RecentsClock clock, List<AccessibilityNodeInfo> roots, long nowMs) {
+        try {
+            if (roots != null && !clock.signSeen()) {
+                for (AccessibilityNodeInfo r : roots) {
+                    CharSequence pkg = r.getPackageName();
+                    if (pkg != null && pkg.toString().startsWith("com.android.launcher3")) { clock.sign(nowMs); break; }
+                }
+            }
+            if (clock.takeCoverKeep(nowMs) && resetCover != null) { handler.removeCallbacks(coverFailsafe); handler.postDelayed(coverFailsafe, clock.coverFor(nowMs)); }
+        } catch (Throwable t) { Log.e(TAG, "recents clock look failed", t); }
     }
 
     private void collectCards(AccessibilityNodeInfo n, int depth, List<AccessibilityNodeInfo> out) {
