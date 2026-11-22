@@ -120,6 +120,7 @@ public final class ReportState {
             b.append("launcher version: ").append(pi.versionName).append(" (code ").append(pi.versionCode).append(")\n");
         } catch (Throwable t) { b.append("launcher version: (unreadable)\n"); }
         try { b.append("mode: ").append(Mode.get(c)).append('\n'); } catch (Throwable t) { b.append("mode: (unreadable)\n"); }
+        try { b.append("one launcher for both worlds (CV1; the Quickstep home is this launcher in its unlocked form): ").append(HomeProfile.status(c)).append("; layout files: custom ").append(c.getDatabasePath(UnifiedRules.DB_CUSTOM).length()).append(" bytes, unlocked ").append(c.getDatabasePath(UnifiedRules.DB_UNLOCKED).length()).append(" bytes\n"); } catch (Throwable t) { b.append("one launcher (CV1): (unreadable)\n"); }
         b.append("shell helper reachable: ").append(yes(helperReachable)).append('\n');
         b.append("accessibility helper bound: ").append(yes(TjAccessibilityService.get() != null)).append("   (state: ").append(HelperStatus.describe(HelperStatus.now(c)).replaceAll("\\s+-\\s+.*", "")).append(")\n");   // ACC1
         b.append("keep-alive service running: ").append(yes(KeepAliveService.running())).append(" (switch ").append(KeepAliveService.enabled(c) ? "on" : "off").append(")\n");

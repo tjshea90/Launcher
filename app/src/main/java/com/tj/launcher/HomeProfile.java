@@ -22,13 +22,14 @@ public final class HomeProfile {
     private static volatile UnifiedRules.Profile loaded;
     private static volatile long lastReloadAt;
     private static volatile String lastWhy = "";
+    private static volatile boolean again;
 
     private HomeProfile() {}
 
     public static UnifiedRules.Profile loaded() { return loaded; }
 
     /** For tests of the glue-free rules and the report. */
-    static void resetForTest() { loaded = null; lastReloadAt = 0; lastWhy = ""; }
+    static void resetForTest() { loaded = null; lastReloadAt = 0; lastWhy = ""; again = false; }
 
     /**
      * LoaderTask, first step of every load, on the model worker thread (the thread of every layout write): select the wanted profile's layout database in the provider. On any failure the provider
@@ -58,7 +59,14 @@ public final class HomeProfile {
             UnifiedRules.Profile have = loaded;
             if (!UnifiedRules.reloadNeeded(want, have)) return;
             long now = System.currentTimeMillis();
-            if (now - lastReloadAt < MIN_SPACING_MS) return;   // a flip that is already being served; the next trigger looks again
+            if (now - lastReloadAt < MIN_SPACING_MS) {   // a reload was just started: look again right after it (a quick second flip must never be dropped)
+                if (!again) {
+                    again = true;
+                    new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() { @Override public void run() { again = false; syncNow(app, why + " (again)"); } },
+                            MIN_SPACING_MS - (now - lastReloadAt) + 60);
+                }
+                return;
+            }
             lastReloadAt = now;
             lastWhy = why;
             LockLog.add(app, "PROFILE", "reload " + have + " -> " + want + " (" + why + ")");

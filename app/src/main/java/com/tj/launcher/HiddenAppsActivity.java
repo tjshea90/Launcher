@@ -42,7 +42,7 @@ public class HiddenAppsActivity extends Activity {
             if (on) shown.add(r.pkg); else shown.remove(r.pkg);
             HiddenApps.setShown(this, r.pkg, on);
         }
-        HiddenApps.reloadLauncher(this);
+        if (!Unified.unlockedHome(this)) HiddenApps.reloadLauncher(this);   // CV1: the unlocked profile shows every app whatever is chosen here; the custom profile is rebuilt when the mode flips back
     }
 
     @Override protected void onResume() { super.onResume(); RecentsGuard.excludeOurTasks(this); RecentsGuard.describeAsTarget(this); }
@@ -116,7 +116,7 @@ public class HiddenAppsActivity extends Activity {
                         if (on) shown.add(r.pkg); else shown.remove(r.pkg);
                         sw.setChecked(on);
                         HiddenApps.setShown(HiddenAppsActivity.this, r.pkg, on);
-                        HiddenApps.reloadLauncher(HiddenAppsActivity.this);
+                        if (!Unified.unlockedHome(HiddenAppsActivity.this)) HiddenApps.reloadLauncher(HiddenAppsActivity.this);   // CV1
                         head.setText(summary());
                     }
                 });
