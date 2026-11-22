@@ -2034,3 +2034,7 @@
 ## 2026-11-22T08:10:25Z
 > #732, the exact chain that failed twice, is now green: 77 PASS, 0 FAIL. The two earlier AC3 failures did not reproduce on the same product code: the last four unified AC3 runs (#730, #732, #733 and #727's own control, #728 with the switch off) all passed with Home presses 172–221 ms apart. I'm saving the verdict, then adding one cheap check for the case that matters most to Tj: a double Home pressed from inside an app, where our own launcher is busy resuming.
 <!-- sha:6b6228542f38 -->
+
+## 2026-11-22T08:18:27Z
+> Waiting for the 08:23 timer, after which a helper reads #734.
+<!-- sha:82b474107319 -->
