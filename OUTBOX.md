@@ -1982,3 +1982,7 @@
 ## 2026-11-22T06:15:43Z
 > Status: run #720 is going and I'll read it at about 06:19 UTC. If it's green, or only the test was at fault, the next step is the three-run release gate.
 <!-- sha:6ecf5f316037 -->
+
+## 2026-11-22T06:47:59Z
+> Runs #722–#726 are still going and nothing has been read yet. I'm waiting for the timer to fire at 07:02 UTC. Then I read #726 first (the lock core with the switch on, which is what the release does), save the raw verdict, and read #722–#725 at about 07:12. No product code has changed since `a5396e53`.
+<!-- sha:1bd3610adaa2 -->
