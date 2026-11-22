@@ -78,6 +78,59 @@ final class StockForceStop {
     /** Pure: does this reading of {@code low_power} count as a flip? Only a CHANGE of the value does (a ContentObserver can report one write twice). {@code prev} MIN_VALUE = first reading, never counted. */
     static boolean isFlip(int prev, int now) { return prev != Integer.MIN_VALUE && now != prev; }
 
+    // ---- CW1 D3: what counts as debt depends on the world. Emergency exit (the stock launcher is the Quickstep home again) = the v0.9.16 weights; the one launcher in force = pins only.
+
+    /** Pure: debt of one ended Quickstep session. In the one-launcher world a session creates nothing in the stock process (its HOME activity is not started any more), so it weighs nothing. */
+    static int sessionWeight(boolean unifiedActive) { return unifiedActive ? 0 : 1; }
+
+    /** Pure: debt of one change of {@code low_power}. In the one-launcher world a flip pins nothing by itself (a stopped Recents activity is re-created once, at its next show, and that show is what is counted). */
+    static int flipWeight(boolean unifiedActive) { return unifiedActive ? 0 : 1; }
+
+    /** Pure: the debt that justifies a restart in this world. */
+    static int minDebtFor(boolean unifiedActive) { return unifiedActive ? PIN_THRESHOLD : MIN_DEBT; }
+
+    /** Pure: the configuration a stock window was created under, as one string. Night bit (already masked), font scale, density, locale tags: the facts whose change makes the stock process re-create the visible Activity. */
+    static String signature(int nightBits, float fontScale, int densityDpi, String localeTags) {
+        return "n" + nightBits + "|f" + fontScale + "|d" + densityDpi + "|" + (localeTags == null ? "" : localeTags);
+    }
+
+    /** What one stock window means: the signature to store and the pins to add. */
+    static final class Window {
+        final String sig; final int pins;
+        Window(String sig, int pins) { this.sig = sig; this.pins = pins; }
+    }
+
+    /**
+     * Pure: a window of the stock launcher came up under {@code nowSig}. {@code storedSig} EMPTY = none since the last restart: this window is the process's first Activity (the floor), it pins nothing yet. The same
+     * signature as the stored one = a second window of the same show or a show under the same configuration: nothing new. A different one = the stock process built a NEW Activity for it, and the Go Recents view
+     * pins every new one: one pin (counted only in the one-launcher world; in the emergency exit the old weights decide and only the signature is kept).
+     */
+    static Window onStockWindow(String storedSig, String nowSig, boolean unifiedActive) {
+        String now = nowSig == null ? "" : nowSig;
+        if (now.isEmpty()) return new Window(storedSig == null ? "" : storedSig, 0);   // an unreadable configuration changes nothing
+        if (storedSig == null || storedSig.isEmpty()) return new Window(now, 0);
+        if (storedSig.equals(now)) return new Window(storedSig, 0);
+        return new Window(now, unifiedActive ? 1 : 0);
+    }
+
+    /** Pure: the event that counts as "a window of the stock launcher came up" (a window-state change of its package; WINDOWS_CHANGED carries no package and is noise for this). */
+    static boolean isStockWindow(int eventType, String pkg, String stockPkgOrNull) {
+        if (eventType != android.view.accessibility.AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED || pkg == null) return false;
+        return STOCK_PKG.equals(pkg) || (stockPkgOrNull != null && stockPkgOrNull.equals(pkg));
+    }
+
+    /** Pure: the stock process was restarted (or was not running) or the tablet booted: nothing it pinned exists any more, the next stock window is its first. */
+    static String sigAfterRestart() { return ""; }
+
+    /** Pure D5: seed the one cleanup? Only when the one launcher is in force, this switch is on and it was never seeded on this install. */
+    static boolean seedWanted(boolean unifiedActive, boolean switchOn, boolean alreadySeeded) { return unifiedActive && switchOn && !alreadySeeded; }
+
+    /** Pure D5: the seeded debt = the drive threshold (never lower than what is there). */
+    static int seededDebt(int debt, int minDebt) { return Math.max(Math.max(0, debt), Math.max(1, minDebt)); }
+
+    /** Pure D5: the stock process of the v0.9.16 era may hold pinned screens although no window was seen by THIS code: the seed counts as "a stock window was seen" so the blocker does not say "nothing to give back". */
+    static String seededSig(String storedSig, String nowSig) { return storedSig == null || storedSig.isEmpty() ? (nowSig == null ? "" : nowSig) : storedSig; }
+
     /** SR1 (the helper path) or a finished drive took the debt away. Under the same lock as the additions, so a flip cannot be overwritten. */
     static synchronized void setDebt(Context app, int v) { try { Features.setIntAsync(app, DEBT_KEY, v); } catch (Throwable ignored) { } }
 
