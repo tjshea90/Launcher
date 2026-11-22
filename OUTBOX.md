@@ -2247,3 +2247,14 @@
 ## 2026-11-22T23:32:03Z
 > The agent is reading the three failing jobs' FAIL lines now. I'll wait for its result before judging anything.
 <!-- sha:3e71a5984067 -->
+
+## 2026-11-22T23:35:01Z
+> The first gate read came back mixed, and I'm now checking each failure.
+>
+> - **Green:** run #739.
+> - **sf:** failed because the new D5 seed makes the Force-stop debt jump to the line when the one launcher is in force. The test assumed debt below the line, so the premise broke. I pre-marked the seed in the scenario, which is a test change, not a product change. A solo `sf` run will confirm.
+> - **cs, ad/ps and hp:** these failed under the `unified` token. I've queued solo reruns of each on `main` and on the v0.9.17 tag, plus a plain `hp` run, to see whether the failures also happen on the tag.
+> - **Native crash:** #743 and #740 each logged a native crash in our process.
+>
+> I'll read the reruns at about 23:45 UTC and 00:10 UTC. Nothing ships until the failures are explained.
+<!-- sha:4870ae5c5656 -->
