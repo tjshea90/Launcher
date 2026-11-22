@@ -38,7 +38,10 @@ public final class Unified {
     public static UnifiedRules.Profile wantedProfile(Context c) { return UnifiedRules.profile(Mode.isCustom(c), active(c)); }
 
     /** True while our own launcher is the Quickstep world's home (the unlocked profile is wanted). */
-    public static boolean unlockedHome(Context c) { return wantedProfile(c) == UnifiedRules.Profile.UNLOCKED; }
+    public static boolean unlockedHome(Context c) {
+        if (Mode.isCustom(c)) return false;   // A10 (CW1): the same answer as wantedProfile(c) == UNLOCKED (UnifiedRules.profile: CUSTOM whenever the mode is custom), without the switch / debug / breaker reads the drawer filter paid for every app
+        return wantedProfile(c) == UnifiedRules.Profile.UNLOCKED;
+    }
 
     /** The switch was changed by hand (Launcher control): a deliberate choice also ends an emergency, like every deliberate way back (CrashGuard.clearTripped). */
     public static void setSwitch(Context c, boolean on) {

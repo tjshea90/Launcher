@@ -19,7 +19,13 @@ public final class HiddenApps {
 
     private HiddenApps() {}
 
-    private static SharedPreferences p(Context c) { return c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
+    /** A10 (CW1): one handle per process (as {@code Features.p} does): the drawer asks for every app at every load, and each {@code getSharedPreferences} takes the context's global lock. The values are still read live from the handle. */
+    private static volatile SharedPreferences sp;
+    private static SharedPreferences p(Context c) {
+        SharedPreferences s = sp;
+        if (s == null) { s = c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE); sp = s; }
+        return s;
+    }
 
     public static Set<String> installedLaunchablePackages(Context c) {
         Set<String> s = new HashSet<>();

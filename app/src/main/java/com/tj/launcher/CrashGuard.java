@@ -67,8 +67,16 @@ public final class CrashGuard {
         }
     }
 
+    /** A10 (CW1): one handle per process for the READS below (the drawer filter asks per app at every load); the values are still read live. The crash handler and every writer keep their own lookup. */
+    private static volatile SharedPreferences readHandle;
+    private static SharedPreferences reads(Context c) {
+        SharedPreferences s = readHandle;
+        if (s == null) { Context a = c.getApplicationContext(); s = (a != null ? a : c).getSharedPreferences(PREFS, Context.MODE_PRIVATE); readHandle = s; }
+        return s;
+    }
+
     public static boolean wasTripped(Context c) {
-        return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("tripped", false);
+        return reads(c).getBoolean("tripped", false);
     }
 
     /**
@@ -85,12 +93,12 @@ public final class CrashGuard {
     public static boolean automationOff(boolean tripped, boolean paused, boolean customMode) { return tripped || (paused && !customMode); }
 
     public static boolean isPaused(Context c) {
-        return c.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean(PAUSED_KEY, false);
+        return reads(c).getBoolean(PAUSED_KEY, false);
     }
 
     /** The one answer the automation rules read (breaker tripped OR paused). */
     public static boolean automationOff(Context c) {
-        SharedPreferences p = c.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences p = reads(c);
         return automationOff(p.getBoolean("tripped", false), p.getBoolean(PAUSED_KEY, false), Mode.isCustom(c));
     }
 
