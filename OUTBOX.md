@@ -2014,3 +2014,7 @@
 ## 2026-11-22T07:48:13Z
 > Two helpers are reading #730 (`unified,ac`, with the full lock-log lines) and #731 (`an` solo). I'll act on their reports once they arrive.
 <!-- sha:dea62bb7e99b -->
+
+## 2026-11-22T07:52:21Z
+> Status: AC3 passes when run alone with the switch on, so I'm waiting on the two chain reruns (#732 full chain, #733 `unified,o,ac`) for the per-line log that shows what stops the double Home there. They end about 08:00 and 08:07.
+<!-- sha:6eba7a458414 -->
