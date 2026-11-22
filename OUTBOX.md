@@ -1991,3 +1991,128 @@
 >
 > I haven't re-checked that the release page exists. The build log lists it, and I'll confirm it at 10:22 before I write to you.
 <!-- sha:04f39c9fe944 -->
+## 2026-11-22T05:46:25Z
+> Status: heartbeat is armed (`trig_01NxLAL2jZccAiP8UPYM1X7m`). Two read-only reviewers are checking the unified-launcher code (Android-app side and `launcher3` side). The emulator run #718 (`ul,ul2`) is still going and I'll read it at about 05:54 UTC. Nothing is re-dispatched and no code has changed yet.
+<!-- sha:a4cdca546665 -->
+
+## 2026-11-22T06:01:49Z
+> Status: the fixes are pushed and emulator run #719 (`ul,ul2`) is going, with a second review of the fix delta alongside it. I'll read both when they land.
+<!-- sha:edcd7c7175d7 -->
+
+## 2026-11-22T06:15:43Z
+> Status: run #720 is going and I'll read it at about 06:19 UTC. If it's green, or only the test was at fault, the next step is the three-run release gate.
+<!-- sha:6ecf5f316037 -->
+
+## 2026-11-22T06:47:59Z
+> Runs #722–#726 are still going and nothing has been read yet. I'm waiting for the timer to fire at 07:02 UTC. Then I read #726 first (the lock core with the switch on, which is what the release does), save the raw verdict, and read #722–#725 at about 07:12. No product code has changed since `a5396e53`.
+<!-- sha:1bd3610adaa2 -->
+
+## 2026-11-22T06:48:07Z
+> The heartbeat fired and found this session mid-job. There is no other session's work and no new message from Tj, so I carry on. Gate runs #722–#726 are in flight. I read #726 at 07:02 UTC and #722–#725 at about 07:12.
+<!-- sha:486a91f4df01 -->
+
+## 2026-11-22T07:04:49Z
+> Still triaging #726. I'm waiting for the 07:11 timer, then I read #723 and #724 (the switch-off controls), then #722 and #725.
+<!-- sha:8493e0193404 -->
+
+## 2026-11-22T07:11:21Z
+> Four helpers are reading #722–#725 (headers and FAIL lines only). Their reports arrive as notifications, and nothing is concluded until then.
+<!-- sha:3d2ad801e5a5 -->
+
+## 2026-11-22T07:18:51Z
+> Nothing in the lock-time clean-up path (`lockPrepare`, `preCleanAtLock`, `invisibleReady`) looks specific to the switch. So I'm waiting for the INFO diagnostics from #727 and the control #728, due about 07:33 UTC.
+<!-- sha:7f4182f6faf5 -->
+
+## 2026-11-22T07:33:14Z
+> Three helpers are reading #727, #728 and #729, and their reports arrive as notifications.
+<!-- sha:04a2b5917f62 -->
+
+## 2026-11-22T07:38:22Z
+> Diagnostics are in and both runs end about 07:47. My working theory is that with the switch on, the first Home press starts our own launcher, which can delay the second press's `route()` call past the 900 ms double-press window. The per-line lock log with millisecond stamps will confirm or refute that.
+<!-- sha:c7ec40ab535c -->
+
+## 2026-11-22T07:48:13Z
+> Two helpers are reading #730 (`unified,ac`, with the full lock-log lines) and #731 (`an` solo). I'll act on their reports once they arrive.
+<!-- sha:dea62bb7e99b -->
+
+## 2026-11-22T07:52:21Z
+> Status: AC3 passes when run alone with the switch on, so I'm waiting on the two chain reruns (#732 full chain, #733 `unified,o,ac`) for the per-line log that shows what stops the double Home there. They end about 08:00 and 08:07.
+<!-- sha:6eba7a458414 -->
+
+## 2026-11-22T08:02:09Z
+> A helper is reading #733 (`unified,o,ac`); #732 (the full chain) ends about 08:07.
+<!-- sha:2cdf9d275f1b -->
+
+## 2026-11-22T08:04:08Z
+> Run #733 passes AC3 and O4, and its one failure, AC8, reads a log line that can arrive late and passed in the three other unified runs. The deciding run is #732, the full failing chain, which I read at about 08:08 UTC.
+<!-- sha:9d563f59f3c2 -->
+
+## 2026-11-22T08:08:07Z
+> Another helper is reading #732, the full failing chain with the per-line AC3 log. I'll decide the next step from its report.
+<!-- sha:e72eec0fe13b -->
+
+## 2026-11-22T08:10:25Z
+> #732, the exact chain that failed twice, is now green: 77 PASS, 0 FAIL. The two earlier AC3 failures did not reproduce on the same product code: the last four unified AC3 runs (#730, #732, #733 and #727's own control, #728 with the switch off) all passed with Home presses 172–221 ms apart. I'm saving the verdict, then adding one cheap check for the case that matters most to Tj: a double Home pressed from inside an app, where our own launcher is busy resuming.
+<!-- sha:6b6228542f38 -->
+
+## 2026-11-22T08:18:27Z
+> Waiting for the 08:23 timer, after which a helper reads #734.
+<!-- sha:82b474107319 -->
+
+## 2026-11-22T08:20:03Z
+> The 08:20 timer fired early. I'm waiting for the 08:23 one before reading #734.
+<!-- sha:f12e56f0c671 -->
+
+## 2026-11-22T08:23:05Z
+> A helper is reading #734.
+<!-- sha:c1c2eaa44f02 -->
+
+## 2026-11-22T08:25:04Z
+> #734 is green: 25 PASS, 0 FAIL. The new check shows a double Home from inside an app returning to custom mode 3 times out of 3, with the two presses 297, 182 and 177 ms apart (window 900 ms). I'm saving that. Then I run the complete lock core with the switch on in one go, twice in parallel on identical product code. #726 was red on exactly that set and only the pieces have been green since.
+<!-- sha:c2209ec7eb13 -->
+
+## 2026-11-22T08:27:17Z
+> I'm checking each sentence of the answer draft against what the runs actually proved. The first question is whether the "icon added in the unlocked home" check (UL10) had a real icon to look for. A helper is pulling that line from #734 while the two full-core runs (#735, #736) continue.
+<!-- sha:eb2d237d7bec -->
+
+## 2026-11-22T08:27:37Z
+> The check of the draft against run output caught a claim I would have gotten wrong: the "icon added in the unlocked home never reaches the custom home" check had nothing to test, because the emulator never sent the install event (0 rows). That claim stays out of the "proved" list and goes under "only the tablet can show". I'm rewriting the draft so it claims only what the runs showed.
+<!-- sha:727e773ae59d -->
+
+## 2026-11-22T08:29:33Z
+> The draft now claims only what the runs showed, and the gaps are saved as TASKS CV1i. The two full-core runs (#735, #736) end about 08:55, so I'm idle until the 08:56 timer.
+<!-- sha:6a0193b63928 -->
+
+## 2026-11-22T08:44:16Z
+> The heartbeat fired, and no other session is working (`main` equals my tip `7b0f7cc8`). The job continues: #735 and #736 end about 08:55, and I read them at 08:56.
+<!-- sha:0396aaa5d292 -->
+
+## 2026-11-22T08:56:15Z
+> Two helpers are reading #735 and #736, the two full-core runs, and I'll act on their reports.
+<!-- sha:5cf6e52a6f5d -->
+
+## 2026-11-22T09:01:30Z
+> Status: the two `unified,base` reruns (#737 and #738) started 08:58 and end about 09:07. I read them at 09:08. If both are green, I move to the release steps: version bump, `ship.sh`, the Release build, and the answer to Tj.
+<!-- sha:3f335de28063 -->
+
+## 2026-11-22T09:08:10Z
+> Two helpers are reading #737 and #738.
+<!-- sha:ae6fa9bd68e5 -->
+
+## 2026-11-22T09:12:19Z
+> `ship.sh` is running. It covers the unit suite, lint, the handoff test and the push, and I read its exit line when it finishes.
+<!-- sha:2136dc3c939b -->
+
+## 2026-11-22T09:16:09Z
+> `ship.sh` is green (handoff test, version v0.9.17 code 56, full unit suite), and it is pushed with `main` equal to my tip. The Release build (`android.yml`, `full_build=true`) is dispatched. I check for the Release at about 09:20 UTC and write the BUILDLOG line only after it is green.
+<!-- sha:5470f4bd7493 -->
+
+## 2026-11-22T10:22:39Z
+> The release is out, but you haven't been told yet. The other session shipped v0.9.17, the one-launcher build, and recorded it at 09:20 UTC. Its last message to you was at 09:16 UTC, and since then the only changes on `main` are small bookkeeping edits.
+>
+> I'm not touching its work, because that is under an hour old. I've set a one-time check for 10:22 UTC, so you don't wait for my next regular check at 12:04. At 10:22 I'll look at `main` again. If it is still idle and your answer hasn't gone out, I'll pick up from there. I'd check the release exists, fill in the release note and send it to you with the link. I'd also delete my 2-hourly check.
+>
+> The link will be https://github.com/tjshea90/Launcher/releases/tag/v0.9.17
+>
+> I haven't re-checked that the release page exists. The build log lists it, and I'll confirm it at 10:22 before I write to you.
+<!-- sha:04f39c9fe944 -->

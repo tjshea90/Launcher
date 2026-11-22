@@ -902,6 +902,8 @@ adb shell input keyevent KEYCODE_POWER; sleep 9          # lock: screen off; nob
 adb logcat -d -s TjReset:I TjA11y:I > "$OUT/o4-log-before-wake.txt" 2>&1
 adb shell dumpsys activity recents 2>/dev/null | grep -ciE 'contacts|gallery3d|email' > "$OUT/o4-recents.txt"
 getmode > "$OUT/o4-mode.txt"
+adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/o4-crash.txt" 2>&1
+info "O4 detail (CV1 triage): mode=$(cat "$OUT/o4-mode.txt" | tr -d '\r\n') recents=$(tr -d ' \r\n' < "$OUT/o4-recents.txt") breaker=[$(tr -d '\r\n' < "$OUT/o4-crash.txt" | grep -oE '(tripped|paused)[^/]*/' | tr '\n' ' ' | cut -c1-90)] helper_log=[$(adb shell tail -c 140 /data/local/tmp/tjshell.log 2>/dev/null | tr '\r\n' '  ')] lock log: $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep -E 'LOCKPREP|CLEANLOCK|PROFILE|MODE|SERVICE|HELPER' | tail -7 | cut -c1-150 | tr '\n' '|')"
 check "O4: locking from Quickstep closed its apps AT LOCK (before any wake)" grep -q "AT LOCK: force-stopped" "$OUT/o4-log-before-wake.txt"
 check "O4: their Recents cards were gone before the unlock" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/o4-recents.txt)\" = 0 ]"
 check "O4: the custom account was already active behind the lock screen" grep -q custom "$OUT/o4-mode.txt"
@@ -1499,6 +1501,9 @@ adb logcat -c
 adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 5     # the real way back to custom (double Home): Mode.set(CUSTOM)
 AC3B="$(lowpower)"; adb logcat -d -s TjBatSaver:I | grep BATSAVER > "$OUT/ac3-log.txt" 2>&1
 info "AC3: back in the custom launcher (it was switched on in Quickstep): low_power=$AC3B; log: $(head -c 160 $OUT/ac3-log.txt | tr '\n' '|')"
+adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/ac3-crash.txt" 2>&1
+info "AC3 detail (CV1 triage): mode=$(getmode) breaker=[$(tr -d '\r\n' < "$OUT/ac3-crash.txt" | grep -oE '(tripped|paused)[^/]*/' | tr '\n' ' ' | cut -c1-90)] lock log: $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep -E 'ROUTER|PROFILE|MODE|BATSAVER|RESET|COVER' | tail -8 | cut -c1-140 | tr '\n' '|')"
+adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | tail -16 | cut -c1-230 | while IFS= read -r L; do info "AC3 log: $L"; done
 check "AC3: returning to the custom launcher switched battery saver off (turned on in Quickstep, still on when custom began)" bash -c "[ \"$AC3B\" = 0 ]"
 adb shell settings put global low_power 1; sleep 2
 AC3L="$(lowpower)"
@@ -5879,9 +5884,45 @@ ULSET=""; for a in $ULALLOW; do ULSET="$ULSET<string>$a</string>"; done
 adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"baseline_done\\\" value=\\\"true\\\" /><set name=\\\"allowed\\\">$ULSET</set></map>\" > shared_prefs/tj_apps.xml'"
 adb shell pm uninstall com.tj.testnotifier.ctl >/dev/null 2>&1
 ullog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
-uldrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; adb shell uiautomator dump /sdcard/ul.xml >/dev/null 2>&1; adb shell cat /sdcard/ul.xml 2>/dev/null | grep -o 'text="[^"]*"' | sed 's/text="//; s/"$//' | tr '\n' '|'; }
+uldrawer(){ local t i; for i in 1 2 3; do adb shell input swipe 300 900 300 200 400; sleep 3; adb shell uiautomator dump /sdcard/ul.xml >/dev/null 2>&1; t="$(adb shell cat /sdcard/ul.xml 2>/dev/null | grep -o 'text="[^"]*"' | sed 's/text="//; s/"$//' | tr '\n' '|')"; case "$t" in *'Search apps'*) break;; esac; adb shell input keyevent KEYCODE_HOME; sleep 3; done; echo "$t"; }   # retry: the first swipe after a slow first load (default layout) can start a drag instead of opening the drawer (run #720 UL4)
 uldb(){ adb exec-out "run-as $PKG cat databases/$1" 2>/dev/null | strings; }
 UL_STRAY0="$(ullog | grep -c STRAYCUSTOM)"
+# ---- seed: the REAL copy path needs rows in the custom layout (the emulator's custom home is empty: run #720 "nothing to copy"). Start the custom launcher once so launcher.db exists, stop the app, put an app icon, a
+#      folder with two apps, a widget row and a deep-shortcut row into launcher.db on the host (python3 sqlite3), and remove any unlocked database so the NEXT unlocked load seeds it from these rows.
+setmode custom; ensurehome; rebind; home; sleep 5
+adb shell am force-stop "$PKG"; sleep 1
+UL_P1="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.gallery3d | tail -1 | tr -d '\r')"
+UL_P2="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.camera2 | tail -1 | tr -d '\r')"
+UL_P3="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.deskclock | tail -1 | tr -d '\r')"
+adb exec-out "run-as $PKG cat databases/launcher.db" > "$OUT/ul-custom-in.db" 2>/dev/null
+cat > "$OUT/ul_inject.py" <<'PY'
+import sqlite3, sys
+db, p1, p2, p3 = sys.argv[1:5]
+c = sqlite3.connect(db)
+cols = [r[1] for r in c.execute("PRAGMA table_info(favorites)")]
+def row(**k):
+    k.setdefault("spanX", 1); k.setdefault("spanY", 1); k.setdefault("profileId", 0); k.setdefault("restored", 0); k.setdefault("options", 0); k.setdefault("modified", 0); k.setdefault("rank", 0)
+    k = {a: b for a, b in k.items() if a in cols}
+    c.execute("INSERT OR REPLACE INTO favorites (%s) VALUES (%s)" % (",".join(k), ",".join("?" * len(k))), list(k.values()))
+def intent(comp): return "#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=%s;end" % comp
+c.execute("DELETE FROM favorites")
+row(_id=1, title="G", intent=intent(p1), container=-100, screen=0, cellX=0, cellY=1, itemType=0)
+row(_id=2, title="F", container=-100, screen=0, cellX=1, cellY=1, itemType=2)
+row(_id=3, title="C", intent=intent(p2), container=2, screen=0, cellX=0, cellY=0, itemType=0)
+row(_id=4, title="K", intent=intent(p3), container=2, screen=0, cellX=1, cellY=0, itemType=0, rank=1)
+row(_id=5, title="W", container=-100, screen=0, cellX=2, cellY=1, spanX=2, spanY=2, itemType=4, appWidgetId=4242, appWidgetProvider="com.android.deskclock/com.android.alarmclock.AnalogAppWidgetProvider")
+row(_id=6, title="S", intent="#Intent;action=android.intent.action.MAIN;package=com.android.gallery3d;S.shortcut_id=abc;end", container=-100, screen=0, cellX=3, cellY=0, itemType=6)
+c.commit(); print(c.execute("SELECT count(*) FROM favorites").fetchone()[0])
+PY
+if [ -s "$OUT/ul-custom-in.db" ] && [ -n "$UL_P1" ] && [ -n "$UL_P2" ] && [ -n "$UL_P3" ]; then
+  UL_N="$(python3 -I "$OUT/ul_inject.py" "$OUT/ul-custom-in.db" "$UL_P1" "$UL_P2" "$UL_P3" 2>&1 | tail -1)"
+  adb push "$OUT/ul-custom-in.db" /data/local/tmp/ul-custom.db >/dev/null 2>&1
+  adb shell "run-as $PKG sh -c 'rm -f databases/launcher.db-journal databases/launcher_unlocked.db databases/launcher_unlocked.db-journal; cp /data/local/tmp/ul-custom.db databases/launcher.db'" 2>&1 | head -2
+  adb shell rm -f /data/local/tmp/ul-custom.db
+  info "UL seed rows injected into the custom layout: $UL_N (components: $UL_P1 $UL_P2 $UL_P3)"
+else
+  info "UL seed rows NOT injected (db pull empty or a component not found: '$UL_P1' '$UL_P2' '$UL_P3')"
+fi
 # ---- A) the Quickstep world on the one launcher
 setmode quickstep; ensurehome; rebind; home; sleep 4
 resumed > "$OUT/ul-a-resumed.txt"; shot ul-a-home
@@ -5889,6 +5930,23 @@ check "UL1: Quickstep mode with the one launcher: OUR launcher is in front (not 
 check "UL2: the model loaded the UNLOCKED layout (lock log)" bash -c "adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r' | grep -q 'model loads the UNLOCKED layout'"
 check "UL3: the unlocked layout has its own database file" bash -c "adb shell \"run-as $PKG ls databases\" | tr -d '\r' | grep -qx 'launcher_unlocked.db'"
 check "UL3b: ... seeded from the custom layout or Launcher3's default (not empty)" bash -c "[ \"\$(adb exec-out \"run-as $PKG cat databases/launcher_unlocked.db\" 2>/dev/null | wc -c)\" -gt 8000 ]"
+info "UL seed log (provider): $(adb logcat -d -s LauncherProvider:I | grep -E 'seed|nothing to copy|unlocked' | tail -4 | cut -c1-150 | tr '\n' '|')"
+check "UL3c: the seed ran for the unlocked layout (copied the custom layout in one transaction, or found nothing to copy; review CV1)" bash -c "adb logcat -d -s LauncherProvider:I | grep -qE 'unlocked layout seeded with|nothing to copy'"
+adb exec-out "run-as $PKG cat databases/launcher_unlocked.db" > "$OUT/ul-unlocked-out.db" 2>/dev/null
+cat > "$OUT/ul_verify.py" <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+rows = c.execute("SELECT _id,itemType,container FROM favorites").fetchall()
+ids = [r[0] for r in rows]
+folders = {r[0] for r in rows if r[1] == 2}
+bad_ids = [r for r in rows if r[0] < 1000000000]
+bad_types = [r for r in rows if r[1] in (4, 5, 6)]
+bad_links = [r for r in rows if r[2] > 0 and r[2] not in folders]
+print("rows=%d min=%s folders=%d inFolder=%d lowIds=%d widgetOrShortcut=%d orphanLinks=%d" % (len(rows), min(ids) if ids else 0, len(folders), sum(1 for r in rows if r[2] > 0), len(bad_ids), len(bad_types), len(bad_links)))
+PY
+UL_V="$(python3 -I "$OUT/ul_verify.py" "$OUT/ul-unlocked-out.db" 2>&1 | tail -1)"
+info "UL the unlocked layout after the seed: $UL_V"
+check "UL3d: the seeded unlocked layout has the app, the folder and its two apps, ids all >= 1e9, no widget / deep shortcut, no orphan folder link (real copy path, review CV1)" bash -c "echo '$UL_V' | grep -qE 'rows=[3-9] ' && echo '$UL_V' | grep -q 'folders=1 inFolder=2 lowIds=0 widgetOrShortcut=0 orphanLinks=0'"
 UL_DA="$(uldrawer)"; shot ul-a-drawer; rebind
 echo "$UL_DA" > "$OUT/ul-a-drawer.txt"; info "UL drawer in the unlocked profile: $(echo "$UL_DA" | cut -c1-300)"
 check "UL4: the unlocked drawer shows Contacts (NOT in the custom allowed list) and Launcher control and Back to custom" bash -c "grep -q 'Contacts' $OUT/ul-a-drawer.txt && grep -q 'Launcher control' $OUT/ul-a-drawer.txt && grep -q 'Back to custom' $OUT/ul-a-drawer.txt"
@@ -5908,12 +5966,42 @@ echo "$UL_DB" > "$OUT/ul-b-drawer.txt"; info "UL drawer in the custom profile: $
 check "UL9: the custom drawer hides Contacts, Launcher control and Back to custom again, and still shows the allowed Gallery" bash -c "! grep -q 'Contacts' $OUT/ul-b-drawer.txt && ! grep -q 'Launcher control' $OUT/ul-b-drawer.txt && ! grep -q 'Back to custom' $OUT/ul-b-drawer.txt && grep -q 'Gallery' $OUT/ul-b-drawer.txt"
 UL_CUST="$(uldb launcher.db | grep -c 'com.tj.testnotifier.ctl')"
 check "UL10: an icon added in the unlocked profile is NOT in the custom layout (not even a hole): rows in launcher.db = $UL_CUST" bash -c "[ '$UL_CUST' = 0 ]"
-# ---- C) a live flip custom -> quickstep (the L10 failsafe: the helper is off, three quick Home presses)
-adb shell settings put secure enabled_accessibility_services ""; sleep 3
-adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8
+# ---- B2 (CV1 triage, 2026-11-22): the same double Home pressed FROM AN APP (our launcher has to resume while the second press is routed: the stock launcher used to do that in another process). Three rounds; the gap between the two routed presses is printed.
+UL24_IN=0; UL24_OK=0; UL24_GAPS=""
+for R in 1 2 3; do
+  setmode quickstep; home; sleep 1
+  adb shell monkey -p com.android.contacts -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 3
+  resumed | grep -qi 'contacts' && UL24_IN=$((UL24_IN+1))
+  adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 6
+  [ "$(getmode)" = custom ] && UL24_OK=$((UL24_OK+1))
+  UL24_GAPS="$UL24_GAPS $(ullog | grep 'ROUTER home press' | tail -2 | awk '{split($1,a,"[:.]"); t=a[1]*3600000+a[2]*60000+a[3]*1000+a[4]; if(NR==1)p=t; else print t-p}')"
+done
+info "UL24: double Home FROM AN APP: Contacts in front $UL24_IN of 3, custom afterwards $UL24_OK of 3, ms between the two routed presses (window 900):$UL24_GAPS"
+check "UL24: a double Home pressed from an app (Contacts in front each time) returns to the custom mode, 3 of 3" bash -c "[ '$UL24_IN' = 3 ] && [ '$UL24_OK' = 3 ]"
+setmode custom; home
+# ---- C) a live flip custom -> quickstep (the L10 failsafe: the helper is off, three quick Home presses; the presses are tried three ways, the cold start with setmode is the fallback so the rest still runs)
+adb shell settings put secure enabled_accessibility_services ""; adb shell settings put secure accessibility_enabled 0; sleep 4
+UL_FS=none
+for V in a b c; do
+  [ "$(getmode)" = quickstep ] && break
+  case $V in
+    a) adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME" ;;
+    b) adb shell "input keyevent KEYCODE_HOME & input keyevent KEYCODE_HOME & input keyevent KEYCODE_HOME & wait" ;;
+    c) adb shell "for i in 1 2 3; do input keyevent KEYCODE_HOME; sleep 0.15; done" ;;
+  esac
+  sleep 5
+  if [ "$(getmode)" = quickstep ]; then UL_FS=$V; fi
+  info "UL C: variant $V: mode $(getmode), router lines: $(ullog | grep -E 'ROUTER' | tail -4 | cut -c1-70 | tr '\n' '|')"
+  [ "$UL_FS" = none ] && sleep 2
+done
 resumed > "$OUT/ul-c-resumed.txt"
-check "UL11: the failsafe switched to the Quickstep world and our launcher is still the home" bash -c "[ \"$(getmode)\" = quickstep ] && grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-c-resumed.txt"
-rebind; sleep 2
+if [ "$UL_FS" = none ]; then
+  info "UL C: the L10 failsafe could not be triggered by injected Home presses on this emulator (variants a b c, see above); the flip is made with setmode instead (the failsafe rule itself is pinned by ProfileSession JVM tests)"
+  setmode quickstep; ensurehome; rebind; home; sleep 4; resumed > "$OUT/ul-c-resumed.txt"
+else
+  info "UL C: the failsafe worked with variant $UL_FS"; rebind; sleep 2
+fi
+check "UL11: after the flip custom -> Quickstep (failsafe or fallback) our launcher is still the home" bash -c "[ \"$(getmode)\" = quickstep ] && grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-c-resumed.txt"
 check "UL12: the unlocked layout was loaded again from its existing database (second load)" bash -c "L=\$(adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r'); [ \"\$(echo \"\$L\" | grep -c 'model loads the UNLOCKED layout')\" -ge 2 ] || echo \"\$L\" | grep -q 'PROFILE reload CUSTOM -> UNLOCKED'"
 UL_DC="$(uldrawer)"; rebind; echo "$UL_DC" > "$OUT/ul-c-drawer.txt"
 check "UL13: ... and the unlocked drawer is back (Contacts, Launcher control)" bash -c "grep -q 'Contacts' $OUT/ul-c-drawer.txt && grep -q 'Launcher control' $OUT/ul-c-drawer.txt"

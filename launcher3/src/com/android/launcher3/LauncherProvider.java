@@ -184,45 +184,93 @@ public class LauncherProvider extends ContentProvider {
         String want = LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(name) ? name : LauncherFiles.LAUNCHER_DB;
         DatabaseHelper h = mProfileHelpers.get(want);
         if (h == null) {
-            boolean existed = getContext().getDatabasePath(want).exists();
-            h = new DatabaseHelper(getContext(), mListenerHandler, want, true);
+            // No widget-host reset handler: creating the unlocked database must never free the widget ids of the custom home (both profiles share ONE host).
+            h = new DatabaseHelper(getContext(), null, want, true);
             mProfileHelpers.put(want, h);
-            if (!existed) seedFromCustom(h);
+        }
+        // The empty-database flag is PER DATABASE (see emptyFlagKey): a just-created unlocked database is filled here, before anything loads, and a death at any point leaves it flagged
+        // (so the next switch fills it again) while the custom database and its own flag are never involved.
+        if (!LauncherFiles.LAUNCHER_DB.equals(want) && Utilities.getPrefs(getContext()).getBoolean(emptyFlagKey(want), false)) {
+            seedFromCustom(h, want);
         }
         mOpenHelper = h;
         return want;
     }
 
-    /** CV1: copy the custom layout (every row but widgets) into a just-created unlocked database; ATTACH cannot run inside a transaction, so this runs after the helper is open. Never throws. */
-    private void seedFromCustom(DatabaseHelper to) {
-        SQLiteDatabase db = null;
+    /** CV1: ids of the unlocked database start above this, so a layout write that was queued by the OTHER profile's UI (a folder closing, an Undo that comes due, a drop that ends during the reload) matches no row. */
+    static final int UNLOCKED_ID_OFFSET = 1000000000;
+
+    /** CV1 review 2: ids of the unlocked layout live at or above {@link #UNLOCKED_ID_OFFSET}, ids of the custom layout below it: a row on the wrong side was queued by the other profile's UI during a flip. */
+    private static boolean idFitsHelper(DatabaseHelper h, ContentValues v) {
         try {
-            db = to.getWritableDatabase();
-            StringBuilder cols = new StringBuilder();
-            try (android.database.Cursor cu = db.rawQuery("PRAGMA table_info(" + Favorites.TABLE_NAME + ")", null)) {
+            Integer id = v == null ? null : v.getAsInteger(Favorites._ID);
+            if (id == null) return true;
+            return h.mIdFloor > 0 ? id >= h.mIdFloor : id < UNLOCKED_ID_OFFSET;
+        } catch (Throwable t) { return true; }
+    }
+
+    /** CV1: the empty-database flag of one layout database (the custom one keeps Launcher3's own key). */
+    static String emptyFlagKey(String dbName) {
+        return LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(dbName) ? EMPTY_DATABASE_CREATED + "_unlocked" : EMPTY_DATABASE_CREATED;
+    }
+
+    /**
+     * CV1: fill the just-created unlocked database with a copy of the custom layout, in ONE transaction (all or nothing; the previous version copied with ATTACH outside a transaction and could be cut off half way).
+     * Not copied: app widgets (their ids belong to the shared widget host and to the custom home) and deep shortcuts (their pin is shared: removing one copy would unpin the other). Ids and folder links are moved
+     * above {@link #UNLOCKED_ID_OFFSET}. Copied nothing or failed = the flag stays set and Launcher3 loads its default layout. Never throws.
+     */
+    private void seedFromCustom(DatabaseHelper to, String dbName) {
+        try {
+            DatabaseHelper from = mProfileHelpers.get(LauncherFiles.LAUNCHER_DB);
+            if (from == null) return;
+            ArrayList<ContentValues> rows = new ArrayList<>();
+            try (Cursor cu = from.getReadableDatabase().query(Favorites.TABLE_NAME, null,
+                    Favorites.ITEM_TYPE + " NOT IN (" + Favorites.ITEM_TYPE_APPWIDGET + "," + Favorites.ITEM_TYPE_CUSTOM_APPWIDGET + "," + Favorites.ITEM_TYPE_DEEP_SHORTCUT + ")",
+                    null, null, null, Favorites._ID)) {
+                int idCol = cu.getColumnIndexOrThrow(Favorites._ID);
+                int conCol = cu.getColumnIndexOrThrow(Favorites.CONTAINER);
                 while (cu.moveToNext()) {
-                    if (cols.length() > 0) cols.append(',');
-                    cols.append('"').append(cu.getString(1)).append('"');
+                    ContentValues cv = new ContentValues();
+                    android.database.DatabaseUtils.cursorRowToContentValues(cu, cv);
+                    cv.put(Favorites._ID, cu.getLong(idCol) + UNLOCKED_ID_OFFSET);
+                    long container = cu.getLong(conCol);
+                    if (container > 0) cv.put(Favorites.CONTAINER, container + UNLOCKED_ID_OFFSET);
+                    rows.add(cv);
                 }
             }
-            String src = getContext().getDatabasePath(LauncherFiles.LAUNCHER_DB).getPath();
-            db.execSQL("ATTACH DATABASE " + android.database.DatabaseUtils.sqlEscapeString(src) + " AS tjsrc");
-            try {
-                db.execSQL("INSERT INTO " + Favorites.TABLE_NAME + " (" + cols + ") SELECT " + cols + " FROM tjsrc."
-                        + Favorites.TABLE_NAME + " WHERE " + Favorites.ITEM_TYPE + " NOT IN ("
-                        + Favorites.ITEM_TYPE_APPWIDGET + "," + Favorites.ITEM_TYPE_CUSTOM_APPWIDGET + ")");
-            } finally {
-                db.execSQL("DETACH DATABASE tjsrc");
+            if (rows.isEmpty()) { Log.i(TAG, "custom layout holds nothing to copy, default layout for the unlocked profile"); return; }
+            SQLiteDatabase db = to.getWritableDatabase();
+            try (SQLiteTransaction t = new SQLiteTransaction(db)) {
+                db.delete(Favorites.TABLE_NAME, null, null);
+                for (ContentValues cv : rows) {
+                    if (db.insert(Favorites.TABLE_NAME, null, cv) < 0) throw new IllegalStateException("insert failed");
+                }
+                // a folder whose contents were all left out (deep shortcuts) would be an empty folder
+                db.execSQL("DELETE FROM " + Favorites.TABLE_NAME + " WHERE " + Favorites.ITEM_TYPE + "=" + Favorites.ITEM_TYPE_FOLDER
+                        + " AND " + Favorites._ID + " NOT IN (SELECT DISTINCT " + Favorites.CONTAINER + " FROM " + Favorites.TABLE_NAME + " WHERE " + Favorites.CONTAINER + ">0)");
+                t.commit();
             }
-            long n = android.database.DatabaseUtils.queryNumEntries(db, Favorites.TABLE_NAME);
-            if (n > 0) {
-                Utilities.getPrefs(getContext()).edit().putBoolean(EMPTY_DATABASE_CREATED, false).commit();
-                to.reinitIds();
-            }
-            Log.i(TAG, "unlocked layout seeded with " + n + " rows of the custom layout");
+            to.reinitIds();
+            Utilities.getPrefs(getContext()).edit().putBoolean(emptyFlagKey(dbName), false).commit();
+            Log.i(TAG, "unlocked layout seeded with " + rows.size() + " rows of the custom layout");
         } catch (Throwable t) {
             Log.e(TAG, "seeding the unlocked layout failed, default layout instead", t);
-            try { if (db != null) db.execSQL("DELETE FROM " + Favorites.TABLE_NAME); } catch (Throwable ignored) { }
+        }
+    }
+
+    /** CV1: the widget ids that any profile's database still lists (the host is shared, so a ghost is an id that NO profile uses). */
+    private SQLiteDatabase[] allLayoutDbs() {
+        synchronized (this) {
+            // Review 2: a process that has only loaded the custom profile so far must still count the widgets the unlocked layout lists (the host is shared): open it too when its file exists.
+            if (mProfileHelpers.isEmpty()) mProfileHelpers.put(LauncherFiles.LAUNCHER_DB, mOpenHelper);
+            if (!mProfileHelpers.containsKey(LauncherFiles.LAUNCHER_UNLOCKED_DB)
+                    && getContext().getDatabasePath(LauncherFiles.LAUNCHER_UNLOCKED_DB).exists()) {
+                try { mProfileHelpers.put(LauncherFiles.LAUNCHER_UNLOCKED_DB, new DatabaseHelper(getContext(), null, LauncherFiles.LAUNCHER_UNLOCKED_DB, true)); }
+                catch (Throwable t) { Log.e(TAG, "could not open the unlocked layout to count its widgets", t); }
+            }
+            ArrayList<SQLiteDatabase> l = new ArrayList<>();
+            for (DatabaseHelper h : mProfileHelpers.values()) l.add(h.getWritableDatabase());
+            return l.toArray(new SQLiteDatabase[0]);
         }
     }
 
@@ -275,11 +323,13 @@ public class LauncherProvider extends ContentProvider {
             }
         }
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once (the loader may switch the profile database on another thread)
+        if (!idFitsHelper(helper, initialValues)) return null;   // CV1 review 2: a row the OTHER profile's UI queued (its id range) is never written here
+        SQLiteDatabase db = helper.getWritableDatabase();
         addModifiedTime(initialValues);
-        final int rowId = dbInsertAndCheck(mOpenHelper, db, args.table, null, initialValues);
+        final int rowId = dbInsertAndCheck(helper, db, args.table, null, initialValues);
         if (rowId < 0) return null;
-        mOpenHelper.onAddOrDeleteOp(db);
+        helper.onAddOrDeleteOp(db);
 
         uri = ContentUris.withAppendedId(uri, rowId);
         notifyListeners();
@@ -329,16 +379,18 @@ public class LauncherProvider extends ContentProvider {
         createDbIfNotExists();
         SqlArguments args = new SqlArguments(uri);
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once
+        SQLiteDatabase db = helper.getWritableDatabase();
         try (SQLiteTransaction t = new SQLiteTransaction(db)) {
             int numValues = values.length;
             for (int i = 0; i < numValues; i++) {
+                if (!idFitsHelper(helper, values[i])) continue;   // CV1 review 2
                 addModifiedTime(values[i]);
-                if (dbInsertAndCheck(mOpenHelper, db, args.table, null, values[i]) < 0) {
+                if (dbInsertAndCheck(helper, db, args.table, null, values[i]) < 0) {
                     return 0;
                 }
             }
-            mOpenHelper.onAddOrDeleteOp(db);
+            helper.onAddOrDeleteOp(db);
             t.commit();
         }
 
@@ -379,15 +431,16 @@ public class LauncherProvider extends ContentProvider {
         createDbIfNotExists();
         SqlArguments args = new SqlArguments(uri, selection, selectionArgs);
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once
+        SQLiteDatabase db = helper.getWritableDatabase();
 
         if (Binder.getCallingPid() != Process.myPid()
                 && Favorites.TABLE_NAME.equalsIgnoreCase(args.table)) {
-            mOpenHelper.removeGhostWidgets(mOpenHelper.getWritableDatabase());
+            helper.removeGhostWidgets(allLayoutDbs());
         }
         int count = db.delete(args.table, args.where, args.args);
         if (count > 0) {
-            mOpenHelper.onAddOrDeleteOp(db);
+            helper.onAddOrDeleteOp(db);
             notifyListeners();
             reloadLauncherIfExternal();
         }
@@ -423,7 +476,7 @@ public class LauncherProvider extends ContentProvider {
             case LauncherSettings.Settings.METHOD_WAS_EMPTY_DB_CREATED : {
                 Bundle result = new Bundle();
                 result.putBoolean(LauncherSettings.Settings.EXTRA_VALUE,
-                        Utilities.getPrefs(getContext()).getBoolean(EMPTY_DATABASE_CREATED, false));
+                        Utilities.getPrefs(getContext()).getBoolean(emptyFlagKey(mOpenHelper.getDatabaseName()), false));
                 return result;
             }
             case LauncherSettings.Settings.METHOD_DELETE_EMPTY_FOLDERS: {
@@ -451,7 +504,7 @@ public class LauncherProvider extends ContentProvider {
                 return null;
             }
             case LauncherSettings.Settings.METHOD_REMOVE_GHOST_WIDGETS: {
-                mOpenHelper.removeGhostWidgets(mOpenHelper.getWritableDatabase());
+                mOpenHelper.removeGhostWidgets(allLayoutDbs());
                 return null;
             }
             case LauncherSettings.Settings.METHOD_NEW_TRANSACTION: {
@@ -514,7 +567,7 @@ public class LauncherProvider extends ContentProvider {
     }
 
     private void clearFlagEmptyDbCreated() {
-        Utilities.getPrefs(getContext()).edit().remove(EMPTY_DATABASE_CREATED).commit();
+        Utilities.getPrefs(getContext()).edit().remove(emptyFlagKey(mOpenHelper.getDatabaseName())).commit();
     }
 
     /**
@@ -527,7 +580,7 @@ public class LauncherProvider extends ContentProvider {
     synchronized private void loadDefaultFavoritesIfNecessary() {
         SharedPreferences sp = Utilities.getPrefs(getContext());
 
-        if (sp.getBoolean(EMPTY_DATABASE_CREATED, false)) {
+        if (sp.getBoolean(emptyFlagKey(mOpenHelper.getDatabaseName()), false)) {
             Log.d(TAG, "loading default workspace");
 
             AppWidgetHost widgetHost = mOpenHelper.newLauncherWidgetHost();
@@ -633,6 +686,7 @@ public class LauncherProvider extends ContentProvider {
         private final Context mContext;
         private int mMaxItemId = -1;
         private int mMaxScreenId = -1;
+        private int mIdFloor = 0;   // CV1: the unlocked database numbers its items above LauncherProvider.UNLOCKED_ID_OFFSET
         private boolean mBackupTableExists;
 
         DatabaseHelper(Context context, Handler widgetHostResetHandler) {
@@ -642,6 +696,7 @@ public class LauncherProvider extends ContentProvider {
         /** CV1: the same start-up for any profile database. */
         DatabaseHelper(Context context, Handler widgetHostResetHandler, String name, boolean init) {
             this(context, widgetHostResetHandler, name);
+            if (LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(name)) mIdFloor = UNLOCKED_ID_OFFSET;
             if (!init) return;
             // Table creation sometimes fails silently, which leads to a crash loop.
             // This way, we will try to create a table every time after crash, so the device
@@ -718,7 +773,7 @@ public class LauncherProvider extends ContentProvider {
             }
 
             // Set the flag for empty DB
-            Utilities.getPrefs(mContext).edit().putBoolean(EMPTY_DATABASE_CREATED, true).commit();
+            Utilities.getPrefs(mContext).edit().putBoolean(emptyFlagKey(getDatabaseName()), true).commit();
         }
 
         public long getSerialNumberForUser(UserHandle user) {
@@ -893,7 +948,7 @@ public class LauncherProvider extends ContentProvider {
          * in our model.
          */
         @TargetApi(Build.VERSION_CODES.O)
-        public void removeGhostWidgets(SQLiteDatabase db) {
+        public void removeGhostWidgets(SQLiteDatabase... dbs) {
             // Get all existing widget ids.
             final AppWidgetHost host = newLauncherWidgetHost();
             final int[] allWidgets;
@@ -905,9 +960,14 @@ public class LauncherProvider extends ContentProvider {
                 Log.e(TAG, "getAppWidgetIds not supported", e);
                 return;
             }
-            final IntSet validWidgets = IntSet.wrap(LauncherDbUtils.queryIntArray(db,
-                    Favorites.TABLE_NAME, Favorites.APPWIDGET_ID,
-                    "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null));
+            // CV1: a widget is valid when ANY profile's database lists it (one shared host).
+            final IntSet validWidgets = new IntSet();
+            for (SQLiteDatabase db : dbs) {
+                IntArray ids = LauncherDbUtils.queryIntArray(db,
+                        Favorites.TABLE_NAME, Favorites.APPWIDGET_ID,
+                        "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null);
+                for (int i = 0; i < ids.size(); i++) validWidgets.add(ids.get(i));
+            }
             for (int widgetId : allWidgets) {
                 if (!validWidgets.contains(widgetId)) {
                     try {
@@ -1039,7 +1099,7 @@ public class LauncherProvider extends ContentProvider {
         }
 
         private int initializeMaxItemId(SQLiteDatabase db) {
-            return getMaxId(db, "SELECT MAX(%1$s) FROM %2$s", Favorites._ID, Favorites.TABLE_NAME);
+            return Math.max(mIdFloor, getMaxId(db, "SELECT MAX(%1$s) FROM %2$s", Favorites._ID, Favorites.TABLE_NAME));
         }
 
         // Generates a new ID to use for an workspace screen in your database. This method

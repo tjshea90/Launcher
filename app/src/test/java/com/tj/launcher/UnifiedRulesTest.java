@@ -111,4 +111,19 @@ public class UnifiedRulesTest {
         assertFalse(AppVisibility.isShown(allowed, SELF, "com.tj.launcher.ControlActivity", SELF));
         assertTrue(AppVisibility.isShown(allowed, SELF, SettingsSpoof.ALIAS, SELF));
     }
+
+    @Test public void aFailedProfileSwitchIsNotRetriedAtOnceAndNeverHoldsACover() {
+        long t = 1_000_000L;
+        assertTrue("same profile, just failed: hold off", UnifiedRules.holdOff(UnifiedRules.Profile.UNLOCKED, UnifiedRules.Profile.UNLOCKED, t, t + 5_000));
+        assertFalse("after the retry time it may try again", UnifiedRules.holdOff(UnifiedRules.Profile.UNLOCKED, UnifiedRules.Profile.UNLOCKED, t, t + UnifiedRules.SWITCH_RETRY_MS));
+        assertFalse("a failure for the OTHER profile does not hold this one off", UnifiedRules.holdOff(UnifiedRules.Profile.CUSTOM, UnifiedRules.Profile.UNLOCKED, t, t + 5_000));
+        assertFalse("no failure recorded", UnifiedRules.holdOff(UnifiedRules.Profile.UNLOCKED, null, 0, t));
+        assertFalse("a clock that went back never holds for ever", UnifiedRules.holdOff(UnifiedRules.Profile.UNLOCKED, UnifiedRules.Profile.UNLOCKED, t, t - 10));
+    }
+
+    @Test public void aFirstLoadThatCouldNotSwitchStillCountsAsAMismatch() {
+        // onLoadStart sets loaded = CUSTOM after a failed first switch (the provider keeps the custom database): the wanted UNLOCKED then needs a reload, which holdOff paces
+        assertTrue(UnifiedRules.reloadNeeded(UnifiedRules.Profile.UNLOCKED, UnifiedRules.Profile.CUSTOM));
+        assertFalse("while nothing is recorded the first load picks the wanted profile itself", UnifiedRules.reloadNeeded(UnifiedRules.Profile.UNLOCKED, null));
+    }
 }

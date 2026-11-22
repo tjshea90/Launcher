@@ -1,13 +1,13 @@
-# CHECKPOINT 1546 — read me first, then TASKS.md
+# CHECKPOINT 1589 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T10:07:12Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/launcher-performance-audit-39n5do` · **builds on:** `d8a45b7f` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T09:17:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `8eef3a3f` (this checkpoint is the commit after it)
 
 ## Just done
-STAND DOWN heartbeat 10:04: other session shipped+recorded v0.9.17 at 09:20 (45 min old), no answer to Tj in its OUTBOX yet; one-shot recheck armed trig_01UArz4zXUnRSNZvXCjoBxw2 at 10:22 UTC
+CV1: ship.sh green (handoff, version 0.9.17 code 56, unit suite, pushed 47290141); android.yml full_build=true dispatched on branch ccr-bf8eda7f-mrlcxc at ~09:16
 
 ## Do this next
-10:22 UTC: git fetch origin main; if idle 60+ min and no answer to Tj on main, merge origin/main in ONE call, fill CV1 release draft, answer Tj with Release link v0.9.17, delete heartbeat trig_01SrdLzjP9bFC1W4KzxUT1JL (and this one-shot trig_01UArz4zXUnRSNZvXCjoBxw2 has self-disabled); else stand down
+at ~09:20 get_release_by_tag v0.9.17 (Release must exist) and the android.yml run green; THEN bash tools/record-release.sh v0.9.17 'CV1: one launcher for both worlds'; fill the draft placeholders (<VERSION>=v0.9.17, <LINK>, <GATE>, <FULL>=#735 98P 0F), tick TASKS CV1c-g, update HANDOFF 0zd, answer Tj; then delete heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m (delete_trigger; if refused update_trigger enabled=false)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,16 +16,16 @@ STAND DOWN heartbeat 10:04: other session shipped+recorded v0.9.17 at 09:20 (45 
 
 ## Last ten checkpoints
 ```
-  3f507e28 ckpt 1545: STAND DOWN (heartbeat 08:04): another session (branch ccr-bf8eda7f-mrlcxc) t
-  390f5cfb ckpt 1544: CV1: sections ul+ul2 written, gate-map + workflow list, handoff test 53 ok
-  e18d1484 ckpt 1543: CV1: code done: Unified/UnifiedRules/HomeProfile, provider profile db, loade
-  c583442c ckpt 1542: CV1: rules+HomeProfile+provider profile db+loader hook+router+guards+handsha
-  bdfadbd8 ckpt 1541: CV1: design note written (research/CV1_UNIFIED_LAUNCHER_DESIGN_2026-11-22.md
-  abc9a2c6 ckpt 1540: CV1: audits A/B/C saved in research/CV1_AUDIT_*
-  be84f62e ckpt 1539: CV1: heartbeat armed trig_01SrdLzjP9bFC1W4KzxUT1JL (every 2 h at :04)
-  e2c41032 ckpt 1538: CV1: Tj says build the unified launcher (custom launcher only, Quickstep = i
-  28ff992c ckpt 1537: CU1: Tj asked whether the custom launcher could replace Quickstep with an un
-  6b4b55f8 ckpt 1536: CT1: heartbeat trig_01T4TXfU4trvxurWPZHQmijG DELETED (job shipped); only CT1
+  47290141 ckpt 1588: gated v0.9.17 (code 56) and pushed it: the handoff self-test, the full unit 
+  0ceccc00 ckpt 1587: CV1 RAW: #737 id 45005254638 (unified,base, main) 25P 4F = reset: x4 (Calend
+  672c8c8a ckpt 1586: CV1 RAW: #738 id 45005257395 (unified,base, branch ref) GREEN 29P 0F (1 nati
+  343f5a01 ckpt 1585: CV1 rerun unified,base on main@048e5f7e: #737 id 45005254638 (main), #738 id
+  43467833 ckpt 1584: CV1 RAW: #736 id 45002717972 (full unified core, branch ref) 94P 4F: 'crash 
+  048e5f7e ckpt 1583: CV1 RAW: #735 id 45002715538 FULL unified core {unified,base,n,o,ac,e1,x1,rb
+  1e9b80df ckpt 1582: CV1: answer draft rewritten to claim only what runs proved (UL10 vacuous, Re
+  e9ea49d9 ckpt 1581: CV1 FULL unified lock core x2 on main@e2492d57 (product==a5396e53): #735 id 
+  2700ae96 ckpt 1580: CV1 RAW: #734 id 45001887853 (ul solo, main@5c620f40) GREEN 25P 0F, UL24 dou
+  292af997 ckpt 1579: CV1: CLAUDE.md lessons for the CV1 session written; #734 ul solo id 45001887
 ```
 
 (1 automatic checkpoint(s) since the last deliberate one — the

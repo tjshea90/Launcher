@@ -146,6 +146,11 @@ public class InstallShortcutReceiver extends BroadcastReceiver {
                                     + info.launchIntent);
                             continue;
                         }
+                        // Tj (CV1 review): an entry queued while the UNLOCKED profile was shown must not land on the custom home when the model holds the custom profile and the custom drawer hides the app.
+                        if (!TextUtils.isEmpty(pkg) && !com.tj.launcher.HomeProfile.queuedInstallAllowed(context, pkg)) {
+                            Log.i(TAG, "dropping a queued icon of a package the custom drawer hides: " + pkg);
+                            continue;
+                        }
 
                         // Generate a shortcut info to add into the model
                         installQueue.add(info.getItemInfo());
