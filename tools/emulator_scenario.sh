@@ -5910,8 +5910,8 @@ UL_CUST="$(uldb launcher.db | grep -c 'com.tj.testnotifier.ctl')"
 check "UL10: an icon added in the unlocked profile is NOT in the custom layout (not even a hole): rows in launcher.db = $UL_CUST" bash -c "[ '$UL_CUST' = 0 ]"
 # ---- C) a live flip custom -> quickstep (the L10 failsafe: the helper is off, three quick Home presses)
 adb shell settings put secure enabled_accessibility_services ""; sleep 3
-adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8
-resumed > "$OUT/ul-c-resumed.txt"
+adb shell "input keyevent KEYCODE_HOME KEYCODE_HOME KEYCODE_HOME"; sleep 8   # ONE input process: three separate `input` starts are 300-600 ms apart each on the CI emulator and the failsafe window is 800 ms (run #718: UL11-UL15 failed for that reason)
+resumed > "$OUT/ul-c-resumed.txt"; info "UL C: router lines: $(ullog | grep -E 'ROUTER' | tail -5 | cut -c1-110 | tr '\n' '|')"
 check "UL11: the failsafe switched to the Quickstep world and our launcher is still the home" bash -c "[ \"$(getmode)\" = quickstep ] && grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-c-resumed.txt"
 rebind; sleep 2
 check "UL12: the unlocked layout was loaded again from its existing database (second load)" bash -c "L=\$(adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r'); [ \"\$(echo \"\$L\" | grep -c 'model loads the UNLOCKED layout')\" -ge 2 ] || echo \"\$L\" | grep -q 'PROFILE reload CUSTOM -> UNLOCKED'"
