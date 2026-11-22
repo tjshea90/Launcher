@@ -1,13 +1,13 @@
-# CHECKPOINT 1545 — read me first, then TASKS.md
+# CHECKPOINT 1546 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T05:43:00Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `14f725f1` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T05:46:11Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `2d2b69e4` (this checkpoint is the commit after it)
 
 ## Just done
-CV1 takeover: new session continues old one (Tj told me to). Emulator run #718 id 44990179693 (ul,ul2, main@390f5cfb) dispatched 05:37:05 by old session is IN PROGRESS: do not re-dispatch
+CV1: heartbeat armed trig_01NxLAL2jZccAiP8UPYM1X7m (every 2 h at :44). Run #718 id 44990179693 still in progress; starting 2 read-only review subagents on the delta
 
 ## Do this next
-read #718 via get_job_logs (tail 90) at ~05:55 UTC; meanwhile read-only review subagents on git diff be84f62e..390f5cfb -- app launcher3; arm own heartbeat (old trig_01SrdLzjP9bFC1W4KzxUT1JL not visible from this account)
+read #718 (get_job_logs, job id from list_workflow_jobs, tail 90) at ~05:55 UTC; collect review findings, fix real ones, rerun ul,ul2 only if code changed; heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read #718 via get_job_logs (tail 90) at ~05:55 UTC; meanwhile read-only review s
 
 ## Last ten checkpoints
 ```
+  2d2b69e4 ckpt 1545: CV1 takeover: new session continues old one (Tj told me to). Emulator run #7
   390f5cfb ckpt 1544: CV1: sections ul+ul2 written, gate-map + workflow list, handoff test 53 ok
   e18d1484 ckpt 1543: CV1: code done: Unified/UnifiedRules/HomeProfile, provider profile db, loade
   c583442c ckpt 1542: CV1: rules+HomeProfile+provider profile db+loader hook+router+guards+handsha
@@ -25,8 +26,4 @@ read #718 via get_job_logs (tail 90) at ~05:55 UTC; meanwhile read-only review s
   e2c41032 ckpt 1538: CV1: Tj says build the unified launcher (custom launcher only, Quickstep = i
   28ff992c ckpt 1537: CU1: Tj asked whether the custom launcher could replace Quickstep with an un
   6b4b55f8 ckpt 1536: CT1: heartbeat trig_01T4TXfU4trvxurWPZHQmijG DELETED (job shipped); only CT1
-  7cfdbb86 ckpt 1535: CT1: v0.9.16 RELEASED + RECORDED (android.yml full_build, target 1d8b6b2d, p
 ```
-
-(2 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
