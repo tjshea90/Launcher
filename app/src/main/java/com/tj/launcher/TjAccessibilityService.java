@@ -4050,17 +4050,18 @@ public class TjAccessibilityService extends AccessibilityService {
     private void resetRecents(final long t0, final Runnable done, final java.util.Set<String> closeLabels) {
         recentsActionOk = performGlobalAction(GLOBAL_ACTION_RECENTS) ? 1 : 0;
         if (closeLabels == null || closeLabels.isEmpty()) {
-            if (ReturnReset.cleanStart(this)) recentsEmpty(t0, done); else recentsClearAll(t0, done);   // BE2/BE3: a clean start empties the list whichever way this Recents screen allows
+            if (ReturnReset.cleanStart(this)) recentsEmpty(t0, done); else recentsClearAll(t0, done, new RecentsClock(android.os.SystemClock.uptimeMillis(), 1800, recentsActionOk == 1));   // BE2/BE3: a clean start empties the list whichever way this Recents screen allows
             return;
         }
         // D5: dismiss only the cards of apps opened from Quickstep (each Quickstep card carries a "Close" accessibility action); anything unexpected falls back to Clear all.
-        final long deadline = android.os.SystemClock.uptimeMillis() + 2500;
+        final RecentsClock clock = new RecentsClock(android.os.SystemClock.uptimeMillis(), 2500, recentsActionOk == 1);   // CW1 D4: the 2.5 s start at the first window of the stock launcher (cold start), hard cap 6 s
         final int[] closed = {0}, idle = {0};
         final boolean[] sawCards = {false};
         final String[] seen = {null};   // AI1: what the Recents cards looked like (for the lock log)
         handler.post(new Runnable() { @Override public void run() {
             try {
-                List<AccessibilityNodeInfo> cards = findTaskCards();
+                List<AccessibilityNodeInfo> cards = findTaskCards(clock);
+                recentsClockLook(clock, null, android.os.SystemClock.uptimeMillis());
                 if (cards.size() > 0) { sawCards[0] = true; if (seen[0] == null) seen[0] = cards.size() + " card(s): " + describeCards(cards, closeLabels); }
                 boolean did = false;
                 for (AccessibilityNodeInfo card : cards) {
@@ -4070,7 +4071,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     }
                     if (did) break;   // the list changed: look again
                 }
-                if (did && android.os.SystemClock.uptimeMillis() < deadline + 2000) { idle[0] = 0; handler.postDelayed(this, 30); return; }   // never past the deadline (a card that does not go away must not keep this loop alive)
+                if (did && android.os.SystemClock.uptimeMillis() < clock.deadline() + 2000) { idle[0] = 0; handler.postDelayed(this, 30); return; }   // never past the deadline (a card that does not go away must not keep this loop alive)
                 if (sawCards[0] && ++idle[0] >= 3) {   // cards are there and none of ours is left
                     AppOrigin.clearQuickstep(TjAccessibilityService.this); AppOrigin.setTracked(TjAccessibilityService.this);
                     resetReport.append("recents: closed ").append(closed[0]).append(" card(s) of apps opened from Quickstep, others kept (+").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms)\n");
@@ -4080,8 +4081,8 @@ public class TjAccessibilityService extends AccessibilityService {
                     return;
                 }
             } catch (Throwable t) { Log.e(TAG, "selective recents failed", t); }
-            if (android.os.SystemClock.uptimeMillis() >= deadline) {
-                if (!sawCards[0]) { Log.i(TAG, "RESET recents: cards not recognised, falling back to Clear all"); LockLog.add(getApplicationContext(), "RESET", "recents: no card with a 'Close' action found for " + closeLabels + " (this Recents screen is not recognised): falling back to Clear all"); recentsClearAll(t0, done); }
+            if (clock.over(android.os.SystemClock.uptimeMillis())) {
+                if (!sawCards[0]) { Log.i(TAG, "RESET recents: cards not recognised, falling back to Clear all"); LockLog.add(getApplicationContext(), "RESET", "recents: no card with a 'Close' action found for " + closeLabels + " (this Recents screen is not recognised, " + clock.describe(android.os.SystemClock.uptimeMillis()) + "): falling back to Clear all"); recentsClearAll(t0, done, clock.fallback(android.os.SystemClock.uptimeMillis(), 1800)); }
                 else { resetReport.append("recents: stopped after ").append(closed[0]).append(" card(s)\n"); LockLog.add(getApplicationContext(), "RESET", "recents: stopped after " + closed[0] + " card(s) of " + closeLabels + "; saw " + seen[0]); finishReset(t0, done); }
                 return;
             }
