@@ -1994,3 +1994,7 @@
 ## 2026-11-22T07:04:49Z
 > Still triaging #726. I'm waiting for the 07:11 timer, then I read #723 and #724 (the switch-off controls), then #722 and #725.
 <!-- sha:8493e0193404 -->
+
+## 2026-11-22T07:11:21Z
+> Four helpers are reading #722–#725 (headers and FAIL lines only). Their reports arrive as notifications, and nothing is concluded until then.
+<!-- sha:3d2ad801e5a5 -->
