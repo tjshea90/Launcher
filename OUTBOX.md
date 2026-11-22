@@ -2046,3 +2046,7 @@
 ## 2026-11-22T08:23:05Z
 > A helper is reading #734.
 <!-- sha:c1c2eaa44f02 -->
+
+## 2026-11-22T08:25:04Z
+> #734 is green: 25 PASS, 0 FAIL. The new check shows a double Home from inside an app returning to custom mode 3 times out of 3, with the two presses 297, 182 and 177 ms apart (window 900 ms). I'm saving that. Then I run the complete lock core with the switch on in one go, twice in parallel on identical product code. #726 was red on exactly that set and only the pieces have been green since.
+<!-- sha:c2209ec7eb13 -->
