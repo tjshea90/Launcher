@@ -2006,3 +2006,7 @@
 ## 2026-11-22T07:33:14Z
 > Three helpers are reading #727, #728 and #729, and their reports arrive as notifications.
 <!-- sha:04a2b5917f62 -->
+
+## 2026-11-22T07:38:22Z
+> Diagnostics are in and both runs end about 07:47. My working theory is that with the switch on, the first Home press starts our own launcher, which can delay the second press's `route()` call past the 900 ms double-press window. The per-line lock log with millisecond stamps will confirm or refute that.
+<!-- sha:c7ec40ab535c -->
