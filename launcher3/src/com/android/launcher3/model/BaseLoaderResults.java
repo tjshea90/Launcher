@@ -284,6 +284,9 @@ public abstract class BaseLoaderResults {
         executeCallbacksTask(c -> c.bindAllApplications(list), mUiExecutor);
     }
 
+    /** Tj (CW1 A1): runs {@code r} on the UI thread AFTER everything {@link #bindAllApps()} posted before it (the executor is FIFO). */
+    public void afterBindAllApps(Runnable r) { mUiExecutor.execute(r); }
+
     public abstract void bindWidgets();
 
     protected void executeCallbacksTask(CallbackTask task, Executor executor) {

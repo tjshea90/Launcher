@@ -46,6 +46,12 @@ public final class UnifiedRules {
     /** The profile is READY (the cover may go, the unlock may proceed): the model holds the wanted profile AND its load has finished. */
     public static boolean ready(Profile wanted, Profile loaded, boolean modelLoaded) { return loaded == wanted && modelLoaded; }
 
+    /**
+     * CW1 A1: the same, where "the load has finished" may also be "the load has bound workspace and app list" ({@code appsBound}: what a person sees and can open is complete; the icon cache update, the deep shortcuts, the widgets and
+     * three idle waits that follow only prepare things nobody can reach yet). The profile must still be the WANTED one: a bound list of the other profile is never ready.
+     */
+    public static boolean ready(Profile wanted, Profile loaded, boolean modelLoaded, boolean appsBound) { return loaded == wanted && (modelLoaded || appsBound); }
+
     /** The stray-custom-home guard ("our Launcher is in front in a Quickstep session = a mistake") only exists while the stock launcher is the Quickstep home. */
     public static boolean strayCustomApplies(boolean active) { return !active; }
 

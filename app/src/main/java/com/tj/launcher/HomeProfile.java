@@ -115,9 +115,10 @@ public final class HomeProfile {
         try {
             LauncherAppState st = LauncherAppState.getInstanceNoCreate();
             boolean modelLoaded = st != null && st.getModel().isModelLoaded();
+            boolean appsBound = st != null && st.getModel().isAppsBound();   // CW1 A1: workspace and app list are bound; the icon-cache update, deep shortcuts, widgets and three idle waits that follow are invisible
             UnifiedRules.Profile want = Unified.wantedProfile(c);
             if (UnifiedRules.holdOff(want, switchFailedFor, switchFailedAt, System.currentTimeMillis())) return true;   // the switch is failing: never hold a cover for it
-            return UnifiedRules.ready(want, loaded, modelLoaded);
+            return UnifiedRules.ready(want, loaded, modelLoaded, appsBound);
         } catch (Throwable t) {
             return true;   // never hold a cover on a failing check
         }

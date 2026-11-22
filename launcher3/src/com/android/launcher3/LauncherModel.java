@@ -102,6 +102,22 @@ public class LauncherModel extends BroadcastReceiver
     // our monitoring of the package manager provides all updates and we never
     // need to do a requery. This is only ever touched from the loader thread.
     private boolean mModelLoaded;
+    /** Tj (CW1 A1): the load in progress has BOUND the full app list (step 2.2 of the loader): what a person sees and can open is complete, the rest (icon cache update, deep shortcuts, widgets, idle waits) is invisible. Guarded by mLock. */
+    private boolean mAppsBound;
+    /** Tj (CW1 A1): {@link #isModelLoaded()} OR the running load has already bound workspace and app list. Only the profile switch (HomeProfile.ready) asks this; every base reader keeps {@link #isModelLoaded()}. */
+    public boolean isAppsBound() {
+        synchronized (mLock) {
+            return mAppsBound || (mModelLoaded && mLoaderTask == null);
+        }
+    }
+
+    /** Tj (CW1 A1): called on the UI thread after the app list was bound; counts only for the load that is still the current one (a stopped load must never mark a newer one). */
+    public void markAppsBound(LoaderTask task) {
+        synchronized (mLock) {
+            if (mLoaderTask == task) mAppsBound = true;
+        }
+    }
+
     public boolean isModelLoaded() {
         synchronized (mLock) {
             return mModelLoaded && mLoaderTask == null;
@@ -380,6 +396,7 @@ public class LauncherModel extends BroadcastReceiver
         synchronized (mLock) {
             LoaderTask oldTask = mLoaderTask;
             mLoaderTask = null;
+            mAppsBound = false;   // Tj (CW1 A1)
             if (oldTask != null) {
                 oldTask.stopLocked();
             }
@@ -437,6 +454,7 @@ public class LauncherModel extends BroadcastReceiver
                 mTask = task;
                 mIsLoaderTaskRunning = true;
                 mModelLoaded = false;
+                mAppsBound = false;   // Tj (CW1 A1)
             }
         }
 

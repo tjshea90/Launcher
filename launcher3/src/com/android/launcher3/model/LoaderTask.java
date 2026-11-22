@@ -192,6 +192,7 @@ public class LoaderTask implements Runnable {
             TraceHelper.partitionSection(TAG, "step 2.2: Binding all apps");
             verifyNotStopped();
             mResults.bindAllApps();
+            mResults.afterBindAllApps(() -> mApp.getModel().markAppsBound(this));   // Tj (CW1 A1): the profile switch may call this load "ready" from here (the person can see and open everything); the base loader goes on with the invisible rest
 
             verifyNotStopped();
             TraceHelper.partitionSection(TAG, "step 2.3: Update icon cache");
