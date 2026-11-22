@@ -79,9 +79,12 @@ public final class HomePatchRules {
     }
 
     /** Should a new patch be built now? Only when there is none that is fresh, none is being built, and the home has been quiet for {@link #DRAW_QUIET_MS}. */
-    public static boolean buildDue(long now, long lastDrawMs, boolean fresh, boolean building) {
+    public static boolean buildDue(long now, long lastDrawMs, boolean fresh, boolean building) { return buildDue(now, lastDrawMs, fresh, building, DRAW_QUIET_MS); }
+
+    /** CW1 B1a: {@link #buildDue} with the quiet time of THIS build ({@link #buildQuietMs}). */
+    public static boolean buildDue(long now, long lastDrawMs, boolean fresh, boolean building, long quietMs) {
         if (fresh || building) return false;
-        return lastDrawMs <= 0 || now < lastDrawMs || now - lastDrawMs >= DRAW_QUIET_MS;
+        return lastDrawMs <= 0 || now < lastDrawMs || now - lastDrawMs >= quietMs;
     }
 
     /**
@@ -96,9 +99,12 @@ public final class HomePatchRules {
     }
 
     /** Milliseconds until the two timers allow the patch to show (0 = now), for scheduling the next look. */
-    public static long waitMs(long now, long lastTouchDownMs, long lastDrawMs) {
+    public static long waitMs(long now, long lastTouchDownMs, long lastDrawMs) { return waitMs(now, lastTouchDownMs, lastDrawMs, DRAW_QUIET_MS); }
+
+    /** CW1 B1a: {@link #waitMs} with the draw-quiet time of THIS build ({@link #buildQuietMs}); the finger wait is unchanged. */
+    public static long waitMs(long now, long lastTouchDownMs, long lastDrawMs, long quietMs) {
         long a = lastTouchDownMs <= 0 || now < lastTouchDownMs ? 0 : TOUCH_AWAY_MS - (now - lastTouchDownMs);
-        long b = lastDrawMs <= 0 || now < lastDrawMs ? 0 : DRAW_QUIET_MS - (now - lastDrawMs);
+        long b = lastDrawMs <= 0 || now < lastDrawMs ? 0 : quietMs - (now - lastDrawMs);
         return Math.max(0, Math.max(a, b));
     }
 
@@ -329,5 +335,84 @@ public final class HomePatchRules {
     public static boolean guardEndsWithFocus(long focusLostAtMs, long guardUntilMs, long guardLenMs, long nowMs) {
         if (focusLostAtMs <= 0 || guardUntilMs <= nowMs) return false;
         return guardUntilMs - guardLenMs >= focusLostAtMs - 1500;
+    }
+    // ================================================================ CW1 (Tj, 2026-11-22: "preparedness of the screenshot button hider from both home screen and from lock screen so it is hidden before first open of the power menu without lag or flickering")
+    // Audit: research/CW1_AUDIT_B_PATCH_2026-11-22.md. The pure rules of the small changes below (JVM-tested in CW1PatchReadyTest); the service applies them.
+
+    // ---- B3: no pencil search between the first window event of a burst and the patch's first frame
+    /** What the quick-settings pencil look of a window event during a home-flavour burst does: {@link #PENCIL_NOW} = as before, {@link #PENCIL_AFTER_FRAME} = once the patch's first frame is out (the burst's quiet work). */
+    public static final int PENCIL_NOW = 0, PENCIL_AFTER_FRAME = 1;
+    /**
+     * The longest a deferred pencil look waits: the burst's quiet work runs {@code FAST_WAIT_MS} (120) + 20 ms after its first window event at the latest (TjAccessibilityService.deferWork), whether or not the stock
+     * dialog's own event ever comes. The same bound the quiet work already had for the lock screen's pencil follow-up.
+     */
+    public static final long PENCIL_DEFER_MAX_MS = 140;
+
+    /**
+     * B3 (tablet report: a pencil tree search averages 33 ms, 1305 ms at most, and ran BEFORE the stock dialog's own event was handled, which delays the patch's fade anchor): only a FULL search for a pencil that
+     * nobody knows (a SystemUI event while no cover is shown and no pencil node is known: the quick-settings panel is not known to be open) waits for the burst's quiet work. Following a cover that is up, or a known
+     * pencil node, is one node refresh: it stays immediate (the shade's cover must follow the panel exactly as before), and so does anything that is not a SystemUI event (it returns early in the service).
+     */
+    public static int pencilTreatment(boolean coverShown, boolean pencilKnown, boolean systemUiEvent) {
+        if (!systemUiEvent || coverShown || pencilKnown) return PENCIL_NOW;
+        return PENCIL_AFTER_FRAME;
+    }
+
+    // ---- B1a: the first composite of a window is built after a shorter draw-quiet
+    /**
+     * The draw-quiet before the FIRST composite of a patch window (none is kept yet). A composite is only ever SHOWN as fresh when no Launcher draw came after its request ({@link #compositeFresh}), so building
+     * early cannot show a wrong picture: a later draw marks it stale and the 250 ms rule builds it again. The copy is queued behind every frame the Launcher has drawn (PixelCopy runs on the render thread after the
+     * draw that the listener announced), so 100 ms (six frames) only has to say "no animation is running". A REBUILD of a kept composite keeps {@link #DRAW_QUIET_MS}.
+     */
+    public static final long FIRST_BUILD_QUIET_MS = 100;
+
+    public static long buildQuietMs(boolean compositeKept) { return compositeKept ? DRAW_QUIET_MS : FIRST_BUILD_QUIET_MS; }
+
+    // ---- B9: a window kept while the wallpaper passes a step that has no crop
+    /** The ONLY thing missing for a patch window is the crop of the wallpaper position the page scroll is passing through (everything else {@link #whyNot} asks is fine). */
+    public static boolean transientStepOnly(Facts f) {
+        if (f.cropValid) return false;
+        Facts g = new Facts();
+        g.switchOn = f.switchOn; g.coverMode = f.coverMode; g.customMode = f.customMode; g.unlocked = f.unlocked; g.screenOn = f.screenOn; g.homeShowing = f.homeShowing;
+        g.floatingViewOpen = f.floatingViewOpen; g.busy = f.busy; g.rectKnown = f.rectKnown; g.calibrating = f.calibrating; g.automationOff = f.automationOff;
+        g.cropValid = true;
+        return f.rectKnown && whyNot(g).isEmpty();
+    }
+
+    /**
+     * B9: keep the existing home window (hidden, not restable, composite not trusted) instead of removing it, so the page that follows needs no new window: the crops of other steps are cached, the build starts
+     * as soon as the position has a crop. Only for a window of THIS rotation whose place is still the learned one; every other reason for "no patch" removes the window as before.
+     */
+    public static boolean keepWindowForStep(boolean windowExists, boolean homeFlavour, boolean sameRotation, boolean sameWindow, Facts f) {
+        return windowExists && homeFlavour && sameRotation && sameWindow && transientStepOnly(f);
+    }
+
+    /** B9: how many decoded wallpaper crops stay in memory (one per page step; about 150 KB each on the tablet). */
+    public static final int CROP_CACHE_STEPS = 3;
+
+    // ---- B2: the replacement card at the stock dialog's own window event
+    /** Hidden preference (default ON in every build, like patch_dark_settle): OFF = the card is shown by the node-scan path only, as before CW1. The emulator sections use it for control runs. */
+    public static final String CARD_FAST_KEY = "card_fast";
+
+    /**
+     * B2: may the card be shown at the stock dialog's OWN window event, without the node scan before it? Exactly the premises of the scan path's "instant" card (evaluateScan: the dialog is up, the geometry is known, the
+     * card is wanted), plus: a card window is already attached (pre-warmed, alpha 0), nothing is open yet, the screen is UNLOCKED (the lock screen keeps its own paths), no PIN pad, the cover mode is on in the custom world.
+     */
+    public static boolean cardFastReady(boolean switchOn, boolean cardAttached, boolean menuShown, boolean locked, boolean pinPad, boolean coverMode, boolean coverWorld, boolean geometryKnown, boolean cardWanted) {
+        return switchOn && cardAttached && !menuShown && !locked && !pinPad && coverMode && coverWorld && geometryKnown && cardWanted;
+    }
+
+    // ---- B4: the card becomes touchable after the stock fade, like the patch
+    /** The card window is made touchable this long after it became visible (the patch's {@code PatchFade.SETTLE_MS + 20}): the relayout of a flag change costs 100-200 ms inside the first-frame traversal. */
+    public static final long CARD_TOUCHABLE_MS = PatchFade.SETTLE_MS + 20;
+
+    /**
+     * B4: how the card is brought to the screen when the menu opens. {@link #CARD_AT_ONCE}: its place or size changes (the whole panel instead of the short card): a layout is needed now, as before.
+     * {@link #CARD_VISIBLE_FIRST}: only the touchable flag differs: alpha first, the flag {@link #CARD_TOUCHABLE_MS} later. {@link #CARD_NOTHING}: already as wanted.
+     */
+    public static final int CARD_NOTHING = 0, CARD_AT_ONCE = 1, CARD_VISIBLE_FIRST = 2;
+    public static int cardLayoutTreatment(boolean sameRect, boolean touchableNow) {
+        if (!sameRect) return CARD_AT_ONCE;
+        return touchableNow ? CARD_NOTHING : CARD_VISIBLE_FIRST;
     }
 }
