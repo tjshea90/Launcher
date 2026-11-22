@@ -73,6 +73,7 @@ public final class HiddenApps {
 
     public static boolean isShown(Context c, ComponentName app) {
         try {
+            if (Unified.unlockedHome(c)) return UnifiedRules.shownInUnlocked(app.getPackageName(), app.getClassName(), c.getPackageName());   // CV1: the unlocked profile shows what the stock drawer showed (every app, Launcher control, real Settings)
             if (SettingsSpoof.hidesRealSettings(c, app.getPackageName())) return false;   // BN1: the look-alike is the Settings entry of the custom drawer; the real one stays out while it is
             synchronized (LOCK) { autoAllowIfDue(c, app.getPackageName()); return AppVisibility.isShown(allowedReadOnly(c), app.getPackageName(), app.getClassName(), c.getPackageName()); }
         } catch (Throwable t) {
@@ -83,6 +84,7 @@ public final class HiddenApps {
 
     public static boolean isPackageShown(Context c, String pkg) {
         try {
+            if (Unified.unlockedHome(c)) return UnifiedRules.shownInUnlocked(pkg, null, c.getPackageName());   // CV1: same rule by package
             if (SettingsSpoof.hidesRealSettings(c, pkg)) return false;   // BN1: same rule as isShown (the Recents sweep asks by package)
             synchronized (LOCK) { autoAllowIfDue(c, pkg); return AppVisibility.isShown(allowedReadOnly(c), pkg, null, c.getPackageName()); }
         } catch (Throwable t) { return true; }

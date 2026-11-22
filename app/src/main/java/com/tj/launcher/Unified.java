@@ -34,7 +34,7 @@ public final class Unified {
     /** The switch was changed by hand (Launcher control): a deliberate choice also ends an emergency, like every deliberate way back (CrashGuard.clearTripped). */
     public static void setSwitch(Context c, boolean on) {
         Features.set(c, KEY, on);
-        try { CrashGuard.clearTripped(c); } catch (Throwable ignored) { }
+        try { if (CrashGuard.wasTripped(c)) CrashGuard.clearTripped(c); } catch (Throwable ignored) { }
         try { HomeProfile.syncNow(c, "switch " + (on ? "on" : "off")); } catch (Throwable ignored) { }
     }
 }

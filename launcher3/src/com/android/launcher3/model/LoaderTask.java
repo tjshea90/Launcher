@@ -167,6 +167,8 @@ public class LoaderTask implements Runnable {
 
         TraceHelper.beginSection(TAG);
         try (LauncherModel.LoaderTransaction transaction = mApp.getModel().beginLoader(this)) {
+            // Tj (CV1): first step of every load: the layout database of the wanted profile (custom / unlocked), on this model thread, before anything reads or writes the layout.
+            com.tj.launcher.HomeProfile.onLoadStart(mApp.getContext());
             TraceHelper.partitionSection(TAG, "step 1.1: loading workspace");
             loadWorkspace();
 
