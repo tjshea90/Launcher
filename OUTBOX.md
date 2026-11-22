@@ -2074,3 +2074,7 @@
 ## 2026-11-22T09:01:30Z
 > Status: the two `unified,base` reruns (#737 and #738) started 08:58 and end about 09:07. I read them at 09:08. If both are green, I move to the release steps: version bump, `ship.sh`, the Release build, and the answer to Tj.
 <!-- sha:3f335de28063 -->
+
+## 2026-11-22T09:08:10Z
+> Two helpers are reading #737 and #738.
+<!-- sha:ae6fa9bd68e5 -->
