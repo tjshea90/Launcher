@@ -1,13 +1,13 @@
-# CHECKPOINT 1585 — read me first, then TASKS.md
+# CHECKPOINT 1586 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T09:01:23Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `43467833` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T09:10:03Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `786067fd` (this checkpoint is the commit after it)
 
 ## Just done
-CV1 rerun unified,base on main@048e5f7e: #737 id 45005254638 (main), #738 id 45005257395 (branch ref), started 08:58, ends ~09:07
+CV1 RAW: #738 id 45005257395 (unified,base, branch ref) GREEN 29P 0F (1 native crash GrallocUploadTh); #737 id 45005254638 pending
 
 ## Do this next
-read both at ~09:08 (haiku agents); both green => release: bump app/build.gradle.kts.kts 55->56 / 0.9.16->0.9.17 (version-only diff vs a5396e53), ship.sh, android.yml full_build, record-release, fill draft (FULL = #735 98P 0F), answer Tj; heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m
+read #737; both green => release: bump app/build.gradle.kts 55->56 / 0.9.16->0.9.17, diff vs a5396e53 version-only; heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read both at ~09:08 (haiku agents); both green => release: bump app/build.gradle
 
 ## Last ten checkpoints
 ```
+  343f5a01 ckpt 1585: CV1 rerun unified,base on main@048e5f7e: #737 id 45005254638 (main), #738 id
   43467833 ckpt 1584: CV1 RAW: #736 id 45002717972 (full unified core, branch ref) 94P 4F: 'crash 
   048e5f7e ckpt 1583: CV1 RAW: #735 id 45002715538 FULL unified core {unified,base,n,o,ac,e1,x1,rb
   1e9b80df ckpt 1582: CV1: answer draft rewritten to claim only what runs proved (UL10 vacuous, Re
@@ -25,5 +26,7 @@ read both at ~09:08 (haiku agents); both green => release: bump app/build.gradle
   81d3d4c2 ckpt 1578: CV1: ul solo dispatched: #734 id 45001887853 on main@5c620f40 (UL24 double H
   5c620f40 ckpt 1577: CV1: scenario UL24 added (double Home FROM AN APP in unified, 3 rounds + gap
   0055080a ckpt 1576: CV1 RAW: #732 id 45000028314 (unified,base,n,o,ac, main@84de8fa0) GREEN 77P 
-  534e9610 ckpt 1575: CV1 RAW: #733 id 45000031118 (unified,o,ac, branch ref) 41P 1F = AC8 'custom
 ```
+
+(2 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
