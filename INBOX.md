@@ -2285,3 +2285,8 @@ This session's worker process was restarted. If your previous turn was already c
 ```
 This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
 ```
+
+## 2026-11-22T22:28:13Z
+```
+There was another claude session already working on this repo. Pick up and finish the work it started ONLY if you can do so safely with no progress or data loss and you can pick up exactly where it left off. If you can't, stand down
+```
