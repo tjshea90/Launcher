@@ -1,22 +1,22 @@
-# CHECKPOINT 1606 — read me first, then TASKS.md
+# CHECKPOINT 1607 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T22:47:57Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `1877585d` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T22:49:53Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `bfb5d4c0` (this checkpoint is the commit after it)
 
 ## Just done
-CW1 takeover: full suite+lint GREEN (cw1-full2, GRADLE_EXIT=0) incl A1. /code-review high done: 5 findings (cap 6s no-sign = by design, pencil deferral timestamp nit, QsMemory fallback nit, comment fixed, A1 tail needs ul/ul2). HANDOFF D2 text written
+CW1 GATE dispatched 22:48Z on main@880732c8 (product code final; do NOT edit app/launcher3): #739 45079754150 n,n6,bs,bt,mu,pk,ul2 | #740 45079756719 unified,x1,o,t,cs,pf,rb,sr,sf | #741 45079759596 unified,bl,ad,ps,uf,an,nq,ss,last | #742 45079762749 base,legacy,e1,y2,b4,lq,ao,cs2,hf,ul | #743 45079765768 unified,b6,ac,hp,cu,rt,gear,wf,pm | rg run #744 id unknown (list perPage 2)
 
 ## Do this next
-next: update TASKS.md CW1c/d/e/f lines (built/not built list), run 'bash tools/gate.sh v0.9.17' to get sections (expect core + ul,ul2,hp,hf,o,ac...), dispatch emulator.yml runs (list runs first, branch main, event workflow_dispatch), read results with haiku subagent, then bash ship.sh, android.yml full_build=true, get_release_by_tag, tools/record-release.sh, answer Tj (OUTBOX) with built / not built / questions B17 C1 + Developer options Memory number. heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
+wait until ~23:30Z (bounded until-loop on full date), read each run with haiku subagent (header, FAILs, NATIVE CRASH, TIME), ckpt raw verdict FIRST, then rerun failing sections SOLO; then TASKS.md CW1 lines, ship.sh, android.yml full_build, record-release, answer Tj. heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
-     M app/src/main/java/com/tj/launcher/HomePatchRules.java
 
 ## Last ten checkpoints
 ```
+  880732c8 ckpt 1606: CW1 takeover: full suite+lint GREEN (cw1-full2, GRADLE_EXIT=0) incl A1. /cod
   550d9912 ckpt 1605: CW1 takeover: A1 built (LauncherModel.isAppsBound/markAppsBound, BaseLoaderR
   24576f80 ckpt 1604: CW1 takeover: B3 (pencil deferral: pencilDeferred + schedulePencil(boolean,i
   b8e7e556 ckpt 1603: CW1 takeover: full suite+lint GREEN on finished tree (GRADLE_EXIT=0). Read a
@@ -28,5 +28,5 @@ next: update TASKS.md CW1c/d/e/f lines (built/not built list), run 'bash tools/g
   1a6d6cff ckpt 1597: CW1a: audit D done (research/CW1_AUDIT_D_STOCK_SLEEP_2026-11-22.md): stock p
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
