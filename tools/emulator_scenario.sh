@@ -75,6 +75,10 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
 #      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
+# CV1 (one launcher for both worlds): the token `unified` in the sections list (it names no section) switches the debug build to the one-launcher behaviour for the WHOLE run, through the debug-only global setting
+# tj_unified_launcher (Unified.debugOverride; a release build never reads it). The Quickstep home is then OUR launcher (unlocked profile), so every check "the stock launcher is on screen in Quickstep" reads QSHOME_RE.
+UNIFIED=0; case ",$SECTIONS," in *",unified,"*) UNIFIED=1;; esac
+if [ "$UNIFIED" = 1 ]; then adb shell settings put global tj_unified_launcher 1 >/dev/null 2>&1; QSHOME_RE='com.tj.launcher/com.android.launcher3.Launcher'; else adb shell settings delete global tj_unified_launcher >/dev/null 2>&1; QSHOME_RE='com.android.launcher3/'; fi
 # per-section wall time (AJ1): every section that starts prints how long the PREVIOUS one took ("INFO  TIME <section> <s> s"), so the next cut of the gate is data-driven
 _SEC=""; _SECT0=0
 _sectime(){ local n; n=$(date +%s); [ -n "$_SEC" ] && info "TIME $_SEC $((n-_SECT0)) s"; _SEC="$1"; _SECT0=$n; }
@@ -154,7 +158,7 @@ adb shell input keyevent KEYCODE_HOME; sleep 3
 
 # ---- QUICKSTEP mode: Home goes to the stock launcher, and back
 setmode quickstep; home; shot 05-quickstep-mode; resumed | tee "$OUT/resumed-quickstep.txt"
-check "quickstep mode: stock launcher is on screen" bash -c "grep -q 'com.android.launcher3/' $OUT/resumed-quickstep.txt && ! grep -q 'com.tj.launcher' $OUT/resumed-quickstep.txt"
+if [ "$UNIFIED" = 1 ]; then check "quickstep mode (one launcher): OUR launcher is on screen in its unlocked form" bash -c "grep -q '$QSHOME_RE' $OUT/resumed-quickstep.txt"; else check "quickstep mode: stock launcher is on screen" bash -c "grep -q 'com.android.launcher3/' $OUT/resumed-quickstep.txt && ! grep -q 'com.tj.launcher' $OUT/resumed-quickstep.txt"; fi
 # C5: the STOCK launcher started by our router is a HOME-type task too (an explicit component made it an ordinary task that Recents listed as "Quickstep")
 adb shell dumpsys activity activities > "$OUT/activities-quickstep.txt" 2>&1
 check "C5: the stock launcher task started by the router is in the HOME-type stack" bash -c "awk '/Stack #/{h=(\$0 ~ /type=home/)} h' $OUT/activities-quickstep.txt | grep -q 'com.android.launcher3/'"
@@ -422,7 +426,7 @@ if [ -n "$STOCK" ]; then
   setmode quickstep; rebind; home
   adb shell am start -a android.intent.action.MAIN -c android.intent.category.HOME -n "$STOCK" >/dev/null 2>&1; sleep 4
   resumed > "$OUT/resumed-quickstep-guard.txt"
-  check "W5: in Quickstep mode (after the gesture) the stock home is left alone" bash -c "! grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/resumed-quickstep-guard.txt"
+  if [ "$UNIFIED" = 1 ]; then info "W5b skipped with the one launcher: our home IS the Quickstep home (nothing is stray)"; else check "W5: in Quickstep mode (after the gesture) the stock home is left alone" bash -c "! grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/resumed-quickstep-guard.txt"; fi
   setmode custom; home
 else
   info "W5: no separate stock home component on this emulator image; guard not exercised"
@@ -509,7 +513,7 @@ pad d d 1 2 3 4 e; sleep 6
 resumed > "$OUT/e1-resumed-token.txt"; getmode > "$OUT/e1-mode-token.txt"
 adb logcat -d -s TjA11y:I | grep UNLOCKPICK > "$OUT/e1-log-token.txt" 2>&1
 check "E1: Delete x2 before the PIN unlocks into QUICKSTEP (mode switched)" grep -q quickstep "$OUT/e1-mode-token.txt"
-check "E1: and the stock launcher is on screen" grep -q 'com.android.launcher3/' "$OUT/e1-resumed-token.txt"
+check "E1: and the stock launcher is on screen" grep -q "$QSHOME_RE" "$OUT/e1-resumed-token.txt"
 adb logcat -c
 lockpad
 pad 1 2 3 4 e; sleep 7
@@ -785,7 +789,7 @@ else
   ekey 115 115 114 114 158 158 115 114; sleep 4
   getmode > "$OUT/n5-konami-mode.txt"; resumed > "$OUT/n5-konami-resumed.txt"
   check "N5: the Konami key code switches the custom launcher to Quickstep (master failsafe)" grep -q quickstep "$OUT/n5-konami-mode.txt"
-  check "N5: and the stock launcher is on screen" grep -q 'com.android.launcher3/' "$OUT/n5-konami-resumed.txt"
+  check "N5: and the stock launcher is on screen" grep -q "$QSHOME_RE" "$OUT/n5-konami-resumed.txt"
   setfeat; setmode custom; rebind; home; sleep 2
   ekey 115 115 114 114; sleep 2
   getmode > "$OUT/n5-half-mode.txt"
@@ -809,7 +813,7 @@ adb logcat -d -s TjA11y:I | grep -E "UNLOCKPICK|UNLOCKCLICK|PROFILE" > "$OUT/n2-
 info "N2 detail: mode=$(tr -d '\r\n' < $OUT/n2-taperase-mode.txt) resumed=$(grep -o 'ActivityRecord{[^}]*}' $OUT/n2-taperase-resumed.txt | head -1) keyguard=$(adb shell dumpsys window policy 2>/dev/null | grep -io 'showing=[a-z]*' | head -1) a11y_bound=$(adb shell dumpsys accessibility 2>/dev/null | grep -c 'Bound services.*com.tj.launcher') log: $(cut -c1-110 $OUT/n2-taperase-log.txt | tail -6 | tr '\n' '|')"
 info "N2 lock log (newest 8): $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | tail -8 | cut -c1-120 | tr '\n' '|')"
 check "N2: tap-and-erase x3 before the PIN unlocks into Quickstep" grep -q quickstep "$OUT/n2-taperase-mode.txt"
-check "N2: and the stock launcher is on screen" grep -q 'com.android.launcher3/' "$OUT/n2-taperase-resumed.txt"
+check "N2: and the stock launcher is on screen" grep -q "$QSHOME_RE" "$OUT/n2-taperase-resumed.txt"
 lockpad
 pad 1 2 3 4 e; sleep 1.5; resumed > "$OUT/n3-plain-1s5.txt"; sleep 5.5
 getmode > "$OUT/n3-plain-mode.txt"; resumed > "$OUT/n3-plain-resumed.txt"
@@ -869,7 +873,7 @@ lockpad
 pad d 1 d 1 d 1 1 2 3 4 e; sleep 6
 getmode > "$OUT/o-ladder-mode.txt"; resumed > "$OUT/o-ladder-resumed.txt"
 check "O1: the erase ladder (Delete, digit x3) before the PIN unlocks into Quickstep" grep -q quickstep "$OUT/o-ladder-mode.txt"
-check "O1: and the stock launcher is on screen" grep -q 'com.android.launcher3/' "$OUT/o-ladder-resumed.txt"
+check "O1: and the stock launcher is on screen" grep -q "$QSHOME_RE" "$OUT/o-ladder-resumed.txt"
 # O1: charger flick = plug, unplug, plug on the lock screen
 adb shell dumpsys battery set ac 0 >/dev/null 2>&1; adb shell dumpsys battery set usb 0 >/dev/null 2>&1; sleep 1
 lockpad
@@ -1583,7 +1587,7 @@ check "AC9: with 'switch behind the lock screen' OFF the handshake still started
 sleep 2; pad 1 2 3 4 e; sleep 7
 getmode > "$OUT/ac7-mode.txt"; resumed > "$OUT/ac7-resumed.txt"
 check "AC7: a wrong PIN after the gesture, then the right PIN plain: Quickstep (the gesture is not lost)" grep -q quickstep "$OUT/ac7-mode.txt"
-check "AC7: and the stock launcher is on screen" grep -q "com.android.launcher3/" "$OUT/ac7-resumed.txt"
+check "AC7: and the stock launcher is on screen" grep -q "$QSHOME_RE" "$OUT/ac7-resumed.txt"
 
 # ---- AC1 safety net: the helper is NOT running at the unlock; when it comes back the Quickstep session is ended (Android's usage events say the keyguard was shown after the session began)
 adb shell appops set "$PKG" GET_USAGE_STATS allow >/dev/null 2>&1
@@ -1878,7 +1882,7 @@ lockpad; pad d d 1 2 3 4 e; sleep 7
 adopen; sleep 2
 lockpad; pad d d 1 2 3 4 e; sleep 7
 resumed > "$OUT/ad-r2.txt"; shot 152-ad-switch-off
-check "AD5: with the switch OFF the gesture opens the Quickstep home (the open app stays minimised)" grep -q 'com.android.launcher3/' "$OUT/ad-r2.txt"
+check "AD5: with the switch OFF the gesture opens the Quickstep home (the open app stays minimised)" grep -q "$QSHOME_RE" "$OUT/ad-r2.txt"
 adb shell locksettings clear --old 1234 > "$OUT/ad-clearpin.txt" 2>&1
 adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
 check "AD: the PIN used for the test was cleared again" bash -c "! grep -qiE 'fail|error|exception' $OUT/ad-clearpin.txt"
@@ -1906,7 +1910,7 @@ check "SE-F1: five alternating swipes are NOT enough (still the custom launcher)
 sefresh
 flickchain R L R L R L; sleep 3; getmode > "$OUT/se-flick6.txt"; resumed > "$OUT/se-flick6-front.txt"      # six alternating swipes (no pause in the middle: each gap must stay under 2.5 s)
 check "SE-F2: six alternating swipes take Tj to Quickstep" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/se-flick6.txt)\" = quickstep ]"
-check "SE-F3: and the Quickstep home is in front" grep -q 'com.android.launcher3/' "$OUT/se-flick6-front.txt"
+check "SE-F3: and the Quickstep home is in front" grep -q "$QSHOME_RE" "$OUT/se-flick6-front.txt"
 sefresh
 flickchain R R R R R R; sleep 3; getmode > "$OUT/se-flick-same.txt"                # six swipes the SAME way: not a code
 check "SE-F4: six swipes in the same direction are NOT a code" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/se-flick-same.txt)\" = custom ]"
@@ -2718,8 +2722,8 @@ lockpad; adb logcat -b events -c
 pad d d 1 2 3 4 e; sleep 6
 ufev > "$OUT/uf-qs.txt"
 info "UF3 Quickstep handshake: resumed in order: $(ufnames "$OUT/uf-qs.txt"); span $(ufspan "$OUT/uf-qs.txt") ms; mode now: $(getmode)"
-check "UF3: the handshake ends on the stock launcher (Quickstep)" bash -c "tail -1 $OUT/uf-qs.txt | grep -q ' com.android.launcher3/'"
-check "UF3: ... and our launcher is not resumed AFTER the stock one (no custom flash into Quickstep)" bash -c "awk '/ com.android.launcher3\\//{s=1; next} s && / com.tj.launcher\\//{bad=1} END{exit bad}' $OUT/uf-qs.txt"
+check "UF3: the handshake ends on the Quickstep home" bash -c "tail -1 $OUT/uf-qs.txt | grep -q ' $QSHOME_RE'"
+if [ "$UNIFIED" = 1 ]; then info "UF3b skipped with the one launcher: our launcher IS the Quickstep home"; else check "UF3: ... and our launcher is not resumed AFTER the stock one (no custom flash into Quickstep)" bash -c "awk '/ com.android.launcher3\\//{s=1; next} s && / com.tj.launcher\\//{bad=1} END{exit bad}' $OUT/uf-qs.txt"; fi
 adb shell locksettings clear --old 1234 > "$OUT/uf-clearpin.txt" 2>&1
 adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 1
 adb shell "run-as $PKG sh -c 'rm -f shared_prefs/tj_features.xml'" >/dev/null 2>&1
