@@ -2058,3 +2058,7 @@
 ## 2026-11-22T08:27:37Z
 > The check of the draft against run output caught a claim I would have gotten wrong: the "icon added in the unlocked home never reaches the custom home" check had nothing to test, because the emulator never sent the install event (0 rows). That claim stays out of the "proved" list and goes under "only the tablet can show". I'm rewriting the draft so it claims only what the runs showed.
 <!-- sha:727e773ae59d -->
+
+## 2026-11-22T08:29:33Z
+> The draft now claims only what the runs showed, and the gaps are saved as TASKS CV1i. The two full-core runs (#735, #736) end about 08:55, so I'm idle until the 08:56 timer.
+<!-- sha:6a0193b63928 -->
