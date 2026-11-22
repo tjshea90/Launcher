@@ -70,7 +70,7 @@ Totals: **2 free-running periodic timers** (T1 conditional in the app, T2 in the
 | R5 | TAS `radioReceiver` :3706 | Wi-Fi / Bluetooth state | service life | wakes only when a radio changes |
 | R6 | `EntranceWatcher.powerReceiver` :59 | power / screen | process life | wakes at screen on / off |
 | R7 | `SsHomeSummary` :46, R8 `SsPagesBattery` :119, R9 `SsPagesSound` :185 | `BATTERY_CHANGED` / volume | only while that Settings page is open (registered / unregistered by the page) | none |
-| R10 | launcher3 `LauncherAppState` mModel :100 | managed-profile actions, locale, time zone etc. | process life | idle |
+| R10 | launcher3 `LauncherAppState` mModel :100 | the managed-profile actions (the rest of its filter was not read) | process life | idle |
 | R11 | launcher3 `ConfigMonitor` :77 (+ DisplayListener :81 on the background looper) | `CONFIGURATION_CHANGED`, display changes | process life | idle |
 | R12 | launcher3 `InvariantDeviceProfile.OverlayMonitor` :583 | `OVERLAY_CHANGED` | process life | idle |
 | R13 | launcher3 `Launcher.mScreenOffReceiver` :378, R14 `WorkspaceAndHotseatScrim` :232, R15 `WallpaperOffsetInterpolator` :168 | screen off / wallpaper | while the Launcher activity (or its resumed state) lives | wakes at screen off |
