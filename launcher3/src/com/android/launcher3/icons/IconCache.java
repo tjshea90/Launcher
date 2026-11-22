@@ -16,6 +16,7 @@
 
 package com.android.launcher3.icons;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
