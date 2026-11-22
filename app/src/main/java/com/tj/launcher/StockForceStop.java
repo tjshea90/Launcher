@@ -129,7 +129,10 @@ final class StockForceStop {
     static int seededDebt(int debt, int minDebt) { return Math.max(Math.max(0, debt), Math.max(1, minDebt)); }
 
     /** Pure D5: the stock process of the v0.9.16 era may hold pinned screens although no window was seen by THIS code: the seed counts as "a stock window was seen" so the blocker does not say "nothing to give back". */
-    static String seededSig(String storedSig, String nowSig) { return storedSig == null || storedSig.isEmpty() ? (nowSig == null ? "" : nowSig) : storedSig; }
+    static String seededSig(String storedSig, String nowSig) {
+        if (storedSig != null && !storedSig.isEmpty()) return storedSig;
+        return nowSig == null || nowSig.isEmpty() ? "seed" : nowSig;   // never empty: empty means "no stock window since the last restart"
+    }
 
     /** SR1 (the helper path) or a finished drive took the debt away. Under the same lock as the additions, so a flip cannot be overwritten. */
     static synchronized void setDebt(Context app, int v) { try { Features.setIntAsync(app, DEBT_KEY, v); } catch (Throwable ignored) { } }
