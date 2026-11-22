@@ -158,13 +158,19 @@ public final class Utilities {
     private static final int CPU_COUNT = Runtime.getRuntime().availableProcessors();
     private static final int CORE_POOL_SIZE = CPU_COUNT + 1;
     private static final int MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1;
-    private static final int KEEP_ALIVE = 1;
+    private static final int KEEP_ALIVE = 10;
     /**
      * An {@link Executor} to be used with async task with no limit on the queue size.
+     * C6 (CW1): the core threads end after {@link #KEEP_ALIVE} idle seconds (they were kept for the life of the process); the next task starts one again.
      */
-    public static final Executor THREAD_POOL_EXECUTOR = new ThreadPoolExecutor(
-            CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE,
-            TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+    public static final Executor THREAD_POOL_EXECUTOR = newThreadPool();
+
+    private static ThreadPoolExecutor newThreadPool() {
+        ThreadPoolExecutor e = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE,
+                TimeUnit.SECONDS, new LinkedBlockingQueue<>());
+        e.allowCoreThreadTimeOut(true);
+        return e;
+    }
 
     public static boolean IS_RUNNING_IN_TEST_HARNESS =
                     ActivityManager.isRunningInTestHarness();

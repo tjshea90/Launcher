@@ -48,9 +48,8 @@ public final class LockLog {
         return t.endsWith("\n") ? t : t + "\n";
     }
 
-    private static final java.util.concurrent.ExecutorService BG = java.util.concurrent.Executors.newSingleThreadExecutor(new java.util.concurrent.ThreadFactory() {
-        @Override public Thread newThread(Runnable r) { Thread t = new Thread(r, "tj-lock-log"); t.setDaemon(true); return t; }
-    });
+    /** C6 (CW1): one worker, in order, whose thread ends after 10 s idle (it is started again by the next line). */
+    private static final java.util.concurrent.ExecutorService BG = IdleExecutor.single("tj-lock-log");
 
     /** BE1: like {@link #add} but the file is written on a background thread (in order), with the time of the EVENT: for the patch paths, which must not wait for a disk. */
     public static void addAsync(final Context c, final String event, final String detail) {

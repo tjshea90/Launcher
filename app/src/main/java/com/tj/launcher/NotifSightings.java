@@ -110,9 +110,7 @@ public final class NotifSightings {
     private static final Map<String, Long> LAST_LOGGED = new HashMap<>();
 
     /** One worker, in order: the drawer lookup can query the package manager and commit a preference the first time, which the main thread (the Launcher's first frame) must never wait for. */
-    private static final java.util.concurrent.ExecutorService BG = java.util.concurrent.Executors.newSingleThreadExecutor(new java.util.concurrent.ThreadFactory() {
-        @Override public Thread newThread(Runnable r) { Thread t = new Thread(r, "tj-notif-seen"); t.setDaemon(true); return t; }
-    });
+    private static final java.util.concurrent.ExecutorService BG = IdleExecutor.single("tj-notif-seen");   // C6 (CW1): the thread ends after 10 s idle
 
     /**
      * The accessibility helper calls this for every TYPE_NOTIFICATION_STATE_CHANGED event whose class is android.app.Notification (delivered on the main thread): a package check, then everything else on the
