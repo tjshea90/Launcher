@@ -198,6 +198,17 @@ public class Cw1RulesTest {
         assertTrue(UnifiedRules.settleNeedsTree(false, false, 100, 100 + look));
     }
 
+    @Test public void aProfileIsReadyOnceItsAppListIsBoundButNeverForTheOtherProfile() {
+        UnifiedRules.Profile c = UnifiedRules.Profile.CUSTOM, u = UnifiedRules.Profile.UNLOCKED;
+        assertTrue(UnifiedRules.ready(c, c, true, false));    // the load finished
+        assertTrue(UnifiedRules.ready(c, c, false, true));    // CW1 A1: bound, the invisible rest still runs
+        assertFalse(UnifiedRules.ready(c, c, false, false));  // still loading
+        assertFalse(UnifiedRules.ready(c, u, true, true));    // the other profile's list is never ready, bound or not
+        assertFalse(UnifiedRules.ready(u, null, true, true)); // nothing loaded yet
+        // the old three-argument rule is the four-argument one with nothing bound
+        for (boolean loaded : new boolean[] {false, true}) assertEquals(UnifiedRules.ready(c, c, loaded), UnifiedRules.ready(c, c, loaded, false));
+    }
+
     // ================================================================ B3 / B1a / B9 / B2 / B4: the hider's pure rules (HomePatchRules, CW1 block)
 
     @Test public void onlyAFullSearchForAnUnknownPencilWaitsForTheBurstsQuietWork() {
