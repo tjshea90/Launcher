@@ -337,7 +337,7 @@ public final class HomePatchRules {
         return guardUntilMs - guardLenMs >= focusLostAtMs - 1500;
     }
     // ================================================================ CW1 (Tj, 2026-11-22: "preparedness of the screenshot button hider from both home screen and from lock screen so it is hidden before first open of the power menu without lag or flickering")
-    // Audit: research/CW1_AUDIT_B_PATCH_2026-11-22.md. The pure rules of the small changes below (JVM-tested in CW1PatchReadyTest); the service applies them.
+    // Audit: research/CW1_AUDIT_B_PATCH_2026-11-22.md. The pure rules of the small changes below (JVM-tested in Cw1RulesTest). WIRED in the service (CW1 takeover): pencilTreatment (B3), buildQuietMs / the 4-argument buildDue and waitMs (B1a). PREPARED BUT NOT WIRED (not built in this release): transientStepOnly, keepWindowForStep, CROP_CACHE_STEPS (B9), cardFastReady, CARD_FAST_KEY (B2), cardLayoutTreatment, CARD_TOUCHABLE_MS (B4).
 
     // ---- B3: no pencil search between the first window event of a burst and the patch's first frame
     /** What the quick-settings pencil look of a window event during a home-flavour burst does: {@link #PENCIL_NOW} = as before, {@link #PENCIL_AFTER_FRAME} = once the patch's first frame is out (the burst's quiet work). */

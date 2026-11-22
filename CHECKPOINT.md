@@ -1,21 +1,23 @@
-# CHECKPOINT 1605 — read me first, then TASKS.md
+# CHECKPOINT 1606 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T22:44:46Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `72b1be79` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T22:47:57Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `1877585d` (this checkpoint is the commit after it)
 
 ## Just done
-CW1 takeover: A1 built (LauncherModel.isAppsBound/markAppsBound, BaseLoaderResults.afterBindAllApps, LoaderTask marks after bindAllApps, HomeProfile.ready uses UnifiedRules.ready 4-arg) + test; Cw1RulesTest 22 tests + UnifiedRulesTest GREEN. DECIDED NOT TO BUILD: C4 (API 29 VPN callback is blind to VPNs that exclude the launcher: the 30 s poll is function), B10/B11, B4/B2/B5-B9/B13, A8 (marginal vs lock/card risk; to be listed in the answer)
+CW1 takeover: full suite+lint GREEN (cw1-full2, GRADLE_EXIT=0) incl A1. /code-review high done: 5 findings (cap 6s no-sign = by design, pencil deferral timestamp nit, QsMemory fallback nit, comment fixed, A1 tail needs ul/ul2). HANDOFF D2 text written
 
 ## Do this next
-write HANDOFF D2 text (never disable stock HOME activity / TouchInteractionService; stock cannot sleep, adj 100), update TASKS CW1c/d/e, full suite+lint, /code-review high of git diff e2b45cc4~..HEAD (app launcher3), fix, tools/gate.sh v0.9.17, ship.sh, android.yml, record. heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
+next: update TASKS.md CW1c/d/e/f lines (built/not built list), run 'bash tools/gate.sh v0.9.17' to get sections (expect core + ul,ul2,hp,hf,o,ac...), dispatch emulator.yml runs (list runs first, branch main, event workflow_dispatch), read results with haiku subagent, then bash ship.sh, android.yml full_build=true, get_release_by_tag, tools/record-release.sh, answer Tj (OUTBOX) with built / not built / questions B17 C1 + Developer options Memory number. heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
 ## Uncommitted right now
      M CHECKPOINT.md
+     M app/src/main/java/com/tj/launcher/HomePatchRules.java
 
 ## Last ten checkpoints
 ```
+  550d9912 ckpt 1605: CW1 takeover: A1 built (LauncherModel.isAppsBound/markAppsBound, BaseLoaderR
   24576f80 ckpt 1604: CW1 takeover: B3 (pencil deferral: pencilDeferred + schedulePencil(boolean,i
   b8e7e556 ckpt 1603: CW1 takeover: full suite+lint GREEN on finished tree (GRADLE_EXIT=0). Read a
   e8231163 ckpt 1602: CW1 takeover: heartbeat armed trig_01DN2e1WG9kDhpHMtsFee1Lb (every 2h at :34
@@ -26,5 +28,5 @@ write HANDOFF D2 text (never disable stock HOME activity / TouchInteractionServi
   1a6d6cff ckpt 1597: CW1a: audit D done (research/CW1_AUDIT_D_STOCK_SLEEP_2026-11-22.md): stock p
 ```
 
-(2 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
