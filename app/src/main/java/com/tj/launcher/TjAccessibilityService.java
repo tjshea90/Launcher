@@ -140,7 +140,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (why != null) {
             Log.i(TAG, "PATCH fast skip: " + why + " (the normal path follows) t=" + now);
             // BJ1: the burst's first event may have started a wait for a FAST open on the home screen (quietBurst); the dialog's own event says it is not going to happen (the patch went stale in between): the card path must not sit behind that wait
-            if (patchHomeMode && !overlayShown && quietUntilMs != 0) { quietUntilMs = 0; handler.removeCallbacks(quietWork); }
+            if (patchHomeMode && !overlayShown && quietUntilMs != 0) { quietUntilMs = 0; pencilDeferred = false; handler.removeCallbacks(quietWork); }   // (B3: the dialog IS this burst, so a pencil look it deferred is moot)
             return;
         }
         Rect cached = cachedCard();
@@ -196,7 +196,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private int holdMisses = 0;   // AZ1: scans in a row that found no menu text while the dialog window was still up
     /** AZ1: how long a window burst on the lock screen waits for the stock dialog's own event before the normal scans run (fail-open for a ROM whose dialog does not announce itself). The dialog's event follows the first window event of its burst by 15-45 ms. */
     static final long FAST_WAIT_MS = 120;
-    private boolean pencilDeferred = false; private int pencilDeferType = 0, pencilDeferredType = 0;   // B3 (CW1): a SystemUI event of the current burst whose full pencil search waits for quietWork (main thread only)
+    private boolean pencilDeferred = false; private int pencilDeferredType = 0;   // B3 (CW1): a SystemUI event of the current burst whose full pencil search waits for quietWork (main thread only)
     private final Runnable quietWork = new Runnable() { @Override public void run() {
         quietUntilMs = 0;
         try {
