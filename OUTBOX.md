@@ -2002,3 +2002,7 @@
 ## 2026-11-22T07:18:51Z
 > Nothing in the lock-time clean-up path (`lockPrepare`, `preCleanAtLock`, `invisibleReady`) looks specific to the switch. So I'm waiting for the INFO diagnostics from #727 and the control #728, due about 07:33 UTC.
 <!-- sha:7f4182f6faf5 -->
+
+## 2026-11-22T07:33:14Z
+> Three helpers are reading #727, #728 and #729, and their reports arrive as notifications.
+<!-- sha:04a2b5917f62 -->
