@@ -2408,12 +2408,17 @@ public class TjAccessibilityService extends AccessibilityService {
     public void settleHome() {
         final long t0 = android.os.SystemClock.uptimeMillis();
         final boolean[] pressed = { false };
+        final long[] nextLook = { UnifiedRules.SETTLE_LOOK_MS };   // A4: the next time the accessibility tree may be fetched while only the profile reload is awaited
         handler.post(new Runnable() { @Override public void run() {
             try {
                 long dt = android.os.SystemClock.uptimeMillis() - t0;
+                // A4 (CW1): the cheap facts first (deadline, switch, ready flag, Launcher resumed); the tree fetch (a cross-process call on the thread that is binding the Launcher) only when one of them needs it, else once per SETTLE_LOOK_MS
+                boolean waitingForProfile = dt < SETTLE_PROFILE_CAP_MS && Unified.active(getApplicationContext()) && !HomeProfile.ready(getApplicationContext());
+                if (!UnifiedRules.settleNeedsTree(waitingForProfile, TjHooks.launcherInFront(), dt, nextLook[0])) { handler.postDelayed(this, 40); return; }
+                nextLook[0] = dt + UnifiedRules.SETTLE_LOOK_MS;
                 boolean front = isForeground(getPackageName());
                 // CV1: with the one launcher the Launcher may already be in front while the model still holds the unlocked profile (the reload runs under this cover): the cover goes only when the custom profile is loaded
-                if (front && Unified.active(getApplicationContext()) && !HomeProfile.ready(getApplicationContext()) && dt < SETTLE_PROFILE_CAP_MS) { handler.postDelayed(this, 40); return; }
+                if (front && waitingForProfile) { handler.postDelayed(this, 40); return; }
                 if (front) {
                     hideResetCover();
                     AnimationSpeedup.releaseReset(getApplicationContext(), "the custom home is in front");   // BF1 (Tj: animations back on "immediately ... in the custom launcher"): no 700 ms tail once the home is the screen
