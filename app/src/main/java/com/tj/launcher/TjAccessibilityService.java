@@ -196,9 +196,14 @@ public class TjAccessibilityService extends AccessibilityService {
     private int holdMisses = 0;   // AZ1: scans in a row that found no menu text while the dialog window was still up
     /** AZ1: how long a window burst on the lock screen waits for the stock dialog's own event before the normal scans run (fail-open for a ROM whose dialog does not announce itself). The dialog's event follows the first window event of its burst by 15-45 ms. */
     static final long FAST_WAIT_MS = 120;
+    private boolean pencilDeferred = false; private int pencilDeferType = 0, pencilDeferredType = 0;   // B3 (CW1): a SystemUI event of the current burst whose full pencil search waits for quietWork (main thread only)
     private final Runnable quietWork = new Runnable() { @Override public void run() {
         quietUntilMs = 0;
-        try { scheduleLockUpdate(); scheduleLayerRefresh(); schedulePencil(null); } catch (Throwable t) { Log.e(TAG, "deferred event work failed", t); }
+        try {
+            scheduleLockUpdate(); scheduleLayerRefresh();
+            if (pencilDeferred) { pencilDeferred = false; if (!overlayShown) schedulePencil(true, pencilDeferredType); else schedulePencil(null); }   // B3: no pencil can be on screen while the power menu is open: its search is dropped (the burst WAS the power menu)
+            else schedulePencil(null);
+        } catch (Throwable t) { Log.e(TAG, "deferred event work failed", t); }
         try { evaluate(EV_QUIET); } catch (Throwable t) { Log.e(TAG, "evaluate failed", t); removeOverlay(); }
     } };
 
@@ -216,7 +221,11 @@ public class TjAccessibilityService extends AccessibilityService {
             boolean ready = !overlayShown && now >= quietUntilMs && event != null && EventNoise.windowsJustChanged(event.getEventType()) && fastDecline() == null;
             int t = HomePatchRules.burstTreatment(overlayShown, now, quietUntilMs, ready);
             if (t == HomePatchRules.BURST_NORMAL) return false;   // with the menu closed and no wait running no event is deferred, so the shade / QS pencil keep their 40 ms rule
-            if (!overlayShown) schedulePencil(event);             // a wait on the closed home: the pencil cover still follows every SystemUI event
+            if (!overlayShown) {                                    // a wait on the closed home: the pencil cover still follows every SystemUI event ...
+                boolean sysui = isSystemUiEvent(event);
+                if (HomePatchRules.pencilTreatment(penShown, penNode != null, sysui) == HomePatchRules.PENCIL_NOW) schedulePencil(sysui, event == null ? 0 : event.getEventType());
+                else { pencilDeferredType = event.getEventType(); pencilDeferred = true; }   // ... B3 (CW1): except a FULL search for a pencil nobody knows (33 ms on average, 1305 ms at most on the tablet), which would run before the dialog's own event: it waits for quietWork (140 ms at the latest)
+            }
             if (t == HomePatchRules.BURST_START) deferWork(now, FAST_WAIT_MS);
             return true;
         }
@@ -1040,7 +1049,7 @@ public class TjAccessibilityService extends AccessibilityService {
     private void scheduleHomeBuild() {
         if (patchView == null || !patchHomeMode) return;
         homeBuildWaits = 0;   // a fresh wish to build (a draw, a resume, a focus gain) starts a new bounded wait
-        long quiet = HomePatchRules.waitMs(android.os.SystemClock.uptimeMillis(), 0, TjHooks.lastHomeDrawMs);
+        long quiet = HomePatchRules.waitMs(android.os.SystemClock.uptimeMillis(), 0, TjHooks.lastHomeDrawMs, HomePatchRules.buildQuietMs(patchShotBmp != null));   // B1a (CW1): the FIRST composite of a window after 100 ms of draw quiet, a rebuild after 250 ms
         handler.removeCallbacks(homeBuild);
         handler.postDelayed(homeBuild, quiet + 20);
     }
@@ -1050,7 +1059,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long now = android.os.SystemClock.uptimeMillis();
         boolean fresh = homeCompositeFresh();
         if (fresh) { patchShow(false); return; }
-        if (!HomePatchRules.buildDue(now, TjHooks.lastHomeDrawMs, fresh, homeBuilding)) { scheduleHomeBuild(); return; }
+        if (!HomePatchRules.buildDue(now, TjHooks.lastHomeDrawMs, fresh, homeBuilding, HomePatchRules.buildQuietMs(patchShotBmp != null))) { scheduleHomeBuild(); return; }
         if (!TjHooks.homeScreenShowing() || TjHooks.homeFloatingViewOpen() || TjHooks.homeBusy()) {   // not at rest: look again a few times (the draws that end a folder / a drag start a new wish anyway)
             if (++homeBuildWaits <= 10) { handler.removeCallbacks(homeBuild); handler.postDelayed(homeBuild, 400); }
             return;
@@ -2521,22 +2530,25 @@ public class TjAccessibilityService extends AccessibilityService {
     } };
 
     /** Look at SystemUI events only (and keep checking while a cover is up, so it follows the panel and goes with it). Throttled. */
-    private void schedulePencil(AccessibilityEvent e) {
+    private static boolean isSystemUiEvent(AccessibilityEvent e) { return e != null && e.getPackageName() != null && "com.android.systemui".contentEquals(e.getPackageName()); }
+
+    private void schedulePencil(AccessibilityEvent e) { schedulePencil(isSystemUiEvent(e), e == null ? 0 : e.getEventType()); }
+
+    /** B3 (CW1): the look at one event reduced to what it reads (SystemUI or not, the event type), so a burst's first event can be looked at LATER without keeping the (recycled) event object. */
+    private void schedulePencil(boolean sysui, int type) {
         // N3: Quickstep needs no cover over the pencil. BK1b (Tj, 2026-11-08 18:16 UTC: "Can the pencil in the notification panel be hidden on the lock screen? If so, do it."): the LOCK screen counts as the custom world, exactly as for the
         // power-menu cover (coverWorld, AD7a). Without the shell helper the stored mode stays Quickstep while the tablet is locked after a Quickstep session, so `Mode.isCustom` alone left the pencil uncovered on the lock screen.
         if (!coverWorld() || !Features.get(this, PEN_KEY, true)) {
             if (penView != null) removePencil();
-            if (debuggable() && e != null && e.getPackageName() != null && "com.android.systemui".contentEquals(e.getPackageName())) {   // debug builds only, once a second: why no cover (emulator section b6 needs it)
+            if (debuggable() && sysui) {   // debug builds only, once a second: why no cover (emulator section b6 needs it)
                 long up = android.os.SystemClock.uptimeMillis();
                 if (up - penSkipLoggedMs > 1000) { penSkipLoggedMs = up; Log.i(TAG, "PENCIL skipped: custom=" + Mode.isCustom(this) + " locked=" + keyguardLockedFast() + " switch=" + Features.get(this, PEN_KEY, true)); }
             }
             return;
         }
-        boolean sysui = e != null && e.getPackageName() != null && "com.android.systemui".contentEquals(e.getPackageName());
         if (!sysui && penView == null) return;   // (an event-less follow-up of a deferred burst does NOT start a search: review 2026-11-08, a 100 ms whole-tree search after every lock-screen burst was too much for what it saved; the next SystemUI event starts it)
         if (DemoModeProfile.active(this)) { if (penView != null) removePencil(); return; }   // something else already turned the retail flag on (the pencil is gone natively); read only for SystemUI events (AB2)
         long now = android.os.SystemClock.uptimeMillis();
-        int type = e == null ? 0 : e.getEventType();
         if (sysui) penFinger.systemUiEvent(now);   // BQ1b: SystemUI is redrawing: the wait after a finger is not over yet
         if (sysui) penQuicken("SystemUI is redrawing");   // BN8b: a shown cover is watched closely while the panel may be moving (does nothing when no cover is up)
         if (!EventNoise.pencilSearchOnEvent(type, lastBouncer, penShown)) return;   // CA1 U1: a PIN key cannot open the quick settings: no whole-tree search (now or 90 ms later) per key while the pad is up and no cover is shown
