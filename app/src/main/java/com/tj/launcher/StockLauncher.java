@@ -27,6 +27,28 @@ public final class StockLauncher {
         return best;
     }
 
+    /** A9 (CW1): how long {@link #cached} keeps an answer (the service's own {@code stockCached()} uses the same minute). */
+    static final long CACHE_MS = 60_000;
+
+    /** Pure (A9): is an answer taken at {@code atMs} still good at {@code nowMs}? Only a FOUND answer is kept (a failed lookup is retried at once); a clock that went backwards never keeps one. */
+    static boolean cacheFresh(boolean haveAnswer, long atMs, long nowMs) { return haveAnswer && nowMs >= atMs && nowMs - atMs <= CACHE_MS; }
+
+    private static volatile ComponentName cachedAnswer;
+    private static volatile long cachedAt;
+
+    /**
+     * A9 (CW1): {@link #find} at most once a minute, for the planning code that asks again and again (return clean-up, usage marks, the wallpaper picker). A stale answer only matters if another launcher was installed or
+     * removed within the last minute. NOT for the Router's start or any emergency exit: those use {@link #find} (fresh).
+     */
+    public static ComponentName cached(Context c) {
+        long now = android.os.SystemClock.elapsedRealtime();
+        ComponentName have = cachedAnswer;
+        if (cacheFresh(have != null, cachedAt, now)) return have;
+        ComponentName fresh = find(c);
+        if (fresh != null) { cachedAnswer = fresh; cachedAt = now; }
+        return fresh;
+    }
+
     public static ComponentName find(Context c) {
         Intent home = new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME);
         List<ResolveInfo> ris = c.getPackageManager().queryIntentActivities(home, PackageManager.MATCH_DEFAULT_ONLY);
