@@ -902,6 +902,8 @@ adb shell input keyevent KEYCODE_POWER; sleep 9          # lock: screen off; nob
 adb logcat -d -s TjReset:I TjA11y:I > "$OUT/o4-log-before-wake.txt" 2>&1
 adb shell dumpsys activity recents 2>/dev/null | grep -ciE 'contacts|gallery3d|email' > "$OUT/o4-recents.txt"
 getmode > "$OUT/o4-mode.txt"
+adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/o4-crash.txt" 2>&1
+info "O4 detail (CV1 triage): mode=$(cat "$OUT/o4-mode.txt" | tr -d '\r\n') recents=$(tr -d ' \r\n' < "$OUT/o4-recents.txt") breaker=[$(tr -d '\r\n' < "$OUT/o4-crash.txt" | grep -oE '(tripped|paused)[^/]*/' | tr '\n' ' ' | cut -c1-90)] helper_log=[$(adb shell tail -c 140 /data/local/tmp/tjshell.log 2>/dev/null | tr '\r\n' '  ')] lock log: $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep -E 'LOCKPREP|CLEANLOCK|PROFILE|MODE|SERVICE|HELPER' | tail -7 | cut -c1-150 | tr '\n' '|')"
 check "O4: locking from Quickstep closed its apps AT LOCK (before any wake)" grep -q "AT LOCK: force-stopped" "$OUT/o4-log-before-wake.txt"
 check "O4: their Recents cards were gone before the unlock" bash -c "[ \"\$(tr -d ' \r\n' < $OUT/o4-recents.txt)\" = 0 ]"
 check "O4: the custom account was already active behind the lock screen" grep -q custom "$OUT/o4-mode.txt"
@@ -1499,6 +1501,8 @@ adb logcat -c
 adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 5     # the real way back to custom (double Home): Mode.set(CUSTOM)
 AC3B="$(lowpower)"; adb logcat -d -s TjBatSaver:I | grep BATSAVER > "$OUT/ac3-log.txt" 2>&1
 info "AC3: back in the custom launcher (it was switched on in Quickstep): low_power=$AC3B; log: $(head -c 160 $OUT/ac3-log.txt | tr '\n' '|')"
+adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/ac3-crash.txt" 2>&1
+info "AC3 detail (CV1 triage): mode=$(getmode) breaker=[$(tr -d '\r\n' < "$OUT/ac3-crash.txt" | grep -oE '(tripped|paused)[^/]*/' | tr '\n' ' ' | cut -c1-90)] lock log: $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep -E 'ROUTER|PROFILE|MODE|BATSAVER|RESET|COVER' | tail -8 | cut -c1-140 | tr '\n' '|')"
 check "AC3: returning to the custom launcher switched battery saver off (turned on in Quickstep, still on when custom began)" bash -c "[ \"$AC3B\" = 0 ]"
 adb shell settings put global low_power 1; sleep 2
 AC3L="$(lowpower)"
