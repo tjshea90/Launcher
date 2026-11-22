@@ -1994,7 +1994,8 @@ public class TjAccessibilityService extends AccessibilityService {
                 if (Mode.isCustom(app)) Mode.set(app, Mode.QUICKSTEP);
                 // The stock home was started behind the lock screen; only if the pre-start did not land (not in front now) press the router's Home.
                 ComponentName stock = StockLauncher.find(this);
-                boolean front = (stock != null && isForeground(stock.getPackageName())) || (resumedPkg != null && System.currentTimeMillis() - resumedAt < 15_000 && isForeground(resumedPkg));   // AD5: the resumed app counts (for this unlock only)
+                boolean remembered = resumedPkg != null && System.currentTimeMillis() - resumedAt < 15_000 && isForeground(resumedPkg);   // AD5: the resumed app counts (for this unlock only)
+                boolean front = UnifiedRules.quickstepFrontOk(Unified.active(app), stock != null && isForeground(stock.getPackageName()), isForeground(getPackageName()), remembered);   // CV1: with the one launcher OUR home is the Quickstep home
                 if (!front) startQuickstepFront("after the unlock");
                 Features.setStringAsync(this, UnlockPick.LAST_KEY, now() + "  Quickstep (handshake '" + m.title + "')" + (front ? "" : ", started after the unlock"));
                 Log.i(TAG, "UNLOCKPICK quickstep via " + m.id + " front=" + front);
@@ -2003,6 +2004,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 LockQuiet.onUnlockAsync(app, true);   // AK1: a gesture unlock into Quickstep puts Wi-Fi / Bluetooth back as they were before the lock
                 BatterySaverGuard.onUnlockAsync(app, true);   // BA2: ... and Quickstep's own battery saver state (only when Android's state cannot have been reset: not plugged in, same boot)
                 verifyQuickstepFront(0);         // AC9: a late start of the custom home / Solitaire stand-in must not stay on top of the gesture's choice
+                waitForProfile("handshake unlock");   // CV1: the unlocked profile must be loaded before the person sees the home (the reload began when the handshake was accepted)
                 return;
             }
             qsApp = null; resumedPkg = null;   // AD5: a plain unlock ends the session: no app to come back to
@@ -2066,7 +2068,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 android.content.Context app = getApplicationContext();
                 if (Mode.isCustom(app) || keyguardLocked()) return;   // the choice changed meanwhile (a return method, a new lock): nothing to enforce
                 String target = ReturnReset.targetPackage(app);
-                boolean ours = isForeground(getPackageName()), tgt = target != null && isForeground(target);
+                boolean ours = !Unified.active(app) && isForeground(getPackageName()), tgt = target != null && isForeground(target);   // CV1: with the one launcher our home in front IS the right answer; only the Solitaire stand-in is wrong
                 if (ProfileSession.restartQuickstepAfterUnlock(ours, tgt, attempt)) {
                     LockLog.add(app, "VERIFY", "attempt " + (attempt + 1) + ": " + (ours ? "the custom launcher" : "Solitaire") + " is in front after a Quickstep choice: starting Quickstep's home again");
                     startQuickstepFront("verify " + (attempt + 1));
@@ -2363,13 +2365,43 @@ public class TjAccessibilityService extends AccessibilityService {
      * BE3 (clean start): the custom home must be the screen once the clean-up is done (or when there was nothing to clean). Looks every 40 ms for at most 1.5 s: our launcher in front = done, the black cover goes at
      * that very moment (it used to stay until a cold Solitaire start was verified); Recents / the shade still in front after 200 ms = one Home press. Never throws, the cover's own 4.5 s failsafe still exists.
      */
+    /** CV1: how long the return cover may wait for the custom profile to be loaded (then it goes anyway; the check is level-triggered, so a late reload still lands). */
+    private static final long SETTLE_PROFILE_CAP_MS = 4500;
+
+    /** CV1: after a handshake unlock the unlocked profile must be ready; if the reload is still running a cover bridges it (cap 3.5 s, only a cover this call raised is removed). */
+    private void waitForProfile(final String why) {
+        try {
+            final android.content.Context app = getApplicationContext();
+            if (!Unified.active(app) || HomeProfile.ready(app)) return;
+            final boolean raise = resetCover == null;
+            if (raise) showResetCover();
+            final boolean mine = raise && resetCover != null;
+            final long t0 = android.os.SystemClock.uptimeMillis();
+            LockLog.add(app, "PROFILE", "not ready at the " + why + ": cover until the " + Unified.wantedProfile(app) + " profile is loaded");
+            handler.post(new Runnable() { @Override public void run() {
+                try {
+                    long dt = android.os.SystemClock.uptimeMillis() - t0;
+                    if (HomeProfile.ready(app) || dt > 3500 || keyguardLocked()) {
+                        if (mine) hideResetCover();
+                        LockLog.add(app, "PROFILE", "profile " + (HomeProfile.ready(app) ? "ready" : "NOT ready (cap)") + " +" + dt + " ms after the " + why);
+                        return;
+                    }
+                    handler.postDelayed(this, 50);
+                } catch (Throwable t) { Log.e(TAG, "profile wait failed", t); if (mine) hideResetCover(); }
+            } });
+        } catch (Throwable t) { Log.e(TAG, "profile gate failed", t); }
+    }
+
     public void settleHome() {
         final long t0 = android.os.SystemClock.uptimeMillis();
         final boolean[] pressed = { false };
         handler.post(new Runnable() { @Override public void run() {
             try {
                 long dt = android.os.SystemClock.uptimeMillis() - t0;
-                if (isForeground(getPackageName())) {
+                boolean front = isForeground(getPackageName());
+                // CV1: with the one launcher the Launcher may already be in front while the model still holds the unlocked profile (the reload runs under this cover): the cover goes only when the custom profile is loaded
+                if (front && Unified.active(getApplicationContext()) && !HomeProfile.ready(getApplicationContext()) && dt < SETTLE_PROFILE_CAP_MS) { handler.postDelayed(this, 40); return; }
+                if (front) {
                     hideResetCover();
                     AnimationSpeedup.releaseReset(getApplicationContext(), "the custom home is in front");   // BF1 (Tj: animations back on "immediately ... in the custom launcher"): no 700 ms tail once the home is the screen
                     appendReport("clean start: the custom home is on screen (+" + dt + " ms)");
@@ -3102,7 +3134,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (e.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return;
         CharSequence pk = e.getPackageName(), cl = e.getClassName();
         if (pk == null || cl == null) return;
-        if (!Mode.isCustom(this) || !Features.get(this, StrayHomeGuard.KEY, true)) return;
+        if (!UnifiedRules.strayStockApplies(Mode.isCustom(this), Unified.active(this)) || !Features.get(this, StrayHomeGuard.KEY, true)) return;   // CV1: with the one launcher the stock HOME window is stray in the Quickstep world too
         long now = System.currentTimeMillis();
         if (now < guardPausedUntil || now - Mode.changedAt(this) < 2500) return;   // a deliberate mode change or the return reset is running: never fight it
         ComponentName stockHome = stockCached();
