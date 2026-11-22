@@ -285,6 +285,15 @@ final class QsMemory {
         return "no reading: the shell helper is not running, and Android refuses the stock launcher's memory to an app (" + firstLine + (processesChars >= 0 ? "; activity processes: " + processesChars + " chars" : "") + "); start the helper to record";
     }
 
+    /** CW1 D7: the status line when no helper runs (starts with "no reading": {@link #retryDue} keys on it). */
+    static final String STATUS_NEEDS_HELPER = "no reading: the shell helper is not running, and Android refuses the stock launcher's memory to an app (SELinux); start the helper to record";
+
+    /**
+     * CW1 D7 (pure): may a look spawn anything beyond asking the helper? Only when the helper runs: an app uid is refused {@code dumpsys meminfo} and {@code dumpsys activity processes} on Android 10
+     * (emulator runs #621-#623), so the two calls were pure cost. A forced look (Launcher control, SR1's after-session reading) is therefore worth a thread only to ask the helper.
+     */
+    static boolean mayRunDumpsys(boolean helperUp) { return helperUp; }
+
     /** One sentence for Launcher control and the tablet report. */
     static String describe(Context c) { String st = ""; try { st = Features.getString(c, STATUS_KEY, ""); } catch (Throwable ignored) { } String d = describe(ring(c), System.currentTimeMillis()); return st.isEmpty() || "ok".equals(st) ? d : d + " [last look: " + st + "]"; }
 
@@ -303,18 +312,16 @@ final class QsMemory {
                         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
                         long now = System.currentTimeMillis();
                         Features.setLongAsync(app, TRY_AT_KEY, now);
-                        // CG1f (emulator runs #621-623): an APP uid is refused ("Can't find service: meminfo"), the shell uid reads it: the helper first, the app's own look only as a fallback (it may work on another image)
+                        // CG1f (emulator runs #621-623): an APP uid is refused ("Can't find service: meminfo": SELinux), the shell uid reads it. CW1 D7: so without a running helper nothing is spawned (the two app-uid dumpsys
+                        // calls only made system_server walk its processes for an answer that never came); the status line says the helper is needed.
                         boolean helperUp = false;
                         try { helperUp = ShellHelper.running(); } catch (Throwable ignored) { }
-                        boolean dumpOk = app.checkSelfPermission(android.Manifest.permission.DUMP) == PackageManager.PERMISSION_GRANTED;
+                        if (!helperUp) { Features.setStringAsync(app, STATUS_KEY, STATUS_NEEDS_HELPER); return; }
                         Sample s = new Sample();
                         String how = "the shell helper";
-                        String why = "";   // the first line that explains a failure: the HELPER's own when it was asked (the app's refusal used to overwrite it: CG1 review C), else the app's
-                        if (helperUp) { String h = ShellHelper.stockMeminfo(); s = parse(h == null ? "" : h, now); why = firstLine(h == null ? String.valueOf(ShellHelper.lastError) : h); }
-                        if (!s.found && dumpOk) { String d1 = read(PACKAGE, LIMIT_MS); s = parse(d1, now); how = "meminfo"; if (!helperUp) why = firstLine(d1); }
-                        int procChars = -1;
-                        if (!s.found && dumpOk) { String d2 = read(new String[] { "dumpsys", "activity", "processes" }, LIMIT_MS); s = parseProcesses(d2, now); procChars = d2.length(); if (s.found) how = "activity processes (PSS only)"; }
-                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, helperUp, dumpOk, why, procChars));   // why a look gave nothing (an app-uid dumpsys may be refused by SELinux on a real device)
+                        String h = ShellHelper.stockMeminfo(); s = parse(h == null ? "" : h, now);
+                        String why = firstLine(h == null ? String.valueOf(ShellHelper.lastError) : h);   // the first line that explains a failure: the HELPER's own
+                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, true, true, why, -1));
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
