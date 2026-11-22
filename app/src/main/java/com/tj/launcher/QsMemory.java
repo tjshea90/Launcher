@@ -316,7 +316,7 @@ final class QsMemory {
                         // calls only made system_server walk its processes for an answer that never came); the status line says the helper is needed.
                         boolean helperUp = false;
                         try { helperUp = ShellHelper.running(); } catch (Throwable ignored) { }
-                        if (!helperUp) { Features.setStringAsync(app, STATUS_KEY, STATUS_NEEDS_HELPER); return; }
+                        if (!mayRunDumpsys(helperUp)) { Features.setStringAsync(app, STATUS_KEY, STATUS_NEEDS_HELPER); return; }
                         Sample s = new Sample();
                         String how = "the shell helper";
                         String h = ShellHelper.stockMeminfo(); s = parse(h == null ? "" : h, now);
@@ -334,35 +334,5 @@ final class QsMemory {
             t.setDaemon(true);
             t.start();
         } catch (Throwable ignored) { RUNNING.set(false); }
-    }
-
-    /** Runs {@code dumpsys meminfo <pkg>}; blocks up to {@code limitMs}; "" when it fails. Never throws. */
-    static String read(String pkg, long limitMs) { return read(new String[] { "dumpsys", "meminfo", pkg }, limitMs); }
-
-    static String read(String[] cmd, long limitMs) {
-        Process proc = null;
-        final java.util.concurrent.atomic.AtomicBoolean finished = new java.util.concurrent.atomic.AtomicBoolean(false);
-        try {
-            proc = new ProcessBuilder(cmd).redirectErrorStream(true).start();
-            final Process p = proc;
-            final long end = SystemClock.elapsedRealtime() + limitMs;
-            Thread watchdog = new Thread(new Runnable() {
-                @Override public void run() {
-                    while (!finished.get() && SystemClock.elapsedRealtime() < end) { try { Thread.sleep(50); } catch (InterruptedException e) { return; } }
-                    if (!finished.get()) p.destroy();
-                }
-            }, "TjQsMemWatch");
-            watchdog.setDaemon(true);
-            watchdog.start();
-            StringBuilder out = new StringBuilder();
-            BufferedReader r = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            try { String l; while ((l = r.readLine()) != null && out.length() < MAX_CHARS) out.append(l).append('\n'); } finally { r.close(); }
-            return out.toString();
-        } catch (Throwable t) {
-            return "";
-        } finally {
-            finished.set(true);
-            if (proc != null) { try { proc.destroy(); } catch (Throwable ignored) { } }
-        }
     }
 }
