@@ -2081,7 +2081,9 @@ public class TjAccessibilityService extends AccessibilityService {
                 android.content.Context app = getApplicationContext();
                 if (Mode.isCustom(app) || keyguardLocked()) return;   // the choice changed meanwhile (a return method, a new lock): nothing to enforce
                 String target = ReturnReset.targetPackage(app);
-                boolean ours = !Unified.active(app) && isForeground(getPackageName()), tgt = target != null && isForeground(target);   // CV1: with the one launcher our home in front IS the right answer; only the Solitaire stand-in is wrong
+                boolean active = Unified.active(app);
+                String top = active && target == null ? null : activeWindowPackage();   // A6 (CW1): one look at the active window for both questions, none when neither is asked
+                boolean ours = !active && getPackageName().equals(top), tgt = target != null && target.equals(top);   // CV1: with the one launcher our home in front IS the right answer; only the Solitaire stand-in is wrong
                 if (ProfileSession.restartQuickstepAfterUnlock(ours, tgt, attempt)) {
                     LockLog.add(app, "VERIFY", "attempt " + (attempt + 1) + ": " + (ours ? "the custom launcher" : "Solitaire") + " is in front after a Quickstep choice: starting Quickstep's home again");
                     startQuickstepFront("verify " + (attempt + 1));
