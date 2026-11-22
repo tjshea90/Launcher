@@ -92,6 +92,19 @@ public class IconCache extends BaseIconCache {
         return mInstantAppResolver.isInstantApp(info);
     }
 
+    /**
+     * Tj (C8, CW1): an icon of an app the launcher does not show (hidden in the custom drawer) is written to the icon DB but not kept in memory; the unlocked profile shows every app, so
+     * nothing is skipped there. Any doubt keeps the icon.
+     */
+    @Override
+    protected boolean keepInMemory(ComponentName componentName, UserHandle user) {
+        try {
+            return com.tj.launcher.HiddenApps.isPackageShown(mContext, componentName.getPackageName());
+        } catch (Throwable t) {
+            return true;
+        }
+    }
+
     @Override
     protected BaseIconFactory getIconFactory() {
         return LauncherIcons.obtain(mContext);
