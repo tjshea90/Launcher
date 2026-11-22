@@ -40,6 +40,11 @@ public final class Mode {
     /** AC1: when the last unlock that CONFIRMED a Quickstep session (a handshake) happened (ms). With {@link #changedAt} it dates the start of the current Quickstep session. */
     public static long confirmedAt(Context c) { return prefs(c).getLong("qsConfirmedAt", 0); }
     public static void confirmQuickstep(Context c, long now) { prefs(c).edit().putLong("qsConfirmedAt", now).commit(); }
+    /**
+     * A7 (CW1): the same stamp without the disk wait. The in-memory value is updated at once (the router and the service share this process and read it from memory); a process kill in the few ms before the
+     * write lands loses ONLY this later stamp, and the earlier one (committed when the handshake was accepted) still dates the session after the lock it came from.
+     */
+    public static void confirmQuickstepAsync(Context c, long now) { prefs(c).edit().putLong("qsConfirmedAt", now).apply(); }
 
     /** AC1: the start of the current Quickstep session = the later of the mode change and the last handshake unlock; 0 = unknown (a test helper wrote the mode without a time). */
     public static long sessionRefMs(Context c) { return Math.max(changedAt(c), confirmedAt(c)); }
@@ -91,7 +96,13 @@ public final class Mode {
     }
 
     /** commit() (not apply): the router reads this a moment later, possibly after our process is killed. */
-    public static void set(Context c, String mode) {
+    public static void set(Context c, String mode) { set(c, mode, 0); }
+
+    /**
+     * A7 (CW1): as {@link #set(Context, String)}, and when {@code confirmedAtMs > 0} the handshake stamp {@link #confirmQuickstep} goes into the SAME editor, so one commit (one fsync) carries both
+     * where the handshake flips the mode. Both values are durable together before the call returns, exactly as the two separate commits were.
+     */
+    public static void set(Context c, String mode, long confirmedAtMs) {
         String m = QUICKSTEP.equals(mode) ? QUICKSTEP : CUSTOM;
         String before = get(c);
         boolean quickstepBegins = QUICKSTEP.equals(m) && CUSTOM.equals(before);
@@ -101,6 +112,7 @@ public final class Mode {
         SharedPreferences.Editor ed = prefs(c).edit().putString(KEY, m).putLong("changedAt", nowMs);
         if (quickstepBegins) ed.putLong("qsStartAt", nowMs);   // AI1: the Quickstep session's own start and end (changedAt moves at EVERY change): the clean-up asks Android's usage log what was used in between
         if (quickstepEnds) ed.putLong("qsEndAt", nowMs);
+        if (confirmedAtMs > 0) ed.putLong("qsConfirmedAt", confirmedAtMs);   // A7
         ed.commit();
         try { AnimationSpeedup.syncNow(c, "mode " + m); } catch (Throwable ignored) { }   // BF1 (Tj: animations off ONLY inside Quickstep, back on "immediately ... in the custom launcher"): first thing after the mode is stored, before the slower profile switches below
         try { SettingsSpoof.syncSoon(c, "mode " + m); } catch (Throwable ignored) { }   // BN1: the Settings look-alike's drawer entry exists only in the custom mode (level-triggered, a few seconds late on a background thread: never on the unlock path)
