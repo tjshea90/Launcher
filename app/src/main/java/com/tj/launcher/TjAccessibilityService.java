@@ -2013,7 +2013,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 if (!front) startQuickstepFront("after the unlock");
                 Features.setStringAsync(this, UnlockPick.LAST_KEY, now() + "  Quickstep (handshake '" + m.title + "')" + (front ? "" : ", started after the unlock"));
                 Log.i(TAG, "UNLOCKPICK quickstep via " + m.id + " front=" + front);
-                Mode.confirmQuickstep(app, System.currentTimeMillis());   // AC1: this lock ended in a handshake, so the safety net below must not end this Quickstep session
+                Mode.confirmQuickstepAsync(app, System.currentTimeMillis());   // AC1: this lock ended in a handshake, so the safety net below must not end this Quickstep session   // A7 (CW1): no fsync on the first-frame path; the accept-time stamp is the durable one
                 LockLog.add(app, "UNLOCK", "handshake " + m.id + " -> Quickstep, stock in front=" + front + ", Enter to unlock " + sinceEnter + " ms");
                 LockQuiet.onUnlockAsync(app, true);   // AK1: a gesture unlock into Quickstep puts Wi-Fi / Bluetooth back as they were before the lock
                 BatterySaverGuard.onUnlockAsync(app, true);   // BA2: ... and Quickstep's own battery saver state (only when Android's state cannot have been reset: not plugged in, same boot)
