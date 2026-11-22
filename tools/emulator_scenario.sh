@@ -5879,9 +5879,45 @@ ULSET=""; for a in $ULALLOW; do ULSET="$ULSET<string>$a</string>"; done
 adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"baseline_done\\\" value=\\\"true\\\" /><set name=\\\"allowed\\\">$ULSET</set></map>\" > shared_prefs/tj_apps.xml'"
 adb shell pm uninstall com.tj.testnotifier.ctl >/dev/null 2>&1
 ullog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
-uldrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; adb shell uiautomator dump /sdcard/ul.xml >/dev/null 2>&1; adb shell cat /sdcard/ul.xml 2>/dev/null | grep -o 'text="[^"]*"' | sed 's/text="//; s/"$//' | tr '\n' '|'; }
+uldrawer(){ local t i; for i in 1 2 3; do adb shell input swipe 300 900 300 200 400; sleep 3; adb shell uiautomator dump /sdcard/ul.xml >/dev/null 2>&1; t="$(adb shell cat /sdcard/ul.xml 2>/dev/null | grep -o 'text="[^"]*"' | sed 's/text="//; s/"$//' | tr '\n' '|')"; case "$t" in *'Search apps'*) break;; esac; adb shell input keyevent KEYCODE_HOME; sleep 3; done; echo "$t"; }   # retry: the first swipe after a slow first load (default layout) can start a drag instead of opening the drawer (run #720 UL4)
 uldb(){ adb exec-out "run-as $PKG cat databases/$1" 2>/dev/null | strings; }
 UL_STRAY0="$(ullog | grep -c STRAYCUSTOM)"
+# ---- seed: the REAL copy path needs rows in the custom layout (the emulator's custom home is empty: run #720 "nothing to copy"). Start the custom launcher once so launcher.db exists, stop the app, put an app icon, a
+#      folder with two apps, a widget row and a deep-shortcut row into launcher.db on the host (python3 sqlite3), and remove any unlocked database so the NEXT unlocked load seeds it from these rows.
+setmode custom; ensurehome; rebind; home; sleep 5
+adb shell am force-stop "$PKG"; sleep 1
+UL_P1="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.gallery3d | tail -1 | tr -d '\r')"
+UL_P2="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.camera2 | tail -1 | tr -d '\r')"
+UL_P3="$(adb shell cmd package resolve-activity --brief -c android.intent.category.LAUNCHER com.android.deskclock | tail -1 | tr -d '\r')"
+adb exec-out "run-as $PKG cat databases/launcher.db" > "$OUT/ul-custom-in.db" 2>/dev/null
+cat > "$OUT/ul_inject.py" <<'PY'
+import sqlite3, sys
+db, p1, p2, p3 = sys.argv[1:5]
+c = sqlite3.connect(db)
+cols = [r[1] for r in c.execute("PRAGMA table_info(favorites)")]
+def row(**k):
+    k.setdefault("spanX", 1); k.setdefault("spanY", 1); k.setdefault("profileId", 0); k.setdefault("restored", 0); k.setdefault("options", 0); k.setdefault("modified", 0); k.setdefault("rank", 0)
+    k = {a: b for a, b in k.items() if a in cols}
+    c.execute("INSERT OR REPLACE INTO favorites (%s) VALUES (%s)" % (",".join(k), ",".join("?" * len(k))), list(k.values()))
+def intent(comp): return "#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;launchFlags=0x10200000;component=%s;end" % comp
+c.execute("DELETE FROM favorites")
+row(_id=1, title="G", intent=intent(p1), container=-100, screen=0, cellX=0, cellY=1, itemType=0)
+row(_id=2, title="F", container=-100, screen=0, cellX=1, cellY=1, itemType=2)
+row(_id=3, title="C", intent=intent(p2), container=2, screen=0, cellX=0, cellY=0, itemType=0)
+row(_id=4, title="K", intent=intent(p3), container=2, screen=0, cellX=1, cellY=0, itemType=0, rank=1)
+row(_id=5, title="W", container=-100, screen=0, cellX=2, cellY=1, spanX=2, spanY=2, itemType=4, appWidgetId=4242, appWidgetProvider="com.android.deskclock/com.android.alarmclock.AnalogAppWidgetProvider")
+row(_id=6, title="S", intent="#Intent;action=android.intent.action.MAIN;package=com.android.gallery3d;S.shortcut_id=abc;end", container=-100, screen=0, cellX=3, cellY=0, itemType=6)
+c.commit(); print(c.execute("SELECT count(*) FROM favorites").fetchone()[0])
+PY
+if [ -s "$OUT/ul-custom-in.db" ] && [ -n "$UL_P1" ] && [ -n "$UL_P2" ] && [ -n "$UL_P3" ]; then
+  UL_N="$(python3 -I "$OUT/ul_inject.py" "$OUT/ul-custom-in.db" "$UL_P1" "$UL_P2" "$UL_P3" 2>&1 | tail -1)"
+  adb push "$OUT/ul-custom-in.db" /data/local/tmp/ul-custom.db >/dev/null 2>&1
+  adb shell "run-as $PKG sh -c 'rm -f databases/launcher.db-journal databases/launcher_unlocked.db databases/launcher_unlocked.db-journal; cp /data/local/tmp/ul-custom.db databases/launcher.db'" 2>&1 | head -2
+  adb shell rm -f /data/local/tmp/ul-custom.db
+  info "UL seed rows injected into the custom layout: $UL_N (components: $UL_P1 $UL_P2 $UL_P3)"
+else
+  info "UL seed rows NOT injected (db pull empty or a component not found: '$UL_P1' '$UL_P2' '$UL_P3')"
+fi
 # ---- A) the Quickstep world on the one launcher
 setmode quickstep; ensurehome; rebind; home; sleep 4
 resumed > "$OUT/ul-a-resumed.txt"; shot ul-a-home
@@ -5891,6 +5927,21 @@ check "UL3: the unlocked layout has its own database file" bash -c "adb shell \"
 check "UL3b: ... seeded from the custom layout or Launcher3's default (not empty)" bash -c "[ \"\$(adb exec-out \"run-as $PKG cat databases/launcher_unlocked.db\" 2>/dev/null | wc -c)\" -gt 8000 ]"
 info "UL seed log (provider): $(adb logcat -d -s LauncherProvider:I | grep -E 'seed|nothing to copy|unlocked' | tail -4 | cut -c1-150 | tr '\n' '|')"
 check "UL3c: the seed ran for the unlocked layout (copied the custom layout in one transaction, or found nothing to copy; review CV1)" bash -c "adb logcat -d -s LauncherProvider:I | grep -qE 'unlocked layout seeded with|nothing to copy'"
+adb exec-out "run-as $PKG cat databases/launcher_unlocked.db" > "$OUT/ul-unlocked-out.db" 2>/dev/null
+cat > "$OUT/ul_verify.py" <<'PY'
+import sqlite3, sys
+c = sqlite3.connect(sys.argv[1])
+rows = c.execute("SELECT _id,itemType,container FROM favorites").fetchall()
+ids = [r[0] for r in rows]
+folders = {r[0] for r in rows if r[1] == 2}
+bad_ids = [r for r in rows if r[0] < 1000000000]
+bad_types = [r for r in rows if r[1] in (4, 5, 6)]
+bad_links = [r for r in rows if r[2] > 0 and r[2] not in folders]
+print("rows=%d min=%s folders=%d inFolder=%d lowIds=%d widgetOrShortcut=%d orphanLinks=%d" % (len(rows), min(ids) if ids else 0, len(folders), sum(1 for r in rows if r[2] > 0), len(bad_ids), len(bad_types), len(bad_links)))
+PY
+UL_V="$(python3 -I "$OUT/ul_verify.py" "$OUT/ul-unlocked-out.db" 2>&1 | tail -1)"
+info "UL the unlocked layout after the seed: $UL_V"
+check "UL3d: the seeded unlocked layout has the app, the folder and its two apps, ids all >= 1e9, no widget / deep shortcut, no orphan folder link (real copy path, review CV1)" bash -c "echo '$UL_V' | grep -qE 'rows=[3-9] ' && echo '$UL_V' | grep -q 'folders=1 inFolder=2 lowIds=0 widgetOrShortcut=0 orphanLinks=0'"
 UL_DA="$(uldrawer)"; shot ul-a-drawer; rebind
 echo "$UL_DA" > "$OUT/ul-a-drawer.txt"; info "UL drawer in the unlocked profile: $(echo "$UL_DA" | cut -c1-300)"
 check "UL4: the unlocked drawer shows Contacts (NOT in the custom allowed list) and Launcher control and Back to custom" bash -c "grep -q 'Contacts' $OUT/ul-a-drawer.txt && grep -q 'Launcher control' $OUT/ul-a-drawer.txt && grep -q 'Back to custom' $OUT/ul-a-drawer.txt"
