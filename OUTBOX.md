@@ -2078,3 +2078,7 @@
 ## 2026-11-22T09:08:10Z
 > Two helpers are reading #737 and #738.
 <!-- sha:ae6fa9bd68e5 -->
+
+## 2026-11-22T09:12:19Z
+> `ship.sh` is running. It covers the unit suite, lint, the handoff test and the push, and I read its exit line when it finishes.
+<!-- sha:2136dc3c939b -->
