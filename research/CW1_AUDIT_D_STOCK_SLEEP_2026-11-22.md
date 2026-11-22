@@ -193,7 +193,7 @@ File: StockForceStop.java:236-247, StockRefresh.java:100-114. Each `afterQuickst
 ## 6. Recommended plan, in order
 
 0. **No code, [T]:** ask the owner for (a) Settings > Developer options > Memory > Memory used by apps, "Quickstep" 3-h and 1-day average after about a day of v0.9.17 (the old-world values were 414-450 MB); (b) the tablet report lines for SR2 / SR1 and the recorder. Everything below is cheap enough to build before the answer, but only (a) can say whether D8 / L4 / a lower SR1 line are worth anything.
-1. **App-only, one small change set (pure rules + JVM tests, then sections `sf`, `sr` and the lock core the diff pulls in):** D3 (re-aimed debt + "stock window seen" flag + config signature), D5 (one seeded drive), D4 (cold-start tolerant clock + a "cold start +N ms" number in the log), D6, D7. Run the review with a neutral brief on the delta only.
+1. **App-only, one small change set (pure rules + JVM tests, then sections `sf`, `sr` and the lock core the diff pulls in):** D3 (re-aimed debt + "stock window seen" flag + config signature), D5 (one seeded drive), D4 (cold-start tolerant clock + a "cold start +N ms" number in the log), D7. D6 only if the cable probe says so (deliberate review decision, lock-adjacent). Run the review with a neutral brief on the delta only.
 2. **Keep SR1 as it is**; revisit its 200 MB / 6 Activities line after the tablet number (L4 `send-trim-memory` is the only unproven helper add-on; skip it until a number says what it frees).
 3. **Defer D8** (alias) and D11 until a number shows they matter.
 4. **Write D2 into HANDOFF.md / BRIEF.md** so no later session tries `pm disable-user`.
