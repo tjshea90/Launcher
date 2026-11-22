@@ -28,8 +28,10 @@ public class Cw1RulesTest {
         assertEquals(1000 + 2500, RecentsClock.deadline(1000, 2500, false, 4000));
         // a sign: the budget starts there
         assertEquals(4500, RecentsClock.deadline(1000, 2500, true, 2000));
-        // a very early sign never gives LESS than the old rule
-        assertEquals(1000 + 2500, RecentsClock.deadline(1000, 2500, true, 1001));
+        // a very early sign never gives LESS than the old rule (a sign at the press itself equals it, a sign "before" it cannot shorten it)
+        assertEquals(1000 + 2500, RecentsClock.deadline(1000, 2500, true, 1000));
+        assertEquals(1000 + 2500, RecentsClock.deadline(1000, 2500, true, 500));
+        assertEquals(3501, RecentsClock.deadline(1000, 2500, true, 1001));
         // a very late sign never runs past the cap
         assertEquals(1000 + 6000, RecentsClock.deadline(1000, 2500, true, 6500));
     }
