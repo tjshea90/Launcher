@@ -6,9 +6,9 @@
 
 ---
 
-<VERSION> is released: the unlocked home is now THIS launcher, so there is one launcher instead of two.
+v0.9.17 is released: the unlocked home is now THIS launcher, so there is one launcher instead of two.
 
-<LINK>
+https://github.com/tjshea90/Launcher/releases/tag/v0.9.17
 
 **What changed**
 - After the secret handshake you land in this launcher in its unlocked form: the drawer has every app, with Launcher control and Back to custom in it, nothing hidden. Locked down it is the custom launcher as before. Double Home, the lock and a plain PIN work as before.
