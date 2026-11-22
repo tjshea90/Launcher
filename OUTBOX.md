@@ -2184,3 +2184,21 @@
 >
 > Next I'll rank everything into one findings list (CW1b) when audits A, C and D arrive.
 <!-- sha:0032eefe0dbf -->
+
+## 2026-11-22T18:22:08Z
+> Audits A (speed), B (screenshot-button hider) and C (RAM/CPU/battery) are finished and saved in `research/CW1_AUDIT_*`. Audit D (the stock launcher's sleep) is still running.
+>
+> **Speed (A):**
+> - **Slow cover (A1):** after a switch between the two modes, the cover and the unlock wait for the launcher's whole background load, including invisible work.
+> - **Double Home (A2):** it does a lot of bookkeeping on the main thread before the launcher even starts.
+> - **Wasted checks (A4, A6, A7):** the cover polls every 40 ms for up to 4.5 s. The handshake does lookups whose answer is thrown away. It also writes the same preferences file three times.
+>
+> **RAM/CPU/battery (C):** no high-severity finding. The app has no alarms, jobs, wake locks or timers. It has about 55 receivers, observers and listeners, and two free-running timers, one of which is the adb helper, not the app. Smaller items:
+> - The VPN check runs every 30 s and could use the system's network callback instead.
+> - Several idle threads never time out.
+> - The secret-code key filter is on all day in the custom launcher. It adds roughly 0.1–0.3 ms per input event [reasoned]. It is also your lock-out safety net, so removing it is your call.
+>
+> I can't size most of these without tablet numbers. The newest tablet report is from v0.9.1, so every cost here is reasoned from the code.
+>
+> I'll wait for audit D, then merge all four into one ranked fix list (CW1b).
+<!-- sha:faaa7e945274 -->
