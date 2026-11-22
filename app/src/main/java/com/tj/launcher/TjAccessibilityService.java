@@ -2048,6 +2048,15 @@ public class TjAccessibilityService extends AccessibilityService {
         } catch (Throwable t) { Log.e(TAG, "unlock choice failed", t); }
     }
 
+    /** A6 (CW1): the package of the active window's root (one cross-process fetch), "" when the root has no package, null when there is no root: {@code pkg.equals(activeWindowPackage())} answers what {@link #isForeground} does. Never throws. */
+    private String activeWindowPackage() {
+        try {
+            AccessibilityNodeInfo r = getRootInActiveWindow();
+            if (r == null) return null;
+            try { return r.getPackageName() == null ? "" : r.getPackageName().toString(); } finally { r.recycle(); }
+        } catch (Throwable t) { return null; }
+    }
+
     /**
      * AC1 safety net ({@link UsageGap}): if the helper was not running when the tablet was unlocked, nothing saw the plain PIN and Android showed Quickstep. Now that it is back: the keyguard was shown after the
      * Quickstep session began and no handshake was confirmed, so the session ended at that unlock - the custom launcher takes the tablet, exactly like a plain unlock does. Cheap when nothing is wrong
