@@ -1,13 +1,13 @@
-# CHECKPOINT 1544 — read me first, then TASKS.md
+# CHECKPOINT 1545 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T05:36:54Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/launcher-performance-audit-39n5do` · **builds on:** `c1d5c814` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T05:43:00Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `14f725f1` (this checkpoint is the commit after it)
 
 ## Just done
-CV1: sections ul+ul2 written, gate-map + workflow list, handoff test 53 ok
+CV1 takeover: new session continues old one (Tj told me to). Emulator run #718 id 44990179693 (ul,ul2, main@390f5cfb) dispatched 05:37:05 by old session is IN PROGRESS: do not re-dispatch
 
 ## Do this next
-dispatch emulator.yml sections=ul,ul2 on branch claude/launcher-performance-audit-39n5do (ref), read result with get_job_logs; in parallel start read-only review subagents (delta: git diff be84f62e HEAD -- app launcher3); heartbeat trig_01SrdLzjP9bFC1W4KzxUT1JL
+read #718 via get_job_logs (tail 90) at ~05:55 UTC; meanwhile read-only review subagents on git diff be84f62e..390f5cfb -- app launcher3; arm own heartbeat (old trig_01SrdLzjP9bFC1W4KzxUT1JL not visible from this account)
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch emulator.yml sections=ul,ul2 on branch claude/launcher-performance-audi
 
 ## Last ten checkpoints
 ```
+  390f5cfb ckpt 1544: CV1: sections ul+ul2 written, gate-map + workflow list, handoff test 53 ok
   e18d1484 ckpt 1543: CV1: code done: Unified/UnifiedRules/HomeProfile, provider profile db, loade
   c583442c ckpt 1542: CV1: rules+HomeProfile+provider profile db+loader hook+router+guards+handsha
   bdfadbd8 ckpt 1541: CV1: design note written (research/CV1_UNIFIED_LAUNCHER_DESIGN_2026-11-22.md
@@ -25,7 +26,6 @@ dispatch emulator.yml sections=ul,ul2 on branch claude/launcher-performance-audi
   28ff992c ckpt 1537: CU1: Tj asked whether the custom launcher could replace Quickstep with an un
   6b4b55f8 ckpt 1536: CT1: heartbeat trig_01T4TXfU4trvxurWPZHQmijG DELETED (job shipped); only CT1
   7cfdbb86 ckpt 1535: CT1: v0.9.16 RELEASED + RECORDED (android.yml full_build, target 1d8b6b2d, p
-  ccc3d53a ckpt 1534: CT1: gate GREEN: A #716 id 44957361801 (base,n,o,ac,x,pm) + B #717 id 449573
 ```
 
 (2 automatic checkpoint(s) since the last deliberate one — the
