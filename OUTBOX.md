@@ -2082,3 +2082,7 @@
 ## 2026-11-22T09:12:19Z
 > `ship.sh` is running. It covers the unit suite, lint, the handoff test and the push, and I read its exit line when it finishes.
 <!-- sha:2136dc3c939b -->
+
+## 2026-11-22T09:16:09Z
+> `ship.sh` is green (handoff test, version v0.9.17 code 56, full unit suite), and it is pushed with `main` equal to my tip. The Release build (`android.yml`, `full_build=true`) is dispatched. I check for the Release at about 09:20 UTC and write the BUILDLOG line only after it is green.
+<!-- sha:5470f4bd7493 -->
