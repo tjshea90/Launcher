@@ -259,9 +259,19 @@ final class StockForceStop {
      */
     static String blocker(boolean switchOn, int fails, boolean helperRunning, int debt, int minDebt, boolean customMode, boolean customHomeInFront, boolean screenOnUnlocked,
                           boolean automationOff, long lastAtMs, long nowMs, long cooldownMs) {
+        return blocker(switchOn, fails, helperRunning, debt, minDebt, customMode, customHomeInFront, screenOnUnlocked, automationOff, lastAtMs, nowMs, cooldownMs, false, true);
+    }
+
+    /**
+     * CW1 D3: the same with the one-launcher facts. {@code unifiedActive} + no stock window seen since the stock process was last restarted = "nothing to give back" (a process that showed nothing cannot have pinned
+     * anything), asked right after the helper question and before the debt. The emergency exit (not unified) never asks it: the v0.9.16 behaviour is unchanged.
+     */
+    static String blocker(boolean switchOn, int fails, boolean helperRunning, int debt, int minDebt, boolean customMode, boolean customHomeInFront, boolean screenOnUnlocked,
+                          boolean automationOff, long lastAtMs, long nowMs, long cooldownMs, boolean unifiedActive, boolean stockWindowSeen) {
         if (!switchOn) return "switch off";
         if (fails >= MAX_FAILS) return "gave up after " + fails + " failed tries (switch it off and on to try again)";
         if (helperRunning) return "the shell helper runs: its exact reading decides";
+        if (unifiedActive && !stockWindowSeen) return "nothing to give back: the stock launcher has shown no window since it was last restarted";
         if (debt < minDebt) return "not enough has piled up yet (" + debt + " of " + minDebt + ")";
         String safe = safeMoment(customMode, customHomeInFront, screenOnUnlocked, automationOff);
         if (!safe.isEmpty()) return safe;
@@ -290,7 +300,7 @@ final class StockForceStop {
     static long lastAtAfter(boolean worked, long nowMs, long cooldownMs) { return worked ? nowMs : nowMs - cooldownMs + RETRY_AFTER_FAIL_MS; }
 
     /** Pure: the status line must keep the result of the last drive while the cooldown is what blocks the next one. */
-    static boolean keepsLastResult(String blockerText) { return blockerText != null && (blockerText.startsWith("restarted ") || blockerText.startsWith("not enough")); }
+    static boolean keepsLastResult(String blockerText) { return blockerText != null && (blockerText.startsWith("restarted ") || blockerText.startsWith("not enough") || blockerText.startsWith("nothing to give back")); }
 
     // ------------------------------------------------------------------------------------------------ the drive (pure: what to do at each look)
 
