@@ -1804,7 +1804,7 @@ public class TjAccessibilityService extends AccessibilityService {
         preArmedThisLock = true;
         Features.setStringAsync(this, UnlockPick.LAST_KEY, now() + "  handshake '" + m.title + "' accepted -> Quickstep");
         profileNote("handshake '" + m.title + "' accepted: Quickstep in front behind the lock screen");
-        Mode.confirmQuickstep(app, System.currentTimeMillis());   // AC1: dates this session after the lock it came from, even if the helper dies before the unlock is processed
+        if (!stampedWithMode) Mode.confirmQuickstep(app, System.currentTimeMillis());   // AC1: dates this session after the lock it came from, even if the helper dies before the unlock is processed (durable: commit; where the mode flipped just now the same stamp went into that commit, A7)
         LockLog.add(app, "HANDSHAKE", m.id + " accepted, mode now " + Mode.get(app));
     }
 
