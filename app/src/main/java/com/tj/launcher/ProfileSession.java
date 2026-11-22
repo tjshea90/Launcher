@@ -114,6 +114,7 @@ public final class ProfileSession {
             Features.setInt(c, "boot_count_seen", now);
             if (seen == -2) return;   // first look after install
             ReturnReset.markBootClean(c);   // BE2/BE3: a new boot (clean start only): the first unlock clears the Recents list the last boot left behind
+            StockForceStop.newBoot(c);      // CW1 D3: the stock launcher's process is new: nothing it pinned exists, no stock window seen since
             if (bootEndsQuickstep(seen, now, Mode.isCustom(c), CrashGuard.automationOff(c))) {
                 Mode.set(c, Mode.CUSTOM);
                 AppOrigin.clearQuickstep(c);
