@@ -2202,3 +2202,15 @@
 >
 > I'll wait for audit D, then merge all four into one ranked fix list (CW1b).
 <!-- sha:faaa7e945274 -->
+
+## 2026-11-22T18:31:43Z
+> Three implementers are now working in parallel on the fixes. They're in separate parts of the code and don't touch each other's files.
+>
+> - **Speed and resources:** the faster cover and unlock after a mode switch, cheaper unlock-path steps, and trimming idle threads and caches.
+> - **Screenshot-button hider:** build the home patch earlier so it exists before the first press, stop the slow scan from delaying the first fade, and warm the first draw so it doesn't flicker.
+> - **Stock launcher:** a reviewer found it can't truly sleep, because Android's own system UI keeps it running for Recents and restarts it within seconds if it's killed. So the work is making it small and rarely woken: a smarter cleanup trigger, one cleanup after the switch to the new launcher, and no wasted system calls.
+>
+> Each implementer stays inside its own region, and I run all the build and test steps through one lock so they can't collide. None of them can commit or touch the emulator tests.
+>
+> When they finish I'll run the full unit suite and lint, then have separate read-only reviewers check each change before any emulator run. Two questions for you go with the release note: should the hider also run in the unlocked home, and should the secret-code key filter stay on all day?
+<!-- sha:f2e041949c5a -->
