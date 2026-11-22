@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 
 /**
  * CG1f (Tj, 2026-11-17: "investigate why and how the quickstep launcher slowly builds in ram usage over time ... Figure out what features in the custom launcher app can add to the quickstep ram usage, even if indirectly").
+ * CW1 D7 (2026-11-22): the recorder reads ONLY through the shell helper now; an app uid is refused {@code dumpsys meminfo} and {@code dumpsys activity processes} (SELinux, runs #621-#623), so without a helper the status line says so and nothing is spawned.
  * A recorder that needs no cable: with the DUMP grant from the adb setup the app reads {@code dumpsys meminfo com.android.launcher3} (the STOCK launcher's process, the one Settings calls "Quickstep") on a
  * short-lived background thread, at most every {@link #GAP_MS} and only while the tablet is in use (30 s after a wake, when Launcher control opens, when a tablet report is written), and keeps a ring of
  * {@link #KEEP} compact samples. Each sample holds what tells the candidate causes of the growth apart (research/CG1F_QUICKSTEP_AOSP_ANGLE_2026-11-17.md): the PSS parts (java heap, native heap, code, graphics,
