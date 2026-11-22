@@ -736,9 +736,11 @@ public class LoaderTask implements Runnable {
             }
 
             // Unpin shortcuts that don't exist on the workspace.
+            // Tj (CV1): not once the unlocked layout exists: pinned shortcuts belong to the launcher package and BOTH profiles share them, so a load that sees only its own layout would unpin the other one's.
             HashSet<ShortcutKey> pendingShortcuts =
                     InstallShortcutReceiver.getPendingShortcuts(context);
-            for (ShortcutKey key : shortcutKeyToPinnedShortcuts.keySet()) {
+            boolean sharedPins = com.tj.launcher.HomeProfile.sharedShortcutPins(context);
+            for (ShortcutKey key : sharedPins ? new HashSet<ShortcutKey>() : shortcutKeyToPinnedShortcuts.keySet()) {
                 MutableInt numTimesPinned = mBgDataModel.pinnedShortcutCounts.get(key);
                 if ((numTimesPinned == null || numTimesPinned.value == 0)
                         && !pendingShortcuts.contains(key)) {
