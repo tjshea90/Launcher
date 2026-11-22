@@ -2050,3 +2050,7 @@
 ## 2026-11-22T08:25:04Z
 > #734 is green: 25 PASS, 0 FAIL. The new check shows a double Home from inside an app returning to custom mode 3 times out of 3, with the two presses 297, 182 and 177 ms apart (window 900 ms). I'm saving that. Then I run the complete lock core with the switch on in one go, twice in parallel on identical product code. #726 was red on exactly that set and only the pieces have been green since.
 <!-- sha:c2209ec7eb13 -->
+
+## 2026-11-22T08:27:17Z
+> I'm checking each sentence of the answer draft against what the runs actually proved. The first question is whether the "icon added in the unlocked home" check (UL10) had a real icon to look for. A helper is pulling that line from #734 while the two full-core runs (#735, #736) continue.
+<!-- sha:eb2d237d7bec -->
