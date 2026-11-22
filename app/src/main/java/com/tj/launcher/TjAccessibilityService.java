@@ -4251,13 +4251,13 @@ public class TjAccessibilityService extends AccessibilityService {
                     tick[0]++;
                     if (tick[0] % 5 == 0) scrollSomething(pk);
                     if (saw[0] && ++idle[0] >= 3) {
-                        finishRecentsEmpty(t0, done, leftover ? "closed " + closed[0] + " card(s), but some cards would not go away: Recents is NOT verified empty" : "closed " + closed[0] + " card(s), none left", !leftover, closed[0]);
+                        finishRecentsEmpty(t0, done, leftover ? "closed " + closed[0] + " card(s), but some cards would not go away: Recents is NOT verified empty" : "closed " + closed[0] + " card(s), none left", !leftover, closed[0], clock);
                         return;
                     }
                 }
             } catch (Throwable t) { Log.e(TAG, "empty recents failed", t); }
             finally { if (roots != null) for (AccessibilityNodeInfo r : roots) { try { r.recycle(); } catch (Throwable ignored) { } } }
-            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared | " + recentsDiag(), false, closed[0]); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
+            if (over) { finishRecentsEmpty(t0, done, saw[0] ? "STOPPED after " + closed[0] + " card(s), time ran out: Recents is NOT verified empty" : "no Clear all button and no card with a Close action found: nothing was cleared | " + recentsDiag(), false, closed[0], clock); return; }   // a partial clear never marks Recents clean (code review 2026-11-07): the next return tries again
             handler.postDelayed(this, 40);
         } });
     }
@@ -4335,22 +4335,22 @@ public class TjAccessibilityService extends AccessibilityService {
         }
     }
 
-    private void finishRecentsEmpty(long t0, Runnable done, String what, boolean ok, int closed) {
+    private void finishRecentsEmpty(long t0, Runnable done, String what, boolean ok, int closed, RecentsClock clock) {
         if (ok) { RecentsDirty.clear(this); AppOrigin.clearQuickstep(this); AppOrigin.setTracked(this); ReturnReset.clearBootClean(this); }   // Recents is clean again (and the boot flag is used up)
         resetReport.append("recents: ").append(what).append(" (+").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms)\n");
         Log.i(TAG, "RESET recents (complete) " + what + " +" + (android.os.SystemClock.uptimeMillis() - t0) + "ms");
-        LockLog.add(getApplicationContext(), "RESET", "recents (complete clear): " + what + ", " + closed + " card(s) closed one by one");
+        LockLog.add(getApplicationContext(), "RESET", "recents (complete clear): " + what + ", " + closed + " card(s) closed one by one" + (clock == null ? "" : "; " + clock.describe(android.os.SystemClock.uptimeMillis())));   // CW1 D4: the lock log says how long the stock Recents took to appear
         finishReset(t0, done);
     }
 
-    private void recentsClearAll(final long t0, final Runnable done) {
-        pollPress("clear all", new String[] {"no recent items"}, new String[] {"com.android.launcher3", "com.android.systemui"}, 1800, true, new PollResult() {
+    private void recentsClearAll(final long t0, final Runnable done, final RecentsClock clock) {   // CW1 D4: the clock decides the deadline (pollPress checks it first on every look)
+        pollPress("clear all", new String[] {"no recent items"}, new String[] {"com.android.launcher3", "com.android.systemui"}, 1800, true, clock, new PollResult() {
             @Override public void done(int result) {
                 if (result == PRESSED || result == EMPTY) { RecentsDirty.clear(TjAccessibilityService.this); AppOrigin.clearQuickstep(TjAccessibilityService.this); AppOrigin.setTracked(TjAccessibilityService.this); }   // Recents is clean again
                 resetReport.append("recents: ").append(result == PRESSED ? "cleared (apps closed)" : result == EMPTY ? "already empty" : "no Clear all button found | " + recentsDiag())
                         .append(" (+").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms)\n");
                 Log.i(TAG, "RESET recents result=" + result + " +" + (android.os.SystemClock.uptimeMillis() - t0) + "ms");
-                LockLog.add(getApplicationContext(), "RESET", "recents: Clear all " + (result == PRESSED ? "pressed" : result == EMPTY ? "found the list empty" : "button NOT FOUND: nothing was cleared"));   // AI1: the lock log says what really happened
+                LockLog.add(getApplicationContext(), "RESET", "recents: Clear all " + (result == PRESSED ? "pressed" : result == EMPTY ? "found the list empty" : "button NOT FOUND: nothing was cleared") + "; " + clock.describe(android.os.SystemClock.uptimeMillis()));   // AI1: the lock log says what really happened
                 finishReset(t0, done);
             }
         });
