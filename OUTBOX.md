@@ -2116,3 +2116,47 @@
 >
 > I haven't re-checked that the release page exists. The build log lists it, and I'll confirm it at 10:22 before I write to you.
 <!-- sha:04f39c9fe944 -->
+
+## 2026-11-22T10:25:07Z
+> The one-launcher build, v0.9.17, is ready to install. I haven't seen it run on your tablet, and no emulator run could show the actual screens.
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.17
+>
+> It installs over your current install as an update. The unlocked home is now this launcher, so there is one launcher instead of two.
+>
+> **What changed**
+> - After the secret handshake you land in this launcher in its unlocked form. The drawer has every app, with Launcher control and Back to custom in it, and nothing is hidden. Locked down it is the custom launcher as before. Double Home, the lock and a plain PIN work as before.
+> - The old launcher stays installed for two jobs only. It is Android's own Recents screen, so the Recents key is unchanged. It is also the emergency exit: three crashes in two minutes put it back as the unlocked home.
+> - Launcher control has one switch, "One launcher for both worlds". On is this release. Off is the old two-launcher behaviour. "Restore everything" should switch it off too, but that is written in the code and I did not run it.
+>
+> **One difference you will see:** the unlocked home has its own icon layout. It starts as a copy of the custom home's layout, without widgets or pinned shortcuts. It does not start as your old stock arrangement, such as the "Connect" and "Games" folders, because the stock launcher keeps that private and the app can't read it. You arrange it once, and after that it keeps its own layout.
+>
+> **What the emulator showed:**
+> - In the unlocked world our launcher is in front and loads its own layout file.
+> - The unlocked drawer shows Contacts, Launcher control and Back to custom.
+> - A double Home, also from inside an app, brings back custom mode, and the custom drawer hides those apps again.
+> - The layout copy was checked row by row on a test layout.
+> - The Recents key still opens Android's own Recents.
+> - A tripped crash breaker brings the stock launcher back, a double Home ends that, and the switch off gives the old behaviour.
+> - The whole lock-screen test set passed with the switch on in one run: 98 checks passed, 0 failed (run #735).
+>
+> **Honest note about the tests:** several other runs of the same code were red, and none of those reds repeated on a rerun.
+> - One run (#726) failed six checks, the lock-time clean-up and the battery-saver return. No emulator crash was beside it and I found no cause, so I'm calling it an unexplained flake.
+> - Three runs (#727, #736, #737) failed beside a native crash of the emulator, which also hits the old release.
+> - One run (#733) failed a single check on a log timing race.
+> - Four more runs had one native crash each, and their failing checks passed when run alone.
+>
+> **What the emulator could not show, only your tablet can:**
+> - How the switch between the two worlds looks on the real screen. A short cover bridges the reload.
+> - Whether the Recents opening animation differs a little.
+> - That an app installed while unlocked appears on the unlocked home only. That check had nothing t
+> [... 369 characters omitted ...]
+>  list or of the other layout. If a double Home sometimes doesn't register, tell me. The window is 0.9 s, and the launcher now does work that another process did before.
+> 3. Lock and unlock a few times, with a plain PIN and with the handshake.
+> 4. The Recents key.
+> 5. Install an app while unlocked: it must show on the unlocked home only.
+>
+> If anything looks wrong, switch "One launcher for both worlds" off in Launcher control and the old behaviour comes back at once.
+>
+> The other session did the build, the gate runs and the release. I merged its work into my branch, filled in this answer and verified the Release page, which has all three APKs. I deleted my 2-hourly auto-resume check, since nothing is left for me to do. The other session's own check isn't visible to me, so I couldn't delete it. Waiting on you: the tablet checks above, and your v0.9.16 tablet check from the earlier release (CT1f).
+<!-- sha:3ec954e0c100 -->
