@@ -97,21 +97,16 @@ final class StockRefresh {
             if (!switchOn(app)) return;
             if (!PENDING.compareAndSet(false, true)) return;
             final long delay = Features.getInt(app, DELAY_KEY, (int) AFTER_RETURN_DELAY_MS);   // an int key: the scenario writes it by hand
-            Thread t = new Thread(new Runnable() {
+            // CW1 D11: ONE delayed post (no thread sleeps for the 45 s); the helper question blocks (a PING), so it runs on a thread started when the wait is over
+            StockForceStop.later("TjStockRefresh", delay, new Runnable() {
                 @Override public void run() {
+                    PENDING.set(false);
                     try {
-                        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                        Thread.sleep(Math.max(0L, delay));
-                    } catch (Throwable ignored) {
-                    } finally { PENDING.set(false); }
-                    try {
-                        if (!ShellHelper.running()) return;   // review LOW 1: no helper = no restart is possible, so no forced reading (its app-uid dumpsys fallbacks cost up to 10 s each)
+                        if (!ShellHelper.running()) return;   // review LOW 1: no helper = no restart is possible, so no forced reading
                         QsMemory.refreshAsync(app, true);
                     } catch (Throwable ignored) { }
                 }
-            }, "TjStockRefreshWait");
-            t.setDaemon(true);
-            t.start();
+            });
         } catch (Throwable t) { PENDING.set(false); }
     }
 
