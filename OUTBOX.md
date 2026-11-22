@@ -2258,3 +2258,7 @@
 >
 > I'll read the reruns at about 23:45 UTC and 00:10 UTC. Nothing ships until the failures are explained.
 <!-- sha:4870ae5c5656 -->
+
+## 2026-11-22T23:45:26Z
+> Run #742 hit the 50-minute job limit and was cancelled, so it did not finish on its own. An agent is reading its partial results block now.
+<!-- sha:717c6ebba6e6 -->
