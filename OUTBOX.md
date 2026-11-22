@@ -2010,3 +2010,7 @@
 ## 2026-11-22T07:38:22Z
 > Diagnostics are in and both runs end about 07:47. My working theory is that with the switch on, the first Home press starts our own launcher, which can delay the second press's `route()` call past the 900 ms double-press window. The per-line lock log with millisecond stamps will confirm or refute that.
 <!-- sha:c7ec40ab535c -->
+
+## 2026-11-22T07:48:13Z
+> Two helpers are reading #730 (`unified,ac`, with the full lock-log lines) and #731 (`an` solo). I'll act on their reports once they arrive.
+<!-- sha:dea62bb7e99b -->
