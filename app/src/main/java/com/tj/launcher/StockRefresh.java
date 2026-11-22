@@ -141,7 +141,7 @@ final class StockRefresh {
                     QsMemory.Sample a = QsMemory.parse(d == null ? "" : d, System.currentTimeMillis());
                     if (a.found) { afterKb = a.pssKb; afterAct = a.activities; }
                 }
-                if (ok) StockForceStop.setDebt(app, 0);   // CT1: the stock process is fresh; the helper-free debt starts again
+                if (ok) StockForceStop.stockRestarted(app);   // CT1: the stock process is fresh; the helper-free debt starts again (CW1 D3: and "no stock window since the last restart")
                 String text = resultText(clock(), s.pssKb, s.activities, afterKb, afterAct, ok, err);
                 Features.setStringAsync(app, STATUS_KEY, text);
                 LockLog.add(app, "SR", text.length() > 180 ? text.substring(0, 180) : text);
