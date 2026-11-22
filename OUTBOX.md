@@ -2066,3 +2066,7 @@
 ## 2026-11-22T08:44:16Z
 > The heartbeat fired, and no other session is working (`main` equals my tip `7b0f7cc8`). The job continues: #735 and #736 end about 08:55, and I read them at 08:56.
 <!-- sha:0396aaa5d292 -->
+
+## 2026-11-22T08:56:15Z
+> Two helpers are reading #735 and #736, the two full-core runs, and I'll act on their reports.
+<!-- sha:5cf6e52a6f5d -->
