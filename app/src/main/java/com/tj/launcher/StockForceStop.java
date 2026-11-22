@@ -397,26 +397,55 @@ final class StockForceStop {
 
     // ------------------------------------------------------------------------------------------------ glue
 
-    /** Mode.set hook: a Quickstep session just ended (one more piece of debt); 45 s later the custom home is quiet and {@link #consider} decides. One wait at most; nothing when the switch is off. Never throws, never blocks. */
+    /**
+     * Mode.set hook: a Quickstep session just ended (one more piece of debt in the emergency exit's world, none in the one-launcher world, CW1 D3); 45 s later the custom home is quiet and {@link #consider} decides.
+     * One wait at most; nothing when the switch is off. Never throws, never blocks.
+     */
     static void afterQuickstepSession(final Context c) {
         try {
             final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
             if (!switchOn(app)) return;
-            addDebt(app, 1);
-            if (!PENDING.compareAndSet(false, true)) return;
+            boolean unified = Unified.active(app);
+            seedIfNeeded(app, unified);
+            addDebt(app, sessionWeight(unified));
+            scheduleConsider(app, "after a Quickstep session");
+        } catch (Throwable t) { PENDING.set(false); }
+    }
+
+    /**
+     * CW1 D11: ONE delayed post on the main looper (no thread sleeps for the wait); the work behind it blocks (a helper PING up to 1.5 s, binder calls), so it runs on a thread that is started when the wait is over and
+     * ends with the work. Used by this class and {@link StockRefresh}. Never throws.
+     */
+    static void later(final String name, long delayMs, final Runnable work) {
+        new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override public void run() {
+                try {
+                    Thread t = new Thread(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+                                work.run();
+                            } catch (Throwable ignored) { }
+                        }
+                    }, name);
+                    t.setDaemon(true);
+                    t.start();
+                } catch (Throwable ignored) { }
+            }
+        }, Math.max(0L, delayMs));
+    }
+
+    /** One wait for {@link #consider} at most (PENDING); the flag is cleared when the wait is over, before the decision, as the sleeping thread did. */
+    private static void scheduleConsider(final Context app, final String why) {
+        if (!PENDING.compareAndSet(false, true)) return;
+        try {
             final long delay = Features.getInt(app, DELAY_KEY, (int) AFTER_RETURN_DELAY_MS);
-            Thread t = new Thread(new Runnable() {
+            later("TjStockForceStop", delay, new Runnable() {
                 @Override public void run() {
-                    try {
-                        android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
-                        Thread.sleep(Math.max(0L, delay));
-                    } catch (Throwable ignored) {
-                    } finally { PENDING.set(false); }
-                    try { consider(app, "after a Quickstep session"); } catch (Throwable ignored) { }
+                    PENDING.set(false);
+                    try { consider(app, why); } catch (Throwable ignored) { }
                 }
-            }, "TjStockForceStopWait");
-            t.setDaemon(true);
-            t.start();
+            });
         } catch (Throwable t) { PENDING.set(false); }
     }
 
@@ -424,12 +453,14 @@ final class StockForceStop {
     static void consider(Context app, String why) {
         try {
             long now = System.currentTimeMillis();
-            int minDebt = Features.getInt(app, MIN_DEBT_KEY, MIN_DEBT);
+            boolean unified = Unified.active(app);
+            seedIfNeeded(app, unified);
+            int minDebt = Features.getInt(app, MIN_DEBT_KEY, minDebtFor(unified));
             long cooldown = Features.getInt(app, COOLDOWN_MIN_KEY, (int) (COOLDOWN_MS / 60_000L)) * 60_000L;
             int debt = Features.getInt(app, DEBT_KEY, 0);
             TjAccessibilityService svc = TjAccessibilityService.get();
             String block = svc == null ? "the accessibility service is not running" : blocker(switchOn(app), Features.getInt(app, FAILS_KEY, 0), ShellHelper.running(), debt, minDebt,
-                    Mode.isCustom(app), TjHooks.launcherInFront(), screenOnUnlocked(app), CrashGuard.automationOff(app), Features.getLong(app, LAST_AT_KEY, 0L), now, cooldown);
+                    Mode.isCustom(app), TjHooks.launcherInFront(), screenOnUnlocked(app), CrashGuard.automationOff(app), Features.getLong(app, LAST_AT_KEY, 0L), now, cooldown, unified, stockSeen(app));
             if (!block.isEmpty()) {
                 if (debt >= minDebt && !keepsLastResult(block)) Features.setStringAsync(app, STATUS_KEY, clock() + "  the stock launcher is due (debt " + debt + "), left alone: " + block);
                 return;
@@ -465,7 +496,8 @@ final class StockForceStop {
         try {
             long now = System.currentTimeMillis();
             After af = afterOutcome(outcome, Features.getInt(app, FAILS_KEY, 0), now, cooldownMs);
-            if (af.debt >= 0) setDebt(app, af.debt);
+            if (clearsDebt(outcome)) stockRestarted(app);   // CW1 D3: the process is new (or was not running): no stock window since
+            else if (af.debt >= 0) setDebt(app, af.debt);
             if (af.fails >= 0) Features.setIntAsync(app, FAILS_KEY, af.fails);
             Features.setLongAsync(app, LAST_AT_KEY, af.lastAt);
             String text = resultText(clock(), outcome, why, debtBefore, ms, via);
@@ -493,8 +525,10 @@ final class StockForceStop {
     static String describe(Context c) {
         try {
             String st = Features.getString(c, STATUS_KEY, "");
-            return "switch " + (switchOn(c) ? "ON" : "OFF") + "; debt " + Features.getInt(c, DEBT_KEY, 0) + " of " + MIN_DEBT + "; "
-                    + (st.isEmpty() ? "has not had to act yet (it acts only when the debt reaches " + MIN_DEBT + ", the custom home is quiet on screen, the shell helper is not running, at most every " + (COOLDOWN_MS / 3_600_000L) + " h)" : st);
+            boolean unified = Unified.active(c);
+            int line = Features.getInt(c, MIN_DEBT_KEY, minDebtFor(unified));
+            return "switch " + (switchOn(c) ? "ON" : "OFF") + "; " + (unified ? "one launcher (counts pinned Recents screens)" : "two launchers (counts Quickstep sessions and battery-saver changes)") + "; debt " + Features.getInt(c, DEBT_KEY, 0) + " of " + line + (unified ? "; stock window seen since its last restart: " + (stockSeen(c) ? "yes" : "no") : "") + "; "
+                    + (st.isEmpty() ? "has not had to act yet (it acts only when the debt reaches " + line + ", the custom home is quiet on screen, the shell helper is not running, at most every " + (COOLDOWN_MS / 3_600_000L) + " h)" : st);
         } catch (Throwable t) { return "(unreadable)"; }
     }
 }
