@@ -138,7 +138,7 @@ Totals: **content observers 4 process-lifetime + 1 calibration-only + about 4 sc
 4. Whether `NotificationListener` ever binds (A3), whether the helper is alive in daily use, and the Bluetooth radio path (no BT on the emulator). [T]
 5. Exact resident size of the idle threads (C6) and of the second DB helper (C3): estimated from stack and page sizes, not measured. [T]
 6. Deep-sleep behaviour of `VpnOff.poll`: it uses `uptimeMillis`, which stops in suspend; how often the quiet world has the CPU awake is [T].
-7. Not read line by line: `AppOrigin`, `TaskOrigin`, `RecentsSweep`, `QsMemory` and `ProcessLife` internals (only their thread / timer sites were checked); the ~60 `Ss*` look-alike pages (they register only while open, spot-checked 4); `eleven/` (a separate app, not our process).
+7. Not read line by line: `AppOrigin`, `TaskOrigin`, `RecentsSweep`, `QsMemory` and `ProcessLife` internals (only their thread / timer sites were checked); the `Ss*` look-alike pages (their registrations were found by grep: they register only while the page is open and unregister in the page's stop path; the page bodies were not read); `eleven/` (a separate app, not our process).
 8. The counts in section 2 come from `grep` of `postDelayed`, `registerReceiver`, `registerContentObserver`, `registerOnSharedPreferenceChangeListener`, `Thread` / `HandlerThread` / `Executors` over `app/src/main` and the launcher3 sources; a registration made through a helper class that the grep patterns do not name would be missed (none seen).
 
 ## 7. Suggested next step
