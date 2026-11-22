@@ -1,11 +1,7 @@
 package com.tj.launcher;
 
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.os.SystemClock;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,8 +27,6 @@ final class QsMemory {
     static final long GAP_MS = 25L * 60_000L;          // a sample every 25 minutes at most (the process grows over hours and days)
     static final long FORCED_GAP_MS = 30_000L;         // opening Launcher control twice in a row does not call dumpsys twice
     static final int KEEP = 96;                        // about two days of use
-    private static final long LIMIT_MS = 10_000L;      // a hung dumpsys costs one thread for 10 s, never more
-    private static final int MAX_CHARS = 512 * 1024;
     private static final java.util.concurrent.atomic.AtomicBoolean RUNNING = new java.util.concurrent.atomic.AtomicBoolean(false);
     private static final Object RING_LOCK = new Object();
 
@@ -317,15 +311,14 @@ final class QsMemory {
                         boolean helperUp = false;
                         try { helperUp = ShellHelper.running(); } catch (Throwable ignored) { }
                         if (!mayRunDumpsys(helperUp)) { Features.setStringAsync(app, STATUS_KEY, STATUS_NEEDS_HELPER); return; }
-                        Sample s = new Sample();
-                        String how = "the shell helper";
-                        String h = ShellHelper.stockMeminfo(); s = parse(h == null ? "" : h, now);
+                        String h = ShellHelper.stockMeminfo();
+                        Sample s = parse(h == null ? "" : h, now);
                         String why = firstLine(h == null ? String.valueOf(ShellHelper.lastError) : h);   // the first line that explains a failure: the HELPER's own
-                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, how, true, true, why, -1));
+                        Features.setStringAsync(app, STATUS_KEY, statusText(s.found, "the shell helper", true, true, why, -1));
                         if (s.found) {
                             synchronized (RING_LOCK) { Features.setStringAsync(app, RING_KEY, addLine(ring(app), toLine(s), KEEP)); }
                             Features.setLongAsync(app, LAST_AT_KEY, now);
-                            StockRefresh.consider(app, s, helperUp && "the shell helper".equals(how));   // CI1 (SR1): a big stock launcher is restarted where nobody uses it (switch, helper, custom home in front, cooldown)
+                            StockRefresh.consider(app, s, true);   // CI1 (SR1): a big stock launcher is restarted where nobody uses it (switch, helper, custom home in front, cooldown)
                         }
                     } catch (Throwable ignored) {
                     } finally { RUNNING.set(false); }
