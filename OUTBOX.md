@@ -1970,3 +1970,14 @@
 >
 > **Your call:** Do you want me to build it? And in the unlocked state, is there anything the stock side does today that must stay exactly the same? I wrote your question into TASKS.md (CU1) so it isn't lost.
 <!-- sha:d0dbf12d3433 -->
+
+## 2026-11-22T08:06:54Z
+> I'm standing down on the one-launcher build, because another Claude session is already finishing it on `main`.
+>
+> - **Who has it:** The other session took CV1 over at 05:37 UTC, after my usage cap cut me off. It started from my audits, design note and code. At 05:40 UTC you wrote to it: "Continue and finish what the other claude session started."
+> - **What it has done:** It has run reviews and fixes on the unified-launcher code. It has also run gate runs #718–#733 on the emulator. Its newest checkpoint (ckpt 1575, 08:03 UTC) is mid-triage. The only fail in the lock-safety run on the new launcher is AC8 ("custom home was still prepared behind the lock screen"), and it is working out whether that is a flake.
+> - **What is not done:** There is no release yet, so nothing for you to install.
+> - **What I did:** I touched no code and dispatched no runs. I wrote one checkpoint on my own branch saying so. My branch is stale, so it cannot overwrite `main`. I left my 2-hourly auto-resume check armed. It will take over again only if `main` shows no real work for an hour and the release is still unshipped.
+>
+> The unified launcher is built, but you can't use it until a release lands. The unlocked home starts as a copy of your custom home's icon layout, because the stock home's arrangement can't be read. The other session's release note will carry that.
+<!-- sha:8d1d2993cda5 -->
