@@ -141,16 +141,113 @@ final class StockForceStop {
     static void seedLowPower(int now) { synchronized (StockForceStop.class) { if (lastLow == Integer.MIN_VALUE) lastLow = now; } }
 
     private static synchronized void addDebt(Context app, int n) {
+        if (n <= 0) return;
         try { Features.setIntAsync(app, DEBT_KEY, addDebt(Features.getInt(app, DEBT_KEY, 0), n)); } catch (Throwable ignored) { }
     }
 
-    /** BatterySaverGuard's low_power observer: one more change of the saver (ours or the person's: each is a uiMode flip for the stock launcher). Cheap; never throws; nothing when the switch is off. */
+    /** BatterySaverGuard's low_power observer: one more change of the saver (ours or the person's: each is a uiMode flip for the stock launcher). Cheap; never throws; nothing when the switch is off. CW1 D3: it weighs nothing in the one-launcher world. */
     static void noteLowPower(Context c, int now) {
         try {
             final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
             boolean flip;
             synchronized (StockForceStop.class) { flip = isFlip(lastLow, now); lastLow = now; }
-            if (flip && switchOn(app)) addDebt(app, 1);
+            if (!flip || !switchOn(app)) return;
+            boolean unified = Unified.active(app);
+            seedIfNeeded(app, unified);
+            addDebt(app, flipWeight(unified));
+        } catch (Throwable ignored) { }
+    }
+
+    // ---- CW1 D3 / D5 glue: the stock windows, the signature, the seed, the restart / boot resets
+
+    private static String sigCache = null;   // the stored signature, loaded once per process (guarded by the class monitor)
+    private static volatile boolean seedChecked = false;
+
+    private static String storedSigLocked(Context app) {
+        if (sigCache == null) sigCache = Features.getString(app, SIG_KEY, "");
+        return sigCache;
+    }
+
+    private static void storeSigLocked(Context app, String sig) {
+        sigCache = sig;
+        Features.setStringAsync(app, SIG_KEY, sig);
+    }
+
+    /** The configuration the stock process sees now, as the signature string ("" when it cannot be read). */
+    private static String currentSignature(Context app) {
+        try {
+            android.content.res.Configuration cf = app.getResources().getConfiguration();
+            return signature(cf.uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK, cf.fontScale, cf.densityDpi, cf.getLocales().toLanguageTags());
+        } catch (Throwable t) { return ""; }
+    }
+
+    /**
+     * RecentsFilter.onEvent: a window of the stock launcher came up (CW1 D3). Records that the stock process has shown something since its last restart and, in the one-launcher world, adds one pin when the
+     * configuration differs from the one of the previous stock window. Cheap (a signature compare); nothing when the switch is off; never throws. A debt that reaches the line asks for a look 45 s later.
+     */
+    static void noteStockWindow(Context c) {
+        try {
+            final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
+            if (!switchOn(app)) return;
+            boolean unified = Unified.active(app);
+            String now = currentSignature(app);
+            boolean crossed = false;
+            synchronized (StockForceStop.class) {
+                String stored = storedSigLocked(app);
+                Window w = onStockWindow(stored, now, unified);
+                if (w.sig.equals(stored) && w.pins == 0) return;
+                storeSigLocked(app, w.sig);
+                if (w.pins > 0) {
+                    int before = Features.getInt(app, DEBT_KEY, 0), after = addDebt(before, w.pins);
+                    Features.setIntAsync(app, DEBT_KEY, after);
+                    int line = Features.getInt(app, MIN_DEBT_KEY, minDebtFor(unified));
+                    crossed = before < line && after >= line;
+                }
+            }
+            if (crossed) scheduleConsider(app, "stock launcher pins piled up");
+        } catch (Throwable ignored) { }
+    }
+
+    /** True when a window of the stock launcher has shown since its process was last restarted (or the seed said it may hold old screens). */
+    private static boolean stockSeen(Context app) {
+        synchronized (StockForceStop.class) { return !storedSigLocked(app).isEmpty(); }
+    }
+
+    /**
+     * CW1 D5: the first time the one launcher is in force on this install (with this switch on), the stock process of the v0.9.16 era may still hold pinned screens, a model and a stale home task: set the debt to
+     * the line ONCE, so the existing quiet-moment drive (after the next ended Quickstep session) cleans it. Guarded by {@link #SEED_KEY}: never twice, never while the switch is off. Cheap; never throws.
+     */
+    private static void seedIfNeeded(Context app, boolean unified) {
+        try {
+            if (seedChecked) return;
+            boolean already = Features.get(app, SEED_KEY, false);
+            if (already) { seedChecked = true; return; }
+            if (!seedWanted(unified, switchOn(app), false)) return;
+            synchronized (StockForceStop.class) {
+                if (Features.get(app, SEED_KEY, false)) { seedChecked = true; return; }
+                Features.setAsync(app, SEED_KEY, true);   // the flag first: a lost write below must never mean "twice"
+                seedChecked = true;
+                Features.setIntAsync(app, DEBT_KEY, seededDebt(Features.getInt(app, DEBT_KEY, 0), Features.getInt(app, MIN_DEBT_KEY, minDebtFor(true))));
+                storeSigLocked(app, seededSig(storedSigLocked(app), currentSignature(app)));
+            }
+            LockLog.add(app, "SF", "the one launcher is in force for the first time: one cleanup of the stock launcher is due at the next quiet moment");
+        } catch (Throwable ignored) { }
+    }
+
+    /** The stock process was restarted (SR1 through the helper, or a finished SR2 drive) or was not running: its debt is gone and so is everything it showed. */
+    static void stockRestarted(Context app) {
+        try {
+            synchronized (StockForceStop.class) { storeSigLocked(app, sigAfterRestart()); }
+            setDebt(app, 0);
+        } catch (Throwable ignored) { }
+    }
+
+    /** ProfileSession.checkBoot: a new boot. The stock process is new: in the one-launcher world the pins of the dead one are forgotten (the old weights keep their debt: that world never reset it). */
+    static void newBoot(Context c) {
+        try {
+            final Context app = c.getApplicationContext() != null ? c.getApplicationContext() : c;
+            synchronized (StockForceStop.class) { storeSigLocked(app, sigAfterRestart()); }
+            if (Unified.active(app)) setDebt(app, 0);
         } catch (Throwable ignored) { }
     }
 
