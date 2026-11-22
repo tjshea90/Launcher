@@ -1990,3 +1990,7 @@
 ## 2026-11-22T06:48:07Z
 > The heartbeat fired and found this session mid-job. There is no other session's work and no new message from Tj, so I carry on. Gate runs #722–#726 are in flight. I read #726 at 07:02 UTC and #722–#725 at about 07:12.
 <!-- sha:486a91f4df01 -->
+
+## 2026-11-22T07:04:49Z
+> Still triaging #726. I'm waiting for the 07:11 timer, then I read #723 and #724 (the switch-off controls), then #722 and #725.
+<!-- sha:8493e0193404 -->
