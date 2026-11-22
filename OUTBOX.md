@@ -1986,3 +1986,7 @@
 ## 2026-11-22T06:47:59Z
 > Runs #722–#726 are still going and nothing has been read yet. I'm waiting for the timer to fire at 07:02 UTC. Then I read #726 first (the lock core with the switch on, which is what the release does), save the raw verdict, and read #722–#725 at about 07:12. No product code has changed since `a5396e53`.
 <!-- sha:1bd3610adaa2 -->
+
+## 2026-11-22T06:48:07Z
+> The heartbeat fired and found this session mid-job. There is no other session's work and no new message from Tj, so I carry on. Gate runs #722–#726 are in flight. I read #726 at 07:02 UTC and #722–#725 at about 07:12.
+<!-- sha:486a91f4df01 -->
