@@ -17,6 +17,13 @@ public class UnifiedRulesTest {
         assertFalse(UnifiedRules.active(false, true));
     }
 
+    @Test public void theSwitchDefaultsOnInReleaseAndOffInDebugUnlessTheGateOverridesIt() {
+        assertTrue("release: ON", Unified.defaultOn(false, false));
+        assertTrue("release ignores the override", Unified.defaultOn(false, true));
+        assertFalse("debug: OFF, so the older emulator sections keep testing the two-launcher path", Unified.defaultOn(true, false));
+        assertTrue("debug with the gate's override: ON", Unified.defaultOn(true, true));
+    }
+
     @Test public void customAlwaysAnswersWithOurLauncher() {
         assertEquals(UnifiedRules.Home.OURS, UnifiedRules.homeFor(true, true));
         assertEquals(UnifiedRules.Home.OURS, UnifiedRules.homeFor(true, false));

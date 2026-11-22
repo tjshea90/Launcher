@@ -11,10 +11,19 @@ public final class Unified {
 
     private Unified() {}
 
-    public static boolean defaultOn(boolean debuggable) { return !debuggable; }
+    /** Release builds: ON. Debug builds: OFF, unless the gate's debug-only global setting says otherwise (see {@link #debugOverride}): the older emulator sections keep testing the two-launcher path. */
+    public static boolean defaultOn(boolean debuggable, boolean debugOverride) { return !debuggable || debugOverride; }
+
+    /** Debug builds only: {@code Settings.Global tj_unified_launcher == 1} (written by the emulator scenario's {@code unified} token, never by the app). A release build never reads it. */
+    static boolean debugOverride(Context c) {
+        try {
+            if (!ReturnReset.isDebuggable(c)) return false;
+            return android.provider.Settings.Global.getInt(c.getContentResolver(), "tj_unified_launcher", 0) == 1;
+        } catch (Throwable t) { return false; }
+    }
 
     public static boolean switchOn(Context c) {
-        try { return Features.get(c, KEY, defaultOn(ReturnReset.isDebuggable(c))); } catch (Throwable t) { return false; }
+        try { return Features.get(c, KEY, defaultOn(ReturnReset.isDebuggable(c), debugOverride(c))); } catch (Throwable t) { return false; }
     }
 
     /** The unified launcher is in force: the switch is on and the crash breaker has not tripped (emergency exit = the old behaviour). */
