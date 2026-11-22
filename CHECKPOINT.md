@@ -1,13 +1,13 @@
-# CHECKPOINT 1551 — read me first, then TASKS.md
+# CHECKPOINT 1552 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T06:08:02Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `6002de8e` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T06:10:22Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `bc824069` (this checkpoint is the commit after it)
 
 ## Just done
-CV1: review round 2 saved (research/CV1_REVIEW2_*): 1 HIGH (BgDataModel unpin), 4 MED, 3 LOW. Run #719 id 44991880109 still to read
+CV1: run #719 id 44991880109 (ul,ul2, main@9d1d6c06) = 22 PASS 5 FAIL: UL3c (provider seed log not found), UL11 failsafe, UL12, UL13, UL15; UL14 now PASS. Router lines in phase C: only ONE home press registered (06:04:56) for three keyevents, no MODE line = failsafe never fired (test problem, helper state or key coalescing); profileCover works (flip UNLOCKED->CUSTOM cover until ready +1409 ms)
 
 ## Do this next
-fix review-2 items 1-8 (BgDataModel unpin skip, allLayoutDbs opens unlocked helper, insert id-side guard, waitForProfile ownership, profileCover only when launcherInFront, empty folders in seed, UL3c robust); read #719; then gate
+fix review-2 items; make UL11 robust (variants + diag); UL3c use app log instead of logcat; then read-only review not needed again, gate gate.sh 1d8b6b2d; heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ fix review-2 items 1-8 (BgDataModel unpin skip, allLayoutDbs opens unlocked help
 
 ## Last ten checkpoints
 ```
+  bc824069 ckpt 1551: CV1: review round 2 saved (research/CV1_REVIEW2_*): 1 HIGH (BgDataModel unpi
   6625e904 ckpt 1550: CV1: dispatched emulator #719 id 44991880109 (ul,ul2, main@9d1d6c06, fixes) 
   9d1d6c06 ckpt 1549: CV1: review fixes in: launcher3 per-DB empty flag + atomic Java seed (no wid
   eaa7fdd0 ckpt 1548: CV1: run #718 id 44990179693 (ul,ul2 on main@390f5cfb) = FAIL 21 PASS 5 FAIL
@@ -25,8 +26,4 @@ fix review-2 items 1-8 (BgDataModel unpin skip, allLayoutDbs opens unlocked help
   390f5cfb ckpt 1544: CV1: sections ul+ul2 written, gate-map + workflow list, handoff test 53 ok
   e18d1484 ckpt 1543: CV1: code done: Unified/UnifiedRules/HomeProfile, provider profile db, loade
   c583442c ckpt 1542: CV1: rules+HomeProfile+provider profile db+loader hook+router+guards+handsha
-  bdfadbd8 ckpt 1541: CV1: design note written (research/CV1_UNIFIED_LAUNCHER_DESIGN_2026-11-22.md
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
