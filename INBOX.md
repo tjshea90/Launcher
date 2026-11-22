@@ -2275,3 +2275,8 @@ This session's worker process was restarted. If your previous turn was already c
   Not checkable here [T]: the MediaTek manifest, tablet cold versus warm Recents timing, whether stock widgets exist, the stock process size since CV1. The report lists extra probe lines for the next cable session.
 </agent-message>
 ```
+
+## 2026-11-22T20:04:40Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
