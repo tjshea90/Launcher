@@ -4219,7 +4219,7 @@ public class TjAccessibilityService extends AccessibilityService {
      * closed in one pass; a nudge scrolls the carousel every 5th look (a "Clear all" at the end); three looks in a row without a card after some were seen = done. Gives up after 2.5 s and says what it saw.
      */
     private void recentsEmpty(final long t0, final Runnable done) {
-        final long deadline = android.os.SystemClock.uptimeMillis() + 2500;
+        final RecentsClock clock = new RecentsClock(android.os.SystemClock.uptimeMillis(), 2500, recentsActionOk == 1);   // CW1 D4: the 2.5 s start at the first window of the stock launcher (a cold Recents), hard cap 6 s from the key press
         final int[] tick = {0}, closed = {0}, idle = {0};
         final boolean[] saw = {false};
         final java.util.HashMap<String, Integer> pressed = new java.util.HashMap<>();   // card description -> how often "Close" was pressed on it
