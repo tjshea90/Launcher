@@ -5966,6 +5966,19 @@ echo "$UL_DB" > "$OUT/ul-b-drawer.txt"; info "UL drawer in the custom profile: $
 check "UL9: the custom drawer hides Contacts, Launcher control and Back to custom again, and still shows the allowed Gallery" bash -c "! grep -q 'Contacts' $OUT/ul-b-drawer.txt && ! grep -q 'Launcher control' $OUT/ul-b-drawer.txt && ! grep -q 'Back to custom' $OUT/ul-b-drawer.txt && grep -q 'Gallery' $OUT/ul-b-drawer.txt"
 UL_CUST="$(uldb launcher.db | grep -c 'com.tj.testnotifier.ctl')"
 check "UL10: an icon added in the unlocked profile is NOT in the custom layout (not even a hole): rows in launcher.db = $UL_CUST" bash -c "[ '$UL_CUST' = 0 ]"
+# ---- B2 (CV1 triage, 2026-11-22): the same double Home pressed FROM AN APP (our launcher has to resume while the second press is routed: the stock launcher used to do that in another process). Three rounds; the gap between the two routed presses is printed.
+UL24_IN=0; UL24_OK=0; UL24_GAPS=""
+for R in 1 2 3; do
+  setmode quickstep; home; sleep 1
+  adb shell monkey -p com.android.contacts -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; sleep 3
+  resumed | grep -qi 'contacts' && UL24_IN=$((UL24_IN+1))
+  adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 6
+  [ "$(getmode)" = custom ] && UL24_OK=$((UL24_OK+1))
+  UL24_GAPS="$UL24_GAPS $(ullog | grep 'ROUTER home press' | tail -2 | awk '{split($1,a,"[:.]"); t=a[1]*3600000+a[2]*60000+a[3]*1000+a[4]; if(NR==1)p=t; else print t-p}')"
+done
+info "UL24: double Home FROM AN APP: Contacts in front $UL24_IN of 3, custom afterwards $UL24_OK of 3, ms between the two routed presses (window 900):$UL24_GAPS"
+check "UL24: a double Home pressed from an app (Contacts in front each time) returns to the custom mode, 3 of 3" bash -c "[ '$UL24_IN' = 3 ] && [ '$UL24_OK' = 3 ]"
+setmode custom; home
 # ---- C) a live flip custom -> quickstep (the L10 failsafe: the helper is off, three quick Home presses; the presses are tried three ways, the cold start with setmode is the fallback so the rest still runs)
 adb shell settings put secure enabled_accessibility_services ""; adb shell settings put secure accessibility_enabled 0; sleep 4
 UL_FS=none
