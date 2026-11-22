@@ -2262,3 +2262,12 @@
 ## 2026-11-22T23:45:26Z
 > Run #742 hit the 50-minute job limit and was cancelled, so it did not finish on its own. An agent is reading its partial results block now.
 <!-- sha:717c6ebba6e6 -->
+
+## 2026-11-22T23:53:35Z
+> Status: five reruns (#753 to #757) are running on main with the product code unchanged since the gated head. A timer will wake me at 00:09Z. No change will ship until the failing sections are explained.
+>
+> - **`ad`/`ps` under `unified` (#750, #751):** AD5a and AD5b fail identically on main and on the v0.9.17 tag. The check hard-codes the old two-launcher world, so I reran `ad,ps` without `unified` (#756).
+> - **`hp`:** passes on main, plain (#745) and under `unified` (#746). Under `unified` on the tag it failed HP8 (#747).
+> - **`cs`:** `unified,cs` is green on main (#748) and on the tag (#749).
+> - **#742:** its emulator died (GL checksum error), so its sections were split into #753 and #754 and rerun.
+<!-- sha:7f9a55affe32 -->
