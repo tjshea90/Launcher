@@ -1995,7 +1995,7 @@ public class TjAccessibilityService extends AccessibilityService {
                 // The stock home was started behind the lock screen; only if the pre-start did not land (not in front now) press the router's Home.
                 ComponentName stock = StockLauncher.find(this);
                 boolean remembered = resumedPkg != null && System.currentTimeMillis() - resumedAt < 15_000 && isForeground(resumedPkg);   // AD5: the resumed app counts (for this unlock only)
-                boolean front = UnifiedRules.quickstepFrontOk(Unified.active(app), stock != null && isForeground(stock.getPackageName()), isForeground(getPackageName()), remembered);   // CV1: with the one launcher OUR home is the Quickstep home
+                boolean front = UnifiedRules.quickstepFrontOk(Unified.active(app), stock != null && isForeground(stock.getPackageName()), isForeground(getPackageName()) && TjHooks.launcherInFront(), remembered);   // review CV1-5: our HOME, not one of our other screens   // CV1: with the one launcher OUR home is the Quickstep home
                 if (!front) startQuickstepFront("after the unlock");
                 Features.setStringAsync(this, UnlockPick.LAST_KEY, now() + "  Quickstep (handshake '" + m.title + "')" + (front ? "" : ", started after the unlock"));
                 Log.i(TAG, "UNLOCKPICK quickstep via " + m.id + " front=" + front);
@@ -2373,6 +2373,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try {
             final android.content.Context app = getApplicationContext();
             if (!Unified.active(app) || HomeProfile.ready(app)) return;
+            if (resumedPkg != null && !resumedPkg.equals(getPackageName()) && System.currentTimeMillis() - resumedAt < 15_000 && isForeground(resumedPkg)) return;   // review CV1-8: the remembered app is in front, no home to hide
             final boolean raise = resetCover == null;
             if (raise) showResetCover();
             final boolean mine = raise && resetCover != null;
@@ -2390,6 +2391,16 @@ public class TjAccessibilityService extends AccessibilityService {
                 } catch (Throwable t) { Log.e(TAG, "profile wait failed", t); if (mine) hideResetCover(); }
             } });
         } catch (Throwable t) { Log.e(TAG, "profile gate failed", t); }
+    }
+
+    /**
+     * Review CV1-2: the profile flips on a home that is visible (double Home, tile, Back to custom, volume code, Control): a cover bridges the reload. Called by {@link HomeProfile#syncNow} from any thread; not on the lock
+     * screen (nothing is visible there and the lock-time return has its own cover rules).
+     */
+    public void profileCover(final String why) {
+        handler.post(new Runnable() { @Override public void run() {
+            try { if (!keyguardLocked()) waitForProfile(why); } catch (Throwable t) { Log.e(TAG, "profile cover failed", t); }
+        } });
     }
 
     public void settleHome() {
