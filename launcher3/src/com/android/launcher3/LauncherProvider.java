@@ -184,45 +184,75 @@ public class LauncherProvider extends ContentProvider {
         String want = LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(name) ? name : LauncherFiles.LAUNCHER_DB;
         DatabaseHelper h = mProfileHelpers.get(want);
         if (h == null) {
-            boolean existed = getContext().getDatabasePath(want).exists();
-            h = new DatabaseHelper(getContext(), mListenerHandler, want, true);
+            // No widget-host reset handler: creating the unlocked database must never free the widget ids of the custom home (both profiles share ONE host).
+            h = new DatabaseHelper(getContext(), null, want, true);
             mProfileHelpers.put(want, h);
-            if (!existed) seedFromCustom(h);
+        }
+        // The empty-database flag is PER DATABASE (see emptyFlagKey): a just-created unlocked database is filled here, before anything loads, and a death at any point leaves it flagged
+        // (so the next switch fills it again) while the custom database and its own flag are never involved.
+        if (!LauncherFiles.LAUNCHER_DB.equals(want) && Utilities.getPrefs(getContext()).getBoolean(emptyFlagKey(want), false)) {
+            seedFromCustom(h, want);
         }
         mOpenHelper = h;
         return want;
     }
 
-    /** CV1: copy the custom layout (every row but widgets) into a just-created unlocked database; ATTACH cannot run inside a transaction, so this runs after the helper is open. Never throws. */
-    private void seedFromCustom(DatabaseHelper to) {
-        SQLiteDatabase db = null;
+    /** CV1: ids of the unlocked database start above this, so a layout write that was queued by the OTHER profile's UI (a folder closing, an Undo that comes due, a drop that ends during the reload) matches no row. */
+    static final int UNLOCKED_ID_OFFSET = 1000000000;
+
+    /** CV1: the empty-database flag of one layout database (the custom one keeps Launcher3's own key). */
+    static String emptyFlagKey(String dbName) {
+        return LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(dbName) ? EMPTY_DATABASE_CREATED + "_unlocked" : EMPTY_DATABASE_CREATED;
+    }
+
+    /**
+     * CV1: fill the just-created unlocked database with a copy of the custom layout, in ONE transaction (all or nothing; the previous version copied with ATTACH outside a transaction and could be cut off half way).
+     * Not copied: app widgets (their ids belong to the shared widget host and to the custom home) and deep shortcuts (their pin is shared: removing one copy would unpin the other). Ids and folder links are moved
+     * above {@link #UNLOCKED_ID_OFFSET}. Copied nothing or failed = the flag stays set and Launcher3 loads its default layout. Never throws.
+     */
+    private void seedFromCustom(DatabaseHelper to, String dbName) {
         try {
-            db = to.getWritableDatabase();
-            StringBuilder cols = new StringBuilder();
-            try (android.database.Cursor cu = db.rawQuery("PRAGMA table_info(" + Favorites.TABLE_NAME + ")", null)) {
+            DatabaseHelper from = mProfileHelpers.get(LauncherFiles.LAUNCHER_DB);
+            if (from == null) return;
+            ArrayList<ContentValues> rows = new ArrayList<>();
+            try (Cursor cu = from.getReadableDatabase().query(Favorites.TABLE_NAME, null,
+                    Favorites.ITEM_TYPE + " NOT IN (" + Favorites.ITEM_TYPE_APPWIDGET + "," + Favorites.ITEM_TYPE_CUSTOM_APPWIDGET + "," + Favorites.ITEM_TYPE_DEEP_SHORTCUT + ")",
+                    null, null, null, Favorites._ID)) {
+                int idCol = cu.getColumnIndexOrThrow(Favorites._ID);
+                int conCol = cu.getColumnIndexOrThrow(Favorites.CONTAINER);
                 while (cu.moveToNext()) {
-                    if (cols.length() > 0) cols.append(',');
-                    cols.append('"').append(cu.getString(1)).append('"');
+                    ContentValues cv = new ContentValues();
+                    android.database.DatabaseUtils.cursorRowToContentValues(cu, cv);
+                    cv.put(Favorites._ID, cu.getLong(idCol) + UNLOCKED_ID_OFFSET);
+                    long container = cu.getLong(conCol);
+                    if (container > 0) cv.put(Favorites.CONTAINER, container + UNLOCKED_ID_OFFSET);
+                    rows.add(cv);
                 }
             }
-            String src = getContext().getDatabasePath(LauncherFiles.LAUNCHER_DB).getPath();
-            db.execSQL("ATTACH DATABASE " + android.database.DatabaseUtils.sqlEscapeString(src) + " AS tjsrc");
-            try {
-                db.execSQL("INSERT INTO " + Favorites.TABLE_NAME + " (" + cols + ") SELECT " + cols + " FROM tjsrc."
-                        + Favorites.TABLE_NAME + " WHERE " + Favorites.ITEM_TYPE + " NOT IN ("
-                        + Favorites.ITEM_TYPE_APPWIDGET + "," + Favorites.ITEM_TYPE_CUSTOM_APPWIDGET + ")");
-            } finally {
-                db.execSQL("DETACH DATABASE tjsrc");
+            if (rows.isEmpty()) { Log.i(TAG, "custom layout holds nothing to copy, default layout for the unlocked profile"); return; }
+            SQLiteDatabase db = to.getWritableDatabase();
+            try (SQLiteTransaction t = new SQLiteTransaction(db)) {
+                db.delete(Favorites.TABLE_NAME, null, null);
+                for (ContentValues cv : rows) {
+                    if (db.insert(Favorites.TABLE_NAME, null, cv) < 0) throw new IllegalStateException("insert failed");
+                }
+                t.commit();
             }
-            long n = android.database.DatabaseUtils.queryNumEntries(db, Favorites.TABLE_NAME);
-            if (n > 0) {
-                Utilities.getPrefs(getContext()).edit().putBoolean(EMPTY_DATABASE_CREATED, false).commit();
-                to.reinitIds();
-            }
-            Log.i(TAG, "unlocked layout seeded with " + n + " rows of the custom layout");
+            to.reinitIds();
+            Utilities.getPrefs(getContext()).edit().putBoolean(emptyFlagKey(dbName), false).commit();
+            Log.i(TAG, "unlocked layout seeded with " + rows.size() + " rows of the custom layout");
         } catch (Throwable t) {
             Log.e(TAG, "seeding the unlocked layout failed, default layout instead", t);
-            try { if (db != null) db.execSQL("DELETE FROM " + Favorites.TABLE_NAME); } catch (Throwable ignored) { }
+        }
+    }
+
+    /** CV1: the widget ids that any profile's database still lists (the host is shared, so a ghost is an id that NO profile uses). */
+    private SQLiteDatabase[] allLayoutDbs() {
+        synchronized (this) {
+            ArrayList<SQLiteDatabase> l = new ArrayList<>();
+            for (DatabaseHelper h : mProfileHelpers.values()) l.add(h.getWritableDatabase());
+            if (l.isEmpty()) l.add(mOpenHelper.getWritableDatabase());
+            return l.toArray(new SQLiteDatabase[0]);
         }
     }
 
