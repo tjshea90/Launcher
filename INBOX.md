@@ -2163,3 +2163,8 @@ Build it all in one release. Work carefully.  Look at what the custom launcher c
   - TASKS.md:1408-1411 (CV1, the unified-launcher request that prompted this audit).
 </agent-message>
 ```
+
+## 2026-11-22T06:04:43Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
