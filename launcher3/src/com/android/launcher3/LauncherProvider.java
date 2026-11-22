@@ -305,11 +305,12 @@ public class LauncherProvider extends ContentProvider {
             }
         }
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once (the loader may switch the profile database on another thread)
+        SQLiteDatabase db = helper.getWritableDatabase();
         addModifiedTime(initialValues);
-        final int rowId = dbInsertAndCheck(mOpenHelper, db, args.table, null, initialValues);
+        final int rowId = dbInsertAndCheck(helper, db, args.table, null, initialValues);
         if (rowId < 0) return null;
-        mOpenHelper.onAddOrDeleteOp(db);
+        helper.onAddOrDeleteOp(db);
 
         uri = ContentUris.withAppendedId(uri, rowId);
         notifyListeners();
@@ -409,15 +410,16 @@ public class LauncherProvider extends ContentProvider {
         createDbIfNotExists();
         SqlArguments args = new SqlArguments(uri, selection, selectionArgs);
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once
+        SQLiteDatabase db = helper.getWritableDatabase();
 
         if (Binder.getCallingPid() != Process.myPid()
                 && Favorites.TABLE_NAME.equalsIgnoreCase(args.table)) {
-            mOpenHelper.removeGhostWidgets(allLayoutDbs());
+            helper.removeGhostWidgets(allLayoutDbs());
         }
         int count = db.delete(args.table, args.where, args.args);
         if (count > 0) {
-            mOpenHelper.onAddOrDeleteOp(db);
+            helper.onAddOrDeleteOp(db);
             notifyListeners();
             reloadLauncherIfExternal();
         }

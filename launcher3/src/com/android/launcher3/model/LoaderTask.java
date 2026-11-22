@@ -740,7 +740,8 @@ public class LoaderTask implements Runnable {
             HashSet<ShortcutKey> pendingShortcuts =
                     InstallShortcutReceiver.getPendingShortcuts(context);
             boolean sharedPins = com.tj.launcher.HomeProfile.sharedShortcutPins(context);
-            for (ShortcutKey key : sharedPins ? new HashSet<ShortcutKey>() : shortcutKeyToPinnedShortcuts.keySet()) {
+            for (ShortcutKey key : shortcutKeyToPinnedShortcuts.keySet()) {
+                if (sharedPins) break;
                 MutableInt numTimesPinned = mBgDataModel.pinnedShortcutCounts.get(key);
                 if ((numTimesPinned == null || numTimesPinned.value == 0)
                         && !pendingShortcuts.contains(key)) {
