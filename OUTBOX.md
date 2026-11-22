@@ -2018,3 +2018,7 @@
 ## 2026-11-22T07:52:21Z
 > Status: AC3 passes when run alone with the switch on, so I'm waiting on the two chain reruns (#732 full chain, #733 `unified,o,ac`) for the per-line log that shows what stops the double Home there. They end about 08:00 and 08:07.
 <!-- sha:6eba7a458414 -->
+
+## 2026-11-22T08:02:09Z
+> A helper is reading #733 (`unified,o,ac`); #732 (the full chain) ends about 08:07.
+<!-- sha:2cdf9d275f1b -->
