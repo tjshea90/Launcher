@@ -36,6 +36,13 @@ public final class UnifiedRules {
     /** The model must be reloaded when it holds a profile other than the wanted one. {@code loaded == null}: nothing loaded in this process yet, the first load picks the wanted profile itself. */
     public static boolean reloadNeeded(Profile wanted, Profile loaded) { return loaded != null && wanted != loaded; }
 
+    /** The provider could not switch to {@code failedFor} less than {@link #SWITCH_RETRY_MS} ago: do not start another reload for it yet (a failing switch would reload for ever) and never hold a cover for it. */
+    public static boolean holdOff(Profile wanted, Profile failedFor, long failedAt, long now) {
+        return failedFor != null && failedFor == wanted && now >= failedAt && now - failedAt < SWITCH_RETRY_MS;
+    }
+
+    public static final long SWITCH_RETRY_MS = 60_000;
+
     /** The profile is READY (the cover may go, the unlock may proceed): the model holds the wanted profile AND its load has finished. */
     public static boolean ready(Profile wanted, Profile loaded, boolean modelLoaded) { return loaded == wanted && modelLoaded; }
 

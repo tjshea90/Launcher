@@ -50,7 +50,7 @@ public class RouterActivity extends Activity {
         String pre = in == null ? null : in.getStringExtra(EXTRA_PREARM);
         LockLog.add(this, "ROUTER", (pre == null ? "home press" : "prepare " + pre) + ", mode " + Mode.get(this));   // AC1/AC7: the persistent lock-screen log shows whether a start made by the helper really arrived here
         if ("stock".equals(pre)) {   // the Quickstep world's home: the stock launcher, or (CV1, the one launcher) OUR Launcher3 in its unlocked profile
-            if (Unified.home(this) == UnifiedRules.Home.OURS && startOurs(false, false)) return;
+            if (Unified.active(this) && !Mode.isCustom(this) && Unified.home(this) == UnifiedRules.Home.OURS && startOurs(false, false)) return;   // review CV1-7: a late "stock" start after the mode went back to custom is the stock home exactly as before
             startStock();
             return;
         }

@@ -85,6 +85,13 @@ public final class HiddenApps {
     public static boolean isPackageShown(Context c, String pkg) {
         try {
             if (Unified.unlockedHome(c)) return UnifiedRules.shownInUnlocked(pkg, null, c.getPackageName());   // CV1: same rule by package
+        } catch (Throwable ignored) { }
+        return isPackageShownInCustom(c, pkg);
+    }
+
+    /** CV1: the CUSTOM drawer's rule whatever profile is wanted right now (the Hidden apps screen and the install queue ask for this one). */
+    public static boolean isPackageShownInCustom(Context c, String pkg) {
+        try {
             if (SettingsSpoof.hidesRealSettings(c, pkg)) return false;   // BN1: same rule as isShown (the Recents sweep asks by package)
             synchronized (LOCK) { autoAllowIfDue(c, pkg); return AppVisibility.isShown(allowedReadOnly(c), pkg, null, c.getPackageName()); }
         } catch (Throwable t) { return true; }

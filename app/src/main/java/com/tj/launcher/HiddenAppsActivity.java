@@ -60,7 +60,7 @@ public class HiddenAppsActivity extends Activity {
             rows.add(r);
         }
         Collections.sort(rows, new Comparator<Row>() { @Override public int compare(Row a, Row c) { return a.label.compareToIgnoreCase(c.label); } });
-        for (Row r : rows) if (HiddenApps.isPackageShown(this, r.pkg)) shown.add(r.pkg);
+        for (Row r : rows) if (HiddenApps.isPackageShownInCustom(this, r.pkg)) shown.add(r.pkg);   // CV1 review: the custom choice, not the unlocked profile's "everything"
 
         final float dp = getResources().getDisplayMetrics().density;
         LinearLayout root = new LinearLayout(this);

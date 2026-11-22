@@ -101,6 +101,8 @@ public final class RestoreStore {
         try { VpnOff.retract(c); } catch (Throwable ignored) { }   // CE1: ... and no longer tells LinkMeter's Fast Wi-Fi which world this is (the word is removed)
         Features.set(c, RadioIconHold.KEY, false);   // BS1 + BS2: the Wi-Fi and Bluetooth symbol switch is ON by default in the shipped app, so restore = off (the list itself was put back above; with the switch off the radio guards switch Wi-Fi and Bluetooth off again as before)
         Features.set(c, NotifQuietPolicy.KEY, false);   // BH1: the pop-up banner switch is ON by default in the shipped app, so restore = off (the setting itself was put back above)
+        Features.set(c, Unified.KEY, false);   // CV1: ON by default in the shipped app; restore = the stock launcher is the Quickstep home again and the model goes back to the custom layout
+        try { HomeProfile.syncNow(c, "restore everything"); } catch (Throwable ignored) { }
         Features.set(c, SettingsSpoof.KEY, false);   // BN1: restore = the real Settings is the only Settings again (the look-alike's drawer entry goes, the real one is no longer kept out)
         try { SettingsSpoof.syncSoon(c, "restore everything"); } catch (Throwable ignored) { }
         try { AnimationSpeedup.syncNow(c, "restore everything"); } catch (Throwable ignored) { }   // BF1: allOff() above made the switch read its default (ON) for a few ms, long enough for the window heartbeat to take the animations off again: this closing look sees the switch OFF and puts them back for good
