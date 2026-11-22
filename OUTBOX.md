@@ -2022,3 +2022,7 @@
 ## 2026-11-22T08:02:09Z
 > A helper is reading #733 (`unified,o,ac`); #732 (the full chain) ends about 08:07.
 <!-- sha:2cdf9d275f1b -->
+
+## 2026-11-22T08:04:08Z
+> Run #733 passes AC3 and O4, and its one failure, AC8, reads a log line that can arrive late and passed in the three other unified runs. The deciding run is #732, the full failing chain, which I read at about 08:08 UTC.
+<!-- sha:9d563f59f3c2 -->
