@@ -1993,9 +1993,22 @@ public class TjAccessibilityService extends AccessibilityService {
             if (m != null) {
                 if (Mode.isCustom(app)) Mode.set(app, Mode.QUICKSTEP);
                 // The stock home was started behind the lock screen; only if the pre-start did not land (not in front now) press the router's Home.
-                ComponentName stock = StockLauncher.find(this);
-                boolean remembered = resumedPkg != null && System.currentTimeMillis() - resumedAt < 15_000 && isForeground(resumedPkg);   // AD5: the resumed app counts (for this unlock only)
-                boolean front = UnifiedRules.quickstepFrontOk(Unified.active(app), stock != null && isForeground(stock.getPackageName()), isForeground(getPackageName()) && TjHooks.launcherInFront(), remembered);   // review CV1-5: our HOME, not one of our other screens   // CV1: with the one launcher OUR home is the Quickstep home
+                // A6 (CW1): ONE look at the active window, and only the lookups whose answer is used (the stock lookup and the other side's root fetches were thrown away); the decision is UnifiedRules.quickstepFrontOk, unchanged
+                boolean active = Unified.active(app);
+                String top = null;
+                boolean remembered = false;
+                if (resumedPkg != null && System.currentTimeMillis() - resumedAt < 15_000) { top = activeWindowPackage(); remembered = resumedPkg.equals(top); }   // AD5: the resumed app counts (for this unlock only)
+                UnifiedRules.FrontLook look = UnifiedRules.frontLook(active, remembered);
+                boolean ownInFront = false, stockInFront = false;
+                if (look == UnifiedRules.FrontLook.OWN) {
+                    if (top == null) top = activeWindowPackage();
+                    ownInFront = getPackageName().equals(top) && TjHooks.launcherInFront();   // review CV1-5: our HOME, not one of our other screens   // CV1: with the one launcher OUR home is the Quickstep home
+                } else if (look == UnifiedRules.FrontLook.STOCK) {
+                    ComponentName stock = stockCached();   // A9: the stock home is the same for a minute; a stale name only means "not in front" and the start below is still made
+                    if (top == null) top = activeWindowPackage();
+                    stockInFront = stock != null && stock.getPackageName().equals(top);
+                }
+                boolean front = UnifiedRules.quickstepFrontOk(active, stockInFront, ownInFront, remembered);
                 if (!front) startQuickstepFront("after the unlock");
                 Features.setStringAsync(this, UnlockPick.LAST_KEY, now() + "  Quickstep (handshake '" + m.title + "')" + (front ? "" : ", started after the unlock"));
                 Log.i(TAG, "UNLOCKPICK quickstep via " + m.id + " front=" + front);
