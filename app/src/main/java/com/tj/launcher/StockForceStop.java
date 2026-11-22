@@ -26,8 +26,17 @@ final class StockForceStop {
     static final String SETTINGS_PKG = "com.android.settings";
     private static final String TAG = "TjStockForceStop";
 
-    /** Debt that justifies a restart: one lock + gesture unlock with the saver on is two flips, so about six such cycles (or twelve Quickstep sessions). */
+    /** Debt that justifies a restart: one lock + gesture unlock with the saver on is two flips, so about six such cycles (or twelve Quickstep sessions). The v0.9.16 world, kept for the emergency exit (see {@link #minDebtFor}). */
     static final int MIN_DEBT = 12;
+    /**
+     * CW1 D3 (research/CW1_AUDIT_D_STOCK_SLEEP_2026-11-22.md): with the one launcher in force the debt counts PINS only, one per stock window that came up under a different configuration than the one before it
+     * (each such window is a new Activity the Go Recents view pins for the life of the process). Four to six is a real leak; five.
+     */
+    static final int PIN_THRESHOLD = 5;
+    /** CW1 D5: set once (the first time the one launcher is in force with this switch on): the seeded cleanup of what the v0.9.16 era left in the stock process. */
+    static final String SEED_KEY = "sf_unified_seed";
+    /** CW1 D3: the configuration signature of the last stock window seen since the stock process was last restarted; EMPTY = no stock window since then (nothing can have been pinned). */
+    static final String SIG_KEY = "sf_sig";
     static final long COOLDOWN_MS = 4L * 60 * 60 * 1000;
     /** A drive that failed is tried again after this, not after the full cooldown (still never in a loop, see {@link #MAX_FAILS}). */
     static final long RETRY_AFTER_FAIL_MS = 30L * 60 * 1000;
