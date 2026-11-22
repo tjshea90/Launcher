@@ -1503,6 +1503,7 @@ AC3B="$(lowpower)"; adb logcat -d -s TjBatSaver:I | grep BATSAVER > "$OUT/ac3-lo
 info "AC3: back in the custom launcher (it was switched on in Quickstep): low_power=$AC3B; log: $(head -c 160 $OUT/ac3-log.txt | tr '\n' '|')"
 adb shell "run-as $PKG cat shared_prefs/tj_crash.xml" > "$OUT/ac3-crash.txt" 2>&1
 info "AC3 detail (CV1 triage): mode=$(getmode) breaker=[$(tr -d '\r\n' < "$OUT/ac3-crash.txt" | grep -oE '(tripped|paused)[^/]*/' | tr '\n' ' ' | cut -c1-90)] lock log: $(adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | grep -E 'ROUTER|PROFILE|MODE|BATSAVER|RESET|COVER' | tail -8 | cut -c1-140 | tr '\n' '|')"
+adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r' | tail -16 | cut -c1-230 | while IFS= read -r L; do info "AC3 log: $L"; done
 check "AC3: returning to the custom launcher switched battery saver off (turned on in Quickstep, still on when custom began)" bash -c "[ \"$AC3B\" = 0 ]"
 adb shell settings put global low_power 1; sleep 2
 AC3L="$(lowpower)"
