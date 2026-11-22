@@ -5564,7 +5564,7 @@ if want sf; then # section sf
 #      The CI image has no Go IconRecentsView (no leak to show): this section proves the mechanism and its safety; the memory gain is the tablet's to show.
 CDP=SF
 adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
-hpinit false; hpkey stock_force_stop true; hpkey stock_refresh false; hpint sf_debt 0; hpint sf_fails 0; hpint sf_min_debt 5; hpint sf_delay_ms 3000
+hpinit false; hpkey stock_force_stop true; hpkey stock_refresh false; hpkey sf_unified_seed true; hpint sf_debt 0; hpint sf_fails 0; hpint sf_min_debt 5; hpint sf_delay_ms 3000
 setmode custom; ensurehome; rebind; home; sleep 2
 sfpid(){ adb shell pidof com.android.launcher3 </dev/null 2>/dev/null | tr -d '\r\n' | awk '{print $1}'; }
 sflog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
