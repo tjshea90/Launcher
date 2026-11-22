@@ -1726,3 +1726,8 @@ There is currently a Claude session already working on this repo. Be careful not
 ```
 Would it be better to use the custom launcher at all times and never use quickstep launcher, but the custom launcher could still be unlocked for the extra features and unhidden apps just like how quickstep did?
 ```
+
+## 2026-11-22T05:02:20Z
+```
+Build it all in one release. Work carefully.  Look at what the custom launcher currently does and what quickstep does.  The goal is for me to notice no difference in functionality, only it is one launcher instead of quickstep. Everything must behave and work exactly as it already does, but using only the custom launcher.  Plan and do this carefully and correctly. Then build it as one release
+```
