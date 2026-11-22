@@ -5864,6 +5864,96 @@ check "PM6: the launcher did not crash anywhere in this section" bash -c "! adb 
 setfeat; setmode custom; rebind; home
 info "PM end: resumed $(resumed | grep -o 'com.[a-z.0-9]*/[^ }]*' | head -1), mode $(getmode)"
 fi # section pm
+if want ul; then # section ul
+# ---- UL (TASKS CV1; Tj, 2026-11-22: "use only the custom launcher ... notice no difference in functionality, only it is one launcher instead of quickstep"). With switch unified_launcher ON the Quickstep world's home is OUR
+#      Launcher3 in its UNLOCKED profile: every app, Launcher control and Back to custom in the drawer, its own layout database (launcher_unlocked.db), no hidden-app logic; the custom profile keeps launcher.db and hides again.
+#      Phases: A) mode quickstep: our launcher in front, unlocked profile loaded, drawer shows what the stock drawer showed (Contacts is NOT allowed in the custom list on purpose); B) double Home (live flip back): custom profile
+#      reloaded, Contacts / Launcher control gone again, the test app installed during A is in the unlocked layout only; C) three quick Home presses with the helper off (the L10 failsafe, a live flip custom -> quickstep):
+#      the unlocked profile again (second load of an existing database); D) the Recents key still opens Android's own Recents (the stock process), Launcher control opens (it finishes in custom).
+CDP=UL
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+adb logcat -b crash -c >/dev/null 2>&1
+hpinit false; hpkey unified_launcher true
+ULALLOW="com.android.gallery3d com.android.camera2 com.android.deskclock com.android.documentsui com.android.messaging com.android.dialer com.android.quicksearchbox com.android.settings com.android.webview"
+ULSET=""; for a in $ULALLOW; do ULSET="$ULSET<string>$a</string>"; done
+adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"baseline_done\\\" value=\\\"true\\\" /><set name=\\\"allowed\\\">$ULSET</set></map>\" > shared_prefs/tj_apps.xml'"
+adb shell pm uninstall com.tj.testnotifier.ctl >/dev/null 2>&1
+ullog(){ adb shell "run-as $PKG cat files/lock-events.log" 2>/dev/null | tr -d '\r'; }
+uldrawer(){ adb shell input swipe 300 900 300 200 400; sleep 3; adb shell uiautomator dump /sdcard/ul.xml >/dev/null 2>&1; adb shell cat /sdcard/ul.xml 2>/dev/null | grep -o 'text="[^"]*"' | sed 's/text="//; s/"$//' | tr '\n' '|'; }
+uldb(){ adb exec-out "run-as $PKG cat databases/$1" 2>/dev/null | strings; }
+UL_STRAY0="$(ullog | grep -c STRAYCUSTOM)"
+# ---- A) the Quickstep world on the one launcher
+setmode quickstep; ensurehome; rebind; home; sleep 4
+resumed > "$OUT/ul-a-resumed.txt"; shot ul-a-home
+check "UL1: Quickstep mode with the one launcher: OUR launcher is in front (not the stock home)" bash -c "grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-a-resumed.txt"
+check "UL2: the model loaded the UNLOCKED layout (lock log)" bash -c "adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r' | grep -q 'model loads the UNLOCKED layout'"
+check "UL3: the unlocked layout has its own database file" bash -c "adb shell \"run-as $PKG ls databases\" | tr -d '\r' | grep -qx 'launcher_unlocked.db'"
+check "UL3b: ... seeded from the custom layout or Launcher3's default (not empty)" bash -c "[ \"\$(adb exec-out \"run-as $PKG cat databases/launcher_unlocked.db\" 2>/dev/null | wc -c)\" -gt 8000 ]"
+UL_DA="$(uldrawer)"; shot ul-a-drawer; rebind
+echo "$UL_DA" > "$OUT/ul-a-drawer.txt"; info "UL drawer in the unlocked profile: $(echo "$UL_DA" | cut -c1-300)"
+check "UL4: the unlocked drawer shows Contacts (NOT in the custom allowed list) and Launcher control and Back to custom" bash -c "grep -q 'Contacts' $OUT/ul-a-drawer.txt && grep -q 'Launcher control' $OUT/ul-a-drawer.txt && grep -q 'Back to custom' $OUT/ul-a-drawer.txt"
+check "UL5: the stored mode is still quickstep" bash -c "[ \"$(getmode)\" = quickstep ]"
+adb shell input keyevent KEYCODE_HOME; sleep 2
+adb install -r -g testnotifier/build/outputs/apk/ctl/debug/testnotifier-ctl-debug.apk > "$OUT/ul-install.txt" 2>&1; sleep 8
+UL_ADDED="$(uldb launcher_unlocked.db | grep -c 'com.tj.testnotifier.ctl')"
+info "UL a new app installed in the unlocked profile: home shortcut rows mentioning it in launcher_unlocked.db: $UL_ADDED (0 = the image did not send the session-commit broadcast; nothing to compare then)"
+# ---- B) the live flip back by double Home
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 10
+resumed > "$OUT/ul-b-resumed.txt"; shot ul-b-home
+check "UL6: double Home in the Quickstep world returns to the custom mode" bash -c "[ \"$(getmode)\" = custom ]"
+check "UL7: our launcher is in front after the return" bash -c "grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-b-resumed.txt"
+check "UL8: the model was brought back to the CUSTOM layout (reload line + load line)" bash -c "L=\$(adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r'); echo \"\$L\" | grep -q 'PROFILE reload UNLOCKED -> CUSTOM' && echo \"\$L\" | grep -q 'model loads the CUSTOM layout'"
+UL_DB="$(uldrawer)"; shot ul-b-drawer; rebind
+echo "$UL_DB" > "$OUT/ul-b-drawer.txt"; info "UL drawer in the custom profile: $(echo "$UL_DB" | cut -c1-300)"
+check "UL9: the custom drawer hides Contacts, Launcher control and Back to custom again, and still shows the allowed Gallery" bash -c "! grep -q 'Contacts' $OUT/ul-b-drawer.txt && ! grep -q 'Launcher control' $OUT/ul-b-drawer.txt && ! grep -q 'Back to custom' $OUT/ul-b-drawer.txt && grep -q 'Gallery' $OUT/ul-b-drawer.txt"
+UL_CUST="$(uldb launcher.db | grep -c 'com.tj.testnotifier.ctl')"
+check "UL10: an icon added in the unlocked profile is NOT in the custom layout (not even a hole): rows in launcher.db = $UL_CUST" bash -c "[ '$UL_CUST' = 0 ]"
+# ---- C) a live flip custom -> quickstep (the L10 failsafe: the helper is off, three quick Home presses)
+adb shell settings put secure enabled_accessibility_services ""; sleep 3
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 8
+resumed > "$OUT/ul-c-resumed.txt"
+check "UL11: the failsafe switched to the Quickstep world and our launcher is still the home" bash -c "[ \"$(getmode)\" = quickstep ] && grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul-c-resumed.txt"
+rebind; sleep 2
+check "UL12: the unlocked layout was loaded again from its existing database (second load)" bash -c "L=\$(adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r'); [ \"\$(echo \"\$L\" | grep -c 'model loads the UNLOCKED layout')\" -ge 2 ] || echo \"\$L\" | grep -q 'PROFILE reload CUSTOM -> UNLOCKED'"
+UL_DC="$(uldrawer)"; rebind; echo "$UL_DC" > "$OUT/ul-c-drawer.txt"
+check "UL13: ... and the unlocked drawer is back (Contacts, Launcher control)" bash -c "grep -q 'Contacts' $OUT/ul-c-drawer.txt && grep -q 'Launcher control' $OUT/ul-c-drawer.txt"
+# ---- D) Recents, Launcher control, no stray guard, no crash
+adb shell input keyevent KEYCODE_HOME; sleep 2
+adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; resumed > "$OUT/ul-d-recents.txt"
+check "UL14: the Recents key still opens Android's own Recents (the stock launcher process)" bash -c "grep -q 'com.android.launcher3/' $OUT/ul-d-recents.txt"
+adb shell input keyevent KEYCODE_HOME; sleep 3
+adb shell am start -n "$PKG/com.tj.launcher.ControlActivity" >/dev/null 2>&1; sleep 3; resumed > "$OUT/ul-d-control.txt"; shot ul-d-control
+check "UL15: Launcher control opens in the Quickstep world (it finishes in the custom world)" bash -c "grep -q 'ControlActivity' $OUT/ul-d-control.txt"
+adb shell input keyevent KEYCODE_BACK; sleep 1
+UL_STRAY1="$(ullog | grep -c STRAYCUSTOM)"
+check "UL16: no stray-custom-home redirect was made (our home IS the Quickstep home)" bash -c "[ '$UL_STRAY1' = '$UL_STRAY0' ]"
+check "UL17: the app did not crash in this section" bash -c "! adb logcat -b crash -d | grep -q 'Process: com.tj.launcher'"
+ullog | grep -E 'PROFILE|MODE' | tail -12 | cut -c1-170 | while read -r L; do info "UL log: $L"; done
+adb shell pm uninstall com.tj.testnotifier.ctl >/dev/null 2>&1
+setmode custom; home
+fi # section ul
+
+if want ul2; then # section ul2
+# ---- UL2 (TASKS CV1): the emergency exit and the switch. A tripped crash breaker means the stock home is the Quickstep home again (exactly the old behaviour); a deliberate way back (double Home) ends it; the switch OFF shows the stock home too.
+CDP=UL2
+adb shell pkill -f com.tj.launcher.ShellServer >/dev/null 2>&1; sleep 1
+hpinit false; hpkey unified_launcher true
+adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"tripped\\\" value=\\\"true\\\" /><int name=\\\"trip_version\\\" value=\\\"2147483647\\\" /></map>\" > shared_prefs/tj_crash.xml'"
+setmode quickstep; ensurehome; rebind; home; sleep 4
+resumed > "$OUT/ul2-a-resumed.txt"
+check "UL20: a tripped crash breaker brings the stock launcher back as the Quickstep home (the emergency exit)" bash -c "grep -q 'com.android.launcher3/' $OUT/ul2-a-resumed.txt && ! grep -q 'com.tj.launcher' $OUT/ul2-a-resumed.txt"
+adb shell "input keyevent KEYCODE_HOME; input keyevent KEYCODE_HOME"; sleep 10
+resumed > "$OUT/ul2-b-resumed.txt"
+check "UL21: double Home is the deliberate way back: custom mode, our launcher, breaker cleared" bash -c "[ \"$(getmode)\" = custom ] && grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul2-b-resumed.txt && ! adb shell \"run-as $PKG cat shared_prefs/tj_crash.xml\" | grep -q 'name=\"tripped\" value=\"true\"'"
+setmode quickstep; rebind; home; sleep 4
+resumed > "$OUT/ul2-c-resumed.txt"
+check "UL22: after the breaker was cleared the Quickstep world is the one launcher again" bash -c "grep -q 'com.tj.launcher/com.android.launcher3.Launcher' $OUT/ul2-c-resumed.txt"
+hpkey unified_launcher false; setmode quickstep; ensurehome; rebind; home; sleep 4
+resumed > "$OUT/ul2-d-resumed.txt"
+check "UL23: with the switch OFF the stock launcher is the Quickstep home (the old behaviour is intact)" bash -c "grep -q 'com.android.launcher3/' $OUT/ul2-d-resumed.txt && ! grep -q 'com.tj.launcher' $OUT/ul2-d-resumed.txt"
+setmode custom; home
+fi # section ul2
+
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
