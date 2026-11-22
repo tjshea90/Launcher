@@ -1981,3 +1981,13 @@
 >
 > The unified launcher is built, but you can't use it until a release lands. The unlocked home starts as a copy of your custom home's icon layout, because the stock home's arrangement can't be read. The other session's release note will carry that.
 <!-- sha:8d1d2993cda5 -->
+
+## 2026-11-22T10:07:20Z
+> The release is out, but you haven't been told yet. The other session shipped v0.9.17, the one-launcher build, and recorded it at 09:20 UTC. Its last message to you was at 09:16 UTC, and since then the only changes on `main` are small bookkeeping edits.
+>
+> I'm not touching its work, because that is under an hour old. I've set a one-time check for 10:22 UTC, so you don't wait for my next regular check at 12:04. At 10:22 I'll look at `main` again. If it is still idle and your answer hasn't gone out, I'll pick up from there. I'd check the release exists, fill in the release note and send it to you with the link. I'd also delete my 2-hourly check.
+>
+> The link will be https://github.com/tjshea90/Launcher/releases/tag/v0.9.17
+>
+> I haven't re-checked that the release page exists. The build log lists it, and I'll confirm it at 10:22 before I write to you.
+<!-- sha:04f39c9fe944 -->
