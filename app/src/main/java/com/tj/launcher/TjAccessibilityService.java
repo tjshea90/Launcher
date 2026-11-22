@@ -2377,18 +2377,20 @@ public class TjAccessibilityService extends AccessibilityService {
             final boolean raise = resetCover == null;
             if (raise) showResetCover();
             final boolean mine = raise && resetCover != null;
+            final View raised = mine ? resetCover : null;   // review 2: only THIS view is ours to remove
             final long t0 = android.os.SystemClock.uptimeMillis();
             LockLog.add(app, "PROFILE", "not ready at the " + why + ": cover until the " + Unified.wantedProfile(app) + " profile is loaded");
             handler.post(new Runnable() { @Override public void run() {
                 try {
                     long dt = android.os.SystemClock.uptimeMillis() - t0;
                     if (HomeProfile.ready(app) || dt > 3500 || keyguardLocked()) {
-                        if (mine) hideResetCover();
+                        // another flow (the power-menu prime, the stock force stop) may have started to work under this very cover meanwhile: then it stays for that flow / the cover's own 4.5 s failsafe
+                        if (mine && resetCover == raised && !primeRunning() && sfPhase == StockForceStop.IDLE) hideResetCover();
                         LockLog.add(app, "PROFILE", "profile " + (HomeProfile.ready(app) ? "ready" : "NOT ready (cap)") + " +" + dt + " ms after the " + why);
                         return;
                     }
                     handler.postDelayed(this, 50);
-                } catch (Throwable t) { Log.e(TAG, "profile wait failed", t); if (mine) hideResetCover(); }
+                } catch (Throwable t) { Log.e(TAG, "profile wait failed", t); if (mine && resetCover == raised) hideResetCover(); }
             } });
         } catch (Throwable t) { Log.e(TAG, "profile gate failed", t); }
     }
@@ -2399,7 +2401,7 @@ public class TjAccessibilityService extends AccessibilityService {
      */
     public void profileCover(final String why) {
         handler.post(new Runnable() { @Override public void run() {
-            try { if (!keyguardLocked()) waitForProfile(why); } catch (Throwable t) { Log.e(TAG, "profile cover failed", t); }
+            try { if (!keyguardLocked() && TjHooks.launcherInFront()) waitForProfile(why); } catch (Throwable t) { Log.e(TAG, "profile cover failed", t); }
         } });
     }
 

@@ -200,6 +200,15 @@ public class LauncherProvider extends ContentProvider {
     /** CV1: ids of the unlocked database start above this, so a layout write that was queued by the OTHER profile's UI (a folder closing, an Undo that comes due, a drop that ends during the reload) matches no row. */
     static final int UNLOCKED_ID_OFFSET = 1000000000;
 
+    /** CV1 review 2: ids of the unlocked layout live at or above {@link #UNLOCKED_ID_OFFSET}, ids of the custom layout below it: a row on the wrong side was queued by the other profile's UI during a flip. */
+    private static boolean idFitsHelper(DatabaseHelper h, ContentValues v) {
+        try {
+            Integer id = v == null ? null : v.getAsInteger(Favorites._ID);
+            if (id == null) return true;
+            return h.mIdFloor > 0 ? id >= h.mIdFloor : id < UNLOCKED_ID_OFFSET;
+        } catch (Throwable t) { return true; }
+    }
+
     /** CV1: the empty-database flag of one layout database (the custom one keeps Launcher3's own key). */
     static String emptyFlagKey(String dbName) {
         return LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(dbName) ? EMPTY_DATABASE_CREATED + "_unlocked" : EMPTY_DATABASE_CREATED;
@@ -236,6 +245,9 @@ public class LauncherProvider extends ContentProvider {
                 for (ContentValues cv : rows) {
                     if (db.insert(Favorites.TABLE_NAME, null, cv) < 0) throw new IllegalStateException("insert failed");
                 }
+                // a folder whose contents were all left out (deep shortcuts) would be an empty folder
+                db.execSQL("DELETE FROM " + Favorites.TABLE_NAME + " WHERE " + Favorites.ITEM_TYPE + "=" + Favorites.ITEM_TYPE_FOLDER
+                        + " AND " + Favorites._ID + " NOT IN (SELECT DISTINCT " + Favorites.CONTAINER + " FROM " + Favorites.TABLE_NAME + " WHERE " + Favorites.CONTAINER + ">0)");
                 t.commit();
             }
             to.reinitIds();
@@ -249,9 +261,15 @@ public class LauncherProvider extends ContentProvider {
     /** CV1: the widget ids that any profile's database still lists (the host is shared, so a ghost is an id that NO profile uses). */
     private SQLiteDatabase[] allLayoutDbs() {
         synchronized (this) {
+            // Review 2: a process that has only loaded the custom profile so far must still count the widgets the unlocked layout lists (the host is shared): open it too when its file exists.
+            if (mProfileHelpers.isEmpty()) mProfileHelpers.put(LauncherFiles.LAUNCHER_DB, mOpenHelper);
+            if (!mProfileHelpers.containsKey(LauncherFiles.LAUNCHER_UNLOCKED_DB)
+                    && getContext().getDatabasePath(LauncherFiles.LAUNCHER_UNLOCKED_DB).exists()) {
+                try { mProfileHelpers.put(LauncherFiles.LAUNCHER_UNLOCKED_DB, new DatabaseHelper(getContext(), null, LauncherFiles.LAUNCHER_UNLOCKED_DB, true)); }
+                catch (Throwable t) { Log.e(TAG, "could not open the unlocked layout to count its widgets", t); }
+            }
             ArrayList<SQLiteDatabase> l = new ArrayList<>();
             for (DatabaseHelper h : mProfileHelpers.values()) l.add(h.getWritableDatabase());
-            if (l.isEmpty()) l.add(mOpenHelper.getWritableDatabase());
             return l.toArray(new SQLiteDatabase[0]);
         }
     }
@@ -306,6 +324,7 @@ public class LauncherProvider extends ContentProvider {
         }
 
         final DatabaseHelper helper = mOpenHelper;   // CV1: read once (the loader may switch the profile database on another thread)
+        if (!idFitsHelper(helper, initialValues)) return null;   // CV1 review 2: a row the OTHER profile's UI queued (its id range) is never written here
         SQLiteDatabase db = helper.getWritableDatabase();
         addModifiedTime(initialValues);
         final int rowId = dbInsertAndCheck(helper, db, args.table, null, initialValues);
@@ -365,6 +384,7 @@ public class LauncherProvider extends ContentProvider {
         try (SQLiteTransaction t = new SQLiteTransaction(db)) {
             int numValues = values.length;
             for (int i = 0; i < numValues; i++) {
+                if (!idFitsHelper(helper, values[i])) continue;   // CV1 review 2
                 addModifiedTime(values[i]);
                 if (dbInsertAndCheck(helper, db, args.table, null, values[i]) < 0) {
                     return 0;

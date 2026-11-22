@@ -277,7 +277,9 @@ public class BgDataModel {
                     // Decrement pinned shortcut count
                     ShortcutKey pinnedShortcut = ShortcutKey.fromItemInfo(item);
                     MutableInt count = pinnedShortcutCounts.get(pinnedShortcut);
+                    // Tj (CV1 review 2): not once the unlocked layout exists: the pin is shared by both profiles, this model sees only its own copies
                     if ((count == null || --count.value == 0)
+                            && !com.tj.launcher.HomeProfile.sharedShortcutPins(context)
                             && !InstallShortcutReceiver.getPendingShortcuts(context)
                                 .contains(pinnedShortcut)) {
                         DeepShortcutManager.getInstance(context).unpinShortcut(pinnedShortcut);
