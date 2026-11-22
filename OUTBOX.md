@@ -1978,3 +1978,7 @@
 ## 2026-11-22T06:01:49Z
 > Status: the fixes are pushed and emulator run #719 (`ul,ul2`) is going, with a second review of the fix delta alongside it. I'll read both when they land.
 <!-- sha:edcd7c7175d7 -->
+
+## 2026-11-22T06:15:43Z
+> Status: run #720 is going and I'll read it at about 06:19 UTC. If it's green, or only the test was at fault, the next step is the three-run release gate.
+<!-- sha:6ecf5f316037 -->
