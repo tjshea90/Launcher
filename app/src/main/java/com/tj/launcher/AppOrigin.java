@@ -69,7 +69,7 @@ public final class AppOrigin {
             synchronized (AppOrigin.class) { if (now - lastMergeAt < 1000) return; lastMergeAt = now; }
             java.util.Set<String> used = QuickstepUsage.resumedDuring(c, from, end);
             if (used.isEmpty()) return;
-            android.content.ComponentName stock = StockLauncher.find(c);
+            android.content.ComponentName stock = StockLauncher.cached(c);   // A9 (CW1): a usage-based mark, a stale name for a minute changes nothing
             String ime = null;
             String cur = android.provider.Settings.Secure.getString(c.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
             if (cur != null && cur.contains("/")) ime = cur.substring(0, cur.indexOf('/'));
@@ -101,7 +101,7 @@ public final class AppOrigin {
             if (from <= 0) from = now - UsageGap.MAX_LOOKBACK_MS;           // never cleared by this version: look back as far as is sensible
             java.util.Set<String> used = QuickstepUsage.resumedDuring(c, from, now);
             if (used.isEmpty()) return out;
-            android.content.ComponentName stock = StockLauncher.find(c);
+            android.content.ComponentName stock = StockLauncher.cached(c);   // A9 (CW1): a usage-based mark, a stale name for a minute changes nothing
             String ime = null;
             String cur = android.provider.Settings.Secure.getString(c.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
             if (cur != null && cur.contains("/")) ime = cur.substring(0, cur.indexOf('/'));

@@ -97,7 +97,7 @@ public final class ReturnReset {
 
     /** The packages to force-stop on return: what Quickstep opened (or, before anything is tracked, every launchable app except the custom ones). Never us, the stock launcher, the keyboard, the target app. */
     private static java.util.List<String> invisibleTargets(Context c) {
-        ComponentName stock = StockLauncher.find(c);
+        ComponentName stock = StockLauncher.cached(c);   // A9 (CW1): planning only, the same stock home for a minute
         String ime = null;
         String cur = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
         if (cur != null && cur.contains("/")) ime = cur.substring(0, cur.indexOf('/'));
@@ -122,7 +122,7 @@ public final class ReturnReset {
 
     /** AA3: what may be closed at all (never this app, the stock launcher, the keyboard, the system). */
     private static TaskOrigin.Guard guard(final Context c) {
-        ComponentName stock = StockLauncher.find(c);
+        ComponentName stock = StockLauncher.cached(c);   // A9 (CW1)
         final String stockPkg = stock == null ? null : stock.getPackageName();
         String cur = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
         final String ime = (cur != null && cur.contains("/")) ? cur.substring(0, cur.indexOf('/')) : null;

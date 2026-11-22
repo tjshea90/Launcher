@@ -99,7 +99,7 @@ public final class WallpaperPickerChoice {
     /** The package the stock launcher is configured to use for its Wallpapers entry (its own {@code wallpaper_picker_package}); "" when none or unknown. Never throws. */
     static String stockHint(Context c) {
         try {
-            ComponentName stock = StockLauncher.find(c);
+            ComponentName stock = StockLauncher.cached(c);   // A9 (CW1)
             if (stock == null) return "";
             Resources r = c.getPackageManager().getResourcesForApplication(stock.getPackageName());
             int id = r.getIdentifier("wallpaper_picker_package", "string", stock.getPackageName());
@@ -155,7 +155,7 @@ public final class WallpaperPickerChoice {
                 pk[i] = list.get(i).activityInfo.packageName;
                 sys[i] = (list.get(i).activityInfo.applicationInfo.flags & (ApplicationInfo.FLAG_SYSTEM | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
             }
-            ComponentName stock = StockLauncher.find(c);
+            ComponentName stock = StockLauncher.cached(c);   // A9 (CW1)
             for (String pkg : wallpaperPackages(pk, sys, stockHint(c), stock == null ? null : stock.getPackageName(), c.getPackageName())) {
                 try {
                     Resources res = pm.getResourcesForApplication(pkg);
