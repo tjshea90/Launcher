@@ -2054,3 +2054,7 @@
 ## 2026-11-22T08:27:17Z
 > I'm checking each sentence of the answer draft against what the runs actually proved. The first question is whether the "icon added in the unlocked home" check (UL10) had a real icon to look for. A helper is pulling that line from #734 while the two full-core runs (#735, #736) continue.
 <!-- sha:eb2d237d7bec -->
+
+## 2026-11-22T08:27:37Z
+> The check of the draft against run output caught a claim I would have gotten wrong: the "icon added in the unlocked home never reaches the custom home" check had nothing to test, because the emulator never sent the install event (0 rows). That claim stays out of the "proved" list and goes under "only the tablet can show". I'm rewriting the draft so it claims only what the runs showed.
+<!-- sha:727e773ae59d -->
