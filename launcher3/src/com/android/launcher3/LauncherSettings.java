@@ -293,10 +293,17 @@ public class LauncherSettings {
 
         public static final String METHOD_REFRESH_BACKUP_TABLE = "refresh_backup_table";
 
+        /** CV1: select the profile's layout database (arg = file name; the answer's EXTRA_VALUE is the active file name). */
+        public static final String METHOD_SET_PROFILE_DB = "set_profile_db";
+
         public static final String EXTRA_VALUE = "value";
 
         public static Bundle call(ContentResolver cr, String method) {
             return cr.call(CONTENT_URI, method, null, null);
+        }
+
+        public static Bundle call(ContentResolver cr, String method, String arg) {
+            return cr.call(CONTENT_URI, method, arg, null);
         }
     }
 }

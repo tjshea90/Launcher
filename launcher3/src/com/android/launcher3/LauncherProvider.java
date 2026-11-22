@@ -105,7 +105,10 @@ public class LauncherProvider extends ContentProvider {
     private final ChangeListenerWrapper mListenerWrapper = new ChangeListenerWrapper();
     private Handler mListenerHandler;
 
-    protected DatabaseHelper mOpenHelper;
+    // CV1: volatile, because the loader switches the profile's database on the model thread while other threads still read it.
+    protected volatile DatabaseHelper mOpenHelper;
+    /** CV1: one open helper per profile database (custom = launcher.db, unlocked = launcher_unlocked.db); guarded by this. */
+    private final java.util.HashMap<String, DatabaseHelper> mProfileHelpers = new java.util.HashMap<>();
 
     /**
      * $ adb shell dumpsys activity provider com.android.launcher3
@@ -166,6 +169,60 @@ public class LauncherProvider extends ContentProvider {
                 // executed again.
                 RestoreDbTask.setPending(getContext(), false);
             }
+        }
+    }
+
+    /**
+     * CV1 (one launcher for both worlds; research/CV1_UNIFIED_LAUNCHER_DESIGN_2026-11-22.md): the layout of the UNLOCKED profile lives in its own database, so a shortcut put on that home never reaches the custom
+     * home (the workspace is not filtered by the hidden-app rule) and neither layout is disturbed by the other. Called by the loader as the first step of every load (model thread: the same looper as
+     * ModelWriter, so no write is in flight). The first creation of the unlocked database is seeded with a copy of the custom layout (the stock home's own arrangement cannot be read); any failure leaves
+     * Launcher3's default layout. Returns the file name that is active afterwards. Anything but the unlocked name selects the custom database.
+     */
+    synchronized String switchProfileDb(String name) {
+        createDbIfNotExists();
+        if (mProfileHelpers.isEmpty()) mProfileHelpers.put(LauncherFiles.LAUNCHER_DB, mOpenHelper);
+        String want = LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(name) ? name : LauncherFiles.LAUNCHER_DB;
+        DatabaseHelper h = mProfileHelpers.get(want);
+        if (h == null) {
+            boolean existed = getContext().getDatabasePath(want).exists();
+            h = new DatabaseHelper(getContext(), mListenerHandler, want, true);
+            mProfileHelpers.put(want, h);
+            if (!existed) seedFromCustom(h);
+        }
+        mOpenHelper = h;
+        return want;
+    }
+
+    /** CV1: copy the custom layout (every row but widgets) into a just-created unlocked database; ATTACH cannot run inside a transaction, so this runs after the helper is open. Never throws. */
+    private void seedFromCustom(DatabaseHelper to) {
+        SQLiteDatabase db = null;
+        try {
+            db = to.getWritableDatabase();
+            StringBuilder cols = new StringBuilder();
+            try (android.database.Cursor cu = db.rawQuery("PRAGMA table_info(" + Favorites.TABLE_NAME + ")", null)) {
+                while (cu.moveToNext()) {
+                    if (cols.length() > 0) cols.append(',');
+                    cols.append('"').append(cu.getString(1)).append('"');
+                }
+            }
+            String src = getContext().getDatabasePath(LauncherFiles.LAUNCHER_DB).getPath();
+            db.execSQL("ATTACH DATABASE " + android.database.DatabaseUtils.sqlEscapeString(src) + " AS tjsrc");
+            try {
+                db.execSQL("INSERT INTO " + Favorites.TABLE_NAME + " (" + cols + ") SELECT " + cols + " FROM tjsrc."
+                        + Favorites.TABLE_NAME + " WHERE " + Favorites.ITEM_TYPE + " NOT IN ("
+                        + Favorites.ITEM_TYPE_APPWIDGET + "," + Favorites.ITEM_TYPE_CUSTOM_APPWIDGET + ")");
+            } finally {
+                db.execSQL("DETACH DATABASE tjsrc");
+            }
+            long n = android.database.DatabaseUtils.queryNumEntries(db, Favorites.TABLE_NAME);
+            if (n > 0) {
+                Utilities.getPrefs(getContext()).edit().putBoolean(EMPTY_DATABASE_CREATED, false).commit();
+                to.reinitIds();
+            }
+            Log.i(TAG, "unlocked layout seeded with " + n + " rows of the custom layout");
+        } catch (Throwable t) {
+            Log.e(TAG, "seeding the unlocked layout failed, default layout instead", t);
+            try { if (db != null) db.execSQL("DELETE FROM " + Favorites.TABLE_NAME); } catch (Throwable ignored) { }
         }
     }
 
@@ -403,6 +460,11 @@ public class LauncherProvider extends ContentProvider {
                         new SQLiteTransaction(mOpenHelper.getWritableDatabase()));
                 return result;
             }
+            case LauncherSettings.Settings.METHOD_SET_PROFILE_DB: {
+                Bundle result = new Bundle();
+                result.putString(LauncherSettings.Settings.EXTRA_VALUE, switchProfileDb(arg));
+                return result;
+            }
             case LauncherSettings.Settings.METHOD_REFRESH_BACKUP_TABLE: {
                 mOpenHelper.mBackupTableExists =
                         tableExists(mOpenHelper.getReadableDatabase(), Favorites.BACKUP_TABLE_NAME);
@@ -574,7 +636,13 @@ public class LauncherProvider extends ContentProvider {
         private boolean mBackupTableExists;
 
         DatabaseHelper(Context context, Handler widgetHostResetHandler) {
-            this(context, widgetHostResetHandler, LauncherFiles.LAUNCHER_DB);
+            this(context, widgetHostResetHandler, LauncherFiles.LAUNCHER_DB, true);
+        }
+
+        /** CV1: the same start-up for any profile database. */
+        DatabaseHelper(Context context, Handler widgetHostResetHandler, String name, boolean init) {
+            this(context, widgetHostResetHandler, name);
+            if (!init) return;
             // Table creation sometimes fails silently, which leads to a crash loop.
             // This way, we will try to create a table every time after crash, so the device
             // would eventually be able to recover.
@@ -586,6 +654,13 @@ public class LauncherProvider extends ContentProvider {
             mBackupTableExists = tableExists(getReadableDatabase(), Favorites.BACKUP_TABLE_NAME);
 
             initIds();
+        }
+
+        /** CV1: the ids follow the rows that a seed copy just brought in. */
+        void reinitIds() {
+            SQLiteDatabase db = getWritableDatabase();
+            mMaxItemId = initializeMaxItemId(db);
+            mMaxScreenId = initializeMaxScreenId(db);
         }
 
         /**

@@ -15,6 +15,8 @@ public class LauncherFiles {
     private static final String XML = ".xml";
 
     public static final String LAUNCHER_DB = "launcher.db";
+    /** CV1: the icon layout of the unlocked profile (the one-launcher design); the custom profile keeps {@link #LAUNCHER_DB}. */
+    public static final String LAUNCHER_UNLOCKED_DB = "launcher_unlocked.db";
     public static final String SHARED_PREFERENCES_KEY = "com.android.launcher3.prefs";
     public static final String MANAGED_USER_PREFERENCES_KEY = "com.android.launcher3.managedusers.prefs";
     // This preference file is not backed up to cloud.
