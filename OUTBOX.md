@@ -2224,3 +2224,22 @@
 >
 > Tj's two open questions go in the release note: whether the screenshot-button hider should also run in the unlocked home, and whether the secret-code key filter stays on all day.
 <!-- sha:25e3e91547ee -->
+
+## 2026-11-22T22:54:59Z
+> Yes, I resumed it without losing any committed progress, and you can safely archive the other session.
+>
+> **Why archiving is safe**
+> - The old session's branch, `claude/launcher-performance-audit-39n5do`, stops at 22:05 UTC. I just re-checked, and it is fully contained in `main`. It hasn't moved since I took over.
+> - Everything it did is committed and pushed: the audits, the findings doc, and the implementers' edits. Its last real commit was at 18:41 UTC, and its two later commits were only "worker restarted" notices.
+>
+> **What was lost**
+> - The three implementers' completion reports (which items were done, skipped or risky) died with that session. I rebuilt that picture from the diff and `research/CW1_FINDINGS_2026-11-22.md`, so no code was lost.
+> - The tree didn't compile when I took over, because the Recents clear-all change was half-written. I finished it, and the full unit suite and lint are now green.
+>
+> **What is not finished**
+> - My work is not finished or shipped. The emulator gate (runs #739–#743 and a solo `rg` run) is still running, and nothing is released yet.
+> - The hider and stock-launcher work is only partly built. The skipped items are B2, B4, B5–B9, B10, B11, B13, A8 and C4, and I'll list each reason in the answer to you.
+>
+> **One loose end**
+> - The old session's heartbeat, `trig_015wPvHD1UqrhN1aXkEXR6TC`, fires every two hours at :04, and I can't see or delete it from here. After you archive that session, please delete that trigger in the app. It is harmless but pointless, and it could wake the archived session.
+<!-- sha:7c6313536911 -->
