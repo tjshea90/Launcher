@@ -4005,19 +4005,25 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** Polls every 20 ms (first look immediately): press {@code label} if it is there; end with EMPTY if one of {@code emptyTexts} is visible instead; scroll now and then if asked; TIMEOUT after maxMs. */
     private void pollPress(final String label, final String[] emptyTexts, final String[] packages, final long maxMs, final boolean scroll, final PollResult cb) {
+        pollPress(label, emptyTexts, packages, maxMs, scroll, null, cb);
+    }
+
+    /** CW1 D4: with a {@code clock} the deadline is the clock's (it starts at the first window of the stock launcher) instead of the fixed {@code maxMs}; the check is still made on every look. */
+    private void pollPress(final String label, final String[] emptyTexts, final String[] packages, final long maxMs, final boolean scroll, final RecentsClock clock, final PollResult cb) {
         final long deadline = android.os.SystemClock.uptimeMillis() + maxMs;
         final int[] tick = {0};
         handler.post(new Runnable() { @Override public void run() {
             List<AccessibilityNodeInfo> roots = null;   // BK1c: the windows' roots are fetched ONCE per look and shared by both searches (the notification step took 303 ms on the emulator, run #396)
             try {
                 roots = recentsRoots();
+                if (clock != null) recentsClockLook(clock, roots, android.os.SystemClock.uptimeMillis());
                 if (pressInRoots(roots, label, packages)) { cb.done(PRESSED); return; }
                 if (emptyTexts != null && emptyTexts.length > 0 && anyTextInRoots(roots, emptyTexts, packages)) { cb.done(EMPTY); return; }
                 tick[0]++;
                 if (scroll && tick[0] % 5 == 0) scrollSomething(packages);
             } catch (Throwable t) { Log.e(TAG, "poll failed", t); }
             finally { if (roots != null) for (AccessibilityNodeInfo r : roots) { try { r.recycle(); } catch (Throwable ignored) { } } }
-            if (android.os.SystemClock.uptimeMillis() >= deadline) { cb.done(TIMEOUT); return; }
+            if (clock != null ? clock.over(android.os.SystemClock.uptimeMillis()) : android.os.SystemClock.uptimeMillis() >= deadline) { cb.done(TIMEOUT); return; }
             handler.postDelayed(this, 20);
         } });
     }
