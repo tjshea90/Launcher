@@ -4227,13 +4227,14 @@ public class TjAccessibilityService extends AccessibilityService {
         handler.post(new Runnable() { @Override public void run() {
             // The deadline is checked FIRST, in every branch: the first version returned early after pressing "Close" and could press a card that never went away for ever, starving the main thread
             // (emulator runs #313 / #314: no result line at all, a hung reset). A card is pressed at most three times; only nodes with a description (a card carries its app's name) count as cards.
-            final boolean over = android.os.SystemClock.uptimeMillis() >= deadline;
+            final boolean over = clock.over(android.os.SystemClock.uptimeMillis());   // CW1 D4: still FIRST on every look; the clock only moves the deadline
             List<AccessibilityNodeInfo> roots = null;   // BK1c: fetched once for this whole look, recycled in the finally below
             try {
                 if (!over) {
                     roots = recentsRoots();
-                    if (pressInRoots(roots, "clear all", pk)) { finishRecentsEmpty(t0, done, "Clear all pressed", true, closed[0]); return; }
-                    if (anyTextInRoots(roots, new String[] {"no recent items"}, pk)) { finishRecentsEmpty(t0, done, "the list was empty", true, closed[0]); return; }
+                    recentsClockLook(clock, roots, android.os.SystemClock.uptimeMillis());
+                    if (pressInRoots(roots, "clear all", pk)) { finishRecentsEmpty(t0, done, "Clear all pressed", true, closed[0], clock); return; }
+                    if (anyTextInRoots(roots, new String[] {"no recent items"}, pk)) { finishRecentsEmpty(t0, done, "the list was empty", true, closed[0], clock); return; }
                     boolean pressedOne = false, leftover = false;
                     for (AccessibilityNodeInfo card : cardsInRoots(roots)) {
                         CharSequence d = card.getContentDescription();
