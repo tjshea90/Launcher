@@ -105,9 +105,14 @@ final class RecentsFilter {
     /** Called for every accessibility event; cheap (a few comparisons) unless a window of the stock launcher / SystemUI changed. Never throws. */
     void onEvent(AccessibilityEvent e) {
         try {
-            if (e == null || pending) return;
+            if (e == null) return;
             CharSequence pkg = e.getPackageName();
-            if (pkg == null || !mayOpenRecents(e.getEventType(), pkg.toString(), svc.stockPackageOrNull(), e.getClassName())) return;
+            if (pkg == null) return;
+            // CW1 D3: any window of the stock launcher = it is alive and has shown something since its last restart (and, under a new configuration, one more pinned screen): the Force stop debt reads this (before the pending
+            // check: a window that arrives while a look waits still counts). A pure compare for every other event.
+            if (StockForceStop.isStockWindow(e.getEventType(), pkg.toString(), null)) StockForceStop.noteStockWindow(svc.getApplicationContext());
+            if (pending) return;
+            if (!mayOpenRecents(e.getEventType(), pkg.toString(), svc.stockPackageOrNull(), e.getClassName())) return;
             // BE2: with the shell helper the cards of non-drawer apps are removed by id (no animation, no card to see); the label-based closing below is the fallback when no helper answers
             if (Mode.isCustom(svc) && !svc.keyguardLockedNow() && !svc.resetDrivesRecents()) RecentsSweep.requestAsync(svc.getApplicationContext(), "the Recents screen opened", RecentsSweep.HIDDEN_ONLY, null, 2500);
             if (!wanted(Mode.isCustom(svc), Features.get(svc, KEY, true), svc.keyguardLockedNow(), CrashGuard.automationOff(svc), svc.resetDrivesRecents())) return;
