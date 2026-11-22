@@ -266,11 +266,22 @@ public abstract class BaseIconCache {
         }
         entry.title = cachingLogic.getLabel(object);
         entry.contentDescription = mPackageManager.getUserBadgedLabel(entry.title, user);
-        mCache.put(key, entry);
+        // C8 (CW1): the icon always goes to the DB; it stays in MEMORY only when the launcher shows the app (a hidden app's icon is loaded from the DB if it is ever unhidden)
+        if (keepInMemory(componentName, user)) {
+            mCache.put(key, entry);
+        }
 
         ContentValues values = newContentValues(entry, entry.title.toString(),
                 componentName.getPackageName());
         addIconToDB(values, componentName, info, userSerial);
+    }
+
+    /**
+     * C8 (CW1): should the icon that {@link #addIconToDBAndMemCache} just made stay in the memory cache? Default yes. An override can say no for apps that are never drawn (they are still written to the DB,
+     * so a later {@code cacheLocked} reads them from there). Called with this cache's monitor held, on the worker thread: must be quick and must not call back into the cache.
+     */
+    protected boolean keepInMemory(ComponentName componentName, UserHandle user) {
+        return true;
     }
 
     /**
