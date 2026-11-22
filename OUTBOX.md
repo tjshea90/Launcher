@@ -2173,3 +2173,14 @@
 >
 > Your request is written into `TASKS.md` as CW1, and I armed a 2-hourly auto-resume check for this job. The audits are code reading only. The tablet itself can still show things they can't, such as real timings and battery drain, so I'll mark which claims are proven in code and which need your tablet.
 <!-- sha:a61e80d214e4 -->
+
+## 2026-11-22T18:17:58Z
+> Audit B (the screenshot-button hider) is finished and saved; the other three reviewers are still running.
+>
+> - **Lock screen, first press:** B5 finds a gap when the wallpaper changed, the screen rotated, or app data was cleared. The first power-menu open then takes the slow path, with no fallback.
+> - **Home screen, first press:** B1 and B3 find that the first press after an unlock, a return from an app, or a double Home can use a stale or unbuilt patch image, or can start a slow scan on the first window event. The scan was measured at 33 ms on average and up to 1.3 s [tablet only].
+> - **Drawer, apps and an unready home:** B2 finds no patch there, so the slow scan runs while the stock Screenshot entry is visible.
+> - **Unlocked home:** no patch or card runs there by design, so the stock menu shows its Screenshot entry in that mode. You asked for the hider "from both home screen and lock screen", so I need to know whether that includes the unlocked home. I'll ask once the other reports are in.
+>
+> Next I'll rank everything into one findings list (CW1b) when audits A, C and D arrive.
+<!-- sha:0032eefe0dbf -->
