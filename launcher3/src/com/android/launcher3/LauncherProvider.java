@@ -413,7 +413,7 @@ public class LauncherProvider extends ContentProvider {
 
         if (Binder.getCallingPid() != Process.myPid()
                 && Favorites.TABLE_NAME.equalsIgnoreCase(args.table)) {
-            mOpenHelper.removeGhostWidgets(mOpenHelper.getWritableDatabase());
+            mOpenHelper.removeGhostWidgets(allLayoutDbs());
         }
         int count = db.delete(args.table, args.where, args.args);
         if (count > 0) {
@@ -453,7 +453,7 @@ public class LauncherProvider extends ContentProvider {
             case LauncherSettings.Settings.METHOD_WAS_EMPTY_DB_CREATED : {
                 Bundle result = new Bundle();
                 result.putBoolean(LauncherSettings.Settings.EXTRA_VALUE,
-                        Utilities.getPrefs(getContext()).getBoolean(EMPTY_DATABASE_CREATED, false));
+                        Utilities.getPrefs(getContext()).getBoolean(emptyFlagKey(mOpenHelper.getDatabaseName()), false));
                 return result;
             }
             case LauncherSettings.Settings.METHOD_DELETE_EMPTY_FOLDERS: {
@@ -481,7 +481,7 @@ public class LauncherProvider extends ContentProvider {
                 return null;
             }
             case LauncherSettings.Settings.METHOD_REMOVE_GHOST_WIDGETS: {
-                mOpenHelper.removeGhostWidgets(mOpenHelper.getWritableDatabase());
+                mOpenHelper.removeGhostWidgets(allLayoutDbs());
                 return null;
             }
             case LauncherSettings.Settings.METHOD_NEW_TRANSACTION: {
@@ -544,7 +544,7 @@ public class LauncherProvider extends ContentProvider {
     }
 
     private void clearFlagEmptyDbCreated() {
-        Utilities.getPrefs(getContext()).edit().remove(EMPTY_DATABASE_CREATED).commit();
+        Utilities.getPrefs(getContext()).edit().remove(emptyFlagKey(mOpenHelper.getDatabaseName())).commit();
     }
 
     /**
@@ -557,7 +557,7 @@ public class LauncherProvider extends ContentProvider {
     synchronized private void loadDefaultFavoritesIfNecessary() {
         SharedPreferences sp = Utilities.getPrefs(getContext());
 
-        if (sp.getBoolean(EMPTY_DATABASE_CREATED, false)) {
+        if (sp.getBoolean(emptyFlagKey(mOpenHelper.getDatabaseName()), false)) {
             Log.d(TAG, "loading default workspace");
 
             AppWidgetHost widgetHost = mOpenHelper.newLauncherWidgetHost();
@@ -663,6 +663,7 @@ public class LauncherProvider extends ContentProvider {
         private final Context mContext;
         private int mMaxItemId = -1;
         private int mMaxScreenId = -1;
+        private int mIdFloor = 0;   // CV1: the unlocked database numbers its items above LauncherProvider.UNLOCKED_ID_OFFSET
         private boolean mBackupTableExists;
 
         DatabaseHelper(Context context, Handler widgetHostResetHandler) {
@@ -672,6 +673,7 @@ public class LauncherProvider extends ContentProvider {
         /** CV1: the same start-up for any profile database. */
         DatabaseHelper(Context context, Handler widgetHostResetHandler, String name, boolean init) {
             this(context, widgetHostResetHandler, name);
+            if (LauncherFiles.LAUNCHER_UNLOCKED_DB.equals(name)) mIdFloor = UNLOCKED_ID_OFFSET;
             if (!init) return;
             // Table creation sometimes fails silently, which leads to a crash loop.
             // This way, we will try to create a table every time after crash, so the device
@@ -748,7 +750,7 @@ public class LauncherProvider extends ContentProvider {
             }
 
             // Set the flag for empty DB
-            Utilities.getPrefs(mContext).edit().putBoolean(EMPTY_DATABASE_CREATED, true).commit();
+            Utilities.getPrefs(mContext).edit().putBoolean(emptyFlagKey(getDatabaseName()), true).commit();
         }
 
         public long getSerialNumberForUser(UserHandle user) {
@@ -923,7 +925,7 @@ public class LauncherProvider extends ContentProvider {
          * in our model.
          */
         @TargetApi(Build.VERSION_CODES.O)
-        public void removeGhostWidgets(SQLiteDatabase db) {
+        public void removeGhostWidgets(SQLiteDatabase... dbs) {
             // Get all existing widget ids.
             final AppWidgetHost host = newLauncherWidgetHost();
             final int[] allWidgets;
@@ -935,9 +937,13 @@ public class LauncherProvider extends ContentProvider {
                 Log.e(TAG, "getAppWidgetIds not supported", e);
                 return;
             }
-            final IntSet validWidgets = IntSet.wrap(LauncherDbUtils.queryIntArray(db,
-                    Favorites.TABLE_NAME, Favorites.APPWIDGET_ID,
-                    "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null));
+            // CV1: a widget is valid when ANY profile's database lists it (one shared host).
+            final IntSet validWidgets = new IntSet();
+            for (SQLiteDatabase db : dbs) {
+                validWidgets.addAll(IntSet.wrap(LauncherDbUtils.queryIntArray(db,
+                        Favorites.TABLE_NAME, Favorites.APPWIDGET_ID,
+                        "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null)));
+            }
             for (int widgetId : allWidgets) {
                 if (!validWidgets.contains(widgetId)) {
                     try {
@@ -1069,7 +1075,7 @@ public class LauncherProvider extends ContentProvider {
         }
 
         private int initializeMaxItemId(SQLiteDatabase db) {
-            return getMaxId(db, "SELECT MAX(%1$s) FROM %2$s", Favorites._ID, Favorites.TABLE_NAME);
+            return Math.max(mIdFloor, getMaxId(db, "SELECT MAX(%1$s) FROM %2$s", Favorites._ID, Favorites.TABLE_NAME));
         }
 
         // Generates a new ID to use for an workspace screen in your database. This method
