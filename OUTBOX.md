@@ -2214,3 +2214,13 @@
 >
 > When they finish I'll run the full unit suite and lint, then have separate read-only reviewers check each change before any emulator run. Two questions for you go with the release note: should the hider also run in the unlocked home, and should the secret-code key filter stay on all day?
 <!-- sha:f2e041949c5a -->
+
+## 2026-11-22T22:49:04Z
+> I'm waiting on the emulator gate. The old session died mid-edit at 18:41 UTC, and I've taken over its work and repaired the tree. It compiles again, and the full unit suite and lint are green.
+>
+> - **Gate:** runs #739–#743 and a solo `rg` run are going on `main`. I'll read them at about 23:30 UTC, record the raw verdict first, then rerun any failing section solo before deciding to ship.
+> - **Heartbeat:** `trig_01DN2e1WG9kDhpHMtsFee1Lb` is armed for this session. The old session's heartbeat belongs to another account, so I can't see or delete it. Its rules should make it stand down while my commits are fresh.
+> - **Not built:** B2, B4, B5–B9, B10, B11, B13, A8 and C4. The hider and stock-launcher work they belong to is only partly done. For each one the change is marginal next to the card or lock-patch risk, or the code shows it would lose function (the VPN callback cannot hear every VPN, so the 30 s poll is needed). I'll list each reason in the answer to Tj.
+>
+> Tj's two open questions go in the release note: whether the screenshot-button hider should also run in the unlocked home, and whether the secret-code key filter stays on all day.
+<!-- sha:25e3e91547ee -->
