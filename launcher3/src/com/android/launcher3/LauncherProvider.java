@@ -360,16 +360,17 @@ public class LauncherProvider extends ContentProvider {
         createDbIfNotExists();
         SqlArguments args = new SqlArguments(uri);
 
-        SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+        final DatabaseHelper helper = mOpenHelper;   // CV1: read once
+        SQLiteDatabase db = helper.getWritableDatabase();
         try (SQLiteTransaction t = new SQLiteTransaction(db)) {
             int numValues = values.length;
             for (int i = 0; i < numValues; i++) {
                 addModifiedTime(values[i]);
-                if (dbInsertAndCheck(mOpenHelper, db, args.table, null, values[i]) < 0) {
+                if (dbInsertAndCheck(helper, db, args.table, null, values[i]) < 0) {
                     return 0;
                 }
             }
-            mOpenHelper.onAddOrDeleteOp(db);
+            helper.onAddOrDeleteOp(db);
             t.commit();
         }
 
