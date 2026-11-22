@@ -5889,6 +5889,7 @@ check "UL1: Quickstep mode with the one launcher: OUR launcher is in front (not 
 check "UL2: the model loaded the UNLOCKED layout (lock log)" bash -c "adb shell \"run-as $PKG cat files/lock-events.log\" | tr -d '\r' | grep -q 'model loads the UNLOCKED layout'"
 check "UL3: the unlocked layout has its own database file" bash -c "adb shell \"run-as $PKG ls databases\" | tr -d '\r' | grep -qx 'launcher_unlocked.db'"
 check "UL3b: ... seeded from the custom layout or Launcher3's default (not empty)" bash -c "[ \"\$(adb exec-out \"run-as $PKG cat databases/launcher_unlocked.db\" 2>/dev/null | wc -c)\" -gt 8000 ]"
+check "UL3c: the unlocked layout was seeded from the custom layout in one transaction (provider log; review CV1-5/7: no ATTACH, no half copy)" bash -c "adb logcat -d -s LauncherProvider:I | grep -q 'unlocked layout seeded with'"
 UL_DA="$(uldrawer)"; shot ul-a-drawer; rebind
 echo "$UL_DA" > "$OUT/ul-a-drawer.txt"; info "UL drawer in the unlocked profile: $(echo "$UL_DA" | cut -c1-300)"
 check "UL4: the unlocked drawer shows Contacts (NOT in the custom allowed list) and Launcher control and Back to custom" bash -c "grep -q 'Contacts' $OUT/ul-a-drawer.txt && grep -q 'Launcher control' $OUT/ul-a-drawer.txt && grep -q 'Back to custom' $OUT/ul-a-drawer.txt"
