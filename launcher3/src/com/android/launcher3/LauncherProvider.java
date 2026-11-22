@@ -940,9 +940,10 @@ public class LauncherProvider extends ContentProvider {
             // CV1: a widget is valid when ANY profile's database lists it (one shared host).
             final IntSet validWidgets = new IntSet();
             for (SQLiteDatabase db : dbs) {
-                validWidgets.addAll(IntSet.wrap(LauncherDbUtils.queryIntArray(db,
+                IntArray ids = LauncherDbUtils.queryIntArray(db,
                         Favorites.TABLE_NAME, Favorites.APPWIDGET_ID,
-                        "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null)));
+                        "itemType=" + Favorites.ITEM_TYPE_APPWIDGET, null, null);
+                for (int i = 0; i < ids.size(); i++) validWidgets.add(ids.get(i));
             }
             for (int widgetId : allWidgets) {
                 if (!validWidgets.contains(widgetId)) {
