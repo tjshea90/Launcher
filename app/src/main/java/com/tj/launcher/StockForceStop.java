@@ -13,6 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * process (adj 100) and, without the helper, cannot even READ its size (an app uid is refused {@code dumpsys meminfo}). So the trigger here is a DEBT counter, an estimate: every change of
  * {@code low_power} and every ended Quickstep session adds one; at {@link #MIN_DEBT} the next quiet moment on the custom home restarts the process. The helper path (SR1) keeps its exact reading and wins when the helper runs.
  *
+ * <p>CW1 D3 / D5 (2026-11-22, research/CW1_AUDIT_D_STOCK_SLEEP_2026-11-22.md): the weights above are the v0.9.16 world (two launchers: every Quickstep session started the stock HOME activity). With the one launcher in force
+ * ({@link Unified#active}) a session and a saver flip weigh nothing; the debt counts PINS: one per stock window that came up under a different configuration than the previous one ({@link #onStockWindow}, fed from
+ * RecentsFilter.onEvent), and the drive needs {@link #PIN_THRESHOLD} of them. No stock window since the stock process was last restarted (a restart, a finished drive, a new boot) = "nothing to give back". The first time the
+ * one launcher is in force the debt is seeded once ({@link #seedIfNeeded}) so one cleanup runs at the next quiet moment. The helper path (SR1, exact reading) is unchanged.
+ *
  * <p>No Android here except the thin preference glue (tested in StockForceStopTest). The step-by-step drive lives in TjAccessibilityService ({@code stockForceStop}) and follows {@link #step}.
  */
 final class StockForceStop {
