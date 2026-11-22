@@ -1939,3 +1939,34 @@
 >
 > Nothing is left for me to do. v0.9.16 is released and recorded, and Tj's only message of this stretch has been answered. What remains waits on Tj: the tablet check (TASKS CT1f) and a decision on the open power-menu follow-ups (CT1e).
 <!-- sha:a41ce31e7ace -->
+
+## 2026-11-22T04:58:20Z
+> **Yes, it would mostly be better, but the stock launcher can't be removed completely, and I wouldn't remove it as the emergency exit.**
+>
+> I checked this against the repo and the CI runs; it's a design opinion, not tested on your tablet. I changed no code.
+>
+> **What you'd gain**
+> - **No more switching between two launchers:** The "Quickstep" side would become an unlocked state of your own launcher. The handshake at the lock screen would unlock it instead of starting the stock home. The launcher you already own is the default home app (it's the app that routes between the two today), and its look already matches the stock one.
+> - **Less stock-launcher churn:** The stock home screen would never be started or re-created. That is the likeliest cause of the RAM growth, because battery-saver changes re-create it.
+> - **Simpler lock handling:** The unlock sequence would no longer need to start, cover, close and clean up after a second launcher.
+>
+> **Why it can't go away entirely**
+> - **Recents:** On Android 10 the Recents screen lives inside the stock launcher's process. Without system signing we can't replace it. Your CI run showed it opening even with the custom launcher in front. So that process stays, and its growth would shrink but not stop. I'd still keep the Force stop from v0.9.16 for it.
+> - **Emergency exit:** The stock home is currently the safety net if the custom launcher crashes in a loop, which keeps you from being locked out. I'd keep it only for that. If the custom launcher were the only home and it broke, you'd have no usable home screen.
+>
+> **What the unlocked state would need**
+> - All apps unhidden.
+> - The Recents clean-up and the lock-screen cover for the power menu both switched off, so the real menu with Screenshot shows.
+> - Your keyboard, quick-settings tiles and notifications behaving as they do in Quickstep now.
+>
+> **How I'd build it**
+> It touches the lock-safety core, so I'd stage it:
+> 1. Add the unlocked state to the custom launcher.
+> 2. Route the handshake to it behind a switch that defaults to off.
+> 3. Test it on your tablet.
+> 4. Make it the default only after that.
+>
+> That is several releases, each with the full lock gate.
+>
+> **Your call:** Do you want me to build it? And in the unlocked state, is there anything the stock side does today that must stay exactly the same? I wrote your question into TASKS.md (CU1) so it isn't lost.
+<!-- sha:d0dbf12d3433 -->
