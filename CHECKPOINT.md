@@ -1,13 +1,13 @@
-# CHECKPOINT 1589 — read me first, then TASKS.md
+# CHECKPOINT 1590 — read me first, then TASKS.md
 
-**Written:** 2026-11-22T09:17:44Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `ccr-bf8eda7f-mrlcxc` · **builds on:** `8eef3a3f` (this checkpoint is the commit after it)
+**Written:** 2026-11-22T10:24:54Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/launcher-performance-audit-39n5do` · **builds on:** `465ba7dc` (this checkpoint is the commit after it)
 
 ## Just done
-CV1: ship.sh green (handoff, version 0.9.17 code 56, unit suite, pushed 47290141); android.yml full_build=true dispatched on branch ccr-bf8eda7f-mrlcxc at ~09:16
+CV1 CLOSED: v0.9.17 Release verified (get_release_by_tag, 3 APKs), merged main@c21f5038 (app code identical), release answer filled+sent to Tj; my heartbeat trig_01SrdLzjP9bFC1W4KzxUT1JL DELETED, one-shot trig_01UArz4zXUnRSNZvXCjoBxw2 fired; other session's heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m not visible to this account
 
 ## Do this next
-at ~09:20 get_release_by_tag v0.9.17 (Release must exist) and the android.yml run green; THEN bash tools/record-release.sh v0.9.17 'CV1: one launcher for both worlds'; fill the draft placeholders (<VERSION>=v0.9.17, <LINK>, <GATE>, <FULL>=#735 98P 0F), tick TASKS CV1c-g, update HANDOFF 0zd, answer Tj; then delete heartbeat trig_01NxLAL2jZccAiP8UPYM1X7m (delete_trigger; if refused update_trigger enabled=false)
+nothing Claude-owned left; waiting on Tj: CV1h tablet checks (install v0.9.17), CT1f, CV1i optional (UL10 vacuous on emulator); do not arm a new heartbeat without a new job
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,8 @@ at ~09:20 get_release_by_tag v0.9.17 (Release must exist) and the android.yml ru
 
 ## Last ten checkpoints
 ```
+  1a02fc09 ckpt 1546: STAND DOWN heartbeat 10:04: other session shipped+recorded v0.9.17 at 09:20 
+  f12b6d8d ckpt 1589: CV1: ship.sh green (handoff, version 0.9.17 code 56, unit suite, pushed 4729
   47290141 ckpt 1588: gated v0.9.17 (code 56) and pushed it: the handoff self-test, the full unit 
   0ceccc00 ckpt 1587: CV1 RAW: #737 id 45005254638 (unified,base, main) 25P 4F = reset: x4 (Calend
   672c8c8a ckpt 1586: CV1 RAW: #738 id 45005257395 (unified,base, branch ref) GREEN 29P 0F (1 nati
@@ -24,9 +26,7 @@ at ~09:20 get_release_by_tag v0.9.17 (Release must exist) and the android.yml ru
   048e5f7e ckpt 1583: CV1 RAW: #735 id 45002715538 FULL unified core {unified,base,n,o,ac,e1,x1,rb
   1e9b80df ckpt 1582: CV1: answer draft rewritten to claim only what runs proved (UL10 vacuous, Re
   e9ea49d9 ckpt 1581: CV1 FULL unified lock core x2 on main@e2492d57 (product==a5396e53): #735 id 
-  2700ae96 ckpt 1580: CV1 RAW: #734 id 45001887853 (ul solo, main@5c620f40) GREEN 25P 0F, UL24 dou
-  292af997 ckpt 1579: CV1: CLAUDE.md lessons for the CV1 session written; #734 ul solo id 45001887
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(64 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
