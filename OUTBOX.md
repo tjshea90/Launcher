@@ -2160,3 +2160,16 @@
 >
 > The other session did the build, the gate runs and the release. I merged its work into my branch, filled in this answer and verified the Release page, which has all three APKs. I deleted my 2-hourly auto-resume check, since nothing is left for me to do. The other session's own check isn't visible to me, so I couldn't delete it. Waiting on you: the tablet checks above, and your v0.9.16 tablet check from the earlier release (CT1f).
 <!-- sha:3ec954e0c100 -->
+
+## 2026-11-22T18:08:27Z
+> I'm auditing four things in parallel, each by its own read-only reviewer. Nothing is changed or released yet.
+>
+> 1. **Speed of the app and its functions:** start-up, Home and double Home, unlock, the drawer, and what the accessibility service does per event.
+> 2. **The screenshot-button hider:** is it ready before the first power-menu open from the lock screen and the home screen, and can that first open lag or flicker? I also asked what happens in the unlocked home, where I'm not sure any hider runs.
+> 3. **RAM, CPU and battery:** every timer, receiver, observer and standing cost, including while the screen is off.
+> 4. **The stock launcher:** why it stays awake now that it's only Recents, which ways exist to let it sleep, and whether the Settings-based force-stop machinery is still needed.
+>
+> Each reviewer writes a report into the repo (`research/CW1_AUDIT_*`). Then I rank the findings and fix them. Your rule that nothing loses speed or function applies to every fix. Then I review the changes, run the emulator tests the changes touch, and release it as one version.
+>
+> Your request is written into `TASKS.md` as CW1, and I armed a 2-hourly auto-resume check for this job. The audits are code reading only. The tablet itself can still show things they can't, such as real timings and battery drain, so I'll mark which claims are proven in code and which need your tablet.
+<!-- sha:a61e80d214e4 -->
