@@ -199,7 +199,7 @@ File: StockForceStop.java:236-247, StockRefresh.java:100-114. Each `afterQuickst
 4. **Write D2 into HANDOFF.md / BRIEF.md** so no later session tries `pm disable-user`.
 5. If the owner ever runs the helper: the invisible task removal makes the stock process truly idle (no Recents open at returns). Without it the on-screen clear-all (W1) stays the one daily wake.
 
-**App-only:** L1, D3-D8, the manual memory read. **Helper-only:** exact size (SR1), `STOCKRESTART`, `send-trim-memory`, task removal by id, any `pm` / `cmd appops` / bucket command.
+**App-only:** L1, D3-D8 (D6 optional), the manual memory read. **Helper-only:** exact size (SR1), `STOCKRESTART`, `send-trim-memory`, task removal by id, any `pm` / `cmd appops` / bucket command.
 
 ---------------------------------------------------------------------------------------------------------
 
