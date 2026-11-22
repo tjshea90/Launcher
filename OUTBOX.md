@@ -1974,3 +1974,7 @@
 ## 2026-11-22T05:46:25Z
 > Status: heartbeat is armed (`trig_01NxLAL2jZccAiP8UPYM1X7m`). Two read-only reviewers are checking the unified-launcher code (Android-app side and `launcher3` side). The emulator run #718 (`ul,ul2`) is still going and I'll read it at about 05:54 UTC. Nothing is re-dispatched and no code has changed yet.
 <!-- sha:a4cdca546665 -->
+
+## 2026-11-22T06:01:49Z
+> Status: the fixes are pushed and emulator run #719 (`ul,ul2`) is going, with a second review of the fix delta alongside it. I'll read both when they land.
+<!-- sha:edcd7c7175d7 -->
