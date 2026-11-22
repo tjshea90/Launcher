@@ -1970,3 +1970,7 @@
 >
 > **Your call:** Do you want me to build it? And in the unlocked state, is there anything the stock side does today that must stay exactly the same? I wrote your question into TASKS.md (CU1) so it isn't lost.
 <!-- sha:d0dbf12d3433 -->
+
+## 2026-11-22T05:46:25Z
+> Status: heartbeat is armed (`trig_01NxLAL2jZccAiP8UPYM1X7m`). Two read-only reviewers are checking the unified-launcher code (Android-app side and `launcher3` side). The emulator run #718 (`ul,ul2`) is still going and I'll read it at about 05:54 UTC. Nothing is re-dispatched and no code has changed yet.
+<!-- sha:a4cdca546665 -->
