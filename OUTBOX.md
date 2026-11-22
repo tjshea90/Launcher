@@ -2038,3 +2038,7 @@
 ## 2026-11-22T08:18:27Z
 > Waiting for the 08:23 timer, after which a helper reads #734.
 <!-- sha:82b474107319 -->
+
+## 2026-11-22T08:20:03Z
+> The 08:20 timer fired early. I'm waiting for the 08:23 one before reading #734.
+<!-- sha:f12e56f0c671 -->
