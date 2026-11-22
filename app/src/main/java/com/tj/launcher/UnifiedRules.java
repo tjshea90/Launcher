@@ -60,6 +60,24 @@ public final class UnifiedRules {
         return resumedIsRemembered || (active ? ownInFront : stockInFront);
     }
 
+    /** A6 (CW1): which window look the handshake front check needs. Pure counterpart of {@link #quickstepFrontOk}: it only evaluates the side whose answer is used (the other side's answer was thrown away). */
+    public enum FrontLook { NONE, OWN, STOCK }
+
+    /** A6: the remembered app is in front = nothing else to look at; else our home (unified world) or the stock home (old world). {@code quickstepFrontOk(a, s, o, r)} equals {@code quickstepFrontOk(a, look==STOCK && s, look==OWN && o, r)}. */
+    public static FrontLook frontLook(boolean active, boolean resumedIsRemembered) { return resumedIsRemembered ? FrontLook.NONE : active ? FrontLook.OWN : FrontLook.STOCK; }
+
+    /** A4 (CW1): how often the settle loop may fetch the accessibility tree while it only waits for the profile reload (ms). The one Home press (>= 200 ms) and the 1.5 s give-up keep their meaning. */
+    public static final long SETTLE_LOOK_MS = 200;
+
+    /**
+     * A4: does this tick of the return-cover settle loop need the accessibility tree (a cross-process fetch on the thread that is binding the Launcher)? The deadline of the next look comes FIRST. Between looks, while the
+     * profile reload is pending ({@code waitingForProfile}) and our Launcher is resumed ({@code launcherResumed}), the only possible answer is "keep waiting", so the tree is not fetched. Every other state looks every tick, as before.
+     */
+    public static boolean settleNeedsTree(boolean waitingForProfile, boolean launcherResumed, long dtMs, long nextLookAtMs) {
+        if (dtMs >= nextLookAtMs) return true;
+        return !(waitingForProfile && launcherResumed);
+    }
+
     /** Apps started from our home belong to the custom world only while the custom profile is shown: in the unlocked profile they are Quickstep-session apps (cleaned at the return). */
     public static boolean marksCustomOrigin(Profile wanted) { return wanted == Profile.CUSTOM; }
 
