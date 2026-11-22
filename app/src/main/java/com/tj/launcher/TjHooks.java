@@ -83,8 +83,9 @@ public final class TjHooks {
 
     public static void onLauncherResumed(final Context c) {
         launcherResumed = true; lastResumeMs = android.os.SystemClock.uptimeMillis();
+        try { HomeProfile.syncNow(c, "launcher resume"); } catch (Throwable ignored) { }   // CV1: level-triggered: the model must hold the wanted profile (custom / unlocked) whenever the home is in front
         try {
-            if (!Mode.isCustom(c)) {
+            if (!Mode.isCustom(c) && UnifiedRules.strayCustomApplies(Unified.active(c))) {   // CV1: with the one launcher our home IS the Quickstep home: nothing is stray
                 LockLog.add(c.getApplicationContext(), "LAUNCHER", "resumed while the mode is " + Mode.get(c) + " (CG1a: the custom home in front in a Quickstep session; the STRAYCUSTOM line says what the helper made of it)");
                 TjAccessibilityService sg = TjAccessibilityService.get();
                 if (sg != null) sg.customHomeAppeared("onResume");   // CG1a: the Launcher's own resume is the ONE signal of this appearance (a window event of our own package never reaches the guard; run #619 saw none either)
