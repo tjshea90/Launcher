@@ -1721,3 +1721,8 @@ There is currently a Claude session already working on this repo. Be careful not
   - AccessibilityNodeInfo non-recycling does not crash on API 29.
 </agent-message>
 ```
+
+## 2026-11-22T04:55:23Z
+```
+Would it be better to use the custom launcher at all times and never use quickstep launcher, but the custom launcher could still be unlocked for the extra features and unhidden apps just like how quickstep did?
+```
