@@ -3358,6 +3358,14 @@ public class TjAccessibilityService extends AccessibilityService {
 
     private String stockPkg() { ComponentName s = stockCached(); return s == null ? null : s.getPackageName(); }
 
+    /** CV1: with the one launcher the Quickstep home is OUR Launcher: it resuming in the Quickstep world means "he went home" (what the stock home window meant before): no app to come back to at the next gesture. Called by TjHooks (main thread). */
+    void quickstepHomeReached() {
+        try {
+            if (ProfileSession.windowIsLockLeftover(keyguardLockedFast(), unlock.armedMethod() != null, System.currentTimeMillis(), lastUnlockAt)) return;   // the pre-arm under the lock is not "he went home" (the same rule as rememberQuickstepApp)
+            if (qsApp != null) { LockLog.add(getApplicationContext(), "RESUME", "the home is in front: the remembered app " + qsApp + " is forgotten"); qsApp = null; }
+        } catch (Throwable t) { Log.e(TAG, "home reached failed", t); }
+    }
+
     private void rememberQuickstepApp(String pk) {
         android.content.Context app = getApplicationContext();
         if (Mode.isCustom(app)) { qsApp = null; return; }   // review RV1: a custom session means there is no Quickstep session to come back to; a stale app must never be started by a later gesture
