@@ -2291,3 +2291,7 @@
 ## 2026-11-23T00:34:45Z
 > The heartbeat fired and is my own: `origin/main` equals my tip (`e71f0acf`), so no other session is working. I'm continuing the job and will read run #762 at 00:37Z when the timer fires.
 <!-- sha:2ad55e1ac1a4 -->
+
+## 2026-11-23T00:38:32Z
+> Run #762, the second head sample of the base chain, is also red. That makes two red head runs against one tag run that failed only on a native-crash flake. So I'm treating it as possibly head-specific until the FAIL lines say otherwise, and an agent is reading them now.
+<!-- sha:86c8c688456f -->
