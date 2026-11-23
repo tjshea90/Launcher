@@ -2275,3 +2275,7 @@
 ## 2026-11-23T00:10:35Z
 > Three reruns are red (#753, #754, #755). A background agent is reading their FAIL lines. The other two reruns, #756 (`ad,ps` without `unified`) and #757 (`unified,last`), are green. So the earlier AD5a/AD5b and card-Restart failures were a test premise and a timing flake, not the diff. I'll triage the three red ones once the agent reports.
 <!-- sha:da6557cb04f3 -->
+
+## 2026-11-23T00:17:14Z
+> Five runs are in flight: the v0.9.17 tag chain and `ul`, plus main's `ul`, the fixed `unified,sf`, and a same-code repeat of the red base chain (#753). A timer will wake me at 00:30Z to read them. The question for each red result is whether the tag shows the same failure. The #753 breaker failures look like the dropped forced-crash race (same pid across every try), and the tag run will confirm that.
+<!-- sha:373f46e46624 -->
