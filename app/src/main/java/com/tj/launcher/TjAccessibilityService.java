@@ -732,7 +732,8 @@ public class TjAccessibilityService extends AccessibilityService {
     private String homeSig() { android.util.DisplayMetrics dm = realMetrics(); return HomePatchRules.sig(homeWallpaperId(), rotation(), dm.widthPixels, dm.heightPixels); }
     private int homeStepNow() { return HomePatchRules.step(TjHooks.wallpaperX); }
     private static long since(long upMs) { return upMs <= 0 ? Long.MAX_VALUE : Math.max(0, android.os.SystemClock.uptimeMillis() - upMs); }
-    private long homeLastTouchMs() { return Math.max(TjHooks.lastHomeTouchMs, lastTouchDownMs); }
+    private long homeLastTouchMs() { return Math.max(Math.max(TjHooks.lastHomeTouchMs, lastTouchDownMs), homeSettleTouchMs); }
+    private long homeSettleTouchMs = 0;   // CX1c: a pretend "touch" after the Launcher got the focus back from a foreign window (HomePatchRules.settleAsTouchMs): the patch waits for the shade to be gone
 
     /** The facts of the home patch right now. Main thread. */
     private HomePatchRules.Facts homeFacts() {
@@ -880,6 +881,7 @@ public class TjAccessibilityService extends AccessibilityService {
                     handler.removeCallbacks(homeForeignRecheck);
                     homeForeignProvisionalUntilMs = 0; homeForeignUntilMs = 0;
                     Log.i(TAG, "HOMEPATCH guard lifted: the Launcher has the focus again (lost " + (up - homeFocusLostAtMs) + " ms ago)");
+                    homeSettleTouchMs = HomePatchRules.settleAsTouchMs(up);   // CX1c: the shade is still closing: the resting patch waits SHADE_CLOSE_SETTLE_MS
                     patchShow(false);
                 } else patchShow(false);
                 scheduleHomeBuild();

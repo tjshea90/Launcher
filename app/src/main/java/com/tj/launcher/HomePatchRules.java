@@ -98,6 +98,16 @@ public final class HomePatchRules {
         return touchOk && drawOk;
     }
 
+    /**
+     * CX1c (emulator runs #771 / #772 / #774, section hm, hmShade2: flashA 16 / 28 / 19 frames): the Launcher gets its window focus back when the shade starts to CLOSE, not when it is gone; the resting patch (constant
+     * wallpaper pixels) came back at once and sat over the last 0.3-0.5 s of the closing shade as a block against it. After the focus returns from a foreign window the patch waits this long (the shade's collapse is
+     * about 250-400 ms); a press inside the wait is still served at the dialog's own event (the patch is merely AWAY, it comes back at once there).
+     */
+    public static final long SHADE_CLOSE_SETTLE_MS = 350;
+
+    /** The "last touch" time that makes {@link #visible} / {@link #waitMs} hold the patch back for {@link #SHADE_CLOSE_SETTLE_MS} from {@code nowMs} (the finger rule is TOUCH_AWAY_MS long, so the pretend touch lies that much earlier minus the settle time). */
+    public static long settleAsTouchMs(long nowMs) { return nowMs - TOUCH_AWAY_MS + SHADE_CLOSE_SETTLE_MS; }
+
     /** Milliseconds until the two timers allow the patch to show (0 = now), for scheduling the next look. */
     public static long waitMs(long now, long lastTouchDownMs, long lastDrawMs) { return waitMs(now, lastTouchDownMs, lastDrawMs, DRAW_QUIET_MS); }
 

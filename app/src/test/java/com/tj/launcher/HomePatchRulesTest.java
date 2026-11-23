@@ -359,4 +359,18 @@ public class HomePatchRulesTest {
     @Test public void cx1AWantedWindowIsNotAKeepCase() {
         assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, good()));
     }
+
+    // CX1c: after the focus came back from a foreign window (the closing shade) the resting patch waits SHADE_CLOSE_SETTLE_MS, no more
+    @Test public void cx1ShadeSettleHoldsTheRestingPatchBackForExactlyTheSettleTime() {
+        long now = 100_000, t = HomePatchRules.settleAsTouchMs(now);
+        assertFalse(HomePatchRules.visible(true, now, t, 0));
+        assertFalse(HomePatchRules.visible(true, now + HomePatchRules.SHADE_CLOSE_SETTLE_MS - 1, t, 0));
+        assertTrue(HomePatchRules.visible(true, now + HomePatchRules.SHADE_CLOSE_SETTLE_MS, t, 0));
+        assertEquals(HomePatchRules.SHADE_CLOSE_SETTLE_MS, HomePatchRules.waitMs(now, t, 0));
+        assertEquals(100, HomePatchRules.waitMs(now + 250, t, 0));
+    }
+    @Test public void cx1ShadeSettleNeverOutlastsAFingerWait() {
+        long now = 100_000, finger = now - 100;   // a real touch 100 ms ago is 600 ms from its end: longer than the settle time
+        assertEquals(600, HomePatchRules.waitMs(now, Math.max(finger, HomePatchRules.settleAsTouchMs(now)), 0));
+    }
 }
