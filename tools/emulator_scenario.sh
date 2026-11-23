@@ -4839,7 +4839,8 @@ adb shell locksettings clear --old 1234 >/dev/null 2>&1
 adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
 setfeat; setmode custom; rebind; home; sleep 3
 fi # section mu
-if want fl; then # section fl
+FL_ON=0; GM_ON=0; want fl && FL_ON=1; want gm && GM_ON=1
+if [ "$FL_ON" = 1 ] || [ "$GM_ON" = 1 ]; then # section fl (and gm: the same setup, calibration and film helpers)
 ensurehome
 # ---- BY1 (Tj, 2026-11-12 17:26 UTC): "test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the
 #      first lock screen or after pulling down the notification panel or pulling up the pin pad. It should not flicker or flash either the screenshot button or the wallpaper patch at any time".
@@ -4917,6 +4918,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   info "FL geometry: panel [$FLX0,$FLY0][$FLX1,$FLY1] card bottom $FLCB; core $FL_CORE; ring $FL_RING; top $FL_TOP; animations before: ${FL_ANIM0:-?}"
   flanim 1
   rm -f "$OUT/fl-metrics.txt"
+  if [ "$FL_ON" = 1 ]; then # the BY1 cases
   # (1) the FIRST lock screen after the custom home (the window is prepared in the dark), twice; (2) woken again from the lock screen
   for k in 1 2; do
     flunlock || info "FL wakeH$k: unlock failed ($(kg_state))"; home; adb logcat -c
@@ -4983,7 +4985,8 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     check "FL2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?} of at most $AW; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" -v aw="$AW" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a!="" && a+0<=aw+0)}'
     info "FL2 $L path: $(flpath $L)"
   done
-else
+  fi # the BY1 cases
+@@GM@@else
   info "FL: the panel geometry was not learned: ${FLCL:-no CARD area line}"; check "FL: the menu rectangle was learned" false
 fi
 flanim "${FL_ANIM0:-0}"
@@ -4993,7 +4996,7 @@ check "FL: unlocked at the end and the test PIN cleared ($FLUN)" [ "$FLUN" = ok 
 adb shell settings put secure lock_screen_show_notifications 1
 adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
-fi # section fl
+fi # section fl (and gm)
 if want vo; then # section vo
 ensurehome
 # ---- CB2 (Tj, 2026-11-13): "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on".
