@@ -2283,3 +2283,7 @@
 ## 2026-11-23T00:31:47Z
 > Still reading the tag's failures: the v0.9.17 tag fails the same base-chain sections (#758), so the breaker, AR1 and W5 failures on main look environmental. A background agent is comparing the two failure sets, and the repeat run on main (#762) is still going.
 <!-- sha:73e246a07e10 -->
+
+## 2026-11-23T00:33:44Z
+> Still waiting on #762, the same-code repeat of the red base chain. A timer wakes me at 00:37Z to read it. On v0.9.17 the breaker, AR1 and W5 checks all pass. The #753 failure had no native crash, so I'm not calling it a flake until #762 decides.
+<!-- sha:b12c2a7af3f9 -->
