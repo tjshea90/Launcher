@@ -104,6 +104,8 @@ public final class HomePatchRules {
      * about 250-400 ms); a press inside the wait is still served at the dialog's own event (the patch is merely AWAY, it comes back at once there).
      */
     public static final long SHADE_CLOSE_SETTLE_MS = 350;
+    /** CX1c: a loss of the Launcher's window focus shorter than this is a blip (a dialog changing focus), not a window that was over the home screen. */
+    public static final long FOCUS_BLIP_MS = 300;
 
     /** The "last touch" time that makes {@link #visible} / {@link #waitMs} hold the patch back for {@link #SHADE_CLOSE_SETTLE_MS} from {@code nowMs} (the finger rule is TOUCH_AWAY_MS long, so the pretend touch lies that much earlier minus the settle time). */
     public static long settleAsTouchMs(long nowMs) { return nowMs - TOUCH_AWAY_MS + SHADE_CLOSE_SETTLE_MS; }

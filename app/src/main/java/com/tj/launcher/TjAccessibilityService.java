@@ -74,7 +74,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try { if (event != null && EventNoise.windowsJustChanged(event.getEventType())) { noteWindowEvent(event.getEventTime()); fastMenuOpen(event); } } catch (Throwable t) { Log.e(TAG, "fast menu check failed", t); }   // AZ1: FIRST, before any other work of this event
         try { if (event != null) fastMenuClose(event); } catch (Throwable t) { Log.e(TAG, "fast menu close check failed", t); }
         try { if (event != null && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) lockShadeEvent(event); } catch (Throwable t) { Log.e(TAG, "shade check failed", t); }   // BY1c F1: the panel opened / closed on the lock screen   // BC2: a click in the stock dialog starts the fade-out, the removal of its window ends it
-        try { if (event != null && patchHomeMode) homeForeignWindow(event); } catch (Throwable t) { Log.e(TAG, "home foreign window check failed", t); }   // BI1: the shade, the volume panel ... must not get the home patch painted over them
+        try { if (event != null && patchHomeMode && TjHooks.homeScreenShowing()) homeForeignWindow(event); } catch (Throwable t) { Log.e(TAG, "home foreign window check failed", t); }   // BI1: the shade, the volume panel ... must not get the home patch painted over them
         try { trackForeground(event); } catch (Throwable t) { Log.e(TAG, "foreground tracking failed", t); }
         try { if (event != null && EventNoise.windowsJustChanged(event.getEventType())) AnimationSpeedup.tick(this); } catch (Throwable t) { Log.e(TAG, "animation heartbeat failed", t); }   // BY1a C2: WINDOW events only (the facts it re-reads, mode / screen / keyguard / helper, change with a window; other apps' content changes drove up to 2 syncs a second, ~6 binder calls each, in Quickstep)   // BF1: self-heal (a lock screen that came up after the wake, a missed broadcast); a volatile read and a time compare in all but two events a second, nothing at all in the custom launcher
         try { picker().onEvent(event); } catch (Throwable t) { Log.e(TAG, "picker guard failed", t); }
@@ -159,7 +159,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     /** AZ1: null = the fast path may open the patch now; else why not (the normal scan path then does it, a little later). */
     private String fastDecline() {
-        if (patchView == null) return "no patch window yet";
+        if (patchView == null || (patchHomeMode && !TjHooks.homeScreenShowing())) return "no patch window yet";   // CX1 review: a window KEPT hidden while an app is in front is no window for a press
         if (!patchLockMode) return "not the lock screen";
         if (!patchResting && (!patchRestable || lastBouncer || padSignFresh())) {   // BE1: a patch that is merely AWAY (touch / PIN guard) comes back at the dialog's own event
             // BT1c / BT1d: on the home screen a patch that is not fresh (a draw of the Launcher since it was built, a window guard) is shown as it is while the Launcher has the focus (HomePatchRules.openTreatment): never the short card with the Screenshot slot open
@@ -876,12 +876,12 @@ public class TjAccessibilityService extends AccessibilityService {
             long up = android.os.SystemClock.uptimeMillis();
             if (!has) { homeFocusLostAtMs = up; return; }   // BT1c: when the Launcher lost the focus (the shade, a dialog, the stock power menu itself): homeOpenTreatment tells those apart
             if (patchView != null && patchHomeMode && !overlayShown) {
+                if (homeFocusLostAtMs > 0 && up - homeFocusLostAtMs >= HomePatchRules.FOCUS_BLIP_MS) homeSettleTouchMs = HomePatchRules.settleAsTouchMs(up);   // CX1c (review): ANY real loss of the focus (a shade held open for 5 s has no guard left): the resting patch waits for the closing window
                 if (HomePatchRules.recheck(true, homeForeignUntilMs, homeForeignProvisionalUntilMs) == HomePatchRules.RECHECK_LIFT) { handler.removeCallbacks(homeForeignRecheck); homeForeignLift(); }   // BN2: the focus is back while the guard was only provisional: the keyguard is gone
                 else if (HomePatchRules.guardEndsWithFocus(homeFocusLostAtMs, homeForeignUntilMs, HOME_FOREIGN_AWAY_MS, up)) {   // BT1c: the window that took the focus (the shade) is gone: its 2.5 s guard has nothing left to guard
                     handler.removeCallbacks(homeForeignRecheck);
                     homeForeignProvisionalUntilMs = 0; homeForeignUntilMs = 0;
                     Log.i(TAG, "HOMEPATCH guard lifted: the Launcher has the focus again (lost " + (up - homeFocusLostAtMs) + " ms ago)");
-                    homeSettleTouchMs = HomePatchRules.settleAsTouchMs(up);   // CX1c: the shade is still closing: the resting patch waits SHADE_CLOSE_SETTLE_MS
                     patchShow(false);
                 } else patchShow(false);
                 scheduleHomeBuild();
@@ -928,7 +928,7 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean focus = homeLauncherFocus();
         return HomePatchRules.notFreshWhy(patchShotBmp != null && homeBuiltAtMs > 0, HomePatchRules.sameStep(homeBuiltStep, homeStepNow()),
                 homeBuiltAtMs > 0 ? up - homeBuiltAtMs : -1, TjHooks.lastHomeDrawMs > 0 ? up - TjHooks.lastHomeDrawMs : -1, homeForeignUntilMs - up,
-                focus, homeCalRunning) + (homeFocusGapMs >= 0 ? " (focus lost " + homeFocusGapMs + " ms before the dialog)" : "") + " {" + TjHooks.homeAtRestWhy() + " window=" + (patchView != null) + "/" + patchHomeMode + " restable=" + patchRestable + "}";
+                focus, homeCalRunning) + (homeFocusGapMs >= 0 ? " (focus lost " + homeFocusGapMs + " ms before the dialog)" : "") + " {" + TjHooks.homeAtRestWhy() + " w" + (patchView != null ? 1 : 0) + (patchHomeMode ? 1 : 0) + " rs" + (patchRestable ? 1 : 0) + "}";
     }
 
     /**
@@ -937,7 +937,7 @@ public class TjAccessibilityService extends AccessibilityService {
      * says which, and why (it goes to the tablet report: Tj's "sometimes the patch doesn't work" had no trace before).
      */
     private void homeOpenDecide() {
-        if (!patchHomeMode || overlayShown) return;
+        if (!patchHomeMode || overlayShown || !TjHooks.homeScreenShowing()) return;   // CX1 review: an app in front (window kept hidden): the old behaviour, no "(home)" press line
         int t = homeOpenTreatment();
         homeOpenStale = false;
         homeOpenLogPersist = t != HomePatchRules.OPEN_FRESH;   // review A #5: the tablet report keeps the rare presses (stale / full card), not every normal one
@@ -1470,8 +1470,8 @@ public class TjAccessibilityService extends AccessibilityService {
         try {
             Rect want = patchTarget();
             if (want == null) {
+                if (homeNeedsCal) { handler.removeCallbacks(homeCalTrigger); handler.postDelayed(homeCalTrigger, HomePatchRules.CAL_DRAW_QUIET_MS + 600); }   // BI1: the home patch has no wallpaper crop for this position yet: calibrate when everything is quiet (CX1 review: BEFORE the keep, or a kept window of a page that was never calibrated never calibrates)
                 if (homeKeepWindow()) return;   // CX1: a transient reason (an app, the drawer, a folder, a page flip): the home window and its composite stay, hidden (HomePatchRules.keepWindowTransient)
-                if (homeNeedsCal) { handler.removeCallbacks(homeCalTrigger); handler.postDelayed(homeCalTrigger, HomePatchRules.CAL_DRAW_QUIET_MS + 600); }   // BI1: the home patch has no wallpaper crop for this position yet: calibrate when everything is quiet
                 if (patchView != null) { removeOverlay(); removePatch(); }
                 if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) dropWallpaper();   // BY1a D1: and the platform's copy
                 if (!keyguardLocked()) lockBmp = null;   // V1: not needed off the lock screen (memory)
@@ -1492,7 +1492,7 @@ public class TjAccessibilityService extends AccessibilityService {
     /**
      * CX1 (Tj, 2026-11-23: the home patch "prepared as soon as possible"): the target is gone for a reason that passes by itself (an app or the drawer in front, a folder, a drag, a page flip): keep the window
      * and its composite instead of removing them, hidden and not restable. The first menu after the return then finds a stale-adoptable patch (HomePatchRules.openTreatment) instead of "no patch window yet" and
-     * the card 300 ms late. While a menu is open nothing is touched (a window removed under an open stock menu showed its Screenshot entry for the 0.3-1.4 s until the new one was up: runs #769 / #771).
+     * the card 300 ms late. While a menu is open the window is not replaced for a rect wobble (PatchRest.rectMoveRemovesWindow; a really different rect or rotation still removes it, applied at the next refresh after the menu closed) (a window removed under an open stock menu showed its Screenshot entry for the 0.3-1.4 s until the new one was up: runs #769 / #771).
      * Returns true when the window was kept (the caller does nothing more).
      */
     private boolean homeKeepWindow() {
@@ -1501,9 +1501,10 @@ public class TjAccessibilityService extends AccessibilityService {
             Rect cached = cachedCard();
             if (cached == null) return false;
             boolean sameWindow = PatchRest.sameWindow(rectArr(patchAt), rectArr(patchRect(cached, true)), 2);
-            if (!HomePatchRules.keepWindowTransient(true, true, patchRot == rotation(), sameWindow, homeFacts())) return false;
+            HomePatchRules.Facts hf = homeFacts();   // one read (it asks the screen, the crash guard ...)
+            if (!HomePatchRules.keepWindowTransient(true, true, patchRot == rotation(), sameWindow, hf)) return false;
             if (!overlayShown) { patchRestable = false; patchResting = false; restableSinceMs = 0; patchView.setAlpha(0f); }
-            homeStatus("away: kept hidden (" + HomePatchRules.whyNot(homeFacts()) + ")");
+            homeStatus("away: kept hidden (" + HomePatchRules.whyNot(hf) + ")");
             return true;
         } catch (Throwable t) { return false; }
     }
