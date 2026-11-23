@@ -158,7 +158,9 @@ public final class TjHooks {
 
     /** CX1c (diagnostic, one short string at a refused press): which fact of "the plain home screen is at rest" is false (hmApp1 / hmApp2, run #772: the focus was there, a composite was kept, the stale patch was still not adopted). Main thread. */
     public static String homeAtRestWhy() {
-        return "resumed=" + launcherResumed + " normal=" + launcherNormal + " floating=" + homeFloatingViewOpen() + " busy=" + homeBusy();
+        String top = "none";
+        try { com.android.launcher3.Launcher l = launcher(); com.android.launcher3.AbstractFloatingView v = l == null ? null : com.android.launcher3.AbstractFloatingView.getTopOpenView(l); if (v != null) top = v.getClass().getSimpleName(); } catch (Throwable t) { top = "?"; }   // run #774: floating=true after Home from an app: WHICH view (the emulator's first-run swipe-up hint, DiscoveryBounce, is the suspect)
+        return "resumed=" + launcherResumed + " normal=" + launcherNormal + " floating=" + top + " busy=" + homeBusy();
     }
 
     /** BL1: where the Launcher window's decor view is on screen and how big it is: {left, top, width, height}, or null while there is none attached (the home curtain copies the whole window and lays it at its origin). Main thread. */
