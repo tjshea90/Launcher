@@ -2321,3 +2321,46 @@
 ## 2026-11-23T01:10:18Z
 > The full build (android.yml run #59, v0.9.18, code 57) is running. A timer wakes me at 01:14Z. Next I check the run, confirm the Release exists, and record it only if the build is green. Then I answer Tj, using the draft I've already written and checked.
 <!-- sha:1319d2ac7bca -->
+
+## 2026-11-23T01:16:42Z
+> Launcher v0.9.18 (code 57) is built, signed and published:
+>
+> https://github.com/tjshea90/Launcher/releases/tag/v0.9.18
+>
+> It's an in-place update, so it installs over your current install.
+>
+> I couldn't see any of it on the tablet, and the emulator can't show how fast anything feels. Please check it there.
+>
+> **What I built.** Nothing was removed and nothing was slowed to get these.
+> - **Profile switch (A1):** it now counts as ready once the home and app list are on screen. Before, it waited for the whole launcher load, including parts you can't see.
+> - **Unlock waits (A4, A6, A7):** the unlock does less waiting. The wait loop checks the cheap ready flag first, it skips the early stock-launcher lookup, and it does one preference write instead of three.
+> - **Cached lookups (A9, A10):** the stock-launcher lookup and the per-app filter preferences are cached.
+> - **Home power-menu button hider:** the first picture of the patch is built after 100 ms of quiet instead of 250 ms (B1a), so your first press finds it ready more often. The quick-settings pencil search no longer runs ahead of the power dialog's own first event (B3); on your tablet it averaged 33 ms and took up to 1305 ms.
+> - **RAM, CPU, battery:**
+>   - Idle worker threads now time out (C6).
+>   - Icons of hidden apps are no longer kept in memory (C8).
+>   - The stock-launcher bookkeeping no longer spawns commands the app isn't allowed to run (D7).
+>   - It uses one delayed post instead of two sleeping threads (D11).
+> - **Stock launcher:** it can't be put to sleep. SystemUI binds its touch service for good and re-binds it within seconds of a kill, as runs #714 and #715 showed. Nothing may disable its HOME activity or that service, and I wrote that into `HANDOFF.md`. What I could do:
+>   - Its bookkeeping now counts only screens that really pin memory (D3).
+>   - There is one cleanup after the switch to the one launcher (D5).
+>   - The Recents clear-all waits from the stock launcher's first window, with a 6 s cap (D4).
+>
+> **What I did not build:**
+> - The hider on the drawer, apps in front, and an unready home (B2, B4, B9). Those touch the card and lock-patch paths and need your tablet numbers first. The tested rules exist but aren't wired in.
+> - The VPN check (C4). The 30 s poll is the function on Android 10.
+> - A2, A3, A5, C3, D6 and D8, deferred until a tablet number says they matter.
+> - The lock-screen hider. The audit found it already well prepared; the gaps were on the home screen.
+>
+> **What's proven.** The full unit suite, lint and the handoff self-test are green. The emulator sections the changes touch are green too, some only after a solo rerun.
+> - Three failures were old two-launcher test premises: AD5a/b under `unified` (they also fail on the v0.9.17 tag) and `sf`. I fixed the `sf` test premise in the scenario.
+> - The rest were known emulator crashes or stalls. The v0.9.17 tag showed the same crash flake. The full record is in `TASKS.md` under CW1e.
+> - The `rg` run (#744) and the other core lock sections passed.
+>
+> **Questions for you:**
+> 1. B17: should the Screenshot-button hider also run in the unlocked, full-app home? Today it doesn't, by the one-launcher design.
+> 2. C1: keep the secret-code key filter on all day (it's the lock-out safety net, 0.1–0.3 ms per key press), or only while the screen is locked?
+> 3. After a day of v0.9.18, please send Settings > Developer options > Memory > "Quickstep" (the 3 h and 1 day averages). Also tell me whether the first home-screen power-menu press ever shows the stock Screenshot entry.
+>
+> Saved: everything is on GitHub and `main` equals my tip. The checkpoint, `HANDOFF.md` and `TASKS.md` are written (CW1g holds your open items), and my auto-resume heartbeat is deleted. The old session's heartbeat, `trig_015wPvHD1UqrhN1aXkEXR6TC`, belongs to the other account and still exists. You can delete it from that account now that you've archived that session.
+<!-- sha:1a08b612e21e -->
