@@ -2317,3 +2317,7 @@
 ## 2026-11-23T01:00:16Z
 > Three solo `hf` runs are in flight: two on the head code (main and the branch, so they can run side by side) and one on the v0.9.17 tag. #764's only new failures were HF1, HF4 and HF5, and UL24 passed (3 of 3 at about 160 to 200 ms), so the earlier UL24 failure was a flake. If `hf` is red on the head and green on the tag, I'll suspect the 100 ms first-build quiet (B1a) and can revert it. A timer wakes me at 01:08Z.
 <!-- sha:64cdcf17f75d -->
+
+## 2026-11-23T01:10:18Z
+> The full build (android.yml run #59, v0.9.18, code 57) is running. A timer wakes me at 01:14Z. Next I check the run, confirm the Release exists, and record it only if the build is green. Then I answer Tj, using the draft I've already written and checked.
+<!-- sha:1319d2ac7bca -->
