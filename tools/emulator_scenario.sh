@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu fl gm cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # CV1 (one launcher for both worlds): the token `unified` in the sections list (it names no section) switches the debug build to the one-launcher behaviour for the WHOLE run, through the debug-only global setting
 # tj_unified_launcher (Unified.debugOverride; a release build never reads it). The Quickstep home is then OUR launcher (unlocked profile), so every check "the stock launcher is on screen in Quickstep" reads QSHOME_RE.
