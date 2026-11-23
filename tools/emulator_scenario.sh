@@ -73,7 +73,7 @@ check "C2: adb pm grant DUMP works and shows granted=true" bash -c "! grep -qi '
 
 # ---- SECTIONS: the Emulator check can run only some parts (N9, Tj 2026-11-04: "make the test runs fast").
 #      SECTIONS="n,n6" bash tools/emulator_scenario.sh   -> only those sections (~4-5 min instead of ~15);  empty = EVERYTHING (the release run).
-#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu fl gm cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
+#      Names: base legacy x1 e1 y2 b6 b4 n n6 o t u s p x v g rs rs2 rs3 rs4 ka ac rt im gc pf rb last an gear wf bt mu fl gm hm cd1 cd2 cd2h cd3 cd3n cd4 cd3u ro sr (the full list with their cost: tools/gate-map.txt; cd1 = research, the stock launcher's memory, TASKS CD1i). Setup, the install and the helper functions below always run.
 SECTIONS="${SECTIONS:-}"
 # CV1 (one launcher for both worlds): the token `unified` in the sections list (it names no section) switches the debug build to the one-launcher behaviour for the WHOLE run, through the debug-only global setting
 # tj_unified_launcher (Unified.debugOverride; a release build never reads it). The Quickstep home is then OUR launcher (unlocked profile), so every check "the stock launcher is on screen in Quickstep" reads QSHOME_RE.
@@ -5065,6 +5065,85 @@ adb shell settings put secure lock_screen_show_notifications 1
 adb logcat -c
 setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
 fi # section fl (and gm)
+if want hm; then # section hm
+ensurehome
+# ---- CX1b / CX1 point 3 (Tj, 2026-11-23 02:45 UTC): "make sure the wallpaper patch is prepared as soon as possible in the custom launcher home screen so the screenshot button is always hidden". THE HOME MATRIX: everything that makes the
+#      home patch go away (an app and the Home key, the drawer, a page flip, the notification panel, screen off / on, the unlock) is followed by a power menu 0.2 s and 0.8 s after the event ENDS, FILMED with animations ON (section fl's
+#      boxes and analysis): shot = the stock Screenshot entry visible in a menu frame, flashA / flashB = the patch lit up. The log shows how each press was served (HOMEPRESS: fresh patch / stale / card; PATCH fast open or skip).
+#      Negative control (HM3): the cover off, the same film must see the entry. Setup as section hf (a patterned home wallpaper, the menu learned with the switch off, then the switch on and the self-calibration).
+beat "before HM"
+adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
+HM_EVRE='HOMEPATCH away: another window|RESET (start|cover|notifications|recents)'
+hmquiet(){ local n m s=0 i; n="$(hplog | grep -cE "$HM_EVRE")"; for i in $(seq 1 25); do sleep 2; m="$(hplog | grep -cE "$HM_EVRE")"; if [ "$m" = "$n" ]; then s=$((s+1)); else s=0; n=$m; fi; [ "$s" -ge 3 ] && break; done; }
+hmpath(){ grep -oE 'menu opened \(home\): [a-zA-Z ,]{0,44}|PATCH fast (open|skip: [^(]*)|HOMEPATCH (patch built|stale: the Launcher drew|away: [a-z ]*)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-320; }
+hm_menu(){ adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3; }
+hm_app(){ adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 2.5; adb shell input keyevent KEYCODE_HOME; }
+hm_drawer(){ adb shell input swipe 300 900 300 300 250; sleep 1.5; adb shell input keyevent KEYCODE_BACK; }
+hm_page(){ adb shell input swipe 500 600 100 600 200; sleep 1; adb shell input swipe 100 600 500 600 200; }
+hm_shade(){ adb shell input swipe 300 2 300 700 250; sleep 1.5; adb shell input keyevent KEYCODE_BACK; }
+hm_off(){ adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.2; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
+hm_tap(){ adb shell input tap 300 600; }
+hmcase(){ # hmcase <label> <film seconds> <event function> <delay s>: a quiet resting home, the film, the event, the delay, the menu, the analysis
+  home; sleep 4; adb logcat -c; flrec "$2" 0.3; eval "$3"; sleep "$4"; hm_menu; flend "$1" menu; }
+beat "HM setup"
+adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
+HM_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
+hpinit false
+hpwall
+hmquiet
+HM_TRY=0; : > "$OUT/hm-a-log.txt"
+while [ "$HM_TRY" -lt 3 ] && ! grep -q "CARD area" "$OUT/hm-a-log.txt"; do
+  HM_TRY=$((HM_TRY+1)); adb logcat -c; hpopen; hpclose; sleep 2
+  hplog | grep "CARD area" > "$OUT/hm-a-log.txt"
+  grep -q "CARD area" "$OUT/hm-a-log.txt" || { info "HM A try $HM_TRY: no CARD line; helper log: $(hplog | tail -n 6 | cut -c25-120 | tr '\n' '|')"; hmquiet; }
+done
+HMCL="$(tail -1 "$OUT/hm-a-log.txt")"
+set -- $(hpnums "$HMCL" full); HMX0=${1:-}; HMY0=${2:-}; HMX1=${3:-}; HMY1=${4:-}
+set -- $(hpnums "$HMCL" area); HMCB=${4:-}
+check "HM0: the first menu on the home screen was learned (a CARD line with its rectangle)" bash -c "[ -n '$HMX0' ] && [ -n '$HMCB' ]"
+if [ -n "$HMX0" ] && [ -n "$HMCB" ]; then
+  hpkey home_patch true
+  setmode custom; rebind; adb logcat -c; home
+  HM_T1="$(hpwait 'HOMEPATCH calibration end' 70)"; HM_T2="$(hpwait 'PATCH rest on' 40)"; sleep 3
+  check "HM1a: the home patch calibrated by itself and RESTS (calibration after ${HM_T1} s, rest after ${HM_T2} s)" bash -c "[ '$HM_T1' != never ] && [ '$HM_T2' != never ]"
+  FL_CORE="$((HMX0+6)),$((HMCB+6)),$((HMX1-6)),$((HMY1-6))"
+  if [ "$HMX0" -ge 110 ]; then HMR1="$((HMX0-50)),$HMCB,$((HMX0-20)),$HMY1"; else HMR1="$((HMX1+20)),$HMCB,$((HMX1+50)),$HMY1"; fi
+  FL_RING="$HMR1;$HMX0,$((HMY1+45)),$HMX1,$((HMY1+60))"
+  FL_TOP="$((HMX0+10)),$((HMY0+10)),$((HMX1-10)),$((HMCB-10))"
+  FL_SHEET="$((HMX0-60)),$((HMY0-10)),$((HMX1+4)),$((HMY1+70))"
+  info "HM geometry: panel [$HMX0,$HMY0][$HMX1,$HMY1] card bottom $HMCB; core $FL_CORE; ring $FL_RING; top $FL_TOP; animations before: ${HM_ANIM0:-?}"
+  flanim 1
+  rm -f "$OUT/fl-metrics.txt"
+  hmcase hmApp1     16 hm_app    0.2
+  hmcase hmApp2     16 hm_app    0.8
+  hmcase hmDrawer1  16 hm_drawer 0.2
+  hmcase hmDrawer2  16 hm_drawer 0.8
+  hmcase hmPage1    15 hm_page   0.2
+  hmcase hmPage2    15 hm_page   0.8
+  hmcase hmShade1   16 hm_shade  0.2
+  hmcase hmShade2   16 hm_shade  0.8
+  hmcase hmOff1     17 hm_off    0.2
+  hmcase hmOff2     17 hm_off    0.8
+  hmcase hmTap1     14 hm_tap    0.2
+  hmcase hmTwice    15 "hm_menu" 0.4
+  # NEGATIVE CONTROL: the cover off (power_mode off): the same film must see the stock Screenshot entry
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"power_mode\">[a-z_]*<#name=\"power_mode\">off<#' shared_prefs/tj_features.xml"
+  setmode custom; rebind
+  hmcase hmCtl 12 hm_tap 0.2
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"power_mode\">[a-z_]*<#name=\"power_mode\">hide_screenshot<#' shared_prefs/tj_features.xml"
+  for L in hmApp1 hmApp2 hmDrawer1 hmDrawer2 hmPage1 hmPage2 hmShade1 hmShade2 hmOff1 hmOff2 hmTap1 hmTwice; do
+    m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"
+    check "HM2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?} of at most 1; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a!="" && a+0<=1)}'
+    info "HM2 $L path: $(hmpath $L)"
+  done
+  s="$(flget hmCtl shot)"
+  check "HM3 control: with the cover OFF the same film SEES the stock Screenshot entry (frames ${s:-?}; the analyser works on the home screen)" awk -v s="$s" 'BEGIN{exit !(s!="" && s+0>=3)}'
+else info "HM: the panel geometry was not learned: ${HMCL:-no CARD area line}"; fi
+flanim "${HM_ANIM0:-0}"
+setfeat; setmode custom; adb shell am force-stop "$PKG"; ensurehome; rebind; home
+fi # section hm
 if want vo; then # section vo
 ensurehome
 # ---- CB2 (Tj, 2026-11-13): "If it can't be removed, make the launcher automatically turn off my VPN any time the screen turns off or the lock screen is on".
