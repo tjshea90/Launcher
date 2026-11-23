@@ -1,13 +1,13 @@
-# CHECKPOINT 1667 — read me first, then TASKS.md
+# CHECKPOINT 1668 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T06:42:47Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `c8401003` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T08:51:25Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `6751c934` (this checkpoint is the commit after it)
 
 ## Just done
-CX1 triage RAW 06:46Z: gate group #781 id 45121482111 ENDED 06:33 FAILED (details being read); fl solo main #784 id 45124590829 FAILED, fl solo TAG #785 id 45124594693 FAILED (so fl fails on the tag too); tag hf median 0.1174 vs head 0.1407; hf reruns main + branch queued 06:43Z; hm #789 id 45124609597 running
+STALE BRANCH: this session (dazzling-hawking-b7qz0b) was cut off 06:43Z; successor shipped v0.9.19 on main (android.yml run 60, recorded) and works on CY1 speed audit on main. Heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A DISABLED 08:50Z (job shipped, update_trigger enabled=false). Nothing here to merge: only INBOX notices.
 
 ## Do this next
-read 3 haiku hand-backs (781/784/785), ckpt FAIL names; compare fl main vs tag; read the 2 new hf runs + hm #789; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
+NOTHING: do not work on this branch. Use origin/main (resume from its CHECKPOINT.md; CY1 speed audit, successor heartbeat trig_01DkASxm8hLzwAL447MmJQnA). Never merge this branch into main
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read 3 haiku hand-backs (781/784/785), ckpt FAIL names; compare fl main vs tag; 
 
 ## Last ten checkpoints
 ```
+  8e2389c4 ckpt 1667: CX1 triage RAW 06:46Z: gate group #781 id 45121482111 ENDED 06:33 FAILED (de
   19582175 ckpt 1666: CX1 triage RAW 06:42Z: ul solo main #786 GREEN (UL24 = native-crash flake); 
   4f8ce7b1 ckpt 1665: CX1 gate 8dc58abf RAW FAILS: #779 fl 86P 2F: FL2 menuW1 flashA 5>4, FL2 menu
   30eb9413 ckpt 1664: CX1 gate 8dc58abf RAW: pt #783 id 45121488481 GREEN; #779 (ac,ad,se,ps,cu,fl
@@ -25,8 +26,7 @@ read 3 haiku hand-backs (781/784/785), ckpt FAIL names; compare fl main vs tag; 
   8dc58abf ckpt 1660: CX1c-H5: HomePatchRules.lossOwnedByDialog + homeLossOwned: a second stock-di
   cf0c9213 ckpt 1659: CX1c-H4 review fixes (subagent a1e2134d: 0 HIGH 2 MEDIUM): calibration trigg
   39393a17 ckpt 1658: CX1: in flight on 5d9b46c8 (H3 + HM2 tiering): hm #777 id 45118558677, hp #7
-  5d9b46c8 ckpt 1657: CX1c: hm #776 id 45116760550 (head 378fd991 H2+nobounce): 15 PASS 4 FAIL (hm
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(5 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
