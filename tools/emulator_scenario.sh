@@ -5088,12 +5088,23 @@ hm_drawer(){ adb shell input swipe 300 900 300 300 250; sleep 1.5; adb shell inp
 hm_page(){ adb shell input swipe 500 600 100 600 200; sleep 1; adb shell input swipe 100 600 500 600 200; }
 hm_shade(){ adb shell input swipe 300 2 300 700 250; sleep 1.5; adb shell input keyevent KEYCODE_BACK; }
 hm_off(){ adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.2; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
+hm_nobounce(){ # CX1c (run #774: floating=true after every Home from an app): Launcher3's first-run swipe-up hint (DiscoveryBounce, an AbstractFloatingView) is shown on each Home resume until it was seen 3 times: Tj's tablet is long past it, the CI emulator never. Mark it seen (read-modify-write of the Launcher's own prefs, the app stopped first)
+  adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+  local f="$OUT/l3prefs.xml"
+  adb shell "run-as $PKG cat shared_prefs/com.android.launcher3.prefs.xml" 2>/dev/null | tr -d '\r' > "$f"
+  grep -q '<map' "$f" || printf '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<map>\n</map>\n' > "$f"
+  sed -i 's#<map />#<map>\n</map>#' "$f"
+  grep -q 'launcher.apps_view_shown' "$f" || sed -i 's#</map>#    <boolean name="launcher.apps_view_shown" value="true" />\n</map>#' "$f"
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
+  info "HM: Launcher prefs after hm_nobounce: $(adb shell "run-as $PKG cat shared_prefs/com.android.launcher3.prefs.xml" 2>/dev/null | tr -d '\r\n' | grep -o 'apps_view_shown[^/]*' | head -1)"
+}
 hm_tap(){ adb shell input tap 300 600; }
 hmcase(){ # hmcase <label> <film seconds> <event function> <delay s>: a quiet resting home, the film, the event, the delay, the menu, the analysis
   home; sleep 4; adb logcat -c; GM_MARK=""; FL_SEQ_LINES=8; flrec "$2" 0.3; eval "$3"; sleep "$4"; hm_menu; flfrom; flend "$1" menu; FL_FROM=""; flfull "$1"; }
 beat "HM setup"
 adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
 HM_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
+hm_nobounce
 hpinit false
 hpwall
 hmquiet
