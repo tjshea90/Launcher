@@ -1,13 +1,17 @@
-# CHECKPOINT 1623 — read me first, then TASKS.md
+# CHECKPOINT 1624 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T00:53:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `6c9a8bfe` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T00:56:30Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `17af4d97` (this checkpoint is the commit after it)
 
 ## Just done
-CW1 RAW 00:54Z: #763 45090010377 main base,e1 GREEN (E1 passes on head). #764 45090013546 ao,cs2,hf,ul still running (13 min in). Gate picture on head 880732c8-code: #739 n,n6,bs,bt,mu,pk,ul2 green; #740 x1,o,t,pf,rb,sr green, cs red->#748 green, sf red->#761 green after scenario premise fix; #741 bl,uf,an,nq,ss green, ad,ps red->#756 green without unified (AD5a/b old-world premise, tag fails too #751), last red->#757 green; #743 b6,ac,cu,rt,gear,wf,pm ok, hp red->#745/#746 green; #744 rg green; base chain #753 red once (stall), #762 E1+native crash = tag #758 same, #763 green
+gated v0.9.18 (code 57) and pushed it: the handoff self-test, the full unit suite + lint
+and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
 
 ## Do this next
-when #764 ends: probe; then bump app/build.gradle.kts versionCode 57 / versionName 0.9.18, TASKS CW1e/f lines, bash ship.sh 'CW1 ...', android.yml full_build; heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
+TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
+android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
+confirm the Release is published (get_release_by_tag is enough) and then run:
+  bash tools/record-release.sh v0.9.18 "CW1: speed + resources audit fixes (profile ready earlier, first home patch composite sooner, no pencil search before the dialog event, idle threads time out, hidden-app icons not cached), stock-launcher bookkeeping counts only what can pin; no behaviour removed"
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +20,7 @@ when #764 ends: probe; then bump app/build.gradle.kts versionCode 57 / versionNa
 
 ## Last ten checkpoints
 ```
+  ef3504c1 ckpt 1623: CW1 RAW 00:54Z: #763 45090010377 main base,e1 GREEN (E1 passes on head). #76
   4de58d41 ckpt 1622: CW1 READ 00:41Z: #762 head base,legacy,e1,y2,b4,lq = 68P 1F: ONLY E1 'Delete
   3987ecf1 ckpt 1621: CW1 RAW 00:38Z: #762 45087708823 (head, base,legacy,e1,y2,b4,lq, 2nd sample)
   ed5ec54e ckpt 1620: CW1 READ 00:33Z: TAG #758 base,legacy,e1,y2,b4,lq = 67P 2F (E1 x2 + NATIVE C
@@ -25,8 +30,7 @@ when #764 ends: probe; then bump app/build.gradle.kts versionCode 57 / versionNa
   2fe4dce4 ckpt 1616: CW1 RERUN READ 00:20Z (subagent): #753 base,legacy,e1,y2,b4,lq 63P 6F no nat
   c98e317f ckpt 1615: CW1 RERUN RAW 00:11Z: #756 ad,ps(no unified) GREEN; #757 unified,last GREEN 
   52a775bb ckpt 1614: CW1 RERUNS on main (product diff vs gated 880732c8 EMPTY, only scenario sf l
-  d0b4ad2e ckpt 1613: CW1 TRIAGE VERDICT 23:55Z (subagent): #750 main AND #751 TAG unified,ad,ps b
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(3 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
