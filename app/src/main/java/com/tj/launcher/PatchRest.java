@@ -124,6 +124,12 @@ public final class PatchRest {
      * Are two patch windows the same for all practical purposes? The slot window follows the card's bottom edge, which is measured on every menu scan and can wobble by a pixel; rebuilding the patch for that
      * would itself flicker. Each side may differ by up to {@code tol} px.
      */
+    /**
+     * CX1c (emulator run #772, section hm): while the stock menu is open the slot window is NOT replaced because its rect moved more than the tolerance (the learned panel wobbled once; hmOff2 re-created the window at
+     * another rect and the real Screenshot entry showed until the next frame of the new window). A rect that really changed is applied at the first refresh after the menu closed.
+     */
+    public static boolean rectMoveRemovesWindow(boolean sameWindow, boolean menuOpen) { return !sameWindow && !menuOpen; }
+
     public static boolean sameWindow(int[] a, int[] b, int tol) {
         if (a == null || b == null || a.length != 4 || b.length != 4) return false;
         for (int i = 0; i < 4; i++) if (Math.abs(a[i] - b[i]) > tol) return false;
