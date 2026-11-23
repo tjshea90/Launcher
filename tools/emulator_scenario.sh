@@ -5580,8 +5580,8 @@ SF_P1="$(sfpid)"; sfwait 15; SF_P2="$(sfpid)"
 SF_N1="$(sflog | grep -c 'restarting the stock launcher through Settings')"
 info "SF control: stock pid before ${SF_P0:-none}, after the return ${SF_P1:-none}, 15 s later ${SF_P2:-none}; start lines: $SF_N1"
 check "SF1: debt below the line: the stock launcher is NOT restarted (pid unchanged, no start line)" bash -c "[ '$SF_N1' = 0 ] && [ '$SF_P1' = '$SF_P2' ]"
-# (2) debt at the line: the next return makes it 5 of 5
-hpint sf_debt 4; hpint sf_delay_ms 3000
+# (2) debt at the line: the next return makes it 5 of 5. CW1 D3: in the one-launcher world (token `unified`) a Quickstep session end weighs 0 (StockForceStop.sessionWeight), only pinned Recents screens count (PIN_THRESHOLD 5), so the premise "one return adds the last piece" is old-world only: there the debt is put AT the line (the cooldown step below drives the same way with 50).
+if [ "$UNIFIED" = 1 ]; then hpint sf_debt 5; else hpint sf_debt 4; fi; hpint sf_delay_ms 3000
 setmode custom; ensurehome; rebind; home; sleep 2
 SF_PB="$(sfpid)"
 SF_RB="$(adb shell dumpsys activity recents 2>/dev/null | grep -c 'com.android.settings/')"
