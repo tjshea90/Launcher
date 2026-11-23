@@ -5106,6 +5106,8 @@ done
 HMCL="$(tail -1 "$OUT/hm-a-log.txt")"
 set -- $(hpnums "$HMCL" full); HMX0=${1:-}; HMY0=${2:-}; HMX1=${3:-}; HMY1=${4:-}
 set -- $(hpnums "$HMCL" area); HMCB=${4:-}
+# run #769: on the home the CARD area is the WHOLE panel (its bottom = the panel bottom), so the Screenshot slot is the bottom 95 px as on the lock screen (section fl: card bottom 547, panel bottom 642)
+if [ -n "$HMCB" ] && [ -n "$HMY1" ] && [ "$HMCB" -ge $((HMY1 - 20)) ]; then HMCB=$((HMY1 - 95)); fi
 check "HM0: the first menu on the home screen was learned (a CARD line with its rectangle)" bash -c "[ -n '$HMX0' ] && [ -n '$HMCB' ]"
 if [ -n "$HMX0" ] && [ -n "$HMCB" ]; then
   hpkey home_patch true
