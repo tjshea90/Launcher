@@ -4986,7 +4986,72 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     info "FL2 $L path: $(flpath $L)"
   done
   fi # the BY1 cases
-@@GM@@else
+  if [ "$GM_ON" = 1 ]; then # section gm
+  # ---- CX1b (Tj, 2026-11-23 02:45 UTC): "do emulations of many different swipes and gestures such as pulling up the pin pad, pulling down the notification bar, etc, and make sure the screenshot button stays hidden both before and
+  #      after all different gestures when i open the power menu. For example, the wallpaper patch often lights up and shows when i pull up the pin pad". THE GESTURE MATRIX: every case starts from a FRESH lock cycle (unlock, lock,
+  #      4.5 s settle: the patch window is made in the dark, as on the tablet), is FILMED with animations ON (the same boxes and analysis as section fl) and judged frame by frame: flashA / flashB = the patch "lights up" (it shows its
+  #      resting look while the screen around it changed, or only the slot changed), shot = the stock Screenshot entry visible in a menu frame. Slow, hesitant and held pulls need a real finger path (input motionevent: one DOWN,
+  #      timed MOVEs, one UP; a plain `input swipe` is one constant-speed stroke). Negative control (GM3): the cover switched OFF, the same film must SEE the entry (the analyser can). Audit: research/CX1_AUDIT_LOCK_2026-11-23.md.
+  gmdown(){ adb shell input motionevent DOWN "$1" "$2"; }
+  gmup(){ adb shell input motionevent UP "$1" "$2"; }
+  gmdrag(){ # gmdrag <x> <y0> <y1> <steps> <pause s>: the finger stays down and moves from y0 to y1 in <steps> MOVEs (one adb call; the pauses run on the device)
+    local x=$1 y0=$2 y1=$3 n=$4 p=$5 i y s=""
+    for i in $(seq 1 "$n"); do y=$(( y0 + (y1 - y0) * i / n )); s="$s input motionevent MOVE $x $y; sleep $p;"; done
+    adb shell "$s"; }
+  gmlock(){ flunlock || info "GM: unlock failed ($(kg_state))"; home; adb shell input keyevent KEYCODE_POWER; sleep 3.5; adb shell input keyevent KEYCODE_WAKEUP; sleep 4.5; adb logcat -c; }
+  gmcase(){ # gmcase <label> <flash|menu> <film seconds> <steps as a shell string>
+    gmlock; flrec "$3" 0.3; eval "$4"; flend "$1" "$2"; }
+  g_padslow(){ adb shell input swipe 300 900 300 300 2600; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
+  g_padhalf(){ gmdown 300 900; gmdrag 300 900 650 6 0.2; sleep 1.2; gmdrag 300 650 900 3 0.15; gmup 300 900; sleep 0.3; }
+  g_padhold(){ gmdown 300 900; gmdrag 300 900 300 8 0.2; sleep 2; gmup 300 300; sleep 1.5; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
+  g_padfling(){ adb shell input swipe 300 900 300 300 90; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
+  g_padoff(){ adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.2; }
+  g_shadehalf(){ gmdown 300 2; gmdrag 300 2 350 6 0.25; sleep 1.5; gmdrag 300 350 2 4 0.15; gmup 300 2; sleep 0.3; }
+  g_qs(){ adb shell input swipe 300 2 300 500 250; sleep 1.2; adb shell input swipe 300 2 300 800 250; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 1.5; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
+  g_tap(){ adb shell input tap 150 700; sleep 0.6; }
+  g_menu(){ adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3.5; }
+  info "GM: input commands: $(adb shell input 2>&1 | grep -c motionevent) line(s) name motionevent; animations before: ${FL_ANIM0:-?}"
+  # (A) the gesture alone, no menu: does the patch light up?
+  gmcase gpSlow  flash 13 "g_padslow; sleep 4"
+  gmcase gpHalf  flash 14 "g_padhalf; sleep 4"
+  gmcase gpHold  flash 17 "g_padhold; sleep 4.5"
+  gmcase gpFling flash 11 "g_padfling; sleep 4.5"
+  gmcase gsHalf  flash 14 "g_shadehalf; sleep 4.5"
+  gmcase gsQS    flash 14 "g_qs; sleep 4"
+  # (B) the same gestures, then the power menu at once (0.3 s after the gesture ended): is the entry covered?
+  gmcase gmSlow      menu 17 "g_padslow; g_menu"
+  gmcase gmHalf      menu 18 "g_padhalf; g_menu"
+  gmcase gmHold      menu 20 "g_padhold; g_menu"
+  gmcase gmFling     menu 15 "g_padfling; g_menu"
+  gmcase gmShadeHalf menu 18 "g_shadehalf; g_menu"
+  gmcase gmQS        menu 19 "g_qs; g_menu"
+  gmcase gmPadOff    menu 18 "g_padoff; g_menu"
+  gmcase gmTap       menu 17 "g_tap; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 1; g_tap; sleep 1; g_menu"
+  gmcase gmTwice     menu 14 "adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 0.4; g_menu"
+  # (C) a marathon in ONE lock cycle (state that piles up across gestures), then the menu
+  gmcase gmMarathon  menu 46 "g_padfling; g_shadehalf; g_tap; g_padhalf; g_qs; g_padslow; g_tap; g_menu"
+  # (D) NEGATIVE CONTROL: the cover is switched off (power_mode off): the same film must see the stock Screenshot entry
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"power_mode\">[a-z_]*<#name=\"power_mode\">off<#' shared_prefs/tj_features.xml"
+  setmode custom; rebind
+  gmcase gmCtl menu 12 "g_menu"
+  adb shell am force-stop "$PKG"; sleep 1
+  adb shell "run-as $PKG sed -i 's#name=\"power_mode\">[a-z_]*<#name=\"power_mode\">hide_screenshot<#' shared_prefs/tj_features.xml"
+  setmode custom; rebind
+  for L in gpSlow gpHalf gpHold gpFling gsHalf gsQS; do
+    a="$(flget $L flashA)"; b="$(flget $L flashB)"
+    check "GM1 $L: the patch never lights up (frames flashA=${a:-?} flashB=${b:-?}; $(flget $L spans))" awk -v a="$a" -v b="$b" 'BEGIN{exit !(a!="" && b!="" && a+0<=1 && b+0<=1)}'
+    info "GM1 $L path: $(flpath $L)"
+  done
+  for L in gmSlow gmHalf gmHold gmFling gmShadeHalf gmQS gmPadOff gmTap gmTwice gmMarathon; do
+    m="$(flget $L menu)"; s="$(flget $L shot)"; a="$(flget $L flashA)"
+    check "GM2 $L: the stock menu opened (menu frames ${m:-?}) and its Screenshot entry never showed (frames ${s:-?}, $(flget $L shot_ms) ms; flashA ${a:-?} of at most 1; $(flget $L spans))" awk -v m="$m" -v s="$s" -v a="$a" 'BEGIN{exit !(m!="" && m+0>=10 && s!="" && s+0==0 && a!="" && a+0<=1)}'
+    info "GM2 $L path: $(flpath $L)"
+  done
+  s="$(flget gmCtl shot)"
+  check "GM3 control: with the cover OFF the same film SEES the stock Screenshot entry (frames ${s:-?}; the analyser works)" awk -v s="$s" 'BEGIN{exit !(s!="" && s+0>=3)}'
+  fi # section gm
+else
   info "FL: the panel geometry was not learned: ${FLCL:-no CARD area line}"; check "FL: the menu rectangle was learned" false
 fi
 flanim "${FL_ANIM0:-0}"
