@@ -2864,3 +2864,12 @@ Were you able to resume the other claude session without loss? Can i safely arch
   Other fact in the tail: 2026-11-23T00:55:14.4794426Z ##[error]The process '/usr/bin/sh' failed with exit code 3 (the step before the emulator was killed; the RESULTS block still printed).
 </agent-message>
 ```
+
+## 2026-11-23T02:45:56Z
+```
+In the unlocked full home, keep the screenshot button. Now do an audit specifically of the screenshot button hiding patch on the lock screen and custom home screen. Make sure:
+
+1) do emulations of many different swipes and gestures such as pulling up the pin pad, pulling down the notification bar, etc, and make sure the screenshot button stays hidden both before and after all different gestures when i open the power menu. For example, the wallpaper patch often lights up and shows when i pull up the pin pad. The wallpaper patch should be prepared immediately whenever the lock screen is on so the screenshot button is always hidden.
+2) also make sure the pencil is hidden as well as possible without a flickering white square cover.
+3) make sure the wallpaper patch is prepared as soon as possible in the custom launcher home screen so the screenshot button is always hidden
+```
