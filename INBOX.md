@@ -3922,3 +3922,8 @@ Continue
   - The last lines are post-job cleanup (git config, "Cleaning up orphan processes"). No step-level success or failure line is visible in the tail, so the job's conclusion is not shown here.
 </agent-message>
 ```
+
+## 2026-11-23T06:51:57Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
