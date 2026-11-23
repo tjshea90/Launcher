@@ -3940,9 +3940,9 @@ public class TjAccessibilityService extends AccessibilityService {
             // node search with NOTHING when it is too slow). The patch then fell back to its bright resting state for 20-170 ms = a light block on the darkened menu screen. (The window list cannot confirm the dialog:
             // its title is not "ActionsDialog" there, dialogUp stays false even while the menu is open.) So within 2 s of the opening one "not open" answer is not believed: look again 250 ms later, hide only if that agrees.
             long sinceOpen = android.os.SystemClock.uptimeMillis() - cardShownMs;
-            if (custom && overlayShown && !menuOpen && Features.isCover(mode) && sinceOpen < 2000 && holdMisses < 1) {
+            if (PowerMenuRule.holdOnMiss(custom, overlayShown, Features.isCover(mode), menuOpen, sinceOpen, holdMisses)) {   // CX1c: also "text found, card not located" (menuOpen && !found)
                 holdMisses++;
-                Log.i(TAG, "PATCH hold: no menu text found " + sinceOpen + " ms after the menu opened: looking again before the patch goes");
+                Log.i(TAG, "PATCH hold: " + (menuOpen ? "the menu text is there but its card was not located " : "no menu text found ") + sinceOpen + " ms after the menu opened: looking again before the patch goes");
                 handler.removeCallbacks(recheck); handler.postDelayed(recheck, 250);
                 return;
             }

@@ -37,4 +37,21 @@ public final class PowerMenuRule {
     public static boolean dyingDialog(long now, long menuClosedAtMs) {
         return menuClosedAtMs > 0 && now >= menuClosedAtMs && now - menuClosedAtMs < DYING_DIALOG_MS;
     }
+
+    /**
+     * CX1c (emulator runs #771 / #772, sections hm and gm): a scan 0.5-0.7 s after the stock menu opened answered "the card cannot be located" although BOTH menu texts were found ("menuOpen=true found=false"; the dialog is
+     * mid-layout, the tree answers from a half-built state) and the patch went away while the stock menu was still open = the real Screenshot entry for the rest of it. {@code AZ1} already doubted ONE "no menu text" answer
+     * within 2 s of the opening (look again 250 ms later); this rule also doubts "text found, card not located", up to {@link #HOLD_MISSES_TEXT_SEEN} times in a row (the text IS the evidence that the menu is open).
+     * @param menuTextSeen both texts were found (only the card's bounds are unresolved); false = no menu text at all
+     * @param holdMisses   doubted answers in a row so far
+     */
+    public static boolean holdOnMiss(boolean customMode, boolean overlayShown, boolean coverMode, boolean menuTextSeen, long sinceOpenMs, int holdMisses) {
+        if (!customMode || !overlayShown || !coverMode || sinceOpenMs >= HOLD_WINDOW_MS) return false;
+        return holdMisses < (menuTextSeen ? HOLD_MISSES_TEXT_SEEN : 1);
+    }
+
+    /** AZ1: an answer "not open" is doubted only this long after the opening. */
+    public static final long HOLD_WINDOW_MS = 2000;
+    /** CX1c: how many times in a row "menu text found, card not located" is doubted (each look is 250 ms after the one before). */
+    public static final int HOLD_MISSES_TEXT_SEEN = 3;
 }
