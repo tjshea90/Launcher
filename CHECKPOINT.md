@@ -1,13 +1,13 @@
-# CHECKPOINT 1631 — read me first, then TASKS.md
+# CHECKPOINT 1632 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T02:49:27Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `42045723` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T02:51:41Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `c0a80247` (this checkpoint is the commit after it)
 
 ## Just done
-CX1: heartbeat armed trig_01GoGsAi9y4N2PpYgaAmbk6A (every 2 h at :48)
+CX1a: 3 read-only audit subagents launched 02:55Z (lock a7429c983f586954f, home a540f57043d755095, pencil aba525140b4babd46); outputs land as notifications, read-only, neutral briefs; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A armed
 
 ## Do this next
-read research/CW1_AUDIT_B_PATCH + CG1D_PATCH_LIFECYCLE + PENCIL_REMOVAL (wc first), then 3 read-only audit subagents (lock / home / pencil); heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
+when the 3 reports arrive: save each verbatim-ish into research/CX1_AUDIT_{LOCK,HOME,PENCIL}_2026-11-23.md (facts + GAPS), ckpt; then design emulator section gm (gesture matrix) from existing helpers (section ae/fl/pt/hf in tools/emulator_scenario.sh, tools/pb_probe.py, tools/fl_analyze.py): per gesture -> power menu -> frame -> Screenshot spot covered?; negative control; compare with TAG v0.9.18; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read research/CW1_AUDIT_B_PATCH + CG1D_PATCH_LIFECYCLE + PENCIL_REMOVAL (wc firs
 
 ## Last ten checkpoints
 ```
+  c0a80247 ckpt 1631: CX1: heartbeat armed trig_01GoGsAi9y4N2PpYgaAmbk6A (every 2 h at :48)
   42045723 ckpt 1630: CX1 request written into TASKS (Tj 02:45Z: lock + home screenshot-button pat
   5a3aaa3f ckpt 1629: CW1 SHIPPED: Launcher v0.9.18 (code 57) published 01:12Z (android.yml run 59
   374bc014 ckpt 1628: CW1 BUILD: android.yml run #59 id 45092939912 on 038c65d3 (full_build=true, 
@@ -25,5 +26,4 @@ read research/CW1_AUDIT_B_PATCH + CG1D_PATCH_LIFECYCLE + PENCIL_REMOVAL (wc firs
   c3f00ded ckpt 1624: gated v0.9.18 (code 57) and pushed it: the handoff self-test, the full unit 
   ef3504c1 ckpt 1623: CW1 RAW 00:54Z: #763 45090010377 main base,e1 GREEN (E1 passes on head). #76
   4de58d41 ckpt 1622: CW1 READ 00:41Z: #762 head base,legacy,e1,y2,b4,lq = 68P 1F: ONLY E1 'Delete
-  3987ecf1 ckpt 1621: CW1 RAW 00:38Z: #762 45087708823 (head, base,legacy,e1,y2,b4,lq, 2nd sample)
 ```
