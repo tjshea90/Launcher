@@ -2364,3 +2364,9 @@
 >
 > Saved: everything is on GitHub and `main` equals my tip. The checkpoint, `HANDOFF.md` and `TASKS.md` are written (CW1g holds your open items), and my auto-resume heartbeat is deleted. The old session's heartbeat, `trig_015wPvHD1UqrhN1aXkEXR6TC`, belongs to the other account and still exists. You can delete it from that account now that you've archived that session.
 <!-- sha:1a08b612e21e -->
+
+## 2026-11-23T03:18:10Z
+> Three audits are running or done for your request (CX1, now in `TASKS.md`). The pencil audit is saved in `research/CX1_AUDIT_PENCIL_2026-11-23.md`. The lock-screen and custom-home audits are still being read. The usage cap that cut them off reset at 03:10Z, and I resumed them. Your answer on the unlocked home is recorded: it keeps the Screenshot button, and nothing changes there.
+>
+> The pencil finding so far: the cover is one plain white window with no pre-creation, and it never matches a dark panel. It hides only after a look or a finger-down. After that I design the gesture-matrix emulator test.
+<!-- sha:9be67086eb0d -->
