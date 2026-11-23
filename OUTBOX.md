@@ -2309,3 +2309,7 @@
 ## 2026-11-23T00:54:04Z
 > `ship.sh` is running locally: the full unit suite, lint, the handoff self-test and the versionCode check. I'll read it when it finishes. Run #764 (the `ao,cs2,hf,ul` repeat) was still going at 00:53Z, so I'll check it as well. The full build is dispatched only after both are clean.
 <!-- sha:3cb744d85695 -->
+
+## 2026-11-23T00:58:09Z
+> `ship.sh` passed for v0.9.18 (code 57) and the tree is pushed, but nothing is built yet. The repeat of `ao,cs2,hf,ul` (#764) came back red. A background agent is reading its failure lines, and I won't dispatch the full build until I know whether it's UL24 beside a native crash again or something new.
+<!-- sha:252ad1c823b3 -->
