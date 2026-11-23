@@ -2279,3 +2279,7 @@
 ## 2026-11-23T00:17:14Z
 > Five runs are in flight: the v0.9.17 tag chain and `ul`, plus main's `ul`, the fixed `unified,sf`, and a same-code repeat of the red base chain (#753). A timer will wake me at 00:30Z to read them. The question for each red result is whether the tag shows the same failure. The #753 breaker failures look like the dropped forced-crash race (same pid across every try), and the tag run will confirm that.
 <!-- sha:373f46e46624 -->
+
+## 2026-11-23T00:31:47Z
+> Still reading the tag's failures: the v0.9.17 tag fails the same base-chain sections (#758), so the breaker, AR1 and W5 failures on main look environmental. A background agent is comparing the two failure sets, and the repeat run on main (#762) is still going.
+<!-- sha:73e246a07e10 -->
