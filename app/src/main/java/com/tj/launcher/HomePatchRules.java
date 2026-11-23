@@ -387,6 +387,26 @@ public final class HomePatchRules {
         return windowExists && homeFlavour && sameRotation && sameWindow && transientStepOnly(f);
     }
 
+    // ---- CX1 (Tj, 2026-11-23: "make sure the wallpaper patch is prepared as soon as possible in the custom launcher home screen so the screenshot button is always hidden")
+    /**
+     * Every reason for "no patch window" that goes by itself: an app or the drawer in front ({@code homeShowing} false), a folder or popup open, a drag, the crop of a page that is only being passed. A window that
+     * exists is KEPT (hidden, not restable, its composite and crop in memory) through them, so the first side-key press after the Home key, the drawer or a page flip finds a stale-adoptable patch instead of "no
+     * patch window yet" (emulator section hm, runs #769 / #771: the press 0.2 s AND 0.8 s after Home from an app saw no window, the card came 300-343 ms late, and the window was removed and re-created WHILE the
+     * stock menu was open). Everything else (switch, mode, lock screen, screen off, calibration, an unknown panel place, a paused automation) still removes the window, exactly as before.
+     */
+    public static boolean transientReasonsOnly(Facts f) {
+        if (f.automationOff || f.calibrating || !f.switchOn || !f.coverMode || !f.customMode || !f.unlocked || !f.screenOn || !f.rectKnown) return false;
+        Facts g = new Facts();
+        g.switchOn = f.switchOn; g.coverMode = f.coverMode; g.customMode = f.customMode; g.unlocked = f.unlocked; g.screenOn = f.screenOn; g.rectKnown = f.rectKnown;
+        g.homeShowing = true; g.floatingViewOpen = false; g.busy = false; g.cropValid = true; g.calibrating = false; g.automationOff = false;
+        return whyNot(g).isEmpty();
+    }
+
+    /** CX1: keep the existing home window hidden instead of removing it (see {@link #transientReasonsOnly}): the window is this rotation's and still at the learned place; the wanted-now case never gets here (a wanted window is not "kept"). */
+    public static boolean keepWindowTransient(boolean windowExists, boolean homeFlavour, boolean sameRotation, boolean sameWindow, Facts f) {
+        return windowExists && homeFlavour && sameRotation && sameWindow && !wanted(f) && transientReasonsOnly(f);
+    }
+
     /** B9: how many decoded wallpaper crops stay in memory (one per page step; about 150 KB each on the tablet). */
     public static final int CROP_CACHE_STEPS = 3;
 

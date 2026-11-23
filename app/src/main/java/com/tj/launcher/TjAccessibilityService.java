@@ -1468,6 +1468,7 @@ public class TjAccessibilityService extends AccessibilityService {
         try {
             Rect want = patchTarget();
             if (want == null) {
+                if (homeKeepWindow()) return;   // CX1: a transient reason (an app, the drawer, a folder, a page flip): the home window and its composite stay, hidden (HomePatchRules.keepWindowTransient)
                 if (homeNeedsCal) { handler.removeCallbacks(homeCalTrigger); handler.postDelayed(homeCalTrigger, HomePatchRules.CAL_DRAW_QUIET_MS + 600); }   // BI1: the home patch has no wallpaper crop for this position yet: calibrate when everything is quiet
                 if (patchView != null) { removeOverlay(); removePatch(); }
                 if (!Features.POWER_WALLPAPER.equals(Features.powerMode(this))) dropWallpaper();   // BY1a D1: and the platform's copy
@@ -1484,6 +1485,25 @@ public class TjAccessibilityService extends AccessibilityService {
             if (patchLockMode && !patchHomeMode) { handler.removeCallbacks(calTrigger); handler.postDelayed(calTrigger, 1500); }
             if (patchHomeMode) scheduleHomeBuild();   // BI1
         } catch (Throwable t) { Log.e(TAG, "layer refresh failed", t); removeOverlay(); removePatch(); }
+    }
+
+    /**
+     * CX1 (Tj, 2026-11-23: the home patch "prepared as soon as possible"): the target is gone for a reason that passes by itself (an app or the drawer in front, a folder, a drag, a page flip): keep the window
+     * and its composite instead of removing them, hidden and not restable. The first menu after the return then finds a stale-adoptable patch (HomePatchRules.openTreatment) instead of "no patch window yet" and
+     * the card 300 ms late. While a menu is open nothing is touched (a window removed under an open stock menu showed its Screenshot entry for the 0.3-1.4 s until the new one was up: runs #769 / #771).
+     * Returns true when the window was kept (the caller does nothing more).
+     */
+    private boolean homeKeepWindow() {
+        try {
+            if (patchView == null || !patchHomeMode) return false;
+            Rect cached = cachedCard();
+            if (cached == null) return false;
+            boolean sameWindow = PatchRest.sameWindow(rectArr(patchAt), rectArr(patchRect(cached, true)), 2);
+            if (!HomePatchRules.keepWindowTransient(true, true, patchRot == rotation(), sameWindow, homeFacts())) return false;
+            if (!overlayShown) { patchRestable = false; patchResting = false; restableSinceMs = 0; patchView.setAlpha(0f); }
+            homeStatus("away: kept hidden (" + HomePatchRules.whyNot(homeFacts()) + ")");
+            return true;
+        } catch (Throwable t) { return false; }
     }
 
     /** Used by the card creation paths: guarantees the patch exists BEFORE the card is added (later windows sit on top). */

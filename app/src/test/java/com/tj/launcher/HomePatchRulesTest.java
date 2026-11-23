@@ -322,4 +322,41 @@ public class HomePatchRulesTest {
         assertFalse("never lost, yet no focus (another window came up without a loss event)", HomePatchRules.launcherFocus(false, 0, 20_000));
         assertTrue("the tolerance stays under the 500 ms long press that opens the dialog", HomePatchRules.FOCUS_TOLERANCE_MS < 500);
     }
+
+    // ---------------------------------------------------------------- CX1: the window outlives the transient reasons
+
+    @Test public void cx1AppInFrontKeepsTheWindow() {
+        HomePatchRules.Facts f = good(); f.homeShowing = false;
+        assertTrue(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+    }
+
+    @Test public void cx1DrawerFolderDragAndCropStepKeepTheWindow() {
+        HomePatchRules.Facts f = good(); f.floatingViewOpen = true; assertTrue(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.busy = true; assertTrue(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.cropValid = false; assertTrue(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.homeShowing = false; f.cropValid = false; assertTrue(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+    }
+
+    @Test public void cx1EveryOtherReasonStillRemovesTheWindow() {
+        HomePatchRules.Facts f = good(); f.screenOn = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.unlocked = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.customMode = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.switchOn = false; f.homeShowing = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.coverMode = false; f.homeShowing = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.automationOff = true; f.homeShowing = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.calibrating = true; f.homeShowing = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+        f = good(); f.rectKnown = false; f.homeShowing = false; assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, f));
+    }
+
+    @Test public void cx1OnlyAnExistingHomeWindowOfThisRotationAndPlaceIsKept() {
+        HomePatchRules.Facts f = good(); f.homeShowing = false;
+        assertFalse(HomePatchRules.keepWindowTransient(false, true, true, true, f));   // no window
+        assertFalse(HomePatchRules.keepWindowTransient(true, false, true, true, f));   // the lock flavour has its own rules
+        assertFalse(HomePatchRules.keepWindowTransient(true, true, false, true, f));   // another rotation
+        assertFalse(HomePatchRules.keepWindowTransient(true, true, true, false, f));   // the panel moved: a new window
+    }
+
+    @Test public void cx1AWantedWindowIsNotAKeepCase() {
+        assertFalse(HomePatchRules.keepWindowTransient(true, true, true, true, good()));
+    }
 }
