@@ -4043,3 +4043,8 @@ Audit and improve the launcher for speed and optimization of code and ram and cp
 ```
 Don't waste usage on the settings app or the music app . Only the launcher
 ```
+
+## 2026-11-23T07:58:48Z
+```
+Checkpoint and save to github any findings immediately in case usage runs out. Another claude session should be able to see any findings you make immediately
+```
