@@ -1,13 +1,13 @@
-# CHECKPOINT 1616 — read me first, then TASKS.md
+# CHECKPOINT 1617 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T00:13:42Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `21e861fb` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T00:15:24Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `e799dbb7` (this checkpoint is the commit after it)
 
 ## Just done
-CW1 RERUN READ 00:20Z (subagent): #753 base,legacy,e1,y2,b4,lq 63P 6F no native crash: breaker switched, home stock after breaker, AR1 grouped x2, W5 x2 (breaker diag: same pid 5025 over 4 tries x3, tj_crash.xml missing = forced crash dropped?); #754 ao,cs2,hf,ul 45P 1F UL24 double Home from app custom 1 of 3, gaps 20640/187/8341 ms + NATIVE CRASH #1 jemalloc/libhwui; #755 unified,sf 11P 2F SF2 force-stop drive never happened (pid same, start lines 0), SF3, 'Bad arguments' x2 earlier, later cooldown drive worked (debt 50)
+CW1 SF2/SF3 under unified = test premise: StockForceStop.sessionWeight(unified)=0 so one session end adds nothing; scenario now puts sf_debt 5 under unified (4 otherwise). Dispatched on tag v0.9.17: base,legacy,e1,y2,b4,lq + ul; main: ul (solo, UL24 check)
 
 ## Do this next
-compare on TAG: dispatch base,legacy,e1,y2,b4,lq (tag) + ul (tag) + ul (main); read sf scenario lines ~5560-5700 for D3/D5 premise; heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
+dispatch unified,sf on main after this ckpt; then read tag runs (breaker/AR1/W5 and UL24) and main ul; heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ compare on TAG: dispatch base,legacy,e1,y2,b4,lq (tag) + ul (tag) + ul (main); r
 
 ## Last ten checkpoints
 ```
+  2fe4dce4 ckpt 1616: CW1 RERUN READ 00:20Z (subagent): #753 base,legacy,e1,y2,b4,lq 63P 6F no nat
   c98e317f ckpt 1615: CW1 RERUN RAW 00:11Z: #756 ad,ps(no unified) GREEN; #757 unified,last GREEN 
   52a775bb ckpt 1614: CW1 RERUNS on main (product diff vs gated 880732c8 EMPTY, only scenario sf l
   d0b4ad2e ckpt 1613: CW1 TRIAGE VERDICT 23:55Z (subagent): #750 main AND #751 TAG unified,ad,ps b
@@ -25,8 +26,7 @@ compare on TAG: dispatch base,legacy,e1,y2,b4,lq (tag) + ul (tag) + ul (main); r
   97c4a442 ckpt 1609: CW1 GATE RAW (read by subagent): #740 job 137385027035 84 PASS 6 FAIL: CS-B1
   5a759cb6 ckpt 1608: CW1 GATE RAW 23:31Z main@880732c8: #739 (n,n6,bs,bt,mu,pk,ul2) GREEN; #740 (
   305c325c ckpt 1607: CW1 GATE dispatched 22:48Z on main@880732c8 (product code final; do NOT edit
-  880732c8 ckpt 1606: CW1 takeover: full suite+lint GREEN (cw1-full2, GRADLE_EXIT=0) incl A1. /cod
 ```
 
-(2 automatic checkpoint(s) since the last deliberate one — the
+(1 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
