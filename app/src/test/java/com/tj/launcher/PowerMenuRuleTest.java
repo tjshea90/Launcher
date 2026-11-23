@@ -1,6 +1,8 @@
 package com.tj.launcher;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 public class PowerMenuRuleTest {
@@ -46,5 +48,24 @@ public class PowerMenuRuleTest {
     }
     @Test public void theFadeOutOfTheStockDialogIsShorterThanTheMarkSoTheMarkCoversItAll() {
         assertEquals(true, PowerMenuRule.DYING_DIALOG_MS >= PatchFade.CLOSE_MS);
+    }
+
+    // CX1c: "text found, card not located" is doubted up to three times (250 ms apart), "no text at all" once; never outside the 2 s window, never without our card up, never in block mode / Quickstep
+    @Test public void cx1HoldsAnUnlocatedCardThreeTimesWhileTheTextIsThere() {
+        assertTrue(PowerMenuRule.holdOnMiss(true, true, true, true, 700, 0));
+        assertTrue(PowerMenuRule.holdOnMiss(true, true, true, true, 950, 1));
+        assertTrue(PowerMenuRule.holdOnMiss(true, true, true, true, 1200, 2));
+        assertFalse(PowerMenuRule.holdOnMiss(true, true, true, true, 1450, 3));
+    }
+    @Test public void cx1HoldsAMissingTextOnceAsBefore() {
+        assertTrue(PowerMenuRule.holdOnMiss(true, true, true, false, 501, 0));
+        assertFalse(PowerMenuRule.holdOnMiss(true, true, true, false, 760, 1));
+    }
+    @Test public void cx1NoHoldOutsideTheWindowOrWithoutTheCard() {
+        assertFalse(PowerMenuRule.holdOnMiss(true, true, true, true, PowerMenuRule.HOLD_WINDOW_MS, 0));
+        assertFalse(PowerMenuRule.holdOnMiss(true, true, true, false, 2500, 0));
+        assertFalse(PowerMenuRule.holdOnMiss(true, false, true, true, 700, 0));   // our card is not up: nothing to keep
+        assertFalse(PowerMenuRule.holdOnMiss(false, true, true, true, 700, 0));   // Quickstep mode never touches the menu
+        assertFalse(PowerMenuRule.holdOnMiss(true, true, false, true, 700, 0));   // block mode closes the menu, no cover to keep
     }
 }

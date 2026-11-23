@@ -288,4 +288,12 @@ public class PatchRestTest {
         assertEquals(700, PatchRest.returnInMs(now, since, now + 700, 0));             // a pad hold still waits (the service clears the holds itself when the screen goes off)
         assertEquals(1500, PatchRest.returnInMs(now, since, 0, now + 1500));
     }
+
+    // CX1c: a rect that wobbles while the stock menu is open does not replace the slot window; it is applied after the menu closed
+    @Test public void cx1RectMoveRemovesTheWindowOnlyWhileNoMenuIsOpen() {
+        assertTrue(PatchRest.rectMoveRemovesWindow(false, false));
+        assertFalse(PatchRest.rectMoveRemovesWindow(false, true));
+        assertFalse(PatchRest.rectMoveRemovesWindow(true, false));
+        assertFalse(PatchRest.rectMoveRemovesWindow(true, true));
+    }
 }
