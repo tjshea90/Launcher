@@ -2313,3 +2313,7 @@
 ## 2026-11-23T00:58:09Z
 > `ship.sh` passed for v0.9.18 (code 57) and the tree is pushed, but nothing is built yet. The repeat of `ao,cs2,hf,ul` (#764) came back red. A background agent is reading its failure lines, and I won't dispatch the full build until I know whether it's UL24 beside a native crash again or something new.
 <!-- sha:252ad1c823b3 -->
+
+## 2026-11-23T01:00:16Z
+> Three solo `hf` runs are in flight: two on the head code (main and the branch, so they can run side by side) and one on the v0.9.17 tag. #764's only new failures were HF1, HF4 and HF5, and UL24 passed (3 of 3 at about 160 to 200 ms), so the earlier UL24 failure was a flake. If `hf` is red on the head and green on the tag, I'll suspect the 100 ms first-build quiet (B1a) and can revert it. A timer wakes me at 01:08Z.
+<!-- sha:64cdcf17f75d -->
