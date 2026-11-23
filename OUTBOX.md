@@ -1840,3 +1840,20 @@
 >
 > I armed an auto-resume heartbeat and deleted it again, since only your tablet items remain. The cut-off session's own heartbeat, `trig_01GoGsAi9y4N2PpYgaAmbk6A`, isn't visible to this account, so I couldn't check or delete it. If it wakes later it will see the shipped release in `CHECKPOINT.md` and stop.
 <!-- sha:fcfeb304ccda -->
+
+## 2026-11-23T08:02:59Z
+> Everything so far is saved on GitHub, and `main` equals my tip (`a53835a7`). Another session can pick it up from `research/CY1_STATE_2026-11-23.md` and `CHECKPOINT.md`.
+>
+> - **Scope:** Only the launcher, as you said. The Settings look-alike pages, the music app, `phoneguide`, `testnotifier` and `wallpaperpicker` are excluded. This is recorded in `TASKS.md` as CY1s.
+> - **What I found before the code audit:**
+>   - **Earlier audits:** This is the fifth performance pass in 12 days. The earlier ones shipped fixes in v0.9.8, v0.9.9, v0.9.12 and v0.9.18, so the cheap wins are already taken.
+>   - **Already in place:** A baseline profile covers all launcher code. The steady state is event-driven, with no alarms or wake locks.
+>   - **Left off on purpose:** R8 minification stays off because of a documented decision. A minifier-only crash is something only your tablet could show, and you said no optimization may hurt function.
+>   - **Open list:** About 20 smaller items from earlier audits are still open or deliberately deferred. Several sit on the unlock path.
+>   - **No measurements for the newest code:** There is no tablet report newer than v0.9.1, so the cost of the newer code is reasoned, not measured.
+> - **In flight:** Three read-only reviewers are running. One reviews the 4.3K lines written since v0.9.12. One checks each open item against the current code and sketches a safe fix. One reviews the Launcher3 fork, the manifest and the layouts.
+> - **Rules for fixes:** I'll save each report to `research/CY1_AUDIT_*_2026-11-23.md` and push it before analysing it. I'll only build fixes that a unit test or an emulator section can prove neutral. Lock-screen code stays untouched unless the change is trivially behaviour-preserving.
+> - **Cut-off protection:** I armed the auto-resume heartbeat (`trig_01DkASxm8hLzwAL447MmJQnA`, every 2 hours, first at 10:01 UTC). Its id is in the checkpoint, and I'll delete it when the job ships or only your tablet items remain.
+>
+> I'll continue when the reviewers report back.
+<!-- sha:f2c039486205 -->
