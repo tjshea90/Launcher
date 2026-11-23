@@ -2271,3 +2271,7 @@
 > - **`cs`:** `unified,cs` is green on main (#748) and on the tag (#749).
 > - **#742:** its emulator died (GL checksum error), so its sections were split into #753 and #754 and rerun.
 <!-- sha:7f9a55affe32 -->
+
+## 2026-11-23T00:10:35Z
+> Three reruns are red (#753, #754, #755). A background agent is reading their FAIL lines. The other two reruns, #756 (`ad,ps` without `unified`) and #757 (`unified,last`), are green. So the earlier AD5a/AD5b and card-Restart failures were a test premise and a timing flake, not the diff. I'll triage the three red ones once the agent reports.
+<!-- sha:da6557cb04f3 -->
