@@ -156,6 +156,11 @@ public final class TjHooks {
 
     public static boolean homeScreenShowing() { return launcherResumed && launcherNormal; }
 
+    /** CX1c (diagnostic, one short string at a refused press): which fact of "the plain home screen is at rest" is false (hmApp1 / hmApp2, run #772: the focus was there, a composite was kept, the stale patch was still not adopted). Main thread. */
+    public static String homeAtRestWhy() {
+        return "resumed=" + launcherResumed + " normal=" + launcherNormal + " floating=" + homeFloatingViewOpen() + " busy=" + homeBusy();
+    }
+
     /** BL1: where the Launcher window's decor view is on screen and how big it is: {left, top, width, height}, or null while there is none attached (the home curtain copies the whole window and lays it at its origin). Main thread. */
     public static int[] launcherWindowBounds() {
         try {

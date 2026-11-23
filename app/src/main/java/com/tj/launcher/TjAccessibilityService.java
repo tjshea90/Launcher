@@ -926,7 +926,7 @@ public class TjAccessibilityService extends AccessibilityService {
         boolean focus = homeLauncherFocus();
         return HomePatchRules.notFreshWhy(patchShotBmp != null && homeBuiltAtMs > 0, HomePatchRules.sameStep(homeBuiltStep, homeStepNow()),
                 homeBuiltAtMs > 0 ? up - homeBuiltAtMs : -1, TjHooks.lastHomeDrawMs > 0 ? up - TjHooks.lastHomeDrawMs : -1, homeForeignUntilMs - up,
-                focus, homeCalRunning) + (homeFocusGapMs >= 0 ? " (focus lost " + homeFocusGapMs + " ms before the dialog)" : "");
+                focus, homeCalRunning) + (homeFocusGapMs >= 0 ? " (focus lost " + homeFocusGapMs + " ms before the dialog)" : "") + " {" + TjHooks.homeAtRestWhy() + " window=" + (patchView != null) + "/" + patchHomeMode + " restable=" + patchRestable + "}";
     }
 
     /**
