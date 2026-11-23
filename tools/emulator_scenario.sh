@@ -4839,25 +4839,9 @@ adb shell locksettings clear --old 1234 >/dev/null 2>&1
 adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
 setfeat; setmode custom; rebind; home; sleep 3
 fi # section mu
-FL_ON=0; GM_ON=0
-if want fl; then FL_ON=1; fi   # (tools/gate.sh --check reads these two lines)
-if want gm; then GM_ON=1; fi
-if [ "$FL_ON" = 1 ] || [ "$GM_ON" = 1 ]; then # section fl (and gm: the same setup, calibration and film helpers)
-ensurehome
-# ---- BY1 (Tj, 2026-11-12 17:26 UTC): "test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the
-#      first lock screen or after pulling down the notification panel or pulling up the pin pad. It should not flicker or flash either the screenshot button or the wallpaper patch at any time".
-#      FILMS (screenrecord, animations ON as on Tj's tablet; the CI emulator runs them OFF, which hides every fade) each case on a calibrated lock patch and measures EVERY frame with tools/fl_analyze.py (boxes from the
-#      learned panel): flashA = the slot shows the resting look while the screen around it changed (the patch over an open panel, a darkening PIN-pad scrim, a screen still fading in at the wake-up); flashB = only the
-#      slot changed (a patch with a wrong look); shot = a frame of an open stock menu with the Screenshot entry visible. Design: research/BY1_FLICKER_TEST_PLAN_2026-11-12.md. Setup like section ps.
-beat "before FL"
-adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
-flfeat(){ # flfeat <calibration window end, epoch ms; 0 = none>: the stored crop wiped, stock menu (no power_card key), lock patch on, the resting patch on (default), no test skew
-  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs files; rm -f files/patchshot_r0.png files/patchshot_r1.png; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"profile_radios_off\\\" value=\\\"false\\\" /><boolean name=\\\"lock_quiet\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"false\\\" /><string name=\\\"patch_cal_until\\\">$1</string><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
+# FILM HELPERS (sections fl, gm and hm): record the screen with screenrecord (animations on), analyse every frame with tools/fl_analyze.py against the boxes in FL_CORE / FL_RING / FL_TOP / FL_SHEET
 flanim(){ for n in window_animation_scale transition_animation_scale animator_duration_scale; do adb shell settings put global $n "$1"; done; }
 flnums(){ echo "$1" | grep -o "$2=[^ ]*" | head -1 | grep -o '[0-9]*' | tr '\n' ' '; }
-flstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
-fllock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }
-flunlock(){ local i; for i in 1 2 3; do [ "$(kg_state)" = "showing=false" ] && return 0; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.5; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input text 1234; sleep 0.5; adb shell input keyevent KEYCODE_ENTER; sleep 3; done; [ "$(kg_state)" = "showing=false" ]; }
 flrec(){ adb shell rm -f /sdcard/fl.mp4 >/dev/null 2>&1; FL_T0="$(adb shell cat /proc/uptime | cut -d' ' -f1 | tr -d '\r\n')"; ( adb shell screenrecord --time-limit "$1" /sdcard/fl.mp4 >/dev/null 2>&1 & ); sleep "${2:-1.4}"; }   # the film starts about 0.4 s after the call
 flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull, analyse, keep the app's PATCH lines of the case
   local L="$1" M="$2" i T=""
@@ -4882,6 +4866,23 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
 flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left|pin pad cancelled|shade open|shade closed)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
+FL_ON=0; GM_ON=0
+if want fl; then FL_ON=1; fi   # (tools/gate.sh --check reads these two lines)
+if want gm; then GM_ON=1; fi
+if [ "$FL_ON" = 1 ] || [ "$GM_ON" = 1 ]; then # section fl (and gm: the same setup, calibration and film helpers)
+ensurehome
+# ---- BY1 (Tj, 2026-11-12 17:26 UTC): "test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the
+#      first lock screen or after pulling down the notification panel or pulling up the pin pad. It should not flicker or flash either the screenshot button or the wallpaper patch at any time".
+#      FILMS (screenrecord, animations ON as on Tj's tablet; the CI emulator runs them OFF, which hides every fade) each case on a calibrated lock patch and measures EVERY frame with tools/fl_analyze.py (boxes from the
+#      learned panel): flashA = the slot shows the resting look while the screen around it changed (the patch over an open panel, a darkening PIN-pad scrim, a screen still fading in at the wake-up); flashB = only the
+#      slot changed (a patch with a wrong look); shot = a frame of an open stock menu with the Screenshot entry visible. Design: research/BY1_FLICKER_TEST_PLAN_2026-11-12.md. Setup like section ps.
+beat "before FL"
+adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
+flfeat(){ # flfeat <calibration window end, epoch ms; 0 = none>: the stored crop wiped, stock menu (no power_card key), lock patch on, the resting patch on (default), no test skew
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs files; rm -f files/patchshot_r0.png files/patchshot_r1.png; printf \"<?xml version=\\\"1.0\\\" encoding=\\\"utf-8\\\" standalone=\\\"yes\\\"?><map><boolean name=\\\"startup_open\\\" value=\\\"false\\\" /><boolean name=\\\"profile_battery_saver_on_quickstep\\\" value=\\\"false\\\" /><boolean name=\\\"profile_radios_off\\\" value=\\\"false\\\" /><boolean name=\\\"lock_quiet\\\" value=\\\"false\\\" /><boolean name=\\\"allow_setup_autorun\\\" value=\\\"true\\\" /><boolean name=\\\"lock_patch\\\" value=\\\"true\\\" /><boolean name=\\\"patch_auto_cal\\\" value=\\\"false\\\" /><string name=\\\"patch_cal_until\\\">$1</string><string name=\\\"power_mode\\\">hide_screenshot</string></map>\" > shared_prefs/tj_features.xml'"; }
+flstatus(){ adb shell "run-as $PKG cat shared_prefs/tj_features.xml" 2>/dev/null | grep -o 'name="patch_shot_status">[^<]*' | sed 's/.*>//'; }
+fllock(){ adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; }
+flunlock(){ local i; for i in 1 2 3; do [ "$(kg_state)" = "showing=false" ] && return 0; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.5; adb shell input swipe 300 900 300 300 300; sleep 1.5; adb shell input text 1234; sleep 0.5; adb shell input keyevent KEYCODE_ENTER; sleep 3; done; [ "$(kg_state)" = "showing=false" ]; }
 FL_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
 adb shell settings put secure lock_screen_show_notifications 0            # no notification card next to the slot (see section ps, AZ4)
 adb shell "run-as $PKG rm -f shared_prefs/tj_restore.xml" >/dev/null 2>&1
