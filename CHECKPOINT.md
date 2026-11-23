@@ -1,13 +1,13 @@
-# CHECKPOINT 1653 — read me first, then TASKS.md
+# CHECKPOINT 1654 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T05:13:11Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `75ea7c58` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T05:16:37Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `6d4459e1` (this checkpoint is the commit after it)
 
 ## Just done
-CX1 RAW VERDICT hm #774 id 45114864876 job 137495285640 (head a5d0d18e H2): 12 PASS 7 FAIL: hmApp1 179fr, hmApp2 173fr, hmDrawer1 17fr/283ms, hmPage2 3fr, hmShade1 4fr, hmShade2 flashA19, hmTap1 5fr. hmOff1/2 now shot=0 (premature-close hold works). gm,fl #775 id 45114867392 still running
+CX1c: hm #774 analysis: hmApp 'floating=true' = a Launcher3 floating view is open after Home from an app (suspect: first-run DiscoveryBounce, emulator only); diagnostic prints its class; section hm now marks launcher.apps_view_shown (hm_nobounce); pencil: fast watch 600 ms at SCREEN_ON; hmTap1/hmDrawer1 shot frames = close-phase / first frames, analyser noise suspected
 
 ## Do this next
-read hmApp facts line {resumed normal floating busy}; analyse why stale adoption refused; gm,fl result; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
+dispatch hm again on this head (hmApp must pass or the floating class names the cause); read gm,fl #775 id 45114867392; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ read hmApp facts line {resumed normal floating busy}; analyse why stale adoption
 
 ## Last ten checkpoints
 ```
+  3361f0d6 ckpt 1653: CX1 RAW VERDICT hm #774 id 45114864876 job 137495285640 (head a5d0d18e H2): 
   8bbf9560 ckpt 1652: CX1c: in flight on a5d0d18e (H2): hm #774 id 45114864876 (04:57Z, ~8 min), g
   a5d0d18e ckpt 1651: CX1c-H2: PowerMenuRule.holdOnMiss (menu text seen but card not located: hold
   d9e77ef6 ckpt 1650: CX1 RAW VERDICT hp #773 id 45112680139 job 137488368103 (head 64dda30f): SUC
@@ -25,8 +26,7 @@ read hmApp facts line {resumed normal floating busy}; analyse why stale adoption
   a2c1e498 ckpt 1646: CX1: gm baseline 2 #770 id 45109356329 job 137477900783 ran > 25 min (emulat
   e03bdd35 ckpt 1645: CX1 RAW VERDICT hm #771 id 45109794817 job 137479292087 (head==tag): 15 PASS
   a9b431f6 ckpt 1644: CX1: BASELINE 2 in flight on product code == tag v0.9.18: gm #770 id 4510935
-  6ff6b527 ckpt 1643: CX1d/CX1e written into TASKS (baseline findings + fix plan); gm baseline 2 a
 ```
 
-(1 automatic checkpoint(s) since the last deliberate one — the
+(2 automatic checkpoint(s) since the last deliberate one — the
 session was still mid-step. `git diff` against it shows what changed.)
