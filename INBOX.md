@@ -4038,3 +4038,8 @@ Pick up and finish where the last claude session was interrupted by usage
 ```
 Audit and improve the launcher for speed and optimization of code and ram and cpu usage only. No optimization should negatively affect speed or function
 ```
+
+## 2026-11-23T07:57:06Z
+```
+Don't waste usage on the settings app or the music app . Only the launcher
+```
