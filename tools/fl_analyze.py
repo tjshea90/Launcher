@@ -22,7 +22,7 @@ Per frame: core_d / ring_d = mean |frame - REF| of CORE / RING (0..255 grey leve
              dimmed wallpaper, darker than REF); frames before the first menu frame are judged as in mode flash.
 
   python3 -I tools/fl_analyze.py <video.mp4> <label> --disp WxH --core X0,Y0,X1,Y1 --ring "X0,Y0,X1,Y1;X0,Y0,X1,Y1" [--top X0,Y0,X1,Y1]
-         [--mode flash|menu] [--ref first|last] [--refms 400] [--fps 60] [--t1 6] [--t2 15]
+         [--mode flash|menu] [--ref first|last] [--refms 400] [--fps 60] [--t1 6] [--t2 15] [--from SECONDS]
   python3 -I tools/fl_analyze.py --selftest
 
 Prints one line: FLMETRIC label=... mode=... frames=N flashA=k flashA_ms=.. flashB=k menu=k shot=k shot_ms=.. first_menu=s worst=... spans=...
@@ -80,12 +80,12 @@ def mean(a):
     return sum(a) / len(a) if a else 0.0
 
 
-def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2):
+def classify(core_d, ring_d, top_up, core_up, mode, fps, t1=T1, t2=T2, menu_from=0):
     """Per-frame numbers -> metrics. core_d / ring_d: mean |frame - REF|; top_up / core_up: mean(frame) - mean(REF) of TOP / CORE (None = no TOP box)."""
     n = min(len(core_d), len(ring_d))
     first_menu = None
     if mode == "menu" and top_up is not None:
-        for i in range(n):
+        for i in range(max(0, menu_from), n):   # frames before menu_from are judged as in mode flash (CX1b: an open notification panel brightens TOP and CORE like a menu would)
             if top_up[i] >= MENU_D:
                 first_menu = i
                 break
@@ -181,6 +181,14 @@ def selftest():
     assert r["menu"] == 30 and r["shot"] == 0 and r["first_menu"] == "0.33", r
     r = classify(d, d, top, core_up_bad, "menu", fps)
     assert r["shot"] == 3 and r["shot_ms"] == 50, r
+    # 4b) CX1b: an open notification panel (TOP and CORE bright for frames 5-24) BEFORE the menu press is not a menu; with menu_from = 30 only the real menu counts
+    top2 = [0.0] * 5 + [80.0] * 20 + [0.0] * 15 + [80.0] * 30
+    core2 = [0.0] * 5 + [90.0] * 20 + [0.0] * 15 + [-25.0] * 30
+    d2 = [0.5] * 70
+    r = classify(d2, d2, top2, core2, "menu", fps)
+    assert r["shot"] == 20, r
+    r = classify(d2, d2, top2, core2, "menu", fps, menu_from=30)
+    assert r["shot"] == 0 and r["menu"] == 30 and r["first_menu"] == "0.67", r
     # 5) thresholds: a soft change (ring 10) is not a flash
     r = classify([1.0] * 10, [10.0] * 10, None, None, "flash", fps)
     assert r["flashA"] == 0, r
@@ -196,7 +204,7 @@ def main(argv):
         return 2
     video, label = argv[1], argv[2]
     opt = {"--disp": "600x1024", "--mode": "flash", "--ref": "first", "--refms": "400", "--fps": "60", "--t1": str(T1), "--t2": str(T2), "--top": "", "--core": "", "--ring": "",
-           "--sheet": "", "--sheetbox": ""}
+           "--sheet": "", "--sheetbox": "", "--from": ""}
     a = argv[3:]
     for i in range(0, len(a) - 1, 2):
         opt[a[i]] = a[i + 1]
@@ -234,7 +242,8 @@ def main(argv):
         mrt, mrc = mean(rt), mean(rc)
         top_up = [mean(ft[i]) - mrt for i in range(n)]
         core_up = [mean(fc[i]) - mrc for i in range(n)]
-    r = classify(core_d, ring_d, top_up, core_up, opt["--mode"], fps, float(opt["--t1"]), float(opt["--t2"]))
+    menu_from = int(float(opt["--from"]) * fps) if opt["--from"] else 0
+    r = classify(core_d, ring_d, top_up, core_up, opt["--mode"], fps, float(opt["--t1"]), float(opt["--t2"]), menu_from)
     if opt["--sheet"] and sbox:
         sheet(video, opt["--sheet"], sbox, fps, n, r["raw"])
     real = max(0, n - fps)  # without the 1 s PAD

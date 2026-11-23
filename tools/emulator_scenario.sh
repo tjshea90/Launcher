@@ -4848,6 +4848,7 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   for i in $(seq 1 15); do adb shell pidof screenrecord >/dev/null 2>&1 || break; sleep 1; done
   adb pull /sdcard/fl.mp4 "$OUT/fl-$L.mp4" >/dev/null 2>&1
   [ "$M" = menu ] && T="--top $FL_TOP"
+  [ -n "${FL_FROM:-}" ] && T="$T --from $FL_FROM"   # CX1b: the menu is judged only from the press on (an open notification panel before it is not a menu)
   python3 -I tools/fl_analyze.py "$OUT/fl-$L.mp4" "$L" --disp 600x1024 --core "$FL_CORE" --ring "$FL_RING" $T --mode "$M" --ref last \
     --sheet "$OUT/fl-sheet-$L.png" --sheetbox "$FL_SHEET" > "$OUT/fl-an-$L.txt" 2>&1
   grep -q '^FLMETRIC' "$OUT/fl-an-$L.txt" && grep '^FLMETRIC' "$OUT/fl-an-$L.txt" | tail -1 >> "$OUT/fl-metrics.txt" \
@@ -4861,11 +4862,16 @@ flend(){ # flend <label> <flash|menu>: wait for the film's own time limit, pull,
   # (#567: a seq shorter than one folded line has no newline and `read` dropped it: only the films with a LONG seq printed one; '|| [ -n "$ln" ]' keeps the last piece)
   grep -v '^PATCHEV' "$OUT/fl-log-$L.txt" 2>/dev/null | grep -E ' t=[0-9]+' | sed "s/fast open: the dialog.s window event is /fast open age=/; s/ ms after the first window event of the burst/ ms in burst/" \
     | awk -v t0="${FL_T0:-0}" '{ t=""; for(i=1;i<=NF;i++) if($i ~ /^t=[0-9]+/){ t=$i; sub("t=","",t); sub(/[^0-9].*$/,"",t) }; if (t=="") next; w=substr($2" "$3" "$4" "$5" "$6, 1, 40); printf "%.2f %s; ", (t - t0*1000 - 400)/1000, w } END { printf "\n" }' \
-    | fold -w 290 | head -3 | while IFS= read -r ln || [ -n "$ln" ]; do [ -n "${ln// /}" ] && info "FL $L seq:$ln"; done
+    | fold -w 290 | head -"${FL_SEQ_LINES:-3}" | while IFS= read -r ln || [ -n "$ln" ]; do [ -n "${ln// /}" ] && info "FL $L seq:$ln"; done
   [ "$M" = flash ] && info "FL $L events (debug PATCHEV, count type pkg cls): $(grep -o 'PATCHEV t=[0-9]* type=0x[0-9a-f]* pkg=[^ ]* cls=[^ ]*' "$OUT/fl-log-$L.txt" 2>/dev/null | sed 's/t=[0-9]* //; s/com.android.systemui/SUI/; s/android.widget./w./' | sort | uniq -c | sort -rn | head -7 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
   grep -q "label=$L .*frames=" "$OUT/fl-metrics.txt" && rm -f "$OUT/fl-$L.mp4"; }
 flget(){ grep "FLMETRIC label=$1 " "$OUT/fl-metrics.txt" 2>/dev/null | tail -1 | grep -o " $2=[^ ]*" | cut -d= -f2; }
 flpath(){ grep -oE 'PATCH (fast open|fast skip: [^(]*|pin hide|pin sign|touch hide|rest on|rest off|visible again \([a-zA-Z]*\)|pin pad left|pin pad cancelled|shade open|shade closed)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-300; }
+g_mark(){ [ -z "${GM_MARK:-}" ] && GM_MARK="$(adb shell cat /proc/uptime | cut -d' ' -f1 | tr -d '\r\n')"; return 0; }   # CX1b: the device uptime of the FIRST menu press of a case (film second = press - FL_T0 - 0.4)
+flfrom(){ FL_FROM=""; [ -n "${GM_MARK:-}" ] && FL_FROM="$(awk -v m="$GM_MARK" -v t="${FL_T0:-0}" 'BEGIN{v = m - t - 0.4; if (v < 0) v = 0; printf "%.2f", v}')"; }
+flfull(){ # flfull <label>: a film that SAW the Screenshot entry prints the case's whole patch log, one INFO per line (the results block cuts a line at about 330 characters)
+  local s; s="$(flget "$1" shot)"; [ -n "$s" ] && [ "$s" != 0 ] || return 0
+  grep -v '^PATCHEV' "$OUT/fl-log-$1.txt" 2>/dev/null | cut -c1-230 | head -60 | while IFS= read -r ln; do info "FL $1 log: $ln"; done; }
 FL_ON=0; GM_ON=0
 if want fl; then FL_ON=1; fi   # (tools/gate.sh --check reads these two lines)
 if want gm; then GM_ON=1; fi
@@ -5003,7 +5009,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
     adb shell "$s"; }
   gmlock(){ flunlock || info "GM: unlock failed ($(kg_state))"; home; adb shell input keyevent KEYCODE_POWER; sleep 3.5; adb shell input keyevent KEYCODE_WAKEUP; sleep 4.5; adb logcat -c; }
   gmcase(){ # gmcase <label> <flash|menu> <film seconds> <steps as a shell string>
-    gmlock; flrec "$3" 0.3; eval "$4"; flend "$1" "$2"; }
+    gmlock; GM_MARK=""; FL_SEQ_LINES=8; flrec "$3" 0.3; eval "$4"; flfrom; flend "$1" "$2"; FL_FROM=""; flfull "$1"; }
   g_padslow(){ adb shell input swipe 300 900 300 300 2600; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
   g_padhalf(){ gmdown 300 900; gmdrag 300 900 650 6 0.2; sleep 1.2; gmdrag 300 650 900 3 0.15; gmup 300 900; sleep 0.3; }
   g_padhold(){ gmdown 300 900; gmdrag 300 900 300 8 0.2; sleep 2; gmup 300 300; sleep 1.5; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
@@ -5012,7 +5018,7 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   g_shadehalf(){ gmdown 300 2; gmdrag 300 2 350 6 0.25; sleep 1.5; gmdrag 300 350 2 4 0.15; gmup 300 2; sleep 0.3; }
   g_qs(){ adb shell input swipe 300 2 300 500 250; sleep 1.2; adb shell input swipe 300 2 300 800 250; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 1.5; adb shell input keyevent KEYCODE_BACK; sleep 0.3; }
   g_tap(){ adb shell input tap 150 700; sleep 0.6; }
-  g_menu(){ adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3.5; }
+  g_menu(){ g_mark; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3.5; }
   info "GM: input commands: $(adb shell input 2>&1 | grep -c motionevent) line(s) name motionevent; animations before: ${FL_ANIM0:-?}"
   # (A) the gesture alone, no menu: does the patch light up?
   gmcase gpSlow  flash 13 "g_padslow; sleep 4"
@@ -5029,8 +5035,8 @@ if [ -n "$FLX0" ] && [ -n "$FLY1" ] && [ -n "$FLCB" ] && [ $(( FLY1 - FLCB )) -g
   gmcase gmShadeHalf menu 18 "g_shadehalf; g_menu"
   gmcase gmQS        menu 19 "g_qs; g_menu"
   gmcase gmPadOff    menu 18 "g_padoff; g_menu"
-  gmcase gmTap       menu 17 "g_tap; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 1; g_tap; sleep 1; g_menu"
-  gmcase gmTwice     menu 14 "adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 0.4; g_menu"
+  gmcase gmTap       menu 17 "g_tap; g_mark; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 1; g_tap; sleep 1; g_menu"
+  gmcase gmTwice     menu 14 "g_mark; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.2; adb shell input keyevent KEYCODE_BACK; sleep 0.4; g_menu"
   # (C) a marathon in ONE lock cycle (state that piles up across gestures), then the menu
   gmcase gmMarathon  menu 46 "g_padfling; g_shadehalf; g_tap; g_padhalf; g_qs; g_padslow; g_tap; g_menu"
   # (D) NEGATIVE CONTROL: the cover is switched off (power_mode off): the same film must see the stock Screenshot entry
@@ -5076,7 +5082,7 @@ adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-ke
 HM_EVRE='HOMEPATCH away: another window|RESET (start|cover|notifications|recents)'
 hmquiet(){ local n m s=0 i; n="$(hplog | grep -cE "$HM_EVRE")"; for i in $(seq 1 25); do sleep 2; m="$(hplog | grep -cE "$HM_EVRE")"; if [ "$m" = "$n" ]; then s=$((s+1)); else s=0; n=$m; fi; [ "$s" -ge 3 ] && break; done; }
 hmpath(){ grep -oE 'menu opened \(home\): [a-zA-Z ,]{0,44}|PATCH fast (open|skip: [^(]*)|HOMEPATCH (patch built|stale: the Launcher drew|away: [a-z ]*)' "$OUT/fl-log-$1.txt" 2>/dev/null | sort | uniq -c | tr -s ' ' | tr '\n' ';' | cut -c1-320; }
-hm_menu(){ adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3; }
+hm_menu(){ g_mark; adb shell input keyevent --longpress KEYCODE_POWER; sleep 2.5; adb shell input keyevent KEYCODE_BACK; sleep 3; }
 hm_app(){ adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 2.5; adb shell input keyevent KEYCODE_HOME; }
 hm_drawer(){ adb shell input swipe 300 900 300 300 250; sleep 1.5; adb shell input keyevent KEYCODE_BACK; }
 hm_page(){ adb shell input swipe 500 600 100 600 200; sleep 1; adb shell input swipe 100 600 500 600 200; }
@@ -5084,7 +5090,7 @@ hm_shade(){ adb shell input swipe 300 2 300 700 250; sleep 1.5; adb shell input 
 hm_off(){ adb shell input keyevent KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_WAKEUP; sleep 1.2; adb shell wm dismiss-keyguard >/dev/null 2>&1; }
 hm_tap(){ adb shell input tap 300 600; }
 hmcase(){ # hmcase <label> <film seconds> <event function> <delay s>: a quiet resting home, the film, the event, the delay, the menu, the analysis
-  home; sleep 4; adb logcat -c; flrec "$2" 0.3; eval "$3"; sleep "$4"; hm_menu; flend "$1" menu; }
+  home; sleep 4; adb logcat -c; GM_MARK=""; FL_SEQ_LINES=8; flrec "$2" 0.3; eval "$3"; sleep "$4"; hm_menu; flfrom; flend "$1" menu; FL_FROM=""; flfull "$1"; }
 beat "HM setup"
 adb shell pm grant "$PKG" android.permission.READ_EXTERNAL_STORAGE >/dev/null 2>&1
 HM_ANIM0="$(adb shell settings get global animator_duration_scale | tr -d '\r\n')"
