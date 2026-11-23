@@ -2305,3 +2305,7 @@
 >
 > After that comes the version bump to v0.9.18, then `ship.sh`, the full build and the answer to Tj.
 <!-- sha:938eda482d0e -->
+
+## 2026-11-23T00:54:04Z
+> `ship.sh` is running locally: the full unit suite, lint, the handoff self-test and the versionCode check. I'll read it when it finishes. Run #764 (the `ao,cs2,hf,ul` repeat) was still going at 00:53Z, so I'll check it as well. The full build is dispatched only after both are clean.
+<!-- sha:3cb744d85695 -->
