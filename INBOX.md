@@ -4048,3 +4048,8 @@ Don't waste usage on the settings app or the music app . Only the launcher
 ```
 Checkpoint and save to github any findings immediately in case usage runs out. Another claude session should be able to see any findings you make immediately
 ```
+
+## 2026-11-23T10:01:31Z
+```
+This session's worker process was restarted. If your previous turn was already complete, take no action and wait for the next event. Otherwise, continue from where you left off.
+```
