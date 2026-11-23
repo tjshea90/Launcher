@@ -2295,3 +2295,13 @@
 ## 2026-11-23T00:38:32Z
 > Run #762, the second head sample of the base chain, is also red. That makes two red head runs against one tag run that failed only on a native-crash flake. So I'm treating it as possibly head-specific until the FAIL lines say otherwise, and an agent is reading them now.
 <!-- sha:86c8c688456f -->
+
+## 2026-11-23T00:41:03Z
+> Two confirmation runs are in flight on main: `base,e1` and `ao,cs2,hf,ul`. A timer wakes me at 00:52Z.
+>
+> - **Base chain:** the head matches the tag. Both fail only the E1 check, next to a native crash.
+> - **`ul`:** the UL24 failure in #754 did not reproduce when `ul` ran alone (#760, green), so I'm repeating the chain to confirm.
+> - **`sf`, `ad`, `last`:** all green now.
+>
+> After that comes the version bump to v0.9.18, then `ship.sh`, the full build and the answer to Tj.
+<!-- sha:938eda482d0e -->
