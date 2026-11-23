@@ -1548,14 +1548,49 @@ package:/data/app/com.tj.launcher-1eE4rN6F-je7cB921wmqAA==/base.apk
 
 ## 2026-11-13T16:58:18Z
 ```
-tb8168p1_bsp:/ $ pm grant com.tj.launcher android.permission.WRITE_SECURE_SETT com.tj.launcher android.permission.WRITE_SECURE_SETT                         <INGS; pm grant com.tj.laupermission.WRITE_SECURE_SETTINGS; pm grant com.tj.lau                         <ncher android.permission.ETTINGS; pm grant com.tj.launcher android.permission.                         <DUMP; pm grant com.tj.laulauncher android.permission.DUMP; pm grant com.tj.lau                         <ncher android.permission.on.DUMP; pm grant com.tj.launcher android.permission.                         <CHANGE_CONFIGURATION; pm launcher android.permission.CHANGE_CONFIGURATION; pm                          <grant com.tj.launcher andon.CHANGE_CONFIGURATION; pm grant com.tj.launcher and                         <roid.permission.READ_EXTEpm grant com.tj.launcher android.permission.READ_EXTE                         <RNAL_STORAGE; pm grant coandroid.permission.READ_EXTERNAL_STORAGE; pm grant co                         <m.tj.launcher android.perXTERNAL_STORAGE; pm grant com.tj.launcher android.per                         <mission.PACKAGE_USAGE_STA com.tj.launcher android.permission.PACKAGE_USAGE_STA                         <TS; cmd appops set com.tjpermission.PACKAGE_USAGE_STATS; cmd appops set com.tj                         <.launcher GET_USAGE_STATSSTATS; cmd appops set com.tj.launcher GET_USAGE_STATS                         < allow; cmd appops set co.tj.launcher GET_USAGE_STATS allow; cmd appops set co                         <m.tj.launcher WRITE_SETTIATS allow; cmd appops set com.tj.launcher WRITE_SETTI                         <NGS allow; cmd appops set com.tj.launcher WRITE_SETTINGS allow; cmd appops set                         < com.tj.launcher RUN_IN_BTTINGS allow; cmd appops set com.tj.launcher RUN_IN_B                         <ACKGROUND allow; cmd apposet com.tj.launcher RUN_IN_BACKGROUND allow; cmd appo                         <ps set com.tj.launcher RUN_BACKGROUND allow; cmd appops set com.tj.launcher RU                         <N_ANY_IN_BACKGROUND allowppops set com.tj.launcher RUN_ANY_IN_BACKGROUND allow                         <; cmd appops set com.tj.l RUN_ANY_IN_BACKGROUND allow; cmd appops set com.tj.l                         <auncher ACTIVATE_VPN allolow; cmd appops set com.tj.launcher ACTIVATE_VPN allo                         <w; dumpsys deviceidle whij.launcher ACTIVATE_VPN allow; dumpsys deviceidle whi                         <telist +com.tj.launcher; llow; dumpsys deviceidle whitelist +com.tj.launcher;                          <echo DONE
+tb8168p1_bsp:/ $ pm grant com.tj.launcher android.permission.WRITE_SECURE_SETT
+ com.tj.launcher android.permission.WRITE_SECURE_SETT                         <INGS; pm grant com.tj.lau
+permission.WRITE_SECURE_SETTINGS; pm grant com.tj.lau                         <ncher android.permission.
+ETTINGS; pm grant com.tj.launcher android.permission.                         <DUMP; pm grant com.tj.lau
+launcher android.permission.DUMP; pm grant com.tj.lau                         <ncher android.permission.
+on.DUMP; pm grant com.tj.launcher android.permission.                         <CHANGE_CONFIGURATION; pm 
+launcher android.permission.CHANGE_CONFIGURATION; pm                          <grant com.tj.launcher and
+on.CHANGE_CONFIGURATION; pm grant com.tj.launcher and                         <roid.permission.READ_EXTE
+pm grant com.tj.launcher android.permission.READ_EXTE                         <RNAL_STORAGE; pm grant co
+android.permission.READ_EXTERNAL_STORAGE; pm grant co                         <m.tj.launcher android.per
+XTERNAL_STORAGE; pm grant com.tj.launcher android.per                         <mission.PACKAGE_USAGE_STA
+ com.tj.launcher android.permission.PACKAGE_USAGE_STA                         <TS; cmd appops set com.tj
+permission.PACKAGE_USAGE_STATS; cmd appops set com.tj                         <.launcher GET_USAGE_STATS
+STATS; cmd appops set com.tj.launcher GET_USAGE_STATS                         < allow; cmd appops set co
+.tj.launcher GET_USAGE_STATS allow; cmd appops set co                         <m.tj.launcher WRITE_SETTI
+ATS allow; cmd appops set com.tj.launcher WRITE_SETTI                         <NGS allow; cmd appops set
+ com.tj.launcher WRITE_SETTINGS allow; cmd appops set                         < com.tj.launcher RUN_IN_B
+TTINGS allow; cmd appops set com.tj.launcher RUN_IN_B                         <ACKGROUND allow; cmd appo
+set com.tj.launcher RUN_IN_BACKGROUND allow; cmd appo                         <ps set com.tj.launcher RU
+N_BACKGROUND allow; cmd appops set com.tj.launcher RU                         <N_ANY_IN_BACKGROUND allow
+ppops set com.tj.launcher RUN_ANY_IN_BACKGROUND allow                         <; cmd appops set com.tj.l
+ RUN_ANY_IN_BACKGROUND allow; cmd appops set com.tj.l                         <auncher ACTIVATE_VPN allo
+low; cmd appops set com.tj.launcher ACTIVATE_VPN allo                         <w; dumpsys deviceidle whi
+j.launcher ACTIVATE_VPN allow; dumpsys deviceidle whi                         <telist +com.tj.launcher; 
+llow; dumpsys deviceidle whitelist +com.tj.launcher;                          <echo DONE
+
 Added: com.tj.launcher
 DONE
 ```
 
 ## 2026-11-13T17:01:42Z
 ```
-tb8168p1_bsp:/ $ dumpsys package com.tj.launcher | grep -E "(SECURE_SETTINGS|Dpackage com.tj.launcher | grep -E "(SECURE_SETTINGS|D                         <UMP|CHANGE_CONFIGURATION| grep -E "(SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|                         <EXTERNAL_STORAGE|USAGE_STS|DUMP|CHANGE_CONFIGURATION|EXTERNAL_STORAGE|USAGE_ST                         <ATS): granted=true"; cmd ON|EXTERNAL_STORAGE|USAGE_STATS): granted=true"; cmd                          <appops get com.tj.launche_STATS): granted=true"; cmd appops get com.tj.launche                         <r | grep -E "USAGE_STATS|md appops get com.tj.launcher | grep -E "USAGE_STATS|                         <WRITE_SETTINGS|RUN_|VPN";cher | grep -E "USAGE_STATS|WRITE_SETTINGS|RUN_|VPN";                         < settings get secure enabTS|WRITE_SETTINGS|RUN_|VPN"; settings get secure enab                         <led_accessibility_serviceN"; settings get secure enabled_accessibility_service                         <s; echo DONE
+tb8168p1_bsp:/ $ dumpsys package com.tj.launcher | grep -E "(SECURE_SETTINGS|D
+package com.tj.launcher | grep -E "(SECURE_SETTINGS|D                         <UMP|CHANGE_CONFIGURATION|
+ grep -E "(SECURE_SETTINGS|DUMP|CHANGE_CONFIGURATION|                         <EXTERNAL_STORAGE|USAGE_ST
+S|DUMP|CHANGE_CONFIGURATION|EXTERNAL_STORAGE|USAGE_ST                         <ATS): granted=true"; cmd 
+ON|EXTERNAL_STORAGE|USAGE_STATS): granted=true"; cmd                          <appops get com.tj.launche
+_STATS): granted=true"; cmd appops get com.tj.launche                         <r | grep -E "USAGE_STATS|
+md appops get com.tj.launcher | grep -E "USAGE_STATS|                         <WRITE_SETTINGS|RUN_|VPN";
+cher | grep -E "USAGE_STATS|WRITE_SETTINGS|RUN_|VPN";                         < settings get secure enab
+TS|WRITE_SETTINGS|RUN_|VPN"; settings get secure enab                         <led_accessibility_service
+N"; settings get secure enabled_accessibility_service                         <s; echo DONE
+
       android.permission.PACKAGE_USAGE_STATS: granted=true
       android.permission.WRITE_SECURE_SETTINGS: granted=true
       android.permission.CHANGE_CONFIGURATION: granted=true
@@ -1573,7 +1608,12 @@ tb8168p1_bsp:/ $
 
 ## 2026-11-13T17:04:31Z
 ```
-tb8168p1_bsp:/ $ CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) H=$(pm path com.tj.launcher | head -1 | cut -d: -f2)                          <setsid nohup app_process er | head -1 | cut -d: -f2) setsid nohup app_process                          </system/bin com.tj.launch2) setsid nohup app_process /system/bin com.tj.launch                         <er.ShellServer >/dev/nullss /system/bin com.tj.launcher.ShellServer >/dev/null                         < 2>&1 &
+tb8168p1_bsp:/ $ CLASSPATH=$(pm path com.tj.launcher | head -1 | cut -d: -f2) 
+H=$(pm path com.tj.launcher | head -1 | cut -d: -f2)                          <setsid nohup app_process 
+er | head -1 | cut -d: -f2) setsid nohup app_process                          </system/bin com.tj.launch
+2) setsid nohup app_process /system/bin com.tj.launch                         <er.ShellServer >/dev/null
+ss /system/bin com.tj.launcher.ShellServer >/dev/null                         < 2>&1 &
+
 [1] 16808
 tb8168p1_bsp:/ $ 
 ```
@@ -3647,14 +3687,4 @@ Continue
   
   Item 5 of the brief (the SCREEN_ON `penFastUntil` before `startPenWatch`) is correct. `FAST_FOR_MS` is public, the fast watch is bounded to 600 ms, and I found no defect.
 </agent-message>
-```
-
-## 2026-11-23T06:21:29Z
-```
-A 7 leg parlay was accepted. I like this, how can i quote as many as possible like this
-```
-
-## 2026-11-23T06:22:54Z
-```
-Wrong repo remove and ignore the parlay message
 ```

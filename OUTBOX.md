@@ -2369,17 +2369,3 @@
 > Three audits are running or done for your request (CX1, now in `TASKS.md`). The pencil audit is saved in `research/CX1_AUDIT_PENCIL_2026-11-23.md`. The lock-screen and custom-home audits are still being read. The usage cap that cut them off reset at 03:10Z, and I resumed them. Your answer on the unlocked home is recorded: it keeps the Screenshot button, and nothing changes there.
 >
 > The pencil finding so far: the cover is one plain white window with no pre-creation, and it never matches a dark panel. It hides only after a look or a finger-down. After that I design the gesture-matrix emulator test.
-<!-- sha:9be67086eb0d -->
-
-## 2026-11-23T06:22:02Z
-> I can't answer this properly from this session. It's the Launcher session, and neither `novig` nor `Mirage` is in this container, so I can't see how your quoting works. I haven't acted on it.
->
-> I'm guessing you're quoting parlays as a market maker and a 7-leg one just got hit. Is that right? To help I'd need to know:
-> - **Platform and tooling:** which exchange or API you quote on, and whether you have a bot or script for it. Is that in the `novig` repo?
-> - **Why this one got accepted:** which of the price, the leg mix or the size made it attractive. That decides what "more like this" means.
-> - **Your limits:** how much exposure per parlay and in total you're willing to carry.
->
-> If the quoting code is in `novig`, the cleanest route is a session opened in that repo. I can also attach it here read-only if you ask. I haven't done that, since the Launcher rules say not to push from this session.
->
-> The Launcher gate is still running on GitHub. Nothing is lost, and the run ids are in the latest checkpoint. When you're ready I'll go back to reading the five runs, then ship v0.9.19.
-<!-- sha:39ae08824145 -->
