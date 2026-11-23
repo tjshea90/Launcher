@@ -4839,7 +4839,9 @@ adb shell locksettings clear --old 1234 >/dev/null 2>&1
 adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
 setfeat; setmode custom; rebind; home; sleep 3
 fi # section mu
-FL_ON=0; GM_ON=0; want fl && FL_ON=1; want gm && GM_ON=1
+FL_ON=0; GM_ON=0
+if want fl; then FL_ON=1; fi   # (tools/gate.sh --check reads these two lines)
+if want gm; then GM_ON=1; fi
 if [ "$FL_ON" = 1 ] || [ "$GM_ON" = 1 ]; then # section fl (and gm: the same setup, calibration and film helpers)
 ensurehome
 # ---- BY1 (Tj, 2026-11-12 17:26 UTC): "test the screenshot button cover in many different circumstances for speed and effectiveness. It should cover the screenshot button without flicker or delay, whether from the
