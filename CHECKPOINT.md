@@ -1,13 +1,13 @@
-# CHECKPOINT 1632 — read me first, then TASKS.md
+# CHECKPOINT 1633 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T02:51:41Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `c0a80247` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T03:16:17Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `011841c6` (this checkpoint is the commit after it)
 
 ## Just done
-CX1a: 3 read-only audit subagents launched 02:55Z (lock a7429c983f586954f, home a540f57043d755095, pencil aba525140b4babd46); outputs land as notifications, read-only, neutral briefs; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A armed
+CX1a: usage cap (reset 03:10Z) killed the 3 audit subagents at ~02:57Z; Tj typed Continue 03:15Z; all three RESUMED via SendMessage 03:17Z (lock a7429c983f586954f, home a540f57043d755095, pencil aba525140b4babd46); send_later for 03:12 failed (past), not needed
 
 ## Do this next
-when the 3 reports arrive: save each verbatim-ish into research/CX1_AUDIT_{LOCK,HOME,PENCIL}_2026-11-23.md (facts + GAPS), ckpt; then design emulator section gm (gesture matrix) from existing helpers (section ae/fl/pt/hf in tools/emulator_scenario.sh, tools/pb_probe.py, tools/fl_analyze.py): per gesture -> power menu -> frame -> Screenshot spot covered?; negative control; compare with TAG v0.9.18; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
+reports arrive as notifications; save to research/CX1_AUDIT_{LOCK,HOME,PENCIL}_2026-11-23.md; meanwhile read emulator_scenario.sh helpers ptrun (line ~2394), hfrun (~3378), aefeat/aelock (~1966) and tools/pb_probe.py header to design section gm; heartbeat trig_01GoGsAi9y4N2PpYgaAmbk6A
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ when the 3 reports arrive: save each verbatim-ish into research/CX1_AUDIT_{LOCK,
 
 ## Last ten checkpoints
 ```
+  d8282c26 ckpt 1632: CX1a: 3 read-only audit subagents launched 02:55Z (lock a7429c983f586954f, h
   c0a80247 ckpt 1631: CX1: heartbeat armed trig_01GoGsAi9y4N2PpYgaAmbk6A (every 2 h at :48)
   42045723 ckpt 1630: CX1 request written into TASKS (Tj 02:45Z: lock + home screenshot-button pat
   5a3aaa3f ckpt 1629: CW1 SHIPPED: Launcher v0.9.18 (code 57) published 01:12Z (android.yml run 59
@@ -25,5 +26,7 @@ when the 3 reports arrive: save each verbatim-ish into research/CX1_AUDIT_{LOCK,
   d7876e0a ckpt 1625: CW1 00:57Z: ship.sh v0.9.18 (code 57) EXIT 0 (suite+lint+handoff green), NOT
   c3f00ded ckpt 1624: gated v0.9.18 (code 57) and pushed it: the handoff self-test, the full unit 
   ef3504c1 ckpt 1623: CW1 RAW 00:54Z: #763 45090010377 main base,e1 GREEN (E1 passes on head). #76
-  4de58d41 ckpt 1622: CW1 READ 00:41Z: #762 head base,legacy,e1,y2,b4,lq = 68P 1F: ONLY E1 'Delete
 ```
+
+(2 automatic checkpoint(s) since the last deliberate one — the
+session was still mid-step. `git diff` against it shows what changed.)
