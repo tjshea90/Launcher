@@ -319,6 +319,15 @@ public final class HomePatchRules {
      */
     public static final long FOCUS_TOLERANCE_MS = 450;
 
+    /**
+     * CX1c (emulator run #777, hmShade1: the stock dialog was shown twice 0.9 s apart, the second opening found "focus lost 523 ms before the dialog", took it for a shade and the full card came 335 ms late): a loss of
+     * the Launcher's window focus that came within {@link #FOCUS_TOLERANCE_MS} of a stock power dialog's own window event (either order) belongs to that dialog; a LATER dialog event while the focus has not come
+     * back is a re-opening, not a shade. 0 = unknown.
+     */
+    public static boolean lossOwnedByDialog(long focusLostAtMs, long dialogEventMs) {
+        return focusLostAtMs > 0 && dialogEventMs > 0 && Math.abs(focusLostAtMs - dialogEventMs) <= FOCUS_TOLERANCE_MS;
+    }
+
     /** The Launcher counts as having the focus at an opening: it has it, or it lost it within {@link #FOCUS_TOLERANCE_MS} of {@code refMs} (the dialog's own event time, else now). {@code focusLostAtMs} 0 = never lost. */
     public static boolean launcherFocus(boolean hasFocus, long focusLostAtMs, long refMs) {
         return hasFocus || (focusLostAtMs > 0 && focusLostAtMs >= refMs - FOCUS_TOLERANCE_MS);

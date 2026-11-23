@@ -373,4 +373,14 @@ public class HomePatchRulesTest {
         long now = 100_000, finger = now - 100;   // a real touch 100 ms ago is 600 ms from its end: longer than the settle time
         assertEquals(600, HomePatchRules.waitMs(now, Math.max(finger, HomePatchRules.settleAsTouchMs(now)), 0));
     }
+
+    // CX1c: a focus loss within the tolerance of a stock dialog's own event (either order) is the dialog's; unknown times never count
+    @Test public void cx1FocusLossOwnedByTheDialogInEitherOrder() {
+        assertTrue(HomePatchRules.lossOwnedByDialog(1000, 1100));
+        assertTrue(HomePatchRules.lossOwnedByDialog(1100, 1000));
+        assertTrue(HomePatchRules.lossOwnedByDialog(1000, 1000 + HomePatchRules.FOCUS_TOLERANCE_MS));
+        assertFalse(HomePatchRules.lossOwnedByDialog(1000, 1001 + HomePatchRules.FOCUS_TOLERANCE_MS));   // a shade that took the focus long before the dialog
+        assertFalse(HomePatchRules.lossOwnedByDialog(0, 1000));
+        assertFalse(HomePatchRules.lossOwnedByDialog(1000, 0));
+    }
 }

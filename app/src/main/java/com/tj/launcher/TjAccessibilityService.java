@@ -134,6 +134,7 @@ public class TjAccessibilityService extends AccessibilityService {
         if (cn == null || !cn.toString().contains("ActionsDialog")) return;
         long now = android.os.SystemClock.uptimeMillis();
         dialogEventMs = event.getEventTime();
+        if (HomePatchRules.lossOwnedByDialog(homeFocusLostAtMs, dialogEventMs)) homeLossOwned = true;   // CX1c: the loss came first, this dialog event within the tolerance after it
         menuClosedAtMs = 0;                     // BN2: the dialog announced itself: a NEW opening, not the dying one of a close (evaluateScan)
         dialogWindowId = event.getWindowId();   // BC2: the removal of THIS window ends the fade-out (dialogGone)
         String why = fastDecline();
@@ -874,7 +875,8 @@ public class TjAccessibilityService extends AccessibilityService {
     void homeFocusChanged(boolean has) {
         try {
             long up = android.os.SystemClock.uptimeMillis();
-            if (!has) { homeFocusLostAtMs = up; return; }   // BT1c: when the Launcher lost the focus (the shade, a dialog, the stock power menu itself): homeOpenTreatment tells those apart
+            if (!has) { homeFocusLostAtMs = up; homeLossOwned = HomePatchRules.lossOwnedByDialog(up, dialogEventMs); return; }   // BT1c: when the Launcher lost the focus (the shade, a dialog, the stock power menu itself): homeOpenTreatment tells those apart
+            homeLossOwned = false;   // CX1c: the focus is back
             if (patchView != null && patchHomeMode && !overlayShown) {
                 if (homeFocusLostAtMs > 0 && up - homeFocusLostAtMs >= HomePatchRules.FOCUS_BLIP_MS) homeSettleTouchMs = HomePatchRules.settleAsTouchMs(up);   // CX1c (review): ANY real loss of the focus (a shade held open for 5 s has no guard left): the resting patch waits for the closing window
                 if (HomePatchRules.recheck(true, homeForeignUntilMs, homeForeignProvisionalUntilMs) == HomePatchRules.RECHECK_LIFT) { handler.removeCallbacks(homeForeignRecheck); homeForeignLift(); }   // BN2: the focus is back while the guard was only provisional: the keyguard is gone
@@ -890,6 +892,7 @@ public class TjAccessibilityService extends AccessibilityService {
     }
 
     private long homeFocusLostAtMs = 0;       // uptime of the Launcher window's last loss of the focus
+    private boolean homeLossOwned = false;    // CX1c: that loss came with a stock power dialog's own event (HomePatchRules.lossOwnedByDialog): a second dialog event before the focus is back is a re-opening
     private boolean homeOpenStale = false;    // BT1c: THIS opening of the stock menu shows a patch that was not fresh (decided once, in homeOpenDecide)
     private String homeOpenLogLine = "";
 
@@ -919,7 +922,7 @@ public class TjAccessibilityService extends AccessibilityService {
         long now = android.os.SystemClock.uptimeMillis();
         long ref = dialogEventMs > 0 && now - dialogEventMs < 1000 ? dialogEventMs : now;
         homeFocusGapMs = homeFocusLostAtMs > 0 ? ref - homeFocusLostAtMs : -1;
-        return l != null && HomePatchRules.launcherFocus(l.hasWindowFocus(), homeFocusLostAtMs, ref);
+        return l != null && (HomePatchRules.launcherFocus(l.hasWindowFocus(), homeFocusLostAtMs, ref) || homeLossOwned);
     }
 
     /** BT1c: why the home patch is not fresh right now, in words and numbers (the log line of every press that finds it so). */
