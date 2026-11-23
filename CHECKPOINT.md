@@ -1,17 +1,13 @@
-# CHECKPOINT 1624 — read me first, then TASKS.md
+# CHECKPOINT 1625 — read me first, then TASKS.md
 
-**Written:** 2026-11-23T00:56:30Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `17af4d97` (this checkpoint is the commit after it)
+**Written:** 2026-11-23T00:58:01Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/dazzling-hawking-b7qz0b` · **builds on:** `c3f00ded` (this checkpoint is the commit after it)
 
 ## Just done
-gated v0.9.18 (code 57) and pushed it: the handoff self-test, the full unit suite + lint
-and the versionCode check all passed here. NOT yet built - GitHub has not been asked.
+CW1 00:57Z: ship.sh v0.9.18 (code 57) EXIT 0 (suite+lint+handoff green), NOT built yet. #764 45090013546 (main ao,cs2,hf,ul 2nd sample) RED job 137417224744, FAILs unread
 
 ## Do this next
-TRIGGER THE BUILD: mcp__github__actions_run_trigger, method run_workflow, workflow
-android.yml, ref main, inputs {"full_build": "true"}. When that run is green,
-confirm the Release is published (get_release_by_tag is enough) and then run:
-  bash tools/record-release.sh v0.9.18 "CW1: speed + resources audit fixes (profile ready earlier, first home patch composite sooner, no pencil search before the dialog event, idle threads time out, hidden-app icons not cached), stock-launcher bookkeeping counts only what can pin; no behaviour removed"
+haiku: FAIL lines of job 137417224744; if only UL24 + native crash again => solo ul green on head+tag => accept; else investigate; then android.yml full_build=true ref main; heartbeat trig_01DN2e1WG9kDhpHMtsFee1Lb
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -20,6 +16,7 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
 
 ## Last ten checkpoints
 ```
+  c3f00ded ckpt 1624: gated v0.9.18 (code 57) and pushed it: the handoff self-test, the full unit 
   ef3504c1 ckpt 1623: CW1 RAW 00:54Z: #763 45090010377 main base,e1 GREEN (E1 passes on head). #76
   4de58d41 ckpt 1622: CW1 READ 00:41Z: #762 head base,legacy,e1,y2,b4,lq = 68P 1F: ONLY E1 'Delete
   3987ecf1 ckpt 1621: CW1 RAW 00:38Z: #762 45087708823 (head, base,legacy,e1,y2,b4,lq, 2nd sample)
@@ -29,8 +26,4 @@ confirm the Release is published (get_release_by_tag is enough) and then run:
   99497a36 ckpt 1617: CW1 SF2/SF3 under unified = test premise: StockForceStop.sessionWeight(unifi
   2fe4dce4 ckpt 1616: CW1 RERUN READ 00:20Z (subagent): #753 base,legacy,e1,y2,b4,lq 63P 6F no nat
   c98e317f ckpt 1615: CW1 RERUN RAW 00:11Z: #756 ad,ps(no unified) GREEN; #757 unified,last GREEN 
-  52a775bb ckpt 1614: CW1 RERUNS on main (product diff vs gated 880732c8 EMPTY, only scenario sf l
 ```
-
-(3 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
