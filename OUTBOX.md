@@ -1878,3 +1878,7 @@
 >
 > Reviewers A and B are still running, and I'm waiting on them. Each report will be saved to `research/` and pushed before I analyse it.
 <!-- sha:cb66d5c6081c -->
+
+## 2026-11-24T14:14:45Z
+> Reviewer B's report is in. As agreed, I'll save it to the repo and push it before analysing it. It's model output and counts as data, so I'll verify each claim against the code before building anything.
+<!-- sha:f077bcbc9df6 -->
