@@ -1897,7 +1897,9 @@ public class TjAccessibilityService extends AccessibilityService {
             if (locked) ProcessLife.noteLock(app);   // BG1: at what priority does Android hold this process while the tablet is locked? (one sample a minute; the report prints it)
             if (locked && !paused) lockQuietNow(why);   // AK1: on the lock screen Wi-Fi and Bluetooth are off, from any launcher (what was on is remembered for a gesture unlock); AW2: and the quick settings show the rotation tile only
             boolean cleanedNow = false;
-            if (locked && !armed && ProfileSession.preCleanAtLock(ProfileSession.preClean(app), Mode.isCustom(app), paused, true, false, ReturnReset.invisibleReady(app), preCleanedThisLock)) {
+            final boolean customAtLock = Mode.isCustom(app);
+            // CY1 B2: preCleanAtLock is false whenever the mode is custom (ProfileSessionTest), so the helper ping (a thread + up to 5 failed connects, cache miss 4 s after the last look) is only paid when the answer can matter
+            if (locked && !armed && !customAtLock && ProfileSession.preCleanAtLock(ProfileSession.preClean(app), customAtLock, paused, true, false, ReturnReset.invisibleReady(app), preCleanedThisLock)) {
                 if (ReturnReset.cleanAtLock(app)) {
                     preCleanedThisLock = true; cleanedNow = true;
                     qsApp = null;     // AD5: the helper closed the apps: nothing is left to come back to
@@ -1994,7 +1996,9 @@ public class TjAccessibilityService extends AccessibilityService {
     private void coverAtEnter() {
         try {
             android.content.Context app = getApplicationContext();
-            if (!ProfileSession.coverAtEnter(Mode.isCustom(app), CrashGuard.automationOff(app), false, ReturnReset.mayHaveWork(app), Features.get(app, ReturnReset.COVER_KEY, true))) return;
+            final boolean customAtEnter = Mode.isCustom(app), pausedAtEnter = CrashGuard.automationOff(app);
+            if (!ProfileSession.plainUnlockEndsQuickstep(customAtEnter, pausedAtEnter)) return;   // CY1 B3: coverAtEnter is false in custom mode / when paused (ProfileSessionTest): skip the helper ping inside mayHaveWork
+            if (!ProfileSession.coverAtEnter(customAtEnter, pausedAtEnter, false, ReturnReset.mayHaveWork(app), Features.get(app, ReturnReset.COVER_KEY, true))) return;
             showResetCover();
             handler.removeCallbacks(coverCheck);
             handler.postDelayed(coverCheck, 1800);
@@ -4398,7 +4402,7 @@ public class TjAccessibilityService extends AccessibilityService {
         // NO Home press here: on the slow tablet it landed AFTER the app start and covered it.
         handler.postDelayed(new Runnable() { @Override public void run() {
             resetReport.append("took ").append(android.os.SystemClock.uptimeMillis() - t0).append(" ms\n");
-            Features.setString(TjAccessibilityService.this, RESET_REPORT_KEY, resetReport.toString());
+            Features.setStringAsync(TjAccessibilityService.this, RESET_REPORT_KEY, resetReport.toString());   // CY1 B1: a diagnostic line: apply() (same in-process value at once), no fsync of the whole features file before the cover goes
             try { done.run(); } catch (Throwable t) { Log.e(TAG, "reset done failed", t); }
         } }, ReturnReset.fastActive ? 15 : 40);
     }
@@ -4414,7 +4418,7 @@ public class TjAccessibilityService extends AccessibilityService {
 
     public void appendReport(String line) {
         resetReport.append(line).append("\n");
-        Features.setString(this, RESET_REPORT_KEY, resetReport.toString());
+        Features.setStringAsync(this, RESET_REPORT_KEY, resetReport.toString());   // CY1 B1: see finishReset
     }
 
     /** Presses the first clickable node whose text starts with {@code label}, but ONLY inside windows of the given system packages (never in another app). */

@@ -234,9 +234,9 @@ public final class ReturnReset {
                 AnimationSpeedup.restoreLater(app, clean ? 2000 : (fast ? 700 : 0)); } }); return; }   // BF1: a clean start releases the animations the moment the custom home is in front (TjAccessibilityService.settleHome, or its own 1.5 s timeout); this timer is only the backstop. The Solitaire flow keeps its 700 ms
             catch (Throwable t) { Log.e(TAG, "accessibility reset failed, using the simple reset", t); svc.hideResetCover(); }
         } else if (svc == null && (notif || recents)) {
-            Features.setString(app, TjAccessibilityService.RESET_REPORT_KEY, "Accessibility helper is OFF: notifications and Recents were NOT cleared (turn it on in Accessibility settings).");
+            Features.setStringAsync(app, TjAccessibilityService.RESET_REPORT_KEY, "Accessibility helper is OFF: notifications and Recents were NOT cleared (turn it on in Accessibility settings).");
         } else {
-            Features.setString(app, TjAccessibilityService.RESET_REPORT_KEY, "Both Clear all switches are OFF.");
+            Features.setStringAsync(app, TjAccessibilityService.RESET_REPORT_KEY, "Both Clear all switches are OFF.");
         }
         if (notif) { try { clearNotifications(); } catch (Throwable t) { Log.e(TAG, "notifications failed", t); } }
         try { if (clean) settleHome(app); else openApp(app); } catch (Throwable t) { Log.e(TAG, "open app failed", t); }
@@ -535,7 +535,7 @@ public final class ReturnReset {
     private static void report(Context c, String line) {
         TjAccessibilityService svc = TjAccessibilityService.get();
         if (svc != null) svc.appendReport(line);
-        else Features.setString(c, TjAccessibilityService.RESET_REPORT_KEY, line);
+        else Features.setStringAsync(c, TjAccessibilityService.RESET_REPORT_KEY, line);
         Log.i(TAG, line);
     }
 }

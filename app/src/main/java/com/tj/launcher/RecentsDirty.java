@@ -16,7 +16,7 @@ public final class RecentsDirty {
     private static SharedPreferences p(Context c) { return c.getApplicationContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE); }
     public static boolean isDirty(Context c) { return p(c).getBoolean("dirty", true); }
     public static void mark(Context c) { if (!isDirty(c)) p(c).edit().putBoolean("dirty", true).commit(); }
-    public static void clear(Context c) { p(c).edit().putBoolean("dirty", false).commit(); }
+    public static void clear(Context c) { p(c).edit().putBoolean("dirty", false).apply(); }   // CY1 B1: in-memory value at once; a lost write leaves "dirty" = one redundant Recents step (the safe direction); mark() keeps commit()
 
     /** BN8e: at most one DIRTY line per package per minute in the lock log (ordinary use of Quickstep apps wrote about six a minute and pushed everything else out of the report's excerpt). */
     public static final long LOG_GAP_MS = 60_000L;
