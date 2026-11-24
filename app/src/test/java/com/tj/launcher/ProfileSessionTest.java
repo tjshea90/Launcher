@@ -63,6 +63,27 @@ public class ProfileSessionTest {
         assertFalse(ProfileSession.preCleanAtLock(true, false, false, true, false, true, true));      // done already this lock
     }
 
+    /**
+     * CY1 B2 / B3 (2026-11-24): TjAccessibilityService.lockPrepare and coverAtEnter skip the shell-helper ping (the expensive ARGUMENT of these two rules) when the mode is custom.
+     * That is only equivalent if the rules are false for EVERY other input in custom mode. Exhaustive truth table; plainUnlockEndsQuickstep is the first term of coverAtEnter.
+     */
+    @Test public void customModeMakesPreCleanAndCoverFalseForEveryOtherInput_soTheHelperPingMaySkip() {
+        for (int m = 0; m < 64; m++) {
+            boolean enabled = (m & 1) != 0, paused = (m & 2) != 0, locked = (m & 4) != 0, armed = (m & 8) != 0, ready = (m & 16) != 0, done = (m & 32) != 0;
+            assertFalse("preCleanAtLock must be false in custom mode, m=" + m, ProfileSession.preCleanAtLock(enabled, true, paused, locked, armed, ready, done));
+        }
+        for (int m = 0; m < 8; m++) {
+            boolean paused = (m & 1) != 0, handshake = (m & 2) != 0, cover = (m & 4) != 0;
+            assertFalse(ProfileSession.plainUnlockEndsQuickstep(true, paused));
+            for (int w = 0; w < 2; w++) assertFalse("coverAtEnter must be false in custom mode, m=" + m, ProfileSession.coverAtEnter(true, paused, handshake, w == 1, cover));
+        }
+        // and the guard is exactly the first term: whenever plainUnlockEndsQuickstep is false, coverAtEnter is false whatever the rest says
+        for (int m = 0; m < 32; m++) {
+            boolean custom = (m & 1) != 0, paused = (m & 2) != 0, handshake = (m & 4) != 0, work = (m & 8) != 0, cover = (m & 16) != 0;
+            if (!ProfileSession.plainUnlockEndsQuickstep(custom, paused)) assertFalse(ProfileSession.coverAtEnter(custom, paused, handshake, work, cover));
+        }
+    }
+
     // ---- AC9 (v0.7.3): the gesture's choice always wins
     @Test public void aHandshakeAlwaysStartsQuickstepBehindTheLockWhateverThePrearmSwitchSays() { assertTrue(ProfileSession.stockBehindLockOnHandshake()); }
     @Test public void quickstepIsStartedAgainOnlyWhenOurLauncherOrTheStandInIsInFront() {
