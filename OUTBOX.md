@@ -1886,3 +1886,7 @@
 ## 2026-11-24T14:27:29Z
 > The gate run (#794, id 45413130411) is in progress and should finish around 14:45 UTC. A background timer will wake me at 14:47. Then I'll read the RESULTS block and checkpoint the raw verdict before analysing it.
 <!-- sha:31f06afc505e -->
+
+## 2026-11-24T14:51:40Z
+> The first-run failures have two parts. B4 was my own run composition (missing `y2`). CS-B2 is the on-screen Recents clear with no helper. Its log said "no Clear all button and no card with a Close action found", and a NATIVE CRASH had landed in the section just before. I'm not calling it a flake yet. The rerun `base,y2,b4,o,cs` should end around 15:03 UTC, and the timer wakes me at 15:06.
+<!-- sha:1abe27545926 -->
