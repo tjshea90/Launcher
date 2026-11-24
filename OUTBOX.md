@@ -1872,3 +1872,9 @@
 > - **Saved on GitHub:** `research/CY1_STATE_2026-11-23.md`, the reviewer brief and `CHECKPOINT.md` (checkpoint 1681).
 > - **Product code:** Still untouched. Anything I change must be provably no slower and no less functional, and lock-screen code stays alone unless the change is trivially safe.
 <!-- sha:2a066f74ca2e -->
+
+## 2026-11-24T14:06:31Z
+> The push is done: the branch has no unpushed commits, and `main` on GitHub equals my local tip (`6e2d0d4e`). The hook fired on an automatic checkpoint commit that the autosave had already pushed.
+>
+> Reviewers A and B are still running, and I'm waiting on them. Each report will be saved to `research/` and pushed before I analyse it.
+<!-- sha:cb66d5c6081c -->
