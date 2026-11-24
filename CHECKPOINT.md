@@ -1,13 +1,13 @@
-# CHECKPOINT 1685 — read me first, then TASKS.md
+# CHECKPOINT 1686 — read me first, then TASKS.md
 
-**Written:** 2026-11-24T14:22:23Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/serene-lamport-wib3wy` · **builds on:** `0847c754` (this checkpoint is the commit after it)
+**Written:** 2026-11-24T14:24:28Z · **tests:** all 11 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/serene-lamport-wib3wy` · **builds on:** `0ecbff31` (this checkpoint is the commit after it)
 
 ## Just done
-CY1c: emulator gate DISPATCHED 14:22Z on head 0847c754 (product diff vs v0.9.19 = 4 files +33/-8: B1 B2 B3), sections base,b4,o,cs only (v0.9.7 small-change precedent; gate.sh table would need 4 runs/91 min, NOT run: e1 n n6 lq pf gm pk uf fp rt rb fl last x1 y2 cs2 wf pm rg); targeted JVM tests GREEN (ProfileSessionTest incl. new exhaustive test, RecentsDirtyTest, ReportStateTest)
+CY1c: gate run id 45413130411 (#794, emulator.yml base,b4,o,cs, head 0847c754) in progress since 14:21Z
 
 ## Do this next
-find the run id (list_workflow_runs emulator.yml branch claude/serene-lamport-wib3wy event workflow_dispatch perPage 1), wait ~22 min with a bounded until loop, read RESULTS (get_job_logs tail 60); green => bump version 0.9.20 code 59, bash ship.sh, android.yml full_build=true, record-release.sh, write BUILDLOG/TASKS skipped-sections note; red => compare solo on tag v0.9.19 before touching code. Heartbeat trig_01DkASxm8hLzwAL447MmJQnA
+wait until ~14:47Z (bounded loop), then get_job_logs run_id 45413130411 failed_only=true tail_lines 60 (No failed jobs = green); ckpt the raw verdict BEFORE analysing; green => bump 0.9.20 code 59, ship.sh, android.yml full_build, record-release. Heartbeat trig_01DkASxm8hLzwAL447MmJQnA
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ find the run id (list_workflow_runs emulator.yml branch claude/serene-lamport-wi
 
 ## Last ten checkpoints
 ```
+  0ecbff31 ckpt 1685: CY1c: emulator gate DISPATCHED 14:22Z on head 0847c754 (product diff vs v0.9
   0847c754 ckpt 1684: CY1c batch 1 CODED (not yet tested/released): B1 reset-report writes + Recen
   c8cadcaa ckpt 1683: CY1: reviewer A report SAVED research/CY1_AUDIT_A_2026-11-23.md: new code si
   27dfd2ec ckpt 1682: CY1: reviewer B report SAVED research/CY1_AUDIT_B_2026-11-23.md (22 ids: 5 a
@@ -25,5 +26,4 @@ find the run id (list_workflow_runs emulator.yml branch claude/serene-lamport-wi
   5bbdf093 ckpt 1678: CY1: findings so far saved (research/CY1_STATE_2026-11-23.md): 5th perf pass
   1e4abffb ckpt 1677: CY1s: Tj narrows scope: launcher only, no Settings look-alike, no music app;
   96a1fa98 ckpt 1676: CY1: Tj asks for a speed / RAM / CPU audit (no behaviour change allowed); TA
-  cf06c9bd ckpt 1675: CX1 DONE: heartbeat trig_012EemLoDGk8vy7vUJX1T3Qk DELETED 07:47Z (job shippe
 ```
