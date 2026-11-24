@@ -1890,3 +1890,7 @@
 ## 2026-11-24T14:51:40Z
 > The first-run failures have two parts. B4 was my own run composition (missing `y2`). CS-B2 is the on-screen Recents clear with no helper. Its log said "no Clear all button and no card with a Close action found", and a NATIVE CRASH had landed in the section just before. I'm not calling it a flake yet. The rerun `base,y2,b4,o,cs` should end around 15:03 UTC, and the timer wakes me at 15:06.
 <!-- sha:1abe27545926 -->
+
+## 2026-11-24T15:07:47Z
+> Run #795 is green and the version is bumped to 0.9.20 (code 59). `ship.sh` is running in the background: handoff test, full unit suite, lint, then push. I'll read its exit marker when it finishes.
+<!-- sha:96c2efa536a7 -->
