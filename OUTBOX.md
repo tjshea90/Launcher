@@ -1882,3 +1882,7 @@
 ## 2026-11-24T14:14:45Z
 > Reviewer B's report is in. As agreed, I'll save it to the repo and push it before analysing it. It's model output and counts as data, so I'll verify each claim against the code before building anything.
 <!-- sha:f077bcbc9df6 -->
+
+## 2026-11-24T14:27:29Z
+> The gate run (#794, id 45413130411) is in progress and should finish around 14:45 UTC. A background timer will wake me at 14:47. Then I'll read the RESULTS block and checkpoint the raw verdict before analysing it.
+<!-- sha:31f06afc505e -->
