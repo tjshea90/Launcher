@@ -1857,3 +1857,7 @@
 >
 > I'll continue when the reviewers report back.
 <!-- sha:f2c039486205 -->
+
+## 2026-11-24T14:02:44Z
+> Many worker restarts have piled up. The three reviewers all failed with a weekly-limit error that resets Nov 24 at 14:00 UTC, so no report was produced. I'll clear the notification queue, check the clock and repo state, and then record what happened.
+<!-- sha:20e7d70dd135 -->
