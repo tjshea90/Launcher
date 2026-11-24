@@ -1861,3 +1861,14 @@
 ## 2026-11-24T14:02:44Z
 > Many worker restarts have piled up. The three reviewers all failed with a weekly-limit error that resets Nov 24 at 14:00 UTC, so no report was produced. I'll clear the notification queue, check the clock and repo state, and then record what happened.
 <!-- sha:20e7d70dd135 -->
+
+## 2026-11-24T14:06:16Z
+> Both reviewers are running and I've saved everything so far. I'm ending this turn to wait. Each report will wake me when it lands, and I'll commit it before analysing it.
+>
+> **Where things stand:**
+> - **Weekly limit:** All three reviewers from yesterday died on your weekly usage limit, which reset at 14:00 UTC today. No report came from them, and the heartbeat's wake-ups sat unread until the reset. Nothing in the code changed.
+> - **Cost saving:** I relaunched only two reviewers, one for code written since v0.9.12 and one that re-checks the still-open items from earlier audits. I skipped the Launcher3 fork reviewer because it was audited a week ago and barely changed since.
+> - **Already checked, nothing to fix:** The manifest is clean. There are no extra processes except the short-lived wallpaper picker, no eager services, `largeHeap` is off on this tablet, and the keep-alive service does no work.
+> - **Saved on GitHub:** `research/CY1_STATE_2026-11-23.md`, the reviewer brief and `CHECKPOINT.md` (checkpoint 1681).
+> - **Product code:** Still untouched. Anything I change must be provably no slower and no less functional, and lock-screen code stays alone unless the change is trivially safe.
+<!-- sha:2a066f74ca2e -->
