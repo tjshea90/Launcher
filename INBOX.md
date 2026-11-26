@@ -4257,3 +4257,13 @@ This session's worker process was restarted. If your previous turn was already c
   
 </agent-message>
 ```
+
+## 2026-11-26T23:58:01Z
+```
+Tidy and improve this Claude Code setup for Android app building. I have uploaded a plugin called tj-android-kit (Android building, design, testing and debugging skills, including low-memory Android 10 Go tablets). Please do this in order and tell me results in plain words:
+1. Check that the tj-android-kit skills are in your skill list. If they are not, say so.
+2. Run: echo "$ANDROID_HOME"; ls "$ANDROID_HOME/platforms". Then build this project and its tests. If something fails because a download is blocked, tell me the exact domain to add to the environment's allowed domains.
+3. Look at this repository's CLAUDE.md, .claude/ folder and skills. Remove or shorten what is out of date, duplicated or wasteful. Add a short section to CLAUDE.md: which tj-android-kit skill to load before which kind of work, and that this repository's rules win over any skill. Keep my existing standing rules.
+4. List every plugin, skill and connector that is loaded in this session and that this project has no use for, so I can switch them off on claude.ai. Do not install anything that costs money, sends data out of the repository or changes my accounts.
+5. Commit your changes to a new branch and tell me what you changed.
+```
