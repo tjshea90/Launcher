@@ -6309,6 +6309,20 @@ home
 prstart recents
 adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3
 prstop
+# 8b. the unlock with a PIN (the path Tj feels most): PIN set, screen off / on, swipe up, the four digits, Enter; the service sees SystemUI's PIN-pad events
+adb shell locksettings set-pin 1234 >/dev/null 2>&1
+prstart unlock
+adb shell input keyevent KEYCODE_POWER; sleep 2; adb shell input keyevent KEYCODE_WAKEUP; sleep 3; adb shell input swipe 300 900 300 300 300; sleep 2
+adb shell input tap 177 628; sleep 0.4; adb shell input tap 300 628; sleep 0.4; adb shell input tap 424 628; sleep 0.4; adb shell input tap 177 714; sleep 0.4; adb shell input tap 424 886; sleep 4
+prstop
+info "PR unlock: keyguard afterwards $(kg_state)"
+adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1; home
+# 8c. the stock power menu (side key held) on the home screen: the service's scans and the patch logic, then closed
+prstart powermenu
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 2
+adb shell input keyevent --longpress KEYCODE_POWER; sleep 3; adb shell input keyevent KEYCODE_BACK; sleep 2
+prstop
+home
 # 9. where things stand after all that
 prmem end
 info "PR threads at the end: $(adb shell "for t in /proc/$PRPID/task/*; do cat \$t/comm; done" 2>/dev/null | tr -d '\r' | sed -E 's/[0-9]+/#/g' | sort | uniq -c | sort -rn | head -14 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
@@ -6317,6 +6331,64 @@ info "PR apk: $(adb shell ls -l $(adb shell pm path "$PKG" | head -1 | cut -d: -
 grep -E 'INFO  PR ' "$OUT/results.txt" > "$OUT/pr-summary.txt"
 setmode custom; home
 fi # section pr
+
+if want pr2; then # section pr2
+# ---- DA1 (Tj, 2026-11-27): how much is a COMPILED launcher worth? The baseline profile that ships in the release APK lists methods (about 11 400 of 55 200) but only 4 CLASSES (the class list decides the app image: classes
+#      preloaded at start). This section measures the cold start of our launcher three ways on the emulator: (1) as installed (status verify, no compiled code), (2) after `cmd package compile -m speed-profile -f` from the profile the
+#      RUNTIME collected while the scripted interactions ran (an upper bound for "a good profile": real classes AND methods, so an app image is built), (3) after `-m speed` (everything compiled). It also dumps the runtime profile
+#      (classes + methods, text) as pr-profile.txt so a precise class list can be made from it. Research only, zero checks. x86 + fast host CPU: the RATIOS carry over to the tablet, the milliseconds do not.
+beat "before PR2"
+adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
+ensurehome; setmode custom; rebind
+pr2nobounce(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+  local f="$OUT/pr2-l3prefs.xml"
+  adb shell "run-as $PKG cat shared_prefs/com.android.launcher3.prefs.xml" 2>/dev/null | tr -d '\r' > "$f"
+  grep -q '<map' "$f" || printf '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<map>\n</map>\n' > "$f"
+  sed -i 's#<map />#<map>\n</map>#' "$f"
+  grep -q 'launcher.apps_view_shown' "$f" || sed -i 's#</map>#    <boolean name="launcher.apps_view_shown" value="true" />\n</map>#' "$f"
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
+}
+pr2state(){ adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'status=' | head -1 | tr -s ' '; }
+pr2files(){ local d; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"; adb shell "ls -l $d/oat/x86/ 2>/dev/null" | tr -d '\r' | awk 'NF>=8{printf "%s=%s ", $NF, $5}'; }
+pr2cold(){ # pr2cold <tag>: three cold starts (force-stop, start HOME, wait for the first frame): TotalTime of each
+  local i t out=""
+  for i in 1 2 3; do
+    adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 2
+    t=$(adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME 2>&1 | tr -d '\r' | grep -m1 TotalTime | grep -o '[0-9]*')
+    out="$out ${t:-?}"; sleep 5
+  done
+  info "PR2 cold start $1 (am start -W TotalTime ms, three runs):$out; $(pr2state); files: $(pr2files)"
+}
+pr2use(){ # the scripted use that fills the runtime profile: home, drawer + flings, an app and back, the shade, Recents
+  home; sleep 3
+  adb shell input swipe 300 900 300 200 400; sleep 2.5
+  for i in 1 2 3; do adb shell input swipe 300 800 300 200 150; sleep 1; done
+  adb shell input swipe 300 200 300 800 150; sleep 1; adb shell input keyevent KEYCODE_BACK; sleep 2
+  adb shell am start -n com.android.contacts/.activities.PeopleActivity >/dev/null 2>&1; sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3
+  adb shell input swipe 300 2 300 700 250; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 1.5
+  adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3
+}
+pr2nobounce
+info "PR2 start state: $(pr2state); files: $(pr2files)"
+pr2cold installed
+# the runtime collects the profile while the launcher runs; SIGUSR1 forces GC + a profile save (art/runtime/signal_catcher.cc), run-as lets us signal our own process
+pr2use; pr2use
+P2PID="$(adb shell pidof "$PKG" | tr -d '\r' | awk '{print $1}')"
+adb shell "run-as $PKG kill -10 $P2PID" >/dev/null 2>&1; sleep 5
+adb shell cmd package dump-profiles "$PKG" > "$OUT/pr2-dump-profiles.txt" 2>&1; sleep 2
+info "PR2 dump-profiles: $(tr -d '\r' < "$OUT/pr2-dump-profiles.txt" | tr '\n' ' ' | cut -c1-150); profman dir: $(adb shell ls -l /data/misc/profman 2>&1 | tr -d '\r' | tr -s ' ' | tr '\n' ';' | cut -c1-260)"
+adb shell "cat /data/misc/profman/$PKG*.txt" 2>/dev/null | tr -d '\r' > "$OUT/pr-profile.txt"
+info "PR2 runtime profile text: $(wc -l < "$OUT/pr-profile.txt") lines, $(grep -c '^L' "$OUT/pr-profile.txt") class lines, $(grep -c -- '->' "$OUT/pr-profile.txt") method lines; head: $(head -c 300 "$OUT/pr-profile.txt" | tr '\n' '|')"
+adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
+info "PR2 compile speed-profile: $(tr -d '\r' < "$OUT/pr2-compile-sp.txt" | tr '\n' ' ' | cut -c1-120)"
+pr2cold speed-profile
+adb shell cmd package compile -m speed -f "$PKG" > "$OUT/pr2-compile-speed.txt" 2>&1
+info "PR2 compile speed: $(tr -d '\r' < "$OUT/pr2-compile-speed.txt" | tr '\n' ' ' | cut -c1-120)"
+pr2cold speed
+adb shell cmd package compile -m verify -f "$PKG" >/dev/null 2>&1
+grep -E 'INFO  PR2 ' "$OUT/results.txt" > "$OUT/pr-summary2.txt"
+setmode custom; home
+fi # section pr2
 
 if want last; then # section last
 beat "before LAST STEP"
