@@ -8,7 +8,7 @@
 # <scratchpad>/<file>` and looks at the picture with the Read tool.
 #
 # Safe by construction: the emulator is not Tj's tablet (no personal data on it); only *.png from the output folder are published,
-# at most MAX files; the branch shares no history with main (resume.sh already ignores orphan branches); a failure here never fails
+# (DA1, 2026-11-27: plus the measurement files of section pr, pr-*.txt and pr-*.gz: method names and milliseconds, no personal data), at most MAX files; the branch shares no history with main (resume.sh already ignores orphan branches); a failure here never fails
 # the run (the workflow step is continue-on-error and this script always exits 0).
 set -uo pipefail
 SRC="${1:-emulator-out}"
@@ -23,7 +23,7 @@ n=0
 while IFS= read -r f; do
   [ "$n" -ge "$MAX" ] && break
   cp "$f" "$T/$(basename "$f")" && n=$((n+1))
-done < <(find "$SRC" -maxdepth 2 -type f -name "$GLOB" -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+done < <(find "$SRC" -maxdepth 2 -type f \( -name "$GLOB" -o -name 'pr-*.txt' -o -name 'pr-*.gz' \) -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
 [ "$n" -gt 0 ] || { echo "ci_publish_shots: no $GLOB files in $SRC"; exit 0; }
 printf 'run %s on %s\nsections: %s\nfiles: %s\n' "${GITHUB_RUN_ID:-?}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SECTIONS:-?}" "$n" > "$T/RUN.txt"
 

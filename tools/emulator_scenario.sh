@@ -6311,7 +6311,7 @@ adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; adb shell input keyevent K
 prstop
 # 9. where things stand after all that
 prmem end
-info "PR threads at the end: $(adb shell "for t in /proc/$PRPID/task/*; do cat \$t/comm; done" 2>/dev/null | tr -d '\r' | sed -E 's/[0-9]+/#/g' | sort | uniq -c | sort -rn | awk '{printf \"%s x%s; \", \$2\$3\$4, \$1}' | cut -c1-320)"
+info "PR threads at the end: $(adb shell "for t in /proc/$PRPID/task/*; do cat \$t/comm; done" 2>/dev/null | tr -d '\r' | sed -E 's/[0-9]+/#/g' | sort | uniq -c | sort -rn | head -14 | tr -s ' ' | tr '\n' ';' | cut -c1-320)"
 adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'path:|status=|reason=' | head -4 | tr -s ' ' | while IFS= read -r l; do info "PR dexopt: $l"; done
 info "PR apk: $(adb shell ls -l $(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r') 2>/dev/null | tr -s ' ' | cut -c1-120)"
 grep -E 'INFO  PR ' "$OUT/results.txt" > "$OUT/pr-summary.txt"
