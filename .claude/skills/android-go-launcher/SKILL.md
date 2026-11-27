@@ -6,11 +6,12 @@ description: Use when changing Launcher's manifest, HOME activity, installed-app
 # Android 10 Go launcher — constraints and gotchas
 
 Read `BRIEF.md` first: it holds the decisions and the OPEN questions (do not decide those for Tj).
+The app is now a Launcher3 fork (`app/`, `launcher3/`); `HANDOFF.md` has the architecture map. The rules below still hold. Device facts (2 GB, MT8168, what Go switches off): `tj-android-kit:low-ram-android`.
 
 ## Target
 - Android 10 (API 29), "Go edition": 1-2 GB RAM, slow storage, often 32-bit ARM. A Go launcher is judged on
   **cold-start time, resident memory and APK size** before features.
-- `minSdk 29` / `targetSdk 29` / `compileSdk 36`. APIs newer than 29 must be guarded (`Build.VERSION.SDK_INT`) or
+- `minSdk 29` / `targetSdk 28` (on purpose: the AOSP Launcher3 Go value, it lets the kill switch toggle Wi-Fi / Bluetooth; `BRIEF.md`) / `compileSdk 36`. APIs newer than 29 must be guarded (`Build.VERSION.SDK_INT`) or
   avoided; lint (`bash tools/gradle.sh :app:lintDebug`) will flag `NewApi`.
 
 ## Being a launcher
@@ -30,7 +31,7 @@ Read `BRIEF.md` first: it holds the decisions and the OPEN questions (do not dec
   `ActivityManager.memoryClass`, and drop it in `onTrimMemory`. Avoid per-frame allocations in lists.
 - Prefer `RecyclerView`-free lists only for tiny sets; for hundreds of apps a recycling view is mandatory (note the
   `androidx.recyclerview` cost in BRIEF.md first).
-- Do disk and package-manager work off the main thread (see `kotlin-concurrency-and-flow`); keep startup minimal.
+- Do disk and package-manager work off the main thread (the code is Java, no coroutines); keep startup minimal.
 - R8 is on for release; test the **release** build for reflection/keep-rule breakage before shipping.
 
 ## Verifying
