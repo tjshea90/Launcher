@@ -1973,3 +1973,24 @@
 >
 > I also recorded this request in `TASKS.md` (CZ1) and checkpointed it, so a cut-off loses nothing.
 <!-- sha:b39e39a8fc2b -->
+
+## 2026-11-27T00:12:44Z
+> Keeping them barely affects this repo. Builds, tests, CI, the APK and the save hooks never use them, and a skill only loads when something calls it.
+>
+> **What it costs**
+> - **Context space.** Every loaded skill adds its name and description to the list each session starts with.
+>   - The full descriptions of all 154 skills add up to about 66 KB, which is roughly 16,000 tokens at most. The list actually in the prompt is shorter, because many entries show only a name.
+>   - That is under 2% of this repo's context window. It is also smaller than the 13,000 tokens per turn I already saved by moving the old lessons out of `CLAUDE.md`.
+> - **Startup noise.** Plugin connectors you haven't signed in to, or that failed to connect, print notices at session start. This is a minor annoyance, not a cost to the project.
+>
+> **What it risks**
+> - **Wrong skill triggering.** The design plugins could pick up wording like "look" or "UI" and push toward a redesign. The look-alike rule requires matching the stock photos. The new "Not for this repo" list in `CLAUDE.md` tells sessions to ignore them, and the repo rules win over any skill.
+> - **Personal data.** Gmail and Google Calendar (from the `finance` plugin) were not reported as needing sign-in, so they may be connected on your account. Nothing in this repo calls them. If you switch only a few things off, I'd start with those two and the web-scraping plugins (`brightdata-plugin`, `tinyfish`, `exa`), since those are the ones that could send data out if something invoked them.
+>
+> **What I'd keep switched on for this repo**
+> - `tj-android-kit`
+> - `claude-android-qa-plugin`
+> - the built-in `code-review` and `security-review`
+>
+> Claude.ai plugin settings apply to your whole account, so you can't make them per-repo there. Claude Code may allow a project-level setting that disables chosen plugins for this repo only, but I haven't verified that for these account-synced plugins. I can check that if you want. Otherwise I'd leave everything as it is.
+<!-- sha:41eb4f5d485e -->
