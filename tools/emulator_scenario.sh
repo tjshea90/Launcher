@@ -6216,6 +6216,108 @@ check "UL23: with the switch OFF the stock launcher is the Quickstep home (the o
 setmode custom; home
 fi # section ul2
 
+if want pr; then # section pr
+# ---- DA1 (Tj, 2026-11-27: "Look for any possible ways ... to make this launcher as efficient and fast and lightweight as possible ... mt8168 Android 10 go 2gb ram"): a MEASUREMENT section, no checks (like u s p rs*).
+#      The five earlier speed passes read code; nothing had ever measured which methods of the launcher process burn CPU. This records the process with ART's sampling profiler (`am profile start --sampling`,
+#      1 ms) while a script does what Tj does (cold start, drawer + flings, an app launch and back, the shade, screen off / on, Recents) and prints the hottest methods (tools/trace_top.py); two idle windows (screen on /
+#      screen off) say how much CPU the process burns while nothing happens; then the PSS split, the thread inventory and the compile state. Everything lands in INFO lines AND in pr-*.txt / pr-*.trace.gz
+#      (published to branch ci-shots with shots=true). The emulator is x86 with software GL: ranks and ratios carry over to the tablet, absolute milliseconds do not.
+beat "before PR"
+adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
+ensurehome; setmode custom; rebind
+prnobounce(){ # Launcher3's first-run swipe-up hint (DiscoveryBounce) floats views on every Home resume until it was seen 3 times; the CI emulator never has: mark it seen (as hm_nobounce does)
+  adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+  local f="$OUT/pr-l3prefs.xml"
+  adb shell "run-as $PKG cat shared_prefs/com.android.launcher3.prefs.xml" 2>/dev/null | tr -d '\r' > "$f"
+  grep -q '<map' "$f" || printf '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<map>\n</map>\n' > "$f"
+  sed -i 's#<map />#<map>\n</map>#' "$f"
+  grep -q 'launcher.apps_view_shown' "$f" || sed -i 's#</map>#    <boolean name="launcher.apps_view_shown" value="true" />\n</map>#' "$f"
+  adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
+}
+prpid(){ adb shell pidof "$PKG" 2>/dev/null | tr -d '\r' | awk '{print $1}'; }
+prdump(){ adb shell "for t in /proc/$1/task/*; do echo \"\$(cat \$t/comm)|\$(cat \$t/stat)\"; done" 2>/dev/null | tr -d '\r'; }   # prdump <pid>: one `comm|stat` line per thread
+prstart(){ PRPHASE="$1"; adb shell rm -f /data/local/tmp/pr.trace; adb shell am profile start --sampling "${2:-1000}" "$PKG" /data/local/tmp/pr.trace > "$OUT/pr-$1-start.txt" 2>&1; }
+prstop(){ # prstop: stop the profile of $PRPHASE, pull the trace, print the short INFO lines and keep the long report
+  adb shell am profile stop "$PKG" > "$OUT/pr-$PRPHASE-stop.txt" 2>&1; sleep 3
+  adb pull /data/local/tmp/pr.trace "$OUT/pr-$PRPHASE.trace" > "$OUT/pr-$PRPHASE-pull.txt" 2>&1
+  if [ -s "$OUT/pr-$PRPHASE.trace" ]; then
+    python3 -I tools/trace_top.py "$OUT/pr-$PRPHASE.trace" --phase "$PRPHASE" | tee -a "$OUT/results.txt"
+    python3 -I tools/trace_top.py "$OUT/pr-$PRPHASE.trace" --phase "$PRPHASE" --detail --top 40 > "$OUT/pr-$PRPHASE.txt" 2>&1
+    gzip -9 -c "$OUT/pr-$PRPHASE.trace" > "$OUT/pr-$PRPHASE.trace.gz"; rm -f "$OUT/pr-$PRPHASE.trace"
+  else
+    info "PR $PRPHASE: no trace file ($(cat "$OUT/pr-$PRPHASE-start.txt" "$OUT/pr-$PRPHASE-stop.txt" "$OUT/pr-$PRPHASE-pull.txt" 2>/dev/null | tr -d '\r' | tr '\n' ' ' | cut -c1-200))"
+  fi
+}
+prmem(){ # prmem <tag>: one INFO line with the PSS split of our process (App Summary + the mapping rows); the whole dump stays in pr-meminfo-<tag>.txt
+  local f="$OUT/pr-meminfo-$1.txt"
+  adb shell dumpsys meminfo "$PKG" </dev/null > "$f" 2>&1
+  info "PR mem $1 (KB): summary $(sed -nE 's/^ *(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL( PSS)?): +([0-9]+).*/\1=\3/p' "$f" | tr '\n' ' ')"
+  info "PR mem $1 (KB): rows $(sed -nE 's/^ *(Native Heap|Dalvik Heap|Dalvik Other|Stack|Ashmem|Other dev|\.so mmap|\.jar mmap|\.apk mmap|\.ttf mmap|\.dex mmap|\.oat mmap|\.art mmap|Other mmap|EGL mtrack|GL mtrack|Unknown|TOTAL) +([0-9]+).*/\1=\2/p' "$f" | tr ' ' '_' | tr '\n' ' ') objects: $(grep -oE '(Views|ViewRootImpl|Activities|Assets|AssetManagers|Local Binders|Proxy Binders|Death Recipients|SQL MEMORY_USED|PAGECACHE_OVERFLOW): +[0-9]+' "$f" | tr -s ' ' | tr '\n' ';')"
+}
+# 1. cold start from nothing (profile attached from the process start): Application, providers, Launcher.onCreate, the loader
+adb shell rm -f /data/local/tmp/pr.trace; adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1; PRPHASE=cold
+adb shell am start -W --start-profiler /data/local/tmp/pr.trace --sampling 1000 -a android.intent.action.MAIN -c android.intent.category.HOME > "$OUT/pr-cold-start.txt" 2>&1
+sleep 6
+info "PR cold: am start -W says $(grep -E 'Status|ThisTime|TotalTime|WaitTime' "$OUT/pr-cold-start.txt" | tr -d '\r' | tr '\n' ' ' | cut -c1-200)"
+prstop
+# 2. idle: the screen on, home in front, nothing touched; then the screen off. CPU per thread in 30 s + frames drawn (a perpetual invalidation shows as frames)
+home; sleep 3
+PRPID="$(prpid)"; info "PR pid $PRPID; threads $(adb shell "ls /proc/$PRPID/task | wc -l" 2>/dev/null | tr -d '\r')"
+prmem start
+prdump "$PRPID" > "$OUT/pr-idle-on-a.txt"; adb shell dumpsys gfxinfo "$PKG" reset >/dev/null 2>&1
+sleep 30
+prdump "$PRPID" > "$OUT/pr-idle-on-b.txt"
+python3 -I tools/trace_top.py --cpu "$OUT/pr-idle-on-a.txt" "$OUT/pr-idle-on-b.txt" --phase idle-screen-on --secs 30 | tee -a "$OUT/results.txt"
+info "PR idle-screen-on frames: $(adb shell dumpsys gfxinfo "$PKG" 2>/dev/null | grep -E 'Total frames rendered|Janky frames' | tr -s ' \r' ' ' | tr '\n' ';')"
+adb shell input keyevent KEYCODE_POWER; sleep 4
+prdump "$PRPID" > "$OUT/pr-idle-off-a.txt"; sleep 30; prdump "$PRPID" > "$OUT/pr-idle-off-b.txt"
+python3 -I tools/trace_top.py --cpu "$OUT/pr-idle-off-a.txt" "$OUT/pr-idle-off-b.txt" --phase idle-screen-off --secs 30 | tee -a "$OUT/results.txt"
+adb shell input keyevent KEYCODE_WAKEUP; sleep 2; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 2; home
+# 3. the drawer: open, three flings down, two back, close
+prstart drawer
+adb shell input swipe 300 900 300 200 400; sleep 2.5
+for i in 1 2 3; do adb shell input swipe 300 800 300 200 150; sleep 1; done
+for i in 1 2; do adb shell input swipe 300 200 300 800 150; sleep 1; done
+adb shell input keyevent KEYCODE_BACK; sleep 2
+prstop
+# 4. home pages: swipes both ways (a one-page home does nothing visible: that is the answer then)
+prstart pages
+adb shell input swipe 500 600 100 600 200; sleep 1; adb shell input swipe 100 600 500 600 200; sleep 1
+adb shell input swipe 500 600 100 600 200; sleep 1; adb shell input swipe 100 600 500 600 200; sleep 1
+prstop
+# 5. an app from the drawer and back: the position of the icon is read BEFORE the profile starts (a uiautomator dump walks our view tree)
+adb shell input swipe 300 900 300 200 400; sleep 3
+adb shell uiautomator dump /sdcard/tjui.xml >/dev/null 2>&1
+PRB=$(adb shell cat /sdcard/tjui.xml 2>/dev/null | tr '>' '\n' | grep -F 'text="Contacts"' | grep -o 'bounds="[^"]*"' | head -1 | grep -o '[0-9]\+' | tr '\n' ' '); set -- $PRB
+if [ "$#" -ge 4 ]; then PRX=$(( ($1+$3)/2 )); PRY=$(( ($2+$4)/2 )); else PRX=100; PRY=200; fi
+prstart applaunch
+adb shell input tap "$PRX" "$PRY"; sleep 4
+adb shell input keyevent KEYCODE_HOME; sleep 3
+prstop
+home
+# 6. the notification shade pulled down and closed (SystemUI events reach our accessibility service)
+prstart shade
+adb shell input swipe 300 2 300 700 250; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 1.5
+adb shell input swipe 300 2 300 700 250; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 1.5
+prstop
+# 7. screen off, on, unlock (the lock-screen code of the service and the return path)
+prstart screen
+adb shell input keyevent KEYCODE_POWER; sleep 4; adb shell input keyevent KEYCODE_WAKEUP; sleep 2; adb shell wm dismiss-keyguard >/dev/null 2>&1; sleep 4
+prstop
+home
+# 8. Recents (Quickstep hosts them; our service filters)
+prstart recents
+adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3
+prstop
+# 9. where things stand after all that
+prmem end
+info "PR threads at the end: $(adb shell "for t in /proc/$PRPID/task/*; do cat \$t/comm; done" 2>/dev/null | tr -d '\r' | sed -E 's/[0-9]+/#/g' | sort | uniq -c | sort -rn | awk '{printf \"%s x%s; \", \$2\$3\$4, \$1}' | cut -c1-320)"
+adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'path:|status=|reason=' | head -4 | tr -s ' ' | while IFS= read -r l; do info "PR dexopt: $l"; done
+info "PR apk: $(adb shell ls -l $(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r') 2>/dev/null | tr -s ' ' | cut -c1-120)"
+grep -E 'INFO  PR ' "$OUT/results.txt" > "$OUT/pr-summary.txt"
+setmode custom; home
+fi # section pr
+
 if want last; then # section last
 beat "before LAST STEP"
 # the step needs the UNLOCKED custom home (v0.8.13 gate: after `fp` it started on the lock screen and the stock menu was open over the PIN pad, no card): unlock first, whatever ran before
