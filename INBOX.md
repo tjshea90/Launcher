@@ -4267,3 +4267,8 @@ Tidy and improve this Claude Code setup for Android app building. I have uploade
 4. List every plugin, skill and connector that is loaded in this session and that this project has no use for, so I can switch them off on claude.ai. Do not install anything that costs money, sends data out of the repository or changes my accounts.
 5. Commit your changes to a new branch and tell me what you changed.
 ```
+
+## 2026-11-27T00:12:17Z
+```
+I need to keep some plugins and skills for other repos. How much does this basically affect this repo
+```
