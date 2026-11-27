@@ -6,6 +6,8 @@ code; nothing ever measured WHICH of our methods burn CPU. The emulator section 
 things, and this tool turns each trace into a few short lines (the CI RESULTS block can only carry short INFO lines).
 
   python3 -I tools/trace_top.py FILE [--phase NAME] [--top N] [--width W]     print `INFO  PR <phase> ...` lines (the scenario pipes them into results.txt)
+  python3 -I tools/trace_top.py FILE --phase NAME --detail [--top 40]         the same as a long plain-text report (the scenario publishes it as pr-NAME.txt)
+  python3 -I tools/trace_top.py --cpu A B --phase NAME --secs S                two `comm|stat` snapshots of /proc/PID/task -> one INFO line: CPU per thread name in between
   python3 -I tools/trace_top.py --selftest                                    parse a synthetic trace and check the arithmetic (tools/test_trace_top.sh)
 
 Format (art/runtime/trace.cc, non-streaming): a text header (`*version`, 2|3, key=value lines, `*threads` with `id<TAB>name`, `*methods` with
@@ -183,6 +185,66 @@ def summarize(tr, phase, top=14, width=300):
     return lines
 
 
+def detail(tr, phase, top=40):
+    """A longer plain-text report for the published pr-*.txt file (the INFO lines are short on purpose)."""
+    rp = replay(tr)
+    names = tr['threads']
+    main = next((t for t, n in names.items() if n == 'main'), None)
+    out = ['== %s: %d records, version %s, overflow=%s, clock=%s' % (phase, len(tr['records']), tr['version'], tr['kv'].get('data-file-overflow', '?'), tr['kv'].get('clock', '?'))]
+    out.append('threads by CPU (ms): ' + ', '.join('%s=%s' % (names.get(t, t), ms(c)) for t, c in sorted(rp['total'].items(), key=lambda kv: -kv[1]) if c > 0))
+
+    def table(title, d, tid=None, mine=False, idle_ok=True, k=top):
+        rows = sorted(((v, key[0], key[1]) for key, v in d.items() if v > 0 and (tid is None or key[0] == tid)), key=lambda r: -r[0])
+        out.append('-- ' + title)
+        n = 0
+        for v, t, mid in rows:
+            raw = tr['methods'].get(mid, ('', '', ''))
+            if mine and not MINE.match(raw[0]):
+                continue
+            if not idle_ok and IDLE.search(raw[0] + '.' + raw[1]):
+                continue
+            out.append('%8s ms  %s%s' % (ms(v), raw[0] + '.' + raw[1] + raw[2] if raw[0] else '?%x' % mid, '' if tid is not None else '  [%s]' % names.get(t, t)))
+            n += 1
+            if n >= k:
+                break
+    if main is not None:
+        table('main thread: SELF cpu', rp['self_cpu'], main)
+        table('main thread: INCLUSIVE cpu, our code only (what each of our entry points cost)', rp['incl_cpu'], main, mine=True)
+        table('main thread: INCLUSIVE cpu, everything', rp['incl_cpu'], main, k=25)
+        table('main thread: SELF wall, idle waits left out (time spent blocked)', rp['self_wall'], main, idle_ok=False, k=25)
+    table('all other threads: SELF cpu', {k: v for k, v in rp['self_cpu'].items() if k[0] != main}, None, k=30)
+    table('all other threads: INCLUSIVE cpu, our code only', {k: v for k, v in rp['incl_cpu'].items() if k[0] != main}, None, mine=True, k=25)
+    return out
+
+
+def cpu_diff(a_path, b_path, phase, secs):
+    """Two snapshots of /proc/PID/task/*/{comm,stat} written by the scenario as `comm|stat` lines -> one INFO line: CPU per thread name in between."""
+    def load(p):
+        d = {}
+        for ln in open(p, errors='replace'):
+            if '|' not in ln:
+                continue
+            comm, stat = ln.rstrip('\n').split('|', 1)
+            try:
+                tid = int(stat.split()[0])
+                rest = stat.rsplit(') ', 1)[1].split()
+                d[tid] = (comm.strip(), int(rest[11]) + int(rest[12]))   # utime + stime in clock ticks (10 ms)
+            except Exception:
+                pass
+        return d
+    a, b = load(a_path), load(b_path)
+    by = {}
+    for tid, (name, t) in b.items():
+        dt = t - a.get(tid, (name, 0))[1]
+        if dt > 0:
+            key = re.sub(r'\d+', '#', name)
+            by[key] = by.get(key, 0) + dt * 10
+    tot = sum(by.values())
+    return 'INFO  PR %s: %d ms CPU in %d s (%.2f %% of one core) by %d of %d threads: %s' % (
+        phase, tot, secs, 100.0 * tot / (secs * 1000.0) if secs else 0, len(by), len(b),
+        ', '.join('%s %d' % (k, v) for k, v in sorted(by.items(), key=lambda kv: -kv[1])[:10]) or 'none')
+
+
 # ------------------------------------------------------------------ self-test: a synthetic trace built with the layout described above
 def build(version, threads, methods, recs, clock='dual'):
     head = '*version\n%d\ndata-file-overflow=false\nclock=%s\nelapsed-time-usec=9999\nnum-method-calls=%d\nclock-call-overhead-nsec=100\nvm=art\npid=1\n*threads\n' % (version, clock, len(recs))
@@ -217,6 +279,15 @@ def selftest():
         out = summarize(tr, 't', 5, 200)
         assert out[0].startswith('INFO  PR t: ') and any('L3.Launcher.onResume' in x for x in out), out
         assert not any('nativePollOnce' in x for x in out if 'blocked' in x), out
+    d = detail(parse(build(3, {1: 'main'}, methods, recs)), 'd', 5)
+    assert d[0].startswith('== d: 7 records') and any('com.android.launcher3.Launcher.onResume' in x for x in d), d
+    import os, tempfile
+    with tempfile.TemporaryDirectory() as td:
+        pa, pb = os.path.join(td, 'a'), os.path.join(td, 'b')
+        open(pa, 'w').write('main|10 (main) S 1 1 1 0 -1 0 0 0 0 0 5 3 0 0\nBinder:12_3|11 (Binder:12_3) S 1 1 1 0 -1 0 0 0 0 0 1 1 0 0\n')
+        open(pb, 'w').write('main|10 (main) S 1 1 1 0 -1 0 0 0 0 0 9 4 0 0\nBinder:12_3|11 (Binder:12_3) S 1 1 1 0 -1 0 0 0 0 0 1 1 0 0\nnew thr|12 (new thr) S 1 1 1 0 -1 0 0 0 0 0 2 0 0 0\n')
+        line = cpu_diff(pa, pb, 'idle', 10)
+        assert 'main 50' in line and 'new thr 20' in line and '70 ms CPU' in line and 'Binder' not in line, line
     try:
         parse(b'not a trace')
         assert False
@@ -229,12 +300,18 @@ def main(argv):
     if '--selftest' in argv:
         selftest()
         return 0
-    args = [a for a in argv if not a.startswith('--')]
     opt = {}
     for i, a in enumerate(argv):
-        if a in ('--phase', '--top', '--width') and i + 1 < len(argv):
+        if a in ('--phase', '--top', '--width', '--secs') and i + 1 < len(argv):
             opt[a] = argv[i + 1]
+    args = [a for a in argv if not a.startswith('--')]
     files = [a for a in args if a not in opt.values()]
+    if '--cpu' in argv:
+        if len(files) < 2:
+            print(__doc__)
+            return 2
+        print(cpu_diff(files[0], files[1], opt.get('--phase', 'cpu'), int(opt.get('--secs', 0))))
+        return 0
     if not files:
         print(__doc__)
         return 2
@@ -244,6 +321,10 @@ def main(argv):
     except Exception as e:   # never fail the scenario: say what the file looked like
         raw = open(files[0], 'rb').read()
         print('INFO  PR %s: trace not readable (%s); %d bytes; head %r' % (phase, e, len(raw), raw[:60]))
+        return 0
+    if '--detail' in argv:
+        for ln in detail(tr, phase, int(opt.get('--top', 40))):
+            print(ln)
         return 0
     for ln in summarize(tr, phase, int(opt.get('--top', 14)), int(opt.get('--width', 300))):
         print(ln)
