@@ -6349,7 +6349,7 @@ pr2nobounce(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
 }
 pr2state(){ adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'status=' | head -1 | tr -s ' '; }
-pr2files(){ local d; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"; adb shell "ls -l $d/oat/x86/ 2>/dev/null" | tr -d '\r' | awk 'NF>=8{printf "%s=%s ", $NF, $5}'; }
+pr2files(){ local d; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"; adb shell "ls -l $d/oat/*/ 2>/dev/null" | tr -d '\r' | awk 'NF>=8{printf "%s=%s ", $NF, $5}'; }
 pr2cold(){ # pr2cold <tag>: three cold starts (force-stop, start HOME, wait for the first frame): TotalTime of each
   local i t out=""
   for i in 1 2 3; do
