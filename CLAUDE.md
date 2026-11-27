@@ -1,6 +1,6 @@
 # Launcher — working agreement
 
-Tj's **Android 10 (API 29) Go-edition home-screen launcher**, `com.tj.launcher`, Kotlin, sideloaded (not on
+Tj's **Android 10 (API 29) Go-edition home-screen launcher**, `com.tj.launcher`, Java (a Launcher3 fork; no Kotlin sources), sideloaded (not on
 the Play Store). GitHub Actions builds the APK; Claude writes the code. Worked on across many Claude Code
 sessions — a new one may start on another account or device, or right after a usage cap killed the last one
 mid-step. **Everything below exists to make that handoff lossless.** What is decided about the platform and what
@@ -81,7 +81,7 @@ Rules that make the ladder work:
 **What exists:** `mcp__claude-code-remote__create_trigger` (a scheduled task on the server, survives container restarts) and `send_later` (one shot) deliver a message into THIS session (proven: the 04:53:45 UTC wake of this session, trigger `trig_017VWBL4...`). **What does not exist:** Claude cannot see the cap, a dead session cannot restart itself, a wake needs available usage (during the cap it fails and the next one retries), nothing helps if the session itself is deleted. Hooks cannot call these tools.
 - **Heartbeat:** at the start of any long job (more than a couple of steps left) make sure ONE exists: `get_trigger` with the id in the latest ckpt "next" (never `list_triggers`: it prints ~20 KB of old reminders). Missing: `create_trigger`, name "Launcher auto-resume heartbeat", cron `0 */2 * * *`, `initiation` human_request, bound to this session, prompt = the six rules of the live one (read it with `get_trigger`, or TASKS BO1b). Put its id in every ckpt "next" while it lives (its prompt tells the woken session to look there).
 - **A cut-off notice that names a reset time** ("resets 8:20am (UTC)"): `send_later` at that time + 2 minutes AT ONCE ("resume Launcher: bash tools/resume.sh, continue Do this next"), before anything else.
-- **End it:** `delete_trigger` when the job is shipped or only Tj-blocked items remain (the heartbeat's own rules say so); it stands down for ONE firing, and never disables itself, only when another session's REAL work (a `ckpt N:` commit or a change to anything except INBOX.md / OUTBOX.md / CHECKPOINT.md) is under 60 minutes old: an `auto-checkpoint:` commit that only adds a worker-restart notice is NOT work (`research/HEARTBEAT_PROMPT.md` rule 2, TASKS BP2g; 2026-11-10: such notices of a stalled session kept `main` looking fresh for hours). State 2026-11-10 16:34 UTC: the two older heartbeats are deleted (`trig_01NG4acJZ3CVuQZutyT6rsCC` at 06:34 UTC, `trig_01DhC2W8FUPFeqdGFQCt7yWe` at about 07:24 UTC); the one armed for the v0.9.2 job, `trig_013YUvG3qqKTpfyqZn9k2nmE`, is DISABLED (`update_trigger enabled=false` at 16:34 UTC; `delete_trigger` needs Tj's approval in the app and was closed unanswered three times, so the trigger still EXISTS but never fires; Tj can delete it, a later session can re-enable it with `update_trigger enabled=true` or arm ONE new one): no heartbeat fires. Update 2026-11-11 03:11 UTC: it was re-enabled for the v0.9.4 job (BS1/BS2) and DISABLED again when v0.9.4 was released (`get_trigger` shows `enabled:false`); still no heartbeat fires. Only the owning account can see or delete its own trigger, so a session of the other account cannot check it: at the start of the next long job arm exactly ONE (recipe above) and put its id in every ckpt.
+- **End it:** `delete_trigger` when the job is shipped or only Tj-blocked items remain (the heartbeat's own rules say so). It stands down for ONE firing, and never disables itself, only when another session's REAL work (a `ckpt N:` commit or a change to anything except INBOX.md / OUTBOX.md / CHECKPOINT.md) is under 60 minutes old; an `auto-checkpoint:` commit that only adds a worker-restart notice is NOT work (`research/HEARTBEAT_PROMPT.md` rule 2, TASKS BP2g). Only the owning account can see or delete its own trigger, so a session of the other account cannot check it. **Last known state (ckpt 1697): the heartbeat was deleted, none is armed.** At the start of the next long job arm exactly ONE (recipe above) and put its id in every ckpt. Old trigger ids and the dated history: `LESSONS.md`, last section.
 
 ## Messages from Tj (standing rule, 2026-11-03, permanent)
 
@@ -101,18 +101,10 @@ Never commit a raw report or a tablet screenshot by hand: the intake redacts ser
 
 Claude Code gives every session its own branch, so work can strand on a branch nobody opens. Rules:
 - Develop and push on **the branch the session was assigned**; `push.sh` pushes it after every checkpoint.
-- `tools/MIRROR_MAIN` (`on`/`off`, committed) makes every push also fast-forward `origin/main` (plain push, never
-  forced). **On** since 2026-11-02 (Tj approved), so a fresh session that just opens the repo sees the real state;
-  GitHub can only dispatch workflows that exist on the default branch, which is now `main` itself. **2026-11-06 (Tj: "Why are my prompts and Claude findings not being saved? This is important to fix"):** the mirror had been `off` since the v0.7.3/0.7.4 gating and was never switched back, so `main` froze at v0.7.4 for three releases while every new session started FROM it: prompts (INBOX), findings (TASKS) and code looked lost (they sat on side branches). It is `on` again and `main` follows every push. NEVER switch it off again without writing WHY in TASKS.md and switching it back on in the same session; after a push check `git ls-remote origin refs/heads/main` equals your tip.
+- `tools/MIRROR_MAIN` (`on`/`off`, committed) makes every push also fast-forward `origin/main` (plain push, never forced). It is **on** (Tj approved, 2026-11-02): a fresh session opens `main` and must see the real state, and GitHub can only dispatch workflows that exist on the default branch, which is `main`. **NEVER switch it off** without writing WHY in TASKS.md and switching it back on in the same session (on 2026-11-06 it had sat `off` for three releases and Tj's prompts and findings looked lost); after a push check `git ls-remote origin refs/heads/main` equals your tip.
 - `resume.sh` names every other remote branch with unmerged commits; merge deliberately, not blindly.
 
-**What each branch is (audited 2026-11-03):**
-| Branch | Purpose | Status |
-| :- | :- | :- |
-| `main` | the mirror (`MIRROR_MAIN`): fast-forwarded by every push; what a fresh session and the release workflow see | the real, current state |
-| `claude/...` / `ccr-...` | one per Claude session; the session's working branch | `ccr-4ff66321-chzhhg` is an OLD session branch, fully contained in `main` (frozen at ckpt 136); it was GitHub's default branch until Tj switched the default to `main` (2026-11-03, confirmed `HEAD branch: main`); now just a leftover, safe to delete |
-| `dependabot/*` | bot branches, one per update PR | were rooted on a pre-2026-11-02 history that shares no ancestor with `main`/`ccr` (the repo was re-rooted that day), so their PRs could never merge; PRs #1,#2,#3,#5,#6 closed 2026-11-03; do NOT merge such a branch; let Dependabot recreate it |
-`resume.sh` no longer raises a false alarm for `dependabot/*` or for a branch with no common history.
+**What each branch is:** `main` = the mirror, the real current state. `claude/...` / `ccr-...` = one per Claude session, its working branch (the old `ccr-4ff66321-chzhhg` is a fully merged leftover, safe to delete). `dependabot/*` = bot update PRs; the old ones were rooted on a pre-2026-11-02 history and can never merge: do NOT merge such a branch, let Dependabot recreate it. `resume.sh` raises no alarm for `dependabot/*` or for a branch with no common history.
 
 ## GitHub Actions does the building (Tj's rule on all repos)
 
@@ -156,13 +148,35 @@ command rather than the value, on purpose.
 
 ## Skills and tools for this project
 
-`.claude/skills/android-go-launcher` (Go-edition constraints; load before changing the manifest, app list, memory
-behaviour or adding any dependency) and `kotlin-concurrency-and-flow` (Chris Banes, Apache-2.0, unchanged) — use the
-Skill tool. Compose skills are intentionally absent: add them when the UI toolkit decision in `BRIEF.md` lands on
-Compose. Generic plugins that fit: `engineering:code-review`/`code-review` before a release,
-`claude-android-qa-plugin:android-emulator-qa` once an emulator exists, `security-review` on anything touching
-permissions. Where a skill disagrees with this file or BRIEF.md, this repo wins. Don't install anything that costs
-money or sends repo data out without Tj's word.
+**This repository's rules (this file, `BRIEF.md`, `TASKS.md`, the stock photos) win over ANY skill, plugin or default.** A skill is a checklist, not an order: where it disagrees with the repo (asks you to stop and ask, to run `./gradlew`, add a library, restyle a screen, shorten a `ckpt`), follow the repo. Don't install anything that costs money or sends repo data out without Tj's word.
+
+What decides which skill fits: the app is **Java + Android Views (a Launcher3 fork), no Kotlin sources, no Compose, no coroutines**; minSdk 29, targetSdk 28 (on purpose, `BRIEF.md`); a 2 GB MediaTek MT8168 Go tablet. Load with the Skill tool, BEFORE the work:
+
+| Before this kind of work | Load |
+| :- | :- |
+| manifest, HOME activity, app list, icons / bitmaps, memory, adding a dependency | `android-go-launcher` (this repo) and `tj-android-kit:low-ram-android` |
+| any bug, failing test or odd behaviour, before proposing a fix | `tj-android-kit:systematic-debugging` |
+| saying "done / fixed / passing", before a commit, `ckpt` or release | `tj-android-kit:verification-before-completion` (evidence here = a Gradle run, a CI run id, `tools/gate.sh`) |
+| unlock / lock / power-menu paths, main-thread stalls, an ANR trace | `tj-android-kit:anr-audit-and-fix` |
+| manifest exports, intents, permissions, Binder / helper, the accessibility service | `tj-android-kit:android-intent-security`, `tj-android-kit:android-permissions-security`, and `security-review` |
+| R8 keep rules, APK size | `tj-android-kit:r8-analyzer` (read the R8 decisions in `BRIEF.md` first) |
+| a NEW kind of test or test setup | `tj-android-kit:testing-setup` (`tools/gate.sh`, `emulator.yml`, `tools/test_handoff.sh` stay the standard) |
+| 2+ independent read-only audits or reviews | `tj-android-kit:dispatching-parallel-agents` (neutral briefs); `code-review` on the diff before a release |
+| driving the emulator by hand | `claude-android-qa-plugin:android-emulator-qa` (for adb tricks; the CI scenario is the gate) |
+
+**Not for this repo:** `compose-*`, `material-3`, `adaptive`, `edge-to-edge`, `navigation-event` (Compose / SDK 36+; load them only if the UI-toolkit decision in `BRIEF.md` lands on Compose), `kotlin-concurrency-and-flow` (no Kotlin; the repo's old copy was removed 2026-11-27), `design-critique`, `ux-copy`, `accessibility-review` (the look and the wording must match the stock photos, `research/reference/stock/INDEX.md`). `ponytail` only when Tj asks for it, and never to shorten a `ckpt` "next".
+
+## Lessons from earlier sessions live in `LESSONS.md`
+
+Moved out of this file on 2026-11-27, word for word: they cost about 13K tokens on every turn. **Read the matching section BEFORE working in that area** (`grep -n '^## ' LESSONS.md` lists them; new lessons go at its END):
+- lock screen, power menu, patch, scrim, battery saver, quick settings cover: v0.8.1, v0.8.2, v0.8.3, v0.9.2, v0.9.5
+- home-screen patch and its timing: v0.8.9, v0.8.10
+- animations, state machines, level-triggered holds, Wi-Fi / Bluetooth symbols: v0.8.6, v0.9.4
+- shell helper, main thread, system settings that must be put back, notifications, clean start / Recents: BG1/BG2, v0.8.8, v0.8.5
+- reading CI, gate triage, flakes, native crashes, sizing a gate: v0.8.11, v0.9.0, v0.9.1, v0.9.7, CV1, BW1
+- the context limit and compaction ("Prompt is too long"), taking over from a cut-off or parallel session: BM1, v0.8.8, v0.9.1
+- Settings look-alike and comparing screenshots with numbers: BN1; music app and icons: v0.9.6, BW1; keyboard: v0.9.7
+- one launcher for both worlds (`unified_launcher`): CV1
 
 ## Project rules
 
