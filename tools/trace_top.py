@@ -84,8 +84,7 @@ def name_of(tr, mid):
     m = tr['methods'].get(mid)
     if not m:
         return '?%x' % mid
-    cls = m[0].replace('com.android.launcher3.', 'L3.').replace('com.tj.launcher.', 'tj.').replace('android.', 'a.', 1) if False else m[0]
-    cls = cls.replace('com.android.launcher3.', 'L3.').replace('com.tj.launcher.', 'tj.')
+    cls = m[0].replace('com.android.launcher3.', 'L3.').replace('com.tj.launcher.', 'tj.')
     return cls + '.' + m[1]
 
 
@@ -115,10 +114,10 @@ def replay(tr):
         if act == 0:
             st.append([mid, cpu, wall, 0, 0])
         else:
-            # exit (1) closes the top frame; unwind (2) closes it too (an exception passed through it)
-            while st and st[-1][0] != mid and act == 1 and len(st) > 1 and False:
-                close(tid, st, cpu, wall)
-            if st:
+            # exit (1) and unwind (2, an exception passed through) close the topmost frame of that method and everything above it
+            # (a record whose method is not on the stack at all is ignored rather than allowed to corrupt the rest)
+            idx = next((i for i in range(len(st) - 1, -1, -1) if st[i][0] == mid), None)
+            while idx is not None and len(st) > idx:
                 close(tid, st, cpu, wall)
     for tid, st in stacks.items():
         cpu, wall = last.get(tid, (0, 0))
