@@ -7,6 +7,7 @@ things, and this tool turns each trace into a few short lines (the CI RESULTS bl
 
   python3 -I tools/trace_top.py FILE [--phase NAME] [--top N] [--width W]     print `INFO  PR <phase> ...` lines (the scenario pipes them into results.txt)
   python3 -I tools/trace_top.py FILE --phase NAME --detail [--top 40]         the same as a long plain-text report (the scenario publishes it as pr-NAME.txt)
+  python3 -I tools/trace_top.py FILE --tree [--thread main] [--min 8] [--depth 16]   the call tree of one thread (merged by path), inclusive CPU; prune below --min ms
   python3 -I tools/trace_top.py --cpu A B --phase NAME --secs S                two `comm|stat` snapshots of /proc/PID/task -> one INFO line: CPU per thread name in between
   python3 -I tools/trace_top.py --selftest                                    parse a synthetic trace and check the arithmetic (tools/test_trace_top.sh)
 
@@ -217,6 +218,61 @@ def detail(tr, phase, top=40):
     return out
 
 
+
+class _Node:
+    __slots__ = ('mid', 'kids', 'cpu', 'wall', 'n')
+
+    def __init__(self, mid):
+        self.mid, self.kids, self.cpu, self.wall, self.n = mid, {}, 0, 0, 0
+
+
+def call_tree(tr, thread_name='main'):
+    """Rebuild the call tree of one thread (merged by call path): node = (method, inclusive cpu us, inclusive wall us, entries)."""
+    tid = next((t for t, n in tr['threads'].items() if n == thread_name), None)
+    root = _Node(0)
+    if tid is None:
+        return root
+    st = [(root, 0, 0)]
+    last = (0, 0)
+    for t, mid, act, cpu, wall in tr['records']:
+        if t != tid:
+            continue
+        last = (cpu, wall)
+        if act == 0:
+            top = st[-1][0]
+            nd = top.kids.get(mid)
+            if nd is None:
+                nd = top.kids[mid] = _Node(mid)
+            nd.n += 1
+            st.append((nd, cpu, wall))
+        else:
+            idx = next((i for i in range(len(st) - 1, 0, -1) if st[i][0].mid == mid), None)
+            while idx is not None and len(st) > idx:
+                nd, c0, w0 = st.pop()
+                nd.cpu += max(0, cpu - c0)
+                nd.wall += max(0, wall - w0)
+    while len(st) > 1:
+        nd, c0, w0 = st.pop()
+        nd.cpu += max(0, last[0] - c0)
+        nd.wall += max(0, last[1] - w0)
+    return root
+
+
+def tree_lines(tr, thread_name='main', min_ms=8.0, max_depth=16):
+    root = call_tree(tr, thread_name)
+    out = []
+
+    def walk(nd, depth):
+        for k in sorted(nd.kids.values(), key=lambda x: -x.cpu):
+            if k.cpu / 1000.0 < min_ms or depth >= max_depth:
+                continue
+            selfc = k.cpu - sum(c.cpu for c in k.kids.values())
+            out.append('%s%s  incl %s ms (self %s) wall %s ms x%d' % ('  ' * depth, name_of(tr, k.mid), ms(k.cpu), ms(max(0, selfc)), ms(k.wall), k.n))
+            walk(k, depth + 1)
+    walk(root, 0)
+    return out
+
+
 def cpu_diff(a_path, b_path, phase, secs):
     """Two snapshots of /proc/PID/task/*/{comm,stat} written by the scenario as `comm|stat` lines -> one INFO line: CPU per thread name in between."""
     def load(p):
@@ -302,7 +358,7 @@ def main(argv):
         return 0
     opt = {}
     for i, a in enumerate(argv):
-        if a in ('--phase', '--top', '--width', '--secs') and i + 1 < len(argv):
+        if a in ('--phase', '--top', '--width', '--secs', '--thread', '--min', '--depth') and i + 1 < len(argv):
             opt[a] = argv[i + 1]
     args = [a for a in argv if not a.startswith('--')]
     files = [a for a in args if a not in opt.values()]
@@ -321,6 +377,10 @@ def main(argv):
     except Exception as e:   # never fail the scenario: say what the file looked like
         raw = open(files[0], 'rb').read()
         print('INFO  PR %s: trace not readable (%s); %d bytes; head %r' % (phase, e, len(raw), raw[:60]))
+        return 0
+    if '--tree' in argv:
+        for ln in tree_lines(tr, opt.get('--thread', 'main'), float(opt.get('--min', 8)), int(opt.get('--depth', 16))):
+            print(ln)
         return 0
     if '--detail' in argv:
         for ln in detail(tr, phase, int(opt.get('--top', 40))):
