@@ -1927,3 +1927,49 @@
 >
 > Everything is saved and pushed. The BUILDLOG line is written, the heartbeat is deleted, and nothing Claude-owned is left open. All three of your messages in this thread are answered.
 <!-- sha:a22d9f3b4dae -->
+
+## 2026-11-27T00:07:16Z
+> All five steps are done. The build and tests pass, and I committed the changes to `claude/lucid-lovelace-qd4qnp`.
+>
+> ## 1. Are the tj-android-kit skills loaded?
+> Yes. All 23 are in the skill list. The plugin contains skills only, with no hooks or connectors, so it sends nothing out.
+>
+> ## 2. Build and tests
+> - `ANDROID_HOME` is `/opt/android-sdk`, with platforms android-29, 34, 36 and 37.0.
+> - **Build:** `assembleDebug` plus all unit tests finished with `BUILD SUCCESSFUL` in 57 seconds. It produced an 11.8 MB debug APK.
+> - **Tests:** 1,303 unit tests ran and 0 failed.
+> - **Blocked downloads:** none, so there is no domain to add.
+> - **Lint:** it passed, but only as a reused report, not a fresh run. Gradle called it up to date because I changed no code. The report lists 648 errors and 388 warnings. The repo sets `abortOnError = false` for these because they come from inherited AOSP Launcher3 code.
+>
+> ## 3. What I changed
+> - **CLAUDE.md went from 81 KB to 31 KB.** It loads into every session, so this saves about 13,000 tokens on every turn.
+>   - The 21 hand-written "Lessons from…" sections moved word for word into a new `LESSONS.md`. CLAUDE.md now has a short index saying which lesson to read before working in each area.
+>   - I archived the dated heartbeat history and old branch table in `LESSONS.md`, and replaced them in CLAUDE.md with the plain rule.
+>   - It said the app was Kotlin, but the code is 798 Java files and no Kotlin, so I corrected it.
+>   - I added the new skills section: which tj-android-kit skill to load before which kind of work, and that this repository's rules win over any skill.
+> - **All your standing rules are untouched.** The plugin-managed "Session Learnings" block is untouched too. The handoff self-test passes (53 passed, 0 failed) and the session briefing is 8,817 characters, under the 10,000 cap.
+> - **Removed from the repo:**
+>   - The repo's copy of the Kotlin concurrency skill, with its licence and notices. It was an older version of the kit's, and the repo has no Kotlin.
+>   - `handoff-launcher.md`, a 38 KB file that called itself superseded. It stays in git history.
+> - **Fixed in the repo's `android-go-launcher` skill:** it said `targetSdk 29`, but the build has `targetSdk 28` on purpose. I also removed its Kotlin reference.
+> - **Not installed:** I installed no plugins, and changed no accounts.
+>
+> ## 4. Switch these off on claude.ai
+> I count 154 skills loaded, and about 120 have no use for this project.
+> - **Whole plugins to switch off:**
+>   - `design`, `design-skills`, `design-superpowers`, `design-dev-bridge`, `design-with-blocks`, `design-system-by-blue`, `superdesign`, `frontend-design`, `mobile-design-system`, `consistent-ui` (designs from scratch, but this launcher must match the stock photos)
+>   - `engineering` (duplicates the built-in code review and the kit's debugging skill)
+>   - `product-management`, `finance`, `data`, `productivity`
+>   - `brightdata-plugin`, `tinyfish`, `exa` (web scraping and search)
+>   - `base44`
+> - **Their bundled connector
+> [... 1079 characters omitted ...]
+> w`, because there is no Kotlin here
+>   - To trim these, someone has to edit the plugin at its source. `ponytail` is optional.
+> - **Keep:** the other tj-android-kit skills, `claude-android-qa-plugin`, and the built-in `code-review` and `security-review`. `security-guidance` adds edit-time security warnings, so keeping it is your call.
+>
+> ## 5. Branch
+> Everything is committed and pushed on `claude/lucid-lovelace-qd4qnp`, and the working tree is clean. The repo's autosave rule (`tools/MIRROR_MAIN`, which you approved on 2026-11-02 and marked "never switch off") also fast-forwards `origin/main` on every push. So `main` now has these changes too, at the same commit `6e22778a`. I left that rule alone. If you want `main` to stay untouched, tell me and I'll bring it up with you before changing anything.
+>
+> I also recorded this request in `TASKS.md` (CZ1) and checkpointed it, so a cut-off loses nothing.
+<!-- sha:b39e39a8fc2b -->
