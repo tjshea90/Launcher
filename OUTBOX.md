@@ -2020,3 +2020,7 @@
 ## 2026-11-28T01:06:29Z
 > Run #799 (id 46091238924) is on the emulator with the signing fix. I'll check the release-APK build step at about 01:12Z, because last time a failed build left the watcher waiting for nothing. The lessons from this pass are saved in `LESSONS.md`.
 <!-- sha:23613e456bd7 -->
+
+## 2026-11-28T01:12:21Z
+> The release-APK build and signing step passed this time. The emulator scenario for run #799 has been running since 01:06Z, and I'm waiting for its results.
+<!-- sha:46c44a0bfab6 -->
