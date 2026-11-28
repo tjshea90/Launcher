@@ -23,7 +23,7 @@ n=0
 while IFS= read -r f; do
   [ "$n" -ge "$MAX" ] && break
   cp "$f" "$T/$(basename "$f")" && n=$((n+1))
-done < <(find "$SRC" -maxdepth 2 -type f \( -name "$GLOB" -o -name 'pr-*.txt' -o -name 'pr-*.gz' \) -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
+done < <(find "$SRC" -maxdepth 2 -type f \( -name "$GLOB" -o -name 'pr-*.txt' -o -name 'pr-*.gz' -o -name 'pr2-*.txt' \) -printf '%T@ %p\n' 2>/dev/null | sort -rn | cut -d' ' -f2-)
 [ "$n" -gt 0 ] || { echo "ci_publish_shots: no $GLOB files in $SRC"; exit 0; }
 printf 'run %s on %s\nsections: %s\nfiles: %s\n' "${GITHUB_RUN_ID:-?}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${SECTIONS:-?}" "$n" > "$T/RUN.txt"
 

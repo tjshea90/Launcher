@@ -6356,6 +6356,7 @@ pr2nobounce(){ # Launcher3's first-run swipe-up hint is marked seen BEFORE the s
   grep -q 'launcher.apps_view_shown' "$f" || sed -i 's#</map>#    <boolean name="launcher.apps_view_shown" value="true" />\n</map>#' "$f"
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
 }
+pr2adb(){ timeout 600 "$(type -P adb)" "$@"; }   # the scenario's adb() gives a command 60 s; a full compile can take longer and its answer (and the wait for it) would be lost
 pr2state(){ adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'status=' | head -1 | tr -s ' '; }
 pr2files(){ local d i; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"
   for i in x86 x86_64; do adb shell "ls -l $d/oat/$i/ 2>/dev/null" | tr -d '\r' | awk -v isa=$i 'NF>=8{printf "%s/%s=%s ", isa, $NF, $5}'; done; }
@@ -6384,7 +6385,7 @@ pr2mem(){ # pr2mem <tag>: fresh process, one scripted use, 20 s of quiet, then t
   adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 3
   adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 2
   adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; sleep 5
-  pr2use; sleep 20
+  rebind; pr2use; sleep 20
   local f="$OUT/pr2-meminfo-$1.txt"
   adb shell dumpsys meminfo "$PKG" </dev/null > "$f" 2>&1
   info "PR2 mem $1 (KB): $(sed -nE 's/^ *(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL( PSS)?): +([0-9]+).*/\1=\3/p' "$f" | tr '\n' ' ') rows: $(sed -nE 's/^ *(\.so mmap|\.jar mmap|\.apk mmap|\.dex mmap|\.oat mmap|\.art mmap|Dalvik Other|Dalvik Heap) +([0-9]+).*/\1=\2/p' "$f" | tr ' ' '_' | tr '\n' ' ')"
@@ -6405,11 +6406,11 @@ if grep -q Success "$OUT/pr2-install.txt"; then
   # 3. the three compile states
   pr2cold verify
   pr2mem verify
-  adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
+  pr2adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
   info "PR2 compile speed-profile: $(tr -d '\r' < "$OUT/pr2-compile-sp.txt" | tr '\n' ' ' | cut -c1-100); now $(pr2state); files: $(pr2files)"
   pr2cold speed-profile
   pr2mem speed-profile
-  adb shell cmd package compile -m speed -f "$PKG" > "$OUT/pr2-compile-speed.txt" 2>&1
+  pr2adb shell cmd package compile -m speed -f "$PKG" > "$OUT/pr2-compile-speed.txt" 2>&1
   info "PR2 compile speed: $(tr -d '\r' < "$OUT/pr2-compile-speed.txt" | tr '\n' ' ' | cut -c1-100); now $(pr2state); files: $(pr2files)"
   pr2cold speed
   pr2mem speed
