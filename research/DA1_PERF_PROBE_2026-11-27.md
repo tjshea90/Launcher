@@ -55,3 +55,17 @@ Compile state: `x86: [status=verify] [reason=boot]` (debug APK: no baseline prof
 | X1 | GPU / EGL surface memory of the overlay windows (patch, pencil cover) | NOT measurable in CI (software GL); needs a tablet report with the PSS split; lock-path code: only if trivially behaviour-preserving |
 | X2 | narrow accessibility event types | NO (CY1 decided: the patches depend on them) |
 | X3 | R8 / minify | NO (BRIEF + PERF_AUDIT K1: hidden-API reflection, class names in XML and in `app_process`) |
+
+## Results of run #799 (id 46091238924, section `pr2`, RELEASE apk debug-signed with a throwaway key; CI emulator x86 api 29) - the shipped baseline profile and compiled code
+The debug APK cannot be used for this (run #797: a debuggable app is capped at `quicken`), and the wrong cold-start method (force-stop alone) measured warm starts. `pr2` now swaps in the release variant and starts Home cold with Settings in front.
+| Fact | Value |
+| :- | :- |
+| assets in the release apk | `assets/dexopt/baseline.prof` 791 B, `baseline.profm` 55 B |
+| profile on the device after the first start + use | hot 14 922, startup 14 908, post-startup 15 127 methods, 281 classes (the shipped rules + what the runtime added): **androidProfileInstaller works on API 29, the CG1c pipeline is real** |
+| state right after `install -r` | `speed-profile [reason=install]` (this image's install-time dexopt; the old debug profile matched nothing, so NOT a true verify baseline: fixed in the next run) |
+| cold start `am start -W` TotalTime, three runs each, LaunchState COLD | install state 345 / 303 / 321 ms; after `compile -m speed-profile` 329 / 304 / 383; after `-m speed` 317 / 245 / 310. Compile state changes the cold start by at most about 10 percent (noise is +-40 ms) |
+| PSS after the same scripted use (KB) | install state TOTAL 53 015 (Native 23 992, Code 8 496); speed-profile 52 789 (Native 18 312, Code 14 080); speed 57 809 (Native 18 376, Code 18 800) |
+| app image | `.art mmap` 2 199 KB (no image) -> 3 142 KB after the speed-profile compile with a 281-class profile: **about +0.94 MB, roughly 3.4 KB per class**; `-m speed` builds no image (1 883 KB). A 1 305-class list (everything a use loads) would cost about 4.4 MB, permanently, for a gain that the cold-start numbers say is under 10 percent |
+Reading: compiled code moves memory from the native heap (JIT data) into file-backed code pages: speed-profile is memory-neutral (52.8 against 53.0 MB), `-m speed` (the Setup item COMPILE_SELF) is about 5 MB more PSS than speed-profile (clean file pages, reclaimable) and not measurably faster at a cold start.
+**Decision P1 (class lines in baseline-prof.txt): SKIPPED.** Measured cost 3.4 KB RAM per class, no measurable cold-start gain, and the existing profile already compiles every method of our code. Nothing to build here.
+Known gaps of run #799 (fixed for run 3): no true `verify` baseline, `files:` empty (the oat directory cannot be listed by the shell user: use `stat -c %s` on the known names), three runs per state is noisy (use five).
