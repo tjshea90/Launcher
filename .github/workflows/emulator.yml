@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       sections:
-        description: 'Which scenario sections to run, comma list, in the order they run: base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x,v,g,rs,ka,ac,bs,bl,pa,pt,ad,se,rs2,rt,im,rs3,gc,rs4,pf,rb,last,ao,rg,uf,cs,cs2,an,nq,hp,cu,hf,fp,ss,gear,wf,bt,mu,fl,gm,hm,vo,cd1,cd2,cd2h,cd3,cd3n,cd4,cd3u,ro,qm,lg,pk,pm,sr,sf,ul,ul2,pr,pr2. EMPTY = everything incl. research: do NOT, pick sections with tools/gate.sh (about 42 min since 2026-11-05, close to the 2700 s step limit: do not use it as the gate). RELEASE GATE = two side-by-side runs, about 20 min each: A = base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x and B = v,g,ka,ac,rt,im,gc,pf,rb,last (the one-off research sections rs to rs4 are not part of it). A new feature usually needs only its own, e.g. "n6" (~5 min). "pr2" = DA1: cold start verify vs speed-profile vs speed + the runtime profile (pr-profile.txt). "pr" = DA1 measurement only (CPU profile of the launcher process per activity, idle CPU, PSS split; no checks; run it with shots=true and read pr-*.txt on branch ci-shots).'
+        description: 'Which scenario sections to run, comma list, in the order they run: base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x,v,g,rs,ka,ac,bs,bl,pa,pt,ad,se,rs2,rt,im,rs3,gc,rs4,pf,rb,last,ao,rg,uf,cs,cs2,an,nq,hp,cu,hf,fp,ss,gear,wf,bt,mu,fl,gm,hm,vo,cd1,cd2,cd2h,cd3,cd3n,cd4,cd3u,ro,qm,lg,pk,pm,sr,sf,ul,ul2,pr,pr2. EMPTY = everything incl. research: do NOT, pick sections with tools/gate.sh (about 42 min since 2026-11-05, close to the 2700 s step limit: do not use it as the gate). RELEASE GATE = two side-by-side runs, about 20 min each: A = base,legacy,x1,e1,y2,b6,b4,n,n6,o,t,u,s,p,x and B = v,g,ka,ac,rt,im,gc,pf,rb,last (the one-off research sections rs to rs4 are not part of it). A new feature usually needs only its own, e.g. "n6" (~5 min). "pr2" = DA1: builds a RELEASE apk (debug-signed) and measures the shipped baseline profile: profile written by profileinstaller? cold start verify vs speed-profile vs speed, oat / art sizes, PSS per state (run it alone, with shots=true; pr-summary2.txt). "pr" = DA1 measurement only (CPU profile of the launcher process per activity, idle CPU, PSS split; no checks; run it with shots=true and read pr-*.txt on branch ci-shots).'
         required: false
         default: ''
       shots:
@@ -87,6 +87,17 @@ jobs:
           git checkout --no-overlay HEAD -- eleven/src/main
           test -z "$(git status --porcelain eleven)"
           ./gradlew :eleven:assembleDebug --console=plain
+      - name: Build the release APK, debug-signed (only for section pr2, TASKS DA1; the shipped baseline profile and what a compiled launcher is worth)
+        if: contains(format(',{0},', inputs.sections), ',pr2,')
+        run: |
+          set -e
+          ./gradlew :app:assembleRelease --console=plain
+          BT="$(ls -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/* | sort -V | tail -1)"
+          IN="$(ls app/build/outputs/apk/release/*.apk | head -1)"
+          "$BT/apksigner" sign --ks "$HOME/.android/debug.keystore" --ks-pass pass:android --key-pass pass:android --ks-key-alias androiddebugkey --out pr2-release.apk "$IN"
+          "$BT/apksigner" verify --print-certs pr2-release.apk | head -2
+          ls -l pr2-release.apk
+          unzip -l pr2-release.apk | grep -E 'dexopt|classes[0-9]*\.dex|resources\.arsc'
       - name: Boot Android 10, run the scenario
         uses: reactivecircus/android-emulator-runner@v2
         env:

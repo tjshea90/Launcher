@@ -6333,14 +6333,22 @@ setmode custom; home
 fi # section pr
 
 if want pr2; then # section pr2
-# ---- DA1 (Tj, 2026-11-27): how much is a COMPILED launcher worth? The baseline profile that ships in the release APK lists methods (about 11 400 of 55 200) but only 4 CLASSES (the class list decides the app image: classes
-#      preloaded at start). This section measures the cold start of our launcher three ways on the emulator: (1) as installed (status verify, no compiled code), (2) after `cmd package compile -m speed-profile -f` from the profile the
-#      RUNTIME collected while the scripted interactions ran (an upper bound for "a good profile": real classes AND methods, so an app image is built), (3) after `-m speed` (everything compiled). It also dumps the runtime profile
-#      (classes + methods, text) as pr-profile.txt so a precise class list can be made from it. Research only, zero checks. x86 + fast host CPU: the RATIOS carry over to the tablet, the milliseconds do not.
+# ---- DA1 (Tj, 2026-11-27): is the SHIPPED baseline profile worth anything, and what is a compiled launcher worth? Research only, zero checks.
+#      The emulator tests install the DEBUG apk, which is debuggable: Android caps a debuggable app at `quicken` (run #797: both `compile -m speed-profile` and `-m speed` ended as status=quicken), so nothing about
+#      ahead-of-time code can be measured with it. emulator.yml therefore builds the RELEASE variant for this section (debug-signed: pr2-release.apk, not debuggable, with assets/dexopt/baseline.prof exactly as a Release has it)
+#      and this section swaps it in over the debug apk (same certificate: the data, the default-home choice and the accessibility switch stay). It then answers, in order: (1) did androidx.profileinstaller write the profile
+#      on API 29 (classes / methods in the app's profile after the first start)? (2) cold start (Settings in front, launcher process killed, `am start -W` of Home: TotalTime + LaunchState) as installed (verify), after
+#      `cmd package compile -m speed-profile -f` (what Android's idle job does with that profile) and after `-m speed` (the Setup item COMPILE_SELF); (3) the oat / vdex / art file sizes of each state (is an app image built?);
+#      (4) the PSS of the process after the same scripted use in each state. x86 + fast host: ratios carry over to the tablet, milliseconds do not. At the end the debug apk is put back.
 beat "before PR2"
+PR2APK=pr2-release.apk
+if [ ! -f "$PR2APK" ]; then
+  info "PR2: $PR2APK is missing (emulator.yml builds it only when sections contains pr2): nothing measured"
+else
 adb shell locksettings clear --old 1234 >/dev/null 2>&1; adb shell wm dismiss-keyguard >/dev/null 2>&1
 ensurehome; setmode custom; rebind
-pr2nobounce(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
+pr2nobounce(){ # Launcher3's first-run swipe-up hint is marked seen BEFORE the swap (the release apk is not debuggable: no run-as afterwards)
+  adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
   local f="$OUT/pr2-l3prefs.xml"
   adb shell "run-as $PKG cat shared_prefs/com.android.launcher3.prefs.xml" 2>/dev/null | tr -d '\r' > "$f"
   grep -q '<map' "$f" || printf '<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n<map>\n</map>\n' > "$f"
@@ -6349,17 +6357,21 @@ pr2nobounce(){ adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 1
   adb shell "run-as $PKG sh -c 'mkdir -p shared_prefs; cat > shared_prefs/com.android.launcher3.prefs.xml'" < "$f"
 }
 pr2state(){ adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'status=' | head -1 | tr -s ' '; }
-pr2files(){ local d; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"; adb shell "ls -l $d/oat/*/ 2>/dev/null" | tr -d '\r' | awk 'NF>=8{printf "%s=%s ", $NF, $5}'; }
-pr2cold(){ # pr2cold <tag>: three cold starts (force-stop, start HOME, wait for the first frame): TotalTime of each
-  local i t out=""
+pr2files(){ local d i; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"
+  for i in x86 x86_64; do adb shell "ls -l $d/oat/$i/ 2>/dev/null" | tr -d '\r' | awk -v isa=$i 'NF>=8{printf "%s/%s=%s ", isa, $NF, $5}'; done; }
+pr2count(){ awk '/^\thot methods:/{s="hot";next} /^\tstartup methods:/{s="st";next} /^\tpost startup methods:/{s="ps";next} /^\tclasses:/{s="cl";next} /^[^\t]/{s=""} /^\t\t/{if(s!="")n[s]++} END{printf "hot=%d startup=%d poststartup=%d classes=%d", n["hot"], n["st"], n["ps"], n["cl"]}' "$1"; }
+pr2cold(){ # pr2cold <tag>: three process-cold starts of Home with another app in front (force-stop alone would let the system restart Home by itself and the next `am start -W` would only measure a warm start)
+  local i t ls out=""
   for i in 1 2 3; do
+    adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 3
     adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 2
-    t=$(adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME 2>&1 | tr -d '\r' | grep -m1 TotalTime | grep -o '[0-9]*')
-    out="$out ${t:-?}"; sleep 5
+    adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME > "$OUT/pr2-cold-$1-$i.txt" 2>&1
+    t=$(tr -d '\r' < "$OUT/pr2-cold-$1-$i.txt" | grep -m1 TotalTime | grep -o '[0-9]*'); ls=$(tr -d '\r' < "$OUT/pr2-cold-$1-$i.txt" | grep -m1 LaunchState | sed 's/.*: *//')
+    out="$out ${t:-?}(${ls:-?})"; sleep 4
   done
   info "PR2 cold start $1 (am start -W TotalTime ms, three runs):$out; $(pr2state); files: $(pr2files)"
 }
-pr2use(){ # the scripted use that fills the runtime profile: home, drawer + flings, an app and back, the shade, Recents
+pr2use(){ # the scripted use that fills the profile and the caches: home, drawer + flings, an app and back, the shade, Recents
   home; sleep 3
   adb shell input swipe 300 900 300 200 400; sleep 2.5
   for i in 1 2 3; do adb shell input swipe 300 800 300 200 150; sleep 1; done
@@ -6368,24 +6380,45 @@ pr2use(){ # the scripted use that fills the runtime profile: home, drawer + flin
   adb shell input swipe 300 2 300 700 250; sleep 2; adb shell input keyevent KEYCODE_BACK; sleep 1.5
   adb shell input keyevent KEYCODE_APP_SWITCH; sleep 3; adb shell input keyevent KEYCODE_HOME; sleep 3
 }
+pr2mem(){ # pr2mem <tag>: fresh process, one scripted use, 20 s of quiet, then the PSS split (the whole dump stays in pr2-meminfo-<tag>.txt)
+  adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 3
+  adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 2
+  adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1; sleep 5
+  pr2use; sleep 20
+  local f="$OUT/pr2-meminfo-$1.txt"
+  adb shell dumpsys meminfo "$PKG" </dev/null > "$f" 2>&1
+  info "PR2 mem $1 (KB): $(sed -nE 's/^ *(Java Heap|Native Heap|Code|Stack|Graphics|Private Other|System|TOTAL( PSS)?): +([0-9]+).*/\1=\3/p' "$f" | tr '\n' ' ') rows: $(sed -nE 's/^ *(\.so mmap|\.jar mmap|\.apk mmap|\.dex mmap|\.oat mmap|\.art mmap|Dalvik Other|Dalvik Heap) +([0-9]+).*/\1=\2/p' "$f" | tr ' ' '_' | tr '\n' ' ')"
+}
 pr2nobounce
-info "PR2 start state: $(pr2state); files: $(pr2files)"
-pr2cold installed
-# the runtime collects the profile while the launcher runs; SIGUSR1 forces GC + a profile save (art/runtime/signal_catcher.cc), run-as lets us signal our own process
-pr2use; pr2use
-P2PID="$(adb shell pidof "$PKG" | tr -d '\r' | awk '{print $1}')"
-adb shell "run-as $PKG kill -10 $P2PID" >/dev/null 2>&1; sleep 5
-adb shell cmd package dump-profiles "$PKG" > "$OUT/pr2-dump-profiles.txt" 2>&1; sleep 2
-info "PR2 dump-profiles: $(tr -d '\r' < "$OUT/pr2-dump-profiles.txt" | tr '\n' ' ' | cut -c1-150); profman dir: $(adb shell ls -l /data/misc/profman 2>&1 | tr -d '\r' | tr -s ' ' | tr '\n' ';' | cut -c1-260)"
-adb shell "cat /data/misc/profman/$PKG*.txt" 2>/dev/null | tr -d '\r' > "$OUT/pr-profile.txt"
-info "PR2 runtime profile text: $(wc -l < "$OUT/pr-profile.txt") lines, $(grep -c '^L' "$OUT/pr-profile.txt") class lines, $(grep -c -- '->' "$OUT/pr-profile.txt") method lines; head: $(head -c 300 "$OUT/pr-profile.txt" | tr '\n' '|')"
-adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
-info "PR2 compile speed-profile: $(tr -d '\r' < "$OUT/pr2-compile-sp.txt" | tr '\n' ' ' | cut -c1-120)"
-pr2cold speed-profile
-adb shell cmd package compile -m speed -f "$PKG" > "$OUT/pr2-compile-speed.txt" 2>&1
-info "PR2 compile speed: $(tr -d '\r' < "$OUT/pr2-compile-speed.txt" | tr '\n' ' ' | cut -c1-120)"
-pr2cold speed
-adb shell cmd package compile -m verify -f "$PKG" >/dev/null 2>&1
+# 1. swap in the release apk (same certificate as the debug one: -r keeps the data)
+adb install -r -d "$PR2APK" > "$OUT/pr2-install.txt" 2>&1
+info "PR2 install of the release apk: $(tr -d '\r' < "$OUT/pr2-install.txt" | tr '\n' ' ' | cut -c1-160); debuggable flag: $(adb shell dumpsys package "$PKG" 2>/dev/null | tr -d '\r' | grep -c 'DEBUGGABLE') (0 = good); apk assets: $(unzip -l "$PR2APK" 2>/dev/null | grep -E 'dexopt' | awk '{printf "%s=%s ", $4, $1}')"
+if grep -q Success "$OUT/pr2-install.txt"; then
+  ensurehome; rebind; sleep 3
+  adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME >/dev/null 2>&1
+  info "PR2 start state: $(pr2state); files: $(pr2files)"
+  # 2. ProfileInstaller writes the profile about 5 s after the first start of a new version: give it 25 s, use the app a little, then read what Android holds
+  pr2use; sleep 25
+  adb shell cmd package dump-profiles "$PKG" > "$OUT/pr2-dump-profiles.txt" 2>&1; sleep 2
+  adb shell "cat /data/misc/profman/$PKG-primary.prof.txt" 2>/dev/null | tr -d '\r' > "$OUT/pr2-profile-installed.txt"
+  info "PR2 installed profile (after first start + use): $(wc -l < "$OUT/pr2-profile-installed.txt") lines, $(pr2count "$OUT/pr2-profile-installed.txt"); dump-profiles said: $(tr -d '\r' < "$OUT/pr2-dump-profiles.txt" | tr '\n' ' ' | cut -c1-120)"
+  # 3. the three compile states
+  pr2cold verify
+  pr2mem verify
+  adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
+  info "PR2 compile speed-profile: $(tr -d '\r' < "$OUT/pr2-compile-sp.txt" | tr '\n' ' ' | cut -c1-100); now $(pr2state); files: $(pr2files)"
+  pr2cold speed-profile
+  pr2mem speed-profile
+  adb shell cmd package compile -m speed -f "$PKG" > "$OUT/pr2-compile-speed.txt" 2>&1
+  info "PR2 compile speed: $(tr -d '\r' < "$OUT/pr2-compile-speed.txt" | tr '\n' ' ' | cut -c1-100); now $(pr2state); files: $(pr2files)"
+  pr2cold speed
+  pr2mem speed
+fi
+# 4. the debug apk back (debuggable, as every other section expects it) and the compile state it had
+adb install -r -d "$APK" > "$OUT/pr2-restore.txt" 2>&1
+info "PR2 restore of the debug apk: $(tr -d '\r' < "$OUT/pr2-restore.txt" | tr '\n' ' ' | cut -c1-100)"
+ensurehome; setmode custom; rebind
+fi
 grep -E 'INFO  PR2 ' "$OUT/results.txt" > "$OUT/pr-summary2.txt"
 setmode custom; home
 fi # section pr2
