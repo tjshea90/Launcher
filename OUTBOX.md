@@ -2034,3 +2034,50 @@
 ## 2026-11-28T01:27:18Z
 > The build step passed again. The scenario for run #800 started at 01:20:41Z, and I'm waiting for it to publish the final numbers.
 <!-- sha:81dca76d8674 -->
+
+## 2026-11-28T01:35:13Z
+> Tj, I measured the launcher instead of re-reading it, and found nothing in the app worth changing. No release is needed, and v0.9.20 stays current. This was the sixth speed pass, so the cheap wins were already taken.
+>
+> **Proven (measured on the CI emulator).** The emulator is x86 with software graphics, so ratios carry over to your tablet but the milliseconds don't.
+> - **Idle:** the launcher uses 0.03 % of one CPU core and draws zero frames, with the screen on or off.
+> - **Main-thread CPU for one whole scripted use:**
+>   - app launch: 25 ms
+>   - Recents: 20 ms
+>   - PIN unlock: 9 ms
+>   - screen on/off: 7 ms
+>   - shade: 2 ms
+>   - power menu: 2 ms
+>   - pages: 104 ms
+>   - drawer plus flings: 153 ms, of which 91 ms is idle wait
+> - **Cold start:** it is the only step with real CPU, mostly class loading.
+> - **Baseline profile:** it works on Android 10. After the first start the system holds 14,922 hot methods and 285 classes for the launcher.
+> - **Compile state of the release APK, five cold starts each:**
+>
+> | State | Cold start | Memory after use |
+> | :- | :- | :- |
+> | verify (a fresh sideload) | 346 ms | 49.7 MB, 21.0 MB of it native heap |
+> | speed-profile (Android's idle job) | 284 ms, 18 % faster | 49.0 MB, 12.9 MB native heap |
+> | speed (the Setup "compile" item) | 322 ms, within noise | 51.6 MB |
+>
+> **Skipped on purpose**
+> - **Class lines in the baseline profile:** the runtime records the classes itself, and an app image costs about 3.4 KB of RAM per class.
+> - **Start-up flags in the profile:** no proof they help.
+> - **Compile right after install:** the shell helper only lives during your cable sessions, and a compile during use would compete for the tablet's CPU.
+> - **Setup item from `speed` to `speed-profile`:** it is leaner, but it would compile nothing if no profile were installed, and you asked for a full compile.
+> - **Narrower accessibility events, R8, threads, receivers:** nothing measurable. There are 23 threads, one Activity and no leak signature.
+>
+> **Built (tools only, no product code):**
+> - an ART trace reader, `tools/trace_top.py`, with its test
+> - emulator sections `pr` and `pr2`
+> - a CI step that builds the release APK
+>
+> The fast checks were green at checkpoint 1713. The full write-up is `research/DA1_PERF_PROBE_2026-11-27.md`.
+>
+> **Only your tablet can show (reasoned, not measured)**
+> - **Overlay-window GPU memory:** CI can't see it.
+> - **Idle compile:** I don't know whether Android's idle compile actually runs on your tablet. Until it does after an update, the launcher starts about 18 % slower and holds about 8 MB more memory that can't be reclaimed.
+>
+> **What I need from you:** a fresh tablet report from v0.9.20. It prints the memory split including graphics, and the compile state. If it shows the tablet staying uncompiled for days, I'd change the Setup compile item. If it compiles, leave it as is. That is only my reading of the numbers, and the choice is yours.
+>
+> Everything is pushed, `main` matches the branch tip (`5d72e97a`), and no heartbeat is armed. The only open item is the tablet report (TASKS DA1f).
+<!-- sha:777b7e9f32cc -->
