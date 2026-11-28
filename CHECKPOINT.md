@@ -1,13 +1,13 @@
-# CHECKPOINT 1711 — read me first, then TASKS.md
+# CHECKPOINT 1712 — read me first, then TASKS.md
 
-**Written:** 2026-11-28T01:18:56Z · **tests:** all 12 fast checks green (gradle suite: see ship.sh)
-**Branch:** `claude/wonderful-franklin-vlm90o` · **builds on:** `75a3e48e` (this checkpoint is the commit after it)
+**Written:** 2026-11-28T01:20:30Z · **tests:** all 12 fast checks green (gradle suite: see ship.sh)
+**Branch:** `claude/wonderful-franklin-vlm90o` · **builds on:** `be0acfae` (this checkpoint is the commit after it)
 
 ## Just done
-DA1b: pr2 run 3 prepared (true verify baseline via compile -m verify -f, stat-based oat file sizes, five cold runs per state)
+DA1b: dispatched emulator.yml sections=pr2 shots=true: run #800 id 46092484975 (started 01:19:04Z, head be0acfae); watcher + 01:27Z timer running
 
 ## Do this next
-dispatch emulator.yml sections=pr2 shots=true ref claude/wonderful-franklin-vlm90o; find run id (list_workflow_runs resource_id emulator.yml workflow_runs_filter {branch,event workflow_dispatch} perPage 1); background watcher scratchpad/wait_ci.sh <runid> 1500 AND list_workflow_jobs at +6 min; then git show origin/ci-shots:pr-summary2.txt; write final DA1 answer, delete heartbeat trig_01TAXAYoGyEPAhuzh7PzBQm8; no product code changed
+wait for ci-shots commit naming run 46092484975, then git show origin/ci-shots:pr-summary2.txt (expect: compile verify state, cold start x5 per state for verify / speed-profile / speed, files: x86/base.odex=.. base.vdex=.. base.art=.., PSS per state); then write the final DA1 answer: research doc decision table, TASKS DA1b-DA1e ticks, delete heartbeat trig_01TAXAYoGyEPAhuzh7PzBQm8, answer Tj; no product code changed so no release
 
 *(resuming? CLAUDE.md's "FIRST ACTION OF EVERY SESSION" comes before "Starting a session" — do that one first, or autosave stays off all session.)*
 
@@ -16,6 +16,7 @@ dispatch emulator.yml sections=pr2 shots=true ref claude/wonderful-franklin-vlm9
 
 ## Last ten checkpoints
 ```
+  be0acfae ckpt 1711: DA1b: pr2 run 3 prepared (true verify baseline via compile -m verify -f, sta
   15eb44cd ckpt 1710: DA1b: run #799 id 46091238924 RESULT: release apk profile pipeline WORKS (pr
   9b11c154 ckpt 1709: DA1: LESSONS.md section for this pass (profiler method, debuggable apk caps 
   7cb3367c ckpt 1708: DA1b: run #798 id 46086858124 FAILED in the workflow step 'Build the release
@@ -25,8 +26,4 @@ dispatch emulator.yml sections=pr2 shots=true ref claude/wonderful-franklin-vlm9
   c3a5ca9d ckpt 1704: DA1b: findings of run #796 written (research/DA1_PERF_PROBE_2026-11-27.md, T
   aefb878e ckpt 1703: DA1b: scenario pr gets the PIN-unlock and power-menu phases; NEW section pr2
   622ba1fb ckpt 1702: DA1 facts so far (all [V] by hand): debug APK resources.arsc + dex are STORE
-  44e5756c ckpt 1701: DA1b: dispatched emulator.yml sections=pr shots=true: run #796 id 4608351418
 ```
-
-(1 automatic checkpoint(s) since the last deliberate one — the
-session was still mid-step. `git diff` against it shows what changed.)
