@@ -2006,3 +2006,13 @@
 >
 > I also armed the auto-resume heartbeat for this job (trigger `trig_01TAXAYoGyEPAhuzh7PzBQm8`, every 2 hours). I'll delete it when the job is shipped or only items waiting on you remain.
 <!-- sha:ab0aca48c81c -->
+
+## 2026-11-28T00:16:50Z
+> Run #798 (id 46086858124) is on the emulator with the rebuilt experiment. It now builds a real release APK, signed with the debug key, so the shipped baseline profile and AOT compile can be tested. The earlier run's compile numbers were unusable. The debug APK is debuggable, so Android caps it at `quicken`, and the force-stop trick measured warm starts. I'll read the results when they land.
+>
+> Run #797 did settle two things:
+> - **PIN unlock:** the launcher process used 9 ms of main-thread CPU across a 9.9 s scripted unlock.
+> - **Stock power menu:** it used 2 ms.
+>
+> I'm leaning toward not adding class lines to the profile. They would build an app image that Android decompresses into permanent RAM, for a gain on a cold start that happens about twice a day. That is reasoned, not measured, and this run will show whether the compile is worth anything at all.
+<!-- sha:f9da94a31cd5 -->
