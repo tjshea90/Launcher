@@ -2024,3 +2024,9 @@
 ## 2026-11-28T01:12:21Z
 > The release-APK build and signing step passed this time. The emulator scenario for run #799 has been running since 01:06Z, and I'm waiting for its results.
 <!-- sha:46c44a0bfab6 -->
+
+## 2026-11-28T01:20:37Z
+> Run #800 (id 46092484975) is the third and last measurement run. It adds a true "no compiled code" baseline, five cold starts per state, and the compiled-code file sizes. I'm waiting on it.
+>
+> Run #799 already answered the main question. The shipped baseline profile works on Android 10: after the first start the device held about 14.9k hot methods. The compile state changed the cold start by roughly 10 percent or less, which is within the measurement noise. A class list for an app image would cost about 3.4 KB of RAM per class, so I'm skipping it.
+<!-- sha:8fbdd389eb3b -->
