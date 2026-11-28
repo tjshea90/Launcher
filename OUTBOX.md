@@ -2030,3 +2030,7 @@
 >
 > Run #799 already answered the main question. The shipped baseline profile works on Android 10: after the first start the device held about 14.9k hot methods. The compile state changed the cold start by roughly 10 percent or less, which is within the measurement noise. A class list for an app image would cost about 3.4 KB of RAM per class, so I'm skipping it.
 <!-- sha:8fbdd389eb3b -->
+
+## 2026-11-28T01:27:18Z
+> The build step passed again. The scenario for run #800 started at 01:20:41Z, and I'm waiting for it to publish the final numbers.
+<!-- sha:81dca76d8674 -->
