@@ -2016,3 +2016,7 @@
 >
 > I'm leaning toward not adding class lines to the profile. They would build an app image that Android decompresses into permanent RAM, for a gain on a cold start that happens about twice a day. That is reasoned, not measured, and this run will show whether the compile is worth anything at all.
 <!-- sha:f9da94a31cd5 -->
+
+## 2026-11-28T01:06:29Z
+> Run #799 (id 46091238924) is on the emulator with the signing fix. I'll check the release-APK build step at about 01:12Z, because last time a failed build left the watcher waiting for nothing. The lessons from this pass are saved in `LESSONS.md`.
+<!-- sha:23613e456bd7 -->
