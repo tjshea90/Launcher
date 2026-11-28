@@ -1,0 +1,13 @@
+INFO  PR2 install of the release apk: Serving... Performing Incremental Install Unknown command: install-incremental Performing Streamed Install Success ; debuggable flag: 0 (0 = good); apk assets: assets/dexopt/baseline.prof=791 assets/dexopt/baseline.profm=55 
+INFO  PR2 start state:  x86: [status=speed-profile] [reason=install]; files: x86/base.odex=131688 x86/base.vdex=58180 x86/base.art=32768 
+INFO  PR2 installed profile (after first start + use): 45253 lines, hot=14922 startup=14908 poststartup=15127 classes=285; dump-profiles said: 
+INFO  PR2 compile verify: Success ; now  x86: [status=verify] [reason=unknown]; files: x86/base.odex=131688 x86/base.vdex=57857 
+INFO  PR2 cold start verify (am start -W TotalTime ms, five runs): 309(COLD) 378(COLD) 331(COLD) 384(COLD) 330(COLD);  x86: [status=verify] [reason=unknown]; files: x86/base.odex=131688 x86/base.vdex=57857 
+INFO  PR2 mem verify (KB): Java Heap=3724 Native Heap=21008 Code=8564 Stack=36 Graphics=0 Private Other=1856 System=14480 TOTAL=49668  rows: Dalvik_Heap=2002 Dalvik_Other=845 .so_mmap=2577 .jar_mmap=1538 .apk_mmap=16898 .dex_mmap=190 .oat_mmap=821 .art_mmap=2158 
+INFO  PR2 compile speed-profile: Success ; now  x86: [status=speed-profile] [reason=unknown]; files: x86/base.odex=6812044 x86/base.vdex=58180 x86/base.art=540672 
+INFO  PR2 cold start speed-profile (am start -W TotalTime ms, five runs): 317(COLD) 268(COLD) 281(COLD) 286(COLD) 270(COLD);  x86: [status=speed-profile] [reason=unknown]; files: x86/base.odex=6812044 x86/base.vdex=58180 x86/base.art=540672 
+INFO  PR2 mem speed-profile (KB): Java Heap=4932 Native Heap=12852 Code=14304 Stack=32 Graphics=0 Private Other=1372 System=15548 TOTAL=49040  rows: Dalvik_Heap=2283 Dalvik_Other=365 .so_mmap=2635 .jar_mmap=1365 .apk_mmap=17782 .dex_mmap=6238 .oat_mmap=792 .art_mmap=3141 
+INFO  PR2 compile speed: Success ; now  x86: [status=speed] [reason=unknown]; files: x86/base.odex=18615692 x86/base.vdex=58180 
+INFO  PR2 cold start speed (am start -W TotalTime ms, five runs): 330(COLD) 300(COLD) 396(COLD) 277(COLD) 308(COLD);  x86: [status=speed] [reason=unknown]; files: x86/base.odex=18615692 x86/base.vdex=58180 
+INFO  PR2 mem speed (KB): Java Heap=4108 Native Heap=12376 Code=18500 Stack=32 Graphics=0 Private Other=1764 System=14865 TOTAL=51645  rows: Dalvik_Heap=2716 Dalvik_Other=733 .so_mmap=2603 .jar_mmap=1412 .apk_mmap=17168 .dex_mmap=10330 .oat_mmap=807 .art_mmap=1892 
+INFO  PR2 restore of the debug apk: Performing Streamed Install Success 

@@ -1,0 +1,54 @@
+Applications Memory Usage (in Kilobytes):
+Uptime: 455420 Realtime: 455420
+
+** MEMINFO in pid 5709 [com.tj.launcher] **
+                   Pss  Private  Private     Swap     Heap     Heap     Heap
+                 Total    Dirty    Clean    Dirty     Size    Alloc     Free
+                ------   ------   ------   ------   ------   ------   ------
+  Native Heap    12424    12376        0        0    25300    23752     1547
+  Dalvik Heap     2716     2524        0        0     4022     2027     1995
+ Dalvik Other      733      732        0        0                           
+        Stack       32       32        0        0                           
+       Ashmem       53       48        0        0                           
+    Other dev      136        0      136        0                           
+     .so mmap     2603      140        4        0                           
+    .jar mmap     1412        0       28        0                           
+    .apk mmap    17168        0     8000        0                           
+    .ttf mmap       58        0        0        0                           
+    .dex mmap    10330       20    10308        0                           
+    .oat mmap      807        0        0        0                           
+    .art mmap     1892     1584        0        0                           
+   Other mmap      448       32       20        0                           
+      Unknown      833      796        0        0                           
+        TOTAL    51645    18284    18496        0    29322    25779     3542
+ 
+ App Summary
+                       Pss(KB)
+                        ------
+           Java Heap:     4108
+         Native Heap:    12376
+                Code:    18500
+               Stack:       32
+            Graphics:        0
+       Private Other:     1764
+              System:    14865
+ 
+               TOTAL:    51645      TOTAL SWAP (KB):        0
+ 
+ Objects
+               Views:       40         ViewRootImpl:        1
+         AppContexts:        7           Activities:        1
+              Assets:       10        AssetManagers:        0
+       Local Binders:       38        Proxy Binders:       37
+       Parcel memory:        7         Parcel count:       30
+    Death Recipients:        0      OpenSSL Sockets:        0
+            WebViews:        0
+ 
+ SQL
+         MEMORY_USED:      279
+  PAGECACHE_OVERFLOW:        8          MALLOC_SIZE:      117
+ 
+ DATABASES
+      pgsz     dbsz   Lookaside(b)          cache  Dbname
+         4       12             66         6/17/4  /data/user/0/com.tj.launcher/databases/launcher.db
+         4       68             45        43/16/3  /data/user/0/com.tj.launcher/databases/app_icons.db

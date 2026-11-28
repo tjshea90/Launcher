@@ -1,0 +1,7 @@
+Starting: Intent { act=android.intent.action.MAIN cat=[android.intent.category.HOME] }
+Status: ok
+LaunchState: COLD
+Activity: com.tj.launcher/com.android.launcher3.Launcher
+TotalTime: 330
+WaitTime: 331
+Complete
