@@ -69,3 +69,23 @@ The debug APK cannot be used for this (run #797: a debuggable app is capped at `
 Reading: compiled code moves memory from the native heap (JIT data) into file-backed code pages: speed-profile is memory-neutral (52.8 against 53.0 MB), `-m speed` (the Setup item COMPILE_SELF) is about 5 MB more PSS than speed-profile (clean file pages, reclaimable) and not measurably faster at a cold start.
 **Decision P1 (class lines in baseline-prof.txt): SKIPPED.** Measured cost 3.4 KB RAM per class, no measurable cold-start gain, and the existing profile already compiles every method of our code. Nothing to build here.
 Known gaps of run #799 (fixed for run 3): no true `verify` baseline, `files:` empty (the oat directory cannot be listed by the shell user: use `stat -c %s` on the known names), three runs per state is noisy (use five).
+
+## FINAL results of run #800 (id 46092484975, section `pr2`, release apk, five cold starts per state, a TRUE verify baseline) - DECISIONS
+| State (compile filter, what makes it) | oat / art files | cold start `am start -W` TotalTime, 5 runs (mean) | PSS after one scripted use (KB) |
+| :- | :- | :- | :- |
+| verify (what a fresh sideload is until Android compiles it) | odex 131 KB, no image | 309 378 331 384 330 (**346 ms**) | TOTAL 49 668: Native heap 21 008, Code 8 564, Java 3 724 |
+| speed-profile (what Android's idle job makes from our shipped profile; `cmd package compile -m speed-profile`) | odex 6.8 MB, art 0.54 MB | 317 268 281 286 270 (**284 ms, 18 % faster**) | TOTAL 49 040: Native heap **12 852**, Code 14 304, Java 4 932 |
+| speed (Setup item COMPILE_SELF, `-m speed`) | odex 18.6 MB, no image | 330 300 396 277 308 (322 ms, 7 % faster, within noise) | TOTAL 51 645: Native heap 12 376, Code 18 500 |
+- The shipped baseline profile WORKS end to end on API 29: after the first start the device holds hot 14 922 / startup 14 908 / post-startup 15 127 methods and 285 classes (shipped rules plus what the runtime recorded). CG1c is verified, not just reasoned.
+- A compile turns about 8 MB of ANONYMOUS memory (JIT data in the native heap, not reclaimable) into about 6 MB of file-backed code pages (reclaimable): speed-profile is the best state on every axis measured; `-m speed` costs 2.6 MB more PSS, 11.8 MB more storage and was not faster. The runtime adds its own classes to the profile, so the app image (about 3.4 KB per class: +0.98 MB for 285 classes) appears anyway; adding class lines to `baseline-prof.txt` would change nothing useful.
+- The cost of NOT being compiled is the first window after each update (until the idle job runs): about 8 MB more anonymous memory and an 18 % slower cold start. Nothing in the app can start that job earlier (shell only: the Setup item).
+| Id | Idea | Decision |
+| :- | :- | :- |
+| P1 | class lines in baseline-prof.txt | SKIPPED: the runtime records the classes itself (285 after one use), the image costs about 3.4 KB per class, no gain over what already happens |
+| P2 | startup (S) / post-startup (P) flags instead of all-HSP | SKIPPED: layout only matters for a verify-state cold start and the numbers show 346 against 284 ms in total; unproven |
+| P3 | compile right after install through the shell helper | SKIPPED: the helper only lives during Tj's cable sessions, a compile during use competes for the CPU of a 2 GB tablet, and the Setup item already exists (COMPILE_SELF) |
+| P4 | Setup item `-m speed` -> `-m speed-profile` | OBSERVED, NOT CHANGED: speed-profile is 2.6 MB leaner, 11.8 MB smaller, not slower; but without an installed profile it compiles nothing and `compile_done_code` would still be set. Tj asked for a FULL compile in CG1c |
+| X1 | GPU / EGL memory of the overlay windows | NOT measurable in CI (software GL); needs a tablet report with the PSS split (v0.9.20 prints it) |
+| X2 | a11y event types | NO again: the event delivery is at most about 10 events per second per window (the framework throttles content-change events to 100 ms), our filter drops them at the door, and the measured idle cost is 0.03 % of a core |
+| X3 | R8, resource trimming, thread count, receivers | nothing measurable: 23 threads (5 Binder), 40 views, one Activity, no leak signature |
+Product code changed in this pass: NONE. What was built: `tools/trace_top.py` + `tools/test_trace_top.sh` (in `tools/test_handoff.sh`), emulator sections `pr` and `pr2`, `ci_publish_shots.sh` globs, the conditional release-apk step of `emulator.yml`. No release needed.
