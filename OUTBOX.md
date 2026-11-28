@@ -1994,3 +1994,15 @@
 >
 > Claude.ai plugin settings apply to your whole account, so you can't make them per-repo there. Claude Code may allow a project-level setting that disables chosen plugins for this repo only, but I haven't verified that for these account-synced plugins. I can check that if you want. Otherwise I'd leave everything as it is.
 <!-- sha:41eb4f5d485e -->
+
+## 2026-11-28T00:02:39Z
+> Measurement run #797 (pr, pr2) is on the emulator now. I'll read it as soon as it lands, because it will show whether a compiled launcher with a precise class list starts measurably faster.
+>
+> What's saved so far, in `research/DA1_PERF_PROBE_2026-11-27.md` and TASKS DA1e:
+> - **Idle:** the launcher process burns about 0.03 % of one core and draws no frames, screen on or off.
+> - **Interactions:** drawer, pages, app launch, shade, screen cycle and Recents each cost a few to about 150 ms of main-thread CPU for a whole scripted use.
+> - **Cold start:** the only sizeable CPU. About 570 ms on the emulator's main thread, nearly all class loading and first inflate. It happens about twice a day on your tablet.
+> - **Baseline profile:** it lists about 14.8k methods but no classes of our own, so no app image gets built. I checked locally that adding class rules does work, giving 1,762 classes for `com.tj.launcher` plus the launcher3 fork. That is probably too many for an app image, so the next step is to pick the class list from the real run.
+>
+> I also armed the auto-resume heartbeat for this job (trigger `trig_01TAXAYoGyEPAhuzh7PzBQm8`, every 2 hours). I'll delete it when the job is shipped or only items waiting on you remain.
+<!-- sha:ab0aca48c81c -->
