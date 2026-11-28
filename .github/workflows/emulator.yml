@@ -92,10 +92,16 @@ jobs:
         run: |
           set -e
           ./gradlew :app:assembleRelease --console=plain
-          BT="$(ls -d "${ANDROID_HOME:-$ANDROID_SDK_ROOT}"/build-tools/* | sort -V | tail -1)"
+          BT="$(ls -d "${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"/build-tools/* | sort -V | tail -1)"
           IN="$(ls app/build/outputs/apk/release/*.apk | head -1)"
-          "$BT/apksigner" sign --ks "$HOME/.android/debug.keystore" --ks-pass pass:android --key-pass pass:android --ks-key-alias androiddebugkey --out pr2-release.apk "$IN"
+          # Run 798 (id 46086858124): "FileNotFoundException: /home/runner/.android/debug.keystore". A runner that restores the debug APK from the Gradle build cache never creates a debug.keystore, and that
+          # APK carries ANOTHER runner's key. So one throwaway key is made here and signs BOTH apks: the release one (pr2-release.apk) and the debug one the scenario installs first (install -r needs one certificate).
+          keytool -genkeypair -keystore "$RUNNER_TEMP/pr2.jks" -storepass android -keypass android -alias pr2 -keyalg RSA -keysize 2048 -validity 30 -dname "CN=pr2 test key"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/pr2.jks" --ks-pass pass:android --key-pass pass:android --ks-key-alias pr2 --out pr2-release.apk "$IN"
+          "$BT/apksigner" sign --ks "$RUNNER_TEMP/pr2.jks" --ks-pass pass:android --key-pass pass:android --ks-key-alias pr2 --out "$RUNNER_TEMP/debug-resigned.apk" app/build/outputs/apk/debug/app-debug.apk
+          cp "$RUNNER_TEMP/debug-resigned.apk" app/build/outputs/apk/debug/app-debug.apk
           "$BT/apksigner" verify --print-certs pr2-release.apk | head -2
+          "$BT/apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk | head -2
           ls -l pr2-release.apk
           unzip -l pr2-release.apk | grep -E 'dexopt|classes[0-9]*\.dex|resources\.arsc'
       - name: Boot Android 10, run the scenario
