@@ -6358,19 +6358,19 @@ pr2nobounce(){ # Launcher3's first-run swipe-up hint is marked seen BEFORE the s
 }
 pr2adb(){ timeout 600 "$(type -P adb)" "$@"; }   # the scenario's adb() gives a command 60 s; a full compile can take longer and its answer (and the wait for it) would be lost
 pr2state(){ adb shell dumpsys package dexopt 2>/dev/null | tr -d '\r' | grep -A8 "\[$PKG\]" | grep -E 'status=' | head -1 | tr -s ' '; }
-pr2files(){ local d i; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"
-  for i in x86 x86_64; do adb shell "ls -l $d/oat/$i/ 2>/dev/null" | tr -d '\r' | awk -v isa=$i 'NF>=8{printf "%s/%s=%s ", isa, $NF, $5}'; done; }
+pr2files(){ local d i f z; d="$(adb shell pm path "$PKG" | head -1 | cut -d: -f2 | tr -d '\r' | xargs dirname)"   # the oat directory cannot be listed by the shell user (run #799: empty), a known file name can be stat-ed
+  for i in x86 x86_64; do for f in base.odex base.vdex base.art; do z=$(adb shell "stat -c %s $d/oat/$i/$f 2>/dev/null" | tr -d '\r'); [ -n "$z" ] && printf '%s/%s=%s ' "$i" "$f" "$z"; done; done; }
 pr2count(){ awk '/^\thot methods:/{s="hot";next} /^\tstartup methods:/{s="st";next} /^\tpost startup methods:/{s="ps";next} /^\tclasses:/{s="cl";next} /^[^\t]/{s=""} /^\t\t/{if(s!="")n[s]++} END{printf "hot=%d startup=%d poststartup=%d classes=%d", n["hot"], n["st"], n["ps"], n["cl"]}' "$1"; }
 pr2cold(){ # pr2cold <tag>: three process-cold starts of Home with another app in front (force-stop alone would let the system restart Home by itself and the next `am start -W` would only measure a warm start)
   local i t ls out=""
-  for i in 1 2 3; do
+  for i in 1 2 3 4 5; do
     adb shell am start -n com.android.settings/.Settings >/dev/null 2>&1; sleep 3
     adb shell am force-stop "$PKG" >/dev/null 2>&1; sleep 2
     adb shell am start -W -a android.intent.action.MAIN -c android.intent.category.HOME > "$OUT/pr2-cold-$1-$i.txt" 2>&1
     t=$(tr -d '\r' < "$OUT/pr2-cold-$1-$i.txt" | grep -m1 TotalTime | grep -o '[0-9]*'); ls=$(tr -d '\r' < "$OUT/pr2-cold-$1-$i.txt" | grep -m1 LaunchState | sed 's/.*: *//')
     out="$out ${t:-?}(${ls:-?})"; sleep 4
   done
-  info "PR2 cold start $1 (am start -W TotalTime ms, three runs):$out; $(pr2state); files: $(pr2files)"
+  info "PR2 cold start $1 (am start -W TotalTime ms, five runs):$out; $(pr2state); files: $(pr2files)"
 }
 pr2use(){ # the scripted use that fills the profile and the caches: home, drawer + flings, an app and back, the shade, Recents
   home; sleep 3
@@ -6403,7 +6403,9 @@ if grep -q Success "$OUT/pr2-install.txt"; then
   adb shell cmd package dump-profiles "$PKG" > "$OUT/pr2-dump-profiles.txt" 2>&1; sleep 2
   adb shell "cat /data/misc/profman/$PKG-primary.prof.txt" 2>/dev/null | tr -d '\r' > "$OUT/pr2-profile-installed.txt"
   info "PR2 installed profile (after first start + use): $(wc -l < "$OUT/pr2-profile-installed.txt") lines, $(pr2count "$OUT/pr2-profile-installed.txt"); dump-profiles said: $(tr -d '\r' < "$OUT/pr2-dump-profiles.txt" | tr '\n' ' ' | cut -c1-120)"
-  # 3. the three compile states
+  # 3. the compile states: a TRUE verify baseline first (run #799: the state right after install -r was already speed-profile with a profile that matched nothing), then what Android's idle job does, then the Setup item
+  pr2adb shell cmd package compile -m verify -f "$PKG" > "$OUT/pr2-compile-verify.txt" 2>&1
+  info "PR2 compile verify: $(tr -d '\r' < "$OUT/pr2-compile-verify.txt" | tr '\n' ' ' | cut -c1-100); now $(pr2state); files: $(pr2files)"
   pr2cold verify
   pr2mem verify
   pr2adb shell cmd package compile -m speed-profile -f "$PKG" > "$OUT/pr2-compile-sp.txt" 2>&1
